@@ -153,9 +153,9 @@ const Watchlist: React.FC<WatchlistProps> = ({
                   e.stopPropagation();
                   onRemoveFromWatchlist(item.id, item.mediaType);
                 }}
-                className="absolute top-2 right-2 p-1 text-white/60 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-white" />
               </button>
             </Link>
           ))}

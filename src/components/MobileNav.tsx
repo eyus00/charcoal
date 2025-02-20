@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Grid, Film, Tv, Search, X, UserCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store/useStore';
 
 const MobileNav = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { searchQuery, setSearchQuery } = useStore();
 
@@ -13,7 +14,7 @@ const MobileNav = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       setIsSearchOpen(false);
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 

@@ -1,20 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, PlayCircle, Film, Video, Bookmark, Plus, Check } from 'lucide-react';
+import { PlayCircle, Film, Video, RotateCcw, Star } from 'lucide-react';
 import { useMedia } from '../api/hooks/useMedia';
 import { getImageUrl } from '../api/config';
 import { cn } from '../lib/utils';
 import { useStore, WatchStatus } from '../store/useStore';
+import WatchlistButton from '../components/WatchlistButton';
 
 const MovieDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
+  const [needsExpansion, setNeedsExpansion] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
   const { data: details, isLoading } = useMedia.useDetails('movie', Number(id));
-  const { addToWatchlist, removeFromWatchlist, getWatchlistItem } = useStore();
+  const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
 
   const watchlistItem = getWatchlistItem(Number(id), 'movie');
+  const watchHistoryItem = watchHistory.find(
+    item => item.id === Number(id) && item.mediaType === 'movie'
+  );
+
+  const watchProgress = watchHistoryItem?.progress
+    ? Math.round((watchHistoryItem.progress.watched / watchHistoryItem.progress.duration) * 100)
+    : 0;
+
+  useEffect(() => {
+    const checkTextHeight = () => {
+      if (textRef.current) {
+        const lineHeight = parseInt(window.getComputedStyle(textRef.current).lineHeight);
+        const threeLineHeight = lineHeight * 3;
+        setNeedsExpansion(textRef.current.scrollHeight > threeLineHeight);
+      }
+    };
+
+    checkTextHeight();
+    window.addEventListener('resize', checkTextHeight);
+    return () => window.removeEventListener('resize', checkTextHeight);
+  }, [details?.overview]);
 
   if (isLoading || !details) return <div>Loading...</div>;
 
@@ -33,12 +56,10 @@ const MovieDetails = () => {
       addedAt: Date.now(),
       status,
     });
-    setIsWatchlistOpen(false);
   };
 
   const handleWatchlistRemove = () => {
     removeFromWatchlist(Number(id), 'movie');
-    setIsWatchlistOpen(false);
   };
 
   // Take only the first 2 genres for mobile/tablet
@@ -89,91 +110,12 @@ const MovieDetails = () => {
                       <span className="text-white font-medium">Movie</span>
                     </div>
                     <div className="w-px h-5 bg-white/20" />
-                    <div className="relative">
-                      {watchlistItem ? (
-                        <button
-                          onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
-                          className="p-1.5 bg-white/10 hover:bg-white/20 transition-colors"
-                        >
-                          <Bookmark className="w-5 h-5 text-white fill-white" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
-                          className="p-1.5 hover:bg-white/10 transition-colors"
-                        >
-                          <Bookmark className="w-5 h-5 text-white" />
-                        </button>
-                      )}
-
-                      {/* Watchlist Dropdown */}
-                      {isWatchlistOpen && (
-                        <div className="absolute top-full mt-1 right-0 w-48 bg-white shadow-lg py-2 z-50">
-                          {!watchlistItem ? (
-                            <>
-                              <button
-                                onClick={() => handleWatchlistAdd('watching')}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                Currently Watching
-                              </button>
-                              <button
-                                onClick={() => handleWatchlistAdd('planned')}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                <div className="w-2 h-2 rounded-full bg-purple-500" />
-                                Plan to Watch
-                              </button>
-                              <button
-                                onClick={() => handleWatchlistAdd('completed')}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                <div className="w-2 h-2 rounded-full bg-green-500" />
-                                Completed
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <div className="px-4 py-1.5">
-                                <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-                                  Current Status
-                                </div>
-                                <div className="text-sm font-medium capitalize mt-0.5">
-                                  {watchlistItem.status === 'planned' ? 'Plan to Watch' : watchlistItem.status}
-                                </div>
-                              </div>
-                              <div className="h-px bg-gray-200 my-1" />
-                              <button
-                                onClick={() => handleWatchlistAdd('watching')}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                              >
-                                Set as Watching
-                              </button>
-                              <button
-                                onClick={() => handleWatchlistAdd('planned')}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                              >
-                                Set as Plan to Watch
-                              </button>
-                              <button
-                                onClick={() => handleWatchlistAdd('completed')}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                              >
-                                Set as Completed
-                              </button>
-                              <div className="h-px bg-gray-200 my-1" />
-                              <button
-                                onClick={handleWatchlistRemove}
-                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
-                              >
-                                Remove from Watchlist
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <WatchlistButton
+                      watchlistItem={watchlistItem}
+                      onAdd={handleWatchlistAdd}
+                      onRemove={handleWatchlistRemove}
+                      darkMode={true}
+                    />
                   </div>
 
                   <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
@@ -197,16 +139,21 @@ const MovieDetails = () => {
                   </div>
 
                   <div className="relative mb-8">
-                    <p className={cn(
-                      "text-gray-100 text-base md:text-lg leading-relaxed",
-                      !isExpanded && "line-clamp-3"
+                    <div className={cn(
+                      "relative text-gray-100 text-base md:text-lg",
+                      !isExpanded && "max-h-[4.5em] overflow-hidden"
                     )}>
-                      {details.overview}
-                    </p>
-                    {details.overview.split(' ').length > 60 && (
+                      <p ref={textRef} className="leading-relaxed">
+                        {details.overview}
+                      </p>
+                      {needsExpansion && !isExpanded && (
+                        <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black to-transparent" />
+                      )}
+                    </div>
+                    {needsExpansion && (
                       <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="text-white/80 hover:text-white text-sm mt-2 block mx-auto md:mx-0"
+                        className="text-white/80 hover:text-white text-sm font-medium mt-2"
                       >
                         {isExpanded ? 'Show less' : 'Read more'}
                       </button>
@@ -217,18 +164,35 @@ const MovieDetails = () => {
                   <div className="flex flex-col md:flex-row gap-3">
                     <button
                       onClick={handleWatch}
-                      className="w-full md:w-auto px-8 py-3 bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+                      className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30 relative group"
                     >
-                      <PlayCircle className="w-5 h-5" />
-                      Watch Now
+                      {watchHistoryItem ? (
+                        <>
+                          <RotateCcw className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          Resume
+                          {watchProgress > 0 && (
+                            <div className="absolute left-0 right-0 bottom-0 h-1 bg-white/10 rounded-b-md overflow-hidden">
+                              <div 
+                                className="absolute inset-y-0 left-0 bg-white/30 transition-all duration-300"
+                                style={{ width: `${watchProgress}%` }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          Watch Now
+                        </>
+                      )}
                     </button>
                     <a
                       href={`https://www.youtube.com/watch?v=${details.videos?.results?.[0]?.key}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full md:w-auto px-8 py-3 bg-white/10 text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors backdrop-blur-sm"
+                      className="w-full md:w-auto px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm group"
                     >
-                      <Video className="w-5 h-5" />
+                      <Video className="w-5 h-5 group-hover:scale-110 transition-transform" />
                       Watch Trailer
                     </a>
                   </div>

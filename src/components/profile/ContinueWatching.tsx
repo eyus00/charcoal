@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Trash2, Play, Timer, Star } from 'lucide-react';
+import { Clock, Trash2, RotateCcw, Timer, Star } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import { WatchHistoryItem } from '../../store/useStore';
 import { getImageUrl } from '../../api/config';
@@ -48,10 +48,12 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
     if (!item.progress) return null;
 
     let totalDuration = item.progress.duration;
-    if (item.mediaType === 'movie') {
-      totalDuration = (details?.runtime || 0) * 60;
-    } else if (item.mediaType === 'tv') {
-      totalDuration = (details?.episode_run_time?.[0] || 0) * 60;
+    if (totalDuration === 0) {
+      if (item.mediaType === 'movie') {
+        totalDuration = (details?.runtime || 0) * 60;
+      } else if (item.mediaType === 'tv') {
+        totalDuration = (details?.episode_run_time?.[0] || 0) * 60;
+      }
     }
 
     if (totalDuration === 0) return null;
@@ -62,7 +64,8 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
     return {
       watched: formatDuration(Math.floor(watched)),
       remaining: formatDuration(Math.floor(remaining)),
-      percentage: Math.round((watched / totalDuration) * 100)
+      percentage: Math.round((watched / totalDuration) * 100),
+      isAccurateTracking: item.progress.duration > 0
     };
   };
 
@@ -96,15 +99,22 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
           {watchHistory.map((item, index) => {
             const details = detailQueries[index]?.data;
             const progress = getWatchProgress(item, details);
-            const isAccurateTracking = item.progress?.duration > 0;
             const releaseDate = details?.release_date || details?.first_air_date;
             const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
 
             return (
               <div
                 key={`${item.mediaType}-${item.id}`}
-                className="flex gap-4 bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark hover:border-accent transition-colors group"
+                className="group flex gap-4 bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark hover:border-accent transition-colors relative"
               >
+                {/* Remove button - Absolute positioned */}
+                <button
+                  onClick={() => onRemoveFromHistory(item.id, item.mediaType)}
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600"
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                </button>
+
                 <div className="w-24 flex-shrink-0 relative">
                   <img
                     src={getImageUrl(item.posterPath, 'w185')}
@@ -122,22 +132,14 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 py-3 pr-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-medium truncate">{item.title}</h3>
-                      <div className="flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                        <span className="capitalize">{item.mediaType}</span>
-                        {item.season !== undefined && (
-                          <span>• S{item.season}:E{item.episode}</span>
-                        )}
-                      </div>
+                  <div className="min-w-0">
+                    <h3 className="font-medium truncate">{item.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                      <span className="capitalize">{item.mediaType}</span>
+                      {item.season !== undefined && (
+                        <span>• S{item.season}:E{item.episode}</span>
+                      )}
                     </div>
-                    <button
-                      onClick={() => onRemoveFromHistory(item.id, item.mediaType)}
-                      className="p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
 
                   <div className="mt-2">
@@ -153,7 +155,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                           </div>
                           <div className={cn(
                             "px-1.5 py-0.5 text-xs rounded-md",
-                            isAccurateTracking 
+                            progress.isAccurateTracking 
                               ? "bg-red-600/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
                               : "bg-light-surface dark:bg-dark-surface text-light-text-secondary dark:text-dark-text-secondary"
                           )}>
@@ -168,7 +170,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                         <div
                           className={cn(
                             "absolute inset-y-0 left-0 transition-all duration-300",
-                            isAccurateTracking 
+                            progress.isAccurateTracking 
                               ? "bg-gradient-to-r from-red-500 to-red-600"
                               : "bg-gradient-to-r from-light-text-secondary to-light-text-secondary dark:from-dark-text-secondary dark:to-dark-text-secondary"
                           )}
@@ -184,9 +186,9 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                         ? `?season=${item.season}&episode=${item.episode}`
                         : ''
                     }`}
-                    className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 mt-3"
+                    className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 mt-3"
                   >
-                    <Play className="w-4 h-4" />
+                    <RotateCcw className="w-4 h-4" />
                     Resume
                   </Link>
                 </div>

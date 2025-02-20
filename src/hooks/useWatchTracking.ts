@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { WatchHistoryItem } from '../store/useStore';
+import { WatchHistoryItem, WatchStatus } from '../store/useStore';
 
 const MINIMUM_WATCH_TIME = 30; // 30 seconds to count as "watched"
 const TRACKING_INTERVAL = 10000; // Update every 10 seconds
+const COMPLETION_THRESHOLD = 0.85; // 85% completion to mark as completed
 
 interface UseWatchTrackingProps {
   mediaType: string;
@@ -12,6 +13,7 @@ interface UseWatchTrackingProps {
   season?: string | null;
   episode?: string | null;
   onAddToHistory: (item: WatchHistoryItem) => void;
+  onUpdateWatchlist: (id: number, mediaType: 'movie' | 'tv', status: WatchStatus) => void;
 }
 
 export const useWatchTracking = ({
@@ -22,6 +24,7 @@ export const useWatchTracking = ({
   season,
   episode,
   onAddToHistory,
+  onUpdateWatchlist,
 }: UseWatchTrackingProps) => {
   const watchTimeRef = useRef(0);
   const lastUpdateRef = useRef(Date.now());
@@ -113,6 +116,20 @@ export const useWatchTracking = ({
             : progressData?.[Number(id)];
 
           if (showProgress?.progress) {
+            const progress = showProgress.progress;
+            const completionRatio = progress.watched / progress.duration;
+
+            // Update watchlist status based on completion
+            if (completionRatio >= COMPLETION_THRESHOLD) {
+              if (mediaType === 'movie') {
+                onUpdateWatchlist(Number(id), 'movie', 'completed');
+              } else if (mediaType === 'tv') {
+                // For TV shows, we only mark as completed if it's the last episode
+                // This logic can be enhanced based on your needs
+                onUpdateWatchlist(Number(id), 'tv', 'watching');
+              }
+            }
+
             onAddToHistory({
               id: Number(id),
               mediaType: mediaType as 'movie' | 'tv',
@@ -132,5 +149,5 @@ export const useWatchTracking = ({
 
     window.addEventListener('message', handlePlayerEvent);
     return () => window.removeEventListener('message', handlePlayerEvent);
-  }, [title, posterPath, mediaType, id, season, episode, onAddToHistory]);
+  }, [title, posterPath, mediaType, id, season, episode, onAddToHistory, onUpdateWatchlist]);
 };

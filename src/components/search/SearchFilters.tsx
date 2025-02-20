@@ -54,6 +54,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 }) => {
   const [customYear, setCustomYear] = useState('');
   const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleYearSelect = (yearOption: { label: string; range: [number, number] }) => {
     const newSelectedYears = new Set(selectedYears);
@@ -93,6 +94,16 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
     }
   };
 
+  const handleRatingSliderChange = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = Math.min(Math.max(x / width, 0), 1);
+    const rating = Math.round(percentage * 9);
+    onRatingChange(rating);
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -125,6 +136,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
           customYear={customYear}
           setCustomYear={setCustomYear}
           handleCustomYearSubmit={handleCustomYearSubmit}
+          handleRatingSliderChange={handleRatingSliderChange}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
         />
       </div>
 
@@ -149,6 +163,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
           customYear={customYear}
           setCustomYear={setCustomYear}
           handleCustomYearSubmit={handleCustomYearSubmit}
+          handleRatingSliderChange={handleRatingSliderChange}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
         />
       </div>
     </>
@@ -170,6 +187,9 @@ const FilterContent: React.FC<{
   customYear: string;
   setCustomYear: (year: string) => void;
   handleCustomYearSubmit: (e: React.FormEvent) => void;
+  handleRatingSliderChange: (e: React.MouseEvent<HTMLDivElement>) => void;
+  isDragging: boolean;
+  setIsDragging: (dragging: boolean) => void;
 }> = ({
   onClose,
   onClearFilters,
@@ -184,6 +204,9 @@ const FilterContent: React.FC<{
   customYear,
   setCustomYear,
   handleCustomYearSubmit,
+  handleRatingSliderChange,
+  isDragging,
+  setIsDragging,
 }) => (
   <div className="h-full flex flex-col">
     {/* Header */}
@@ -281,19 +304,20 @@ const FilterContent: React.FC<{
         <section className="pb-4">
           <h3 className="text-sm font-semibold mb-3">Minimum Rating</h3>
           <div className="space-y-4">
-            <div className="relative w-full h-2 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
+            <div 
+              className="relative w-full h-2 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden cursor-pointer"
+              onMouseDown={() => setIsDragging(true)}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
+              onMouseMove={handleRatingSliderChange}
+            >
               <div
                 className="absolute inset-y-0 left-0 bg-red-600 dark:bg-red-500 transition-all"
                 style={{ width: `${(minRating / 9) * 100}%` }}
               />
-              <input
-                type="range"
-                min="0"
-                max="9"
-                step="1"
-                value={minRating}
-                onChange={(e) => onRatingChange(Number(e.target.value))}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              <div 
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-red-600 dark:bg-red-500 rounded-full shadow-lg transform -translate-x-1/2 cursor-grab"
+                style={{ left: `${(minRating / 9) * 100}%` }}
               />
             </div>
             <div className="flex items-center justify-between text-sm">

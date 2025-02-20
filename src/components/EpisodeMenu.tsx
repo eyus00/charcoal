@@ -74,7 +74,7 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
               <button
                 onClick={onPrevious}
                 disabled={currentSeason === 1 && currentEpisode === 1}
-                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent hover:text-white dark:hover:bg-accent dark:hover:text-white transition-colors"
+                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
@@ -82,7 +82,7 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
               <button
                 onClick={onNext}
                 disabled={currentSeason === totalSeasons && currentEpisode === totalEpisodes}
-                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent hover:text-white dark:hover:bg-accent dark:hover:text-white transition-colors"
+                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-colors"
               >
                 Next
                 <ChevronRight className="w-4 h-4" />
@@ -91,20 +91,25 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
           </div>
 
           <div className="px-4 py-3 border-b border-border-light dark:border-border-dark">
-            <select
-              value={selectedSeason}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              className="w-full px-4 py-2.5 bg-light-surface dark:bg-dark-surface rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {seasons.map((season) => (
-                <option key={season.season_number} value={season.season_number}>
-                  {season.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                className="w-full appearance-none px-4 py-2.5 bg-light-surface dark:bg-dark-surface rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 pr-10"
+              >
+                {seasons.map((season) => (
+                  <option key={season.season_number} value={season.season_number}>
+                    {season.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="w-5 h-5 rotate-90" />
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
             {currentSeasonData?.episodes.map((episode) => (
               <button
                 key={episode.episode_number}
@@ -165,7 +170,7 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
               <button
                 onClick={onPrevious}
                 disabled={currentSeason === 1 && currentEpisode === 1}
-                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent hover:text-white dark:hover:bg-accent dark:hover:text-white transition-colors"
+                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
@@ -173,7 +178,7 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
               <button
                 onClick={onNext}
                 disabled={currentSeason === totalSeasons && currentEpisode === totalEpisodes}
-                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent hover:text-white dark:hover:bg-accent dark:hover:text-white transition-colors"
+                className="flex-1 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-colors"
               >
                 Next
                 <ChevronRight className="w-4 h-4" />
@@ -182,20 +187,25 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
           </div>
 
           <div className="p-4 border-b border-border-light dark:border-border-dark">
-            <select
-              value={selectedSeason}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {seasons.map((season) => (
-                <option key={season.season_number} value={season.season_number}>
-                  {season.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                className="w-full appearance-none px-3 py-2 bg-light-surface dark:bg-dark-surface rounded focus:outline-none focus:ring-2 focus:ring-red-500 pr-10"
+              >
+                {seasons.map((season) => (
+                  <option key={season.season_number} value={season.season_number}>
+                    {season.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="w-5 h-5 rotate-90" />
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
             {currentSeasonData?.episodes.map((episode) => (
               <button
                 key={episode.episode_number}
@@ -220,7 +230,7 @@ const EpisodeMenu: React.FC<EpisodeMenuProps> = ({
                   <div className="font-medium">
                     Episode {episode.episode_number}: {episode.name}
                   </div>
-                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2 mt-1">
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text- text-secondary line-clamp-2 mt-1">
                     {episode.overview}
                   </p>
                 </div>

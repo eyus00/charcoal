@@ -20,7 +20,13 @@ const WatchPage: React.FC = () => {
   const [selectedSource, setSelectedSource] = useState(SOURCES[0].id);
   const [isEpisodeMenuOpen, setIsEpisodeMenuOpen] = useState(false);
   const [isSourcesMenuOpen, setIsSourcesMenuOpen] = useState(false);
-  const { addToWatchHistory, addToWatchlist, removeFromWatchlist, getWatchlistItem } = useStore();
+  const { 
+    addToWatchHistory, 
+    addToWatchlist, 
+    removeFromWatchlist, 
+    getWatchlistItem,
+    updateWatchlistStatus 
+  } = useStore();
 
   const { data: details } = useMedia.useDetails(
     mediaType as 'movie' | 'tv',
@@ -50,6 +56,7 @@ const WatchPage: React.FC = () => {
     season,
     episode,
     onAddToHistory: addToWatchHistory,
+    onUpdateWatchlist: updateWatchlistStatus,
   });
 
   const videoUrl = mediaType === 'movie'
