@@ -10,11 +10,21 @@ const MobileNav = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { searchQuery, setSearchQuery } = useStore();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     if (searchQuery.trim()) {
       setIsSearchOpen(false);
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSearchClick = () => {
+    if (!isSearchOpen) {
+      setIsSearchOpen(true);
+    } else if (searchQuery.trim()) {
+      handleSearch();
     }
   };
 
@@ -83,7 +93,7 @@ const MobileNav = () => {
           </Link>
 
           <button
-            onClick={() => setIsSearchOpen(true)}
+            onClick={handleSearchClick}
             className="flex flex-col items-center justify-center gap-1 text-light-text-secondary dark:text-dark-text-secondary -mt-6"
           >
             <div className="w-14 h-14 bg-accent hover:bg-accent-hover rounded-full flex items-center justify-center shadow-lg">

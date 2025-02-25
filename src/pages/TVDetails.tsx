@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayCircle, Tv, Video, RotateCcw, Star } from 'lucide-react';
+import { PlayCircle, Tv, Video, Star } from 'lucide-react';
 import { useMedia } from '../api/hooks/useMedia';
 import { getImageUrl } from '../api/config';
 import { cn } from '../lib/utils';
@@ -24,10 +24,6 @@ const TVDetails = () => {
   const watchHistoryItem = watchHistory.find(
     item => item.id === Number(id) && item.mediaType === 'tv'
   );
-
-  const watchProgress = watchHistoryItem?.progress
-    ? Math.round((watchHistoryItem.progress.watched / watchHistoryItem.progress.duration) * 100)
-    : 0;
 
   const seasonQueries = useQueries({
     queries: (details?.seasons ?? []).map(season => ({
@@ -56,11 +52,7 @@ const TVDetails = () => {
     .map(query => query.data);
 
   const handleWatch = () => {
-    if (watchHistoryItem) {
-      navigate(`/watch/tv/${id}?season=${watchHistoryItem.season}&episode=${watchHistoryItem.episode}`);
-    } else {
-      setIsEpisodeSelectorOpen(true);
-    }
+    setIsEpisodeSelectorOpen(true);
   };
 
   const handleEpisodeSelect = (season: number, episode: number) => {
@@ -194,28 +186,8 @@ const TVDetails = () => {
                         onClick={handleWatch}
                         className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30 relative group"
                       >
-                        {watchHistoryItem ? (
-                          <>
-                            <RotateCcw className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            Resume
-                            <span className="text-sm text-white/80 ml-1">
-                              S{watchHistoryItem.season}:E{watchHistoryItem.episode}
-                            </span>
-                            {watchProgress > 0 && (
-                              <div className="absolute left-0 right-0 bottom-0 h-1 bg-white/10 rounded-b-md overflow-hidden">
-                                <div 
-                                  className="absolute inset-y-0 left-0 bg-white/30 transition-all duration-300"
-                                  style={{ width: `${watchProgress}%` }}
-                                />
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            Watch Now
-                          </>
-                        )}
+                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Watch Now
                       </button>
                       <a
                         href={`https://www.youtube.com/watch?v=${details.videos?.results?.[0]?.key}`}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Filter } from 'lucide-react';
@@ -12,6 +12,11 @@ const Search = () => {
   const [searchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const query = searchParams.get('q') || '';
+
+  // Scroll to top when search results change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [query]);
 
   const { data: searchResults, isLoading } = useMedia.useSearch(query);
   const { data: genres = [] } = useQuery({
@@ -40,7 +45,7 @@ const Search = () => {
         </h1>
         <button
           onClick={() => setIsFiltersOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
+          className="hidden md:flex items-center gap-2 px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
         >
           <Filter className="w-4 h-4" />
           <span className="text-sm font-medium">Filters</span>
@@ -51,6 +56,14 @@ const Search = () => {
         results={filteredResults}
         isLoading={isLoading}
       />
+
+      {/* Floating Filter Button for Mobile */}
+      <button
+        onClick={() => setIsFiltersOpen(true)}
+        className="fixed right-4 bottom-24 z-30 md:hidden bg-red-600 text-white p-4 rounded-full shadow-lg flex items-center justify-center hover:bg-red-700 transition-colors"
+      >
+        <Filter className="w-5 h-5" />
+      </button>
 
       <SearchFilters
         isOpen={isFiltersOpen}

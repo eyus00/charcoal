@@ -62,6 +62,13 @@ const MovieDetails = () => {
     removeFromWatchlist(Number(id), 'movie');
   };
 
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return null;
+    return minutes >= 60 
+      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+      : `${minutes}m`;
+  };
+
   // Take only the first 2 genres for mobile/tablet
   const displayedGenres = window.innerWidth < 768 ? details.genres?.slice(0, 2) : details.genres;
 
@@ -162,30 +169,41 @@ const MovieDetails = () => {
 
                   {/* Buttons */}
                   <div className="flex flex-col md:flex-row gap-3">
-                    <button
-                      onClick={handleWatch}
-                      className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30 relative group"
-                    >
-                      {watchHistoryItem ? (
-                        <>
-                          <RotateCcw className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          Resume
-                          {watchProgress > 0 && (
-                            <div className="absolute left-0 right-0 bottom-0 h-1 bg-white/10 rounded-b-md overflow-hidden">
-                              <div 
-                                className="absolute inset-y-0 left-0 bg-white/30 transition-all duration-300"
-                                style={{ width: `${watchProgress}%` }}
-                              />
-                            </div>
+                    <div className="relative flex-1 md:flex-none">
+                      <button
+                        onClick={handleWatch}
+                        className="w-full md:w-auto"
+                      >
+                        <div className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30">
+                          {watchHistoryItem ? (
+                            <>
+                              <RotateCcw className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                              <span>Resume</span>
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                              <span>Watch Now</span>
+                            </>
                           )}
-                        </>
-                      ) : (
-                        <>
-                          <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          Watch Now
-                        </>
+                        </div>
+                        {watchProgress > 0 && (
+                          <div className="absolute left-0 right-0 bottom-0 h-1 bg-white/10 rounded-b-md overflow-hidden">
+                            <div 
+                              className="absolute inset-y-0 left-0 bg-white/30 transition-all duration-300"
+                              style={{ width: `${watchProgress}%` }}
+                            />
+                          </div>
+                        )}
+                      </button>
+                      {details.runtime > 0 && (
+                        <div className="absolute inset-x-0 text-center mt-1">
+                          <span className="text-xs text-white/60">
+                            {formatDuration(details.runtime)}
+                          </span>
+                        </div>
                       )}
-                    </button>
+                    </div>
                     <a
                       href={`https://www.youtube.com/watch?v=${details.videos?.results?.[0]?.key}`}
                       target="_blank"

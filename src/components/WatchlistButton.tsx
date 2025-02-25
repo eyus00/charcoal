@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bookmark } from 'lucide-react';
 import { WatchStatus } from '../store/useStore';
+import { cn } from '../lib/utils';
 
 interface WatchlistButtonProps {
   watchlistItem?: {
@@ -9,6 +10,7 @@ interface WatchlistButtonProps {
   onAdd: (status: WatchStatus) => void;
   onRemove: () => void;
   darkMode?: boolean;
+  duration?: number;
 }
 
 const WatchlistButton: React.FC<WatchlistButtonProps> = ({
@@ -16,8 +18,27 @@ const WatchlistButton: React.FC<WatchlistButtonProps> = ({
   onAdd,
   onRemove,
   darkMode = false,
+  duration,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return null;
+    return minutes >= 60 
+      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+      : `${minutes}m`;
+  };
 
   return (
     <div className="relative">
@@ -47,7 +68,10 @@ const WatchlistButton: React.FC<WatchlistButtonProps> = ({
       )}
 
       {isOpen && (
-        <div className="absolute top-full mt-1 right-0 w-48 bg-white dark:bg-dark-surface rounded-lg shadow-lg border border-border-light dark:border-border-dark overflow-hidden z-50">
+        <div className={cn(
+          "absolute w-48 bg-white dark:bg-dark-surface rounded-lg shadow-lg border border-border-light dark:border-border-dark overflow-hidden z-50",
+          isMobile ? "bottom-full right-0 mb-2" : "top-full right-0 mt-1"
+        )}>
           {!watchlistItem ? (
             <>
               <button
