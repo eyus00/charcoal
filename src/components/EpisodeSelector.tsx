@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X, ArrowRightCircle, Star, RotateCcw } from 'lucide-react';
+import { X, ArrowRightCircle, Star, RotateCcw, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getImageUrl } from '../api/config';
 
@@ -27,9 +27,16 @@ interface EpisodeSelectorProps {
 }
 
 const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: EpisodeSelectorProps) => {
-  const [selectedSeason, setSelectedSeason] = React.useState(1);
+  const [selectedSeason, setSelectedSeason] = useState(1);
   const navigate = useNavigate();
   const currentSeason = seasons.find(s => s.season_number === selectedSeason);
+
+  // Set initial season to the first available season if it exists
+  useEffect(() => {
+    if (seasons.length > 0 && seasons[0]) {
+      setSelectedSeason(seasons[0].season_number);
+    }
+  }, [seasons]);
 
   // Get the last watched episode from localStorage
   const progressData = localStorage.getItem('vidLinkProgress');
@@ -113,17 +120,22 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
           )}
 
           <div className="px-4 py-3 border-b border-border-light dark:border-border-dark">
-            <select
-              value={selectedSeason}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              className="w-full px-4 py-2.5 bg-light-surface dark:bg-dark-surface text-light-text-primary dark:text-dark-text-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {seasons.map((season) => (
-                <option key={season.season_number} value={season.season_number}>
-                  {season.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                className="w-full px-4 py-2.5 bg-light-surface dark:bg-dark-surface text-light-text-primary dark:text-dark-text-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 appearance-none"
+              >
+                {seasons.map((season) => (
+                  <option key={season.season_number} value={season.season_number}>
+                    {season.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronDown className="w-5 h-5" />
+              </div>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -226,17 +238,22 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
           )}
 
           <div className="p-4 border-b border-border-light dark:border-border-dark">
-            <select
-              value={selectedSeason}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface text-light-text-primary dark:text-dark-text-primary rounded focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {seasons.map((season) => (
-                <option key={season.season_number} value={season.season_number}>
-                  {season.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface text-light-text-primary dark:text-dark-text-primary rounded focus:outline-none focus:ring-2 focus:ring-red-500 appearance-none pr-10"
+              >
+                {seasons.map((season) => (
+                  <option key={season.season_number} value={season.season_number}>
+                    {season.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronDown className="w-5 h-5" />
+              </div>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin">

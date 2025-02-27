@@ -165,23 +165,26 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                       <Tv className="w-5 h-5 text-white mb-2" />
                     )}
                     <h2 className="text-xl md:text-3xl font-bold text-white mb-2">{title}</h2>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {item.genre_ids.slice(0, 2).map((genreId) => (
-                        <span key={genreId} className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white">
-                          {getGenreName(genreId)}
-                        </span>
-                      ))}
-                    </div>
+                    
                     {/* Hide description on mobile */}
                     <p className="text-gray-200 text-sm md:text-base mb-3 line-clamp-2 md:line-clamp-3 hidden md:block">
                       {item.overview}
                     </p>
-                    <div className="flex items-center gap-4">
+                    
+                    <div className="flex items-center gap-4 mb-3">
                       <div className="flex items-center">
                         <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
                         <span className="text-white ml-1 text-sm md:text-lg">{item.vote_average.toFixed(1)}</span>
                       </div>
                       <span className="text-white text-sm md:text-lg">{new Date(releaseDate).getFullYear()}</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {item.genre_ids.slice(0, 2).map((genreId) => (
+                        <span key={genreId} className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white">
+                          {getGenreName(genreId)}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>

@@ -50,14 +50,8 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
                     <Tv className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary mb-1" />
                   )}
                   <h4 className="font-medium text-base truncate mb-1">{title}</h4>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {media.genre_ids.slice(0, 2).map((genreId) => (
-                      <span key={genreId} className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface rounded-full text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                        {getGenreName(genreId)}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                  
+                  <div className="flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">
                     <div className="flex items-center">
                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                       <span className="ml-0.5">
@@ -65,6 +59,14 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
                       </span>
                     </div>
                     <span>{year}</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {media.genre_ids.slice(0, 2).map((genreId) => (
+                      <span key={genreId} className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface rounded-full text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                        {getGenreName(genreId)}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </Link>

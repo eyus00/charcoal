@@ -22,7 +22,7 @@ export const mediaService = {
       `/${mediaType}/${id}`,
       {
         params: {
-          append_to_response: 'videos,seasons'
+          append_to_response: 'videos,seasons,similar,recommendations'
         }
       }
     );
@@ -43,4 +43,20 @@ export const mediaService = {
     );
     return data;
   },
+  
+  getSimilar: async (mediaType: MediaType, id: number, page: number = 1) => {
+    const { data } = await tmdbClient.get<PaginatedResponse<Movie | TVShow>>(
+      `/${mediaType}/${id}/similar`,
+      { params: { page } }
+    );
+    return data.results;
+  },
+  
+  getRecommendations: async (mediaType: MediaType, id: number, page: number = 1) => {
+    const { data } = await tmdbClient.get<PaginatedResponse<Movie | TVShow>>(
+      `/${mediaType}/${id}/recommendations`,
+      { params: { page } }
+    );
+    return data.results;
+  }
 };
