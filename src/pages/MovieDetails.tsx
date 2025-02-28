@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayCircle, Film, RotateCcw, Star, Clock, Download } from 'lucide-react';
+import { PlayCircle, Film, RotateCcw, Star, Clock, Download, FolderOpen, ChevronDown, Database, Magnet } from 'lucide-react';
 import { useMedia } from '../api/hooks/useMedia';
 import { getImageUrl } from '../api/config';
 import { cn } from '../lib/utils';
@@ -9,6 +9,7 @@ import WatchlistButton from '../components/WatchlistButton';
 import RelatedVideos from '../components/RelatedVideos';
 import SimilarContent from '../components/SimilarContent';
 import TorrentDownloader from '../components/TorrentDownloader';
+import DriveBrowser from '../components/DriveBrowser';
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -16,7 +17,10 @@ const MovieDetails = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [isTorrentMenuOpen, setIsTorrentMenuOpen] = useState(false);
+  const [isDriveBrowserOpen, setIsDriveBrowserOpen] = useState(false);
+  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
   const { data: details, isLoading } = useMedia.useDetails('movie', Number(id));
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
 
@@ -42,6 +46,21 @@ const MovieDetails = () => {
     window.addEventListener('resize', checkTextHeight);
     return () => window.removeEventListener('resize', checkTextHeight);
   }, [details?.overview]);
+
+  // Close download menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        downloadMenuRef.current && 
+        !downloadMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsDownloadMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -213,13 +232,44 @@ const MovieDetails = () => {
                       </button>
                     </div>
                     
-                    <button
-                      onClick={() => setIsTorrentMenuOpen(true)}
-                      className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
-                    >
-                      <Download className="w-5 h-5" />
-                      <span>Download</span>
-                    </button>
+                    <div className="relative" ref={downloadMenuRef}>
+                      <button
+                        onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
+                        className="w-full md:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                      >
+                        <Download className="w-5 h-5" />
+                        <span>Download</span>
+                        <ChevronDown className={cn(
+                          "w-4 h-4 transition-transform ml-1",
+                          isDownloadMenuOpen && "transform rotate-180"
+                        )} />
+                      </button>
+                      
+                      {isDownloadMenuOpen && (
+                        <div className="absolute z-10 mt-2 w-48 bg-black/80 backdrop-blur-md rounded-lg shadow-lg overflow-hidden right-0 md:left-0">
+                          <button
+                            onClick={() => {
+                              setIsTorrentMenuOpen(true);
+                              setIsDownloadMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-3 text-white hover:bg-white/10 transition-colors flex items-center gap-3"
+                          >
+                            <Magnet className="w-5 h-5 text-red-500" />
+                            <span>Torrent Files</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsDriveBrowserOpen(true);
+                              setIsDownloadMenuOpen(false);
+                            }}
+                            className="w-full px-4 py-3 text-white hover:bg-white/10 transition-colors flex items-center gap-3"
+                          >
+                            <Database className="w-5 h-5 text-blue-500" />
+                            <span>Drive Browser</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -245,6 +295,15 @@ const MovieDetails = () => {
       <TorrentDownloader
         isOpen={isTorrentMenuOpen}
         onClose={() => setIsTorrentMenuOpen(false)}
+        title={details.title}
+        releaseYear={year.toString()}
+        isShow={false}
+      />
+
+      {/* Drive Browser */}
+      <DriveBrowser
+        isOpen={isDriveBrowserOpen}
+        onClose={() => setIsDriveBrowserOpen(false)}
         title={details.title}
         releaseYear={year.toString()}
         isShow={false}
