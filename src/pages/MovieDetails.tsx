@@ -18,9 +18,7 @@ const MovieDetails = () => {
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [isTorrentMenuOpen, setIsTorrentMenuOpen] = useState(false);
   const [isDriveBrowserOpen, setIsDriveBrowserOpen] = useState(false);
-  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
-  const downloadMenuRef = useRef<HTMLDivElement>(null);
   const { data: details, isLoading } = useMedia.useDetails('movie', Number(id));
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
 
@@ -46,21 +44,6 @@ const MovieDetails = () => {
     window.addEventListener('resize', checkTextHeight);
     return () => window.removeEventListener('resize', checkTextHeight);
   }, [details?.overview]);
-
-  // Close download menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        downloadMenuRef.current && 
-        !downloadMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsDownloadMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -232,43 +215,23 @@ const MovieDetails = () => {
                       </button>
                     </div>
                     
-                    <div className="relative" ref={downloadMenuRef}>
+                    {/* Download Options */}
+                    <div className="grid grid-cols-2 gap-2 md:w-auto">
                       <button
-                        onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
-                        className="w-full md:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                        onClick={() => setIsTorrentMenuOpen(true)}
+                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
                       >
-                        <Download className="w-5 h-5" />
-                        <span>Download</span>
-                        <ChevronDown className={cn(
-                          "w-4 h-4 transition-transform ml-1",
-                          isDownloadMenuOpen && "transform rotate-180"
-                        )} />
+                        <Magnet className="w-5 h-5" />
+                        <span className="hidden md:inline">Torrent</span>
                       </button>
                       
-                      {isDownloadMenuOpen && (
-                        <div className="absolute z-10 mt-2 w-48 bg-black/80 backdrop-blur-md rounded-lg shadow-lg overflow-hidden right-0 md:left-0">
-                          <button
-                            onClick={() => {
-                              setIsTorrentMenuOpen(true);
-                              setIsDownloadMenuOpen(false);
-                            }}
-                            className="w-full px-4 py-3 text-white hover:bg-white/10 transition-colors flex items-center gap-3"
-                          >
-                            <Magnet className="w-5 h-5 text-red-500" />
-                            <span>Torrent Files</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsDriveBrowserOpen(true);
-                              setIsDownloadMenuOpen(false);
-                            }}
-                            className="w-full px-4 py-3 text-white hover:bg-white/10 transition-colors flex items-center gap-3"
-                          >
-                            <Database className="w-5 h-5 text-blue-500" />
-                            <span>Drive Browser</span>
-                          </button>
-                        </div>
-                      )}
+                      <button
+                        onClick={() => setIsDriveBrowserOpen(true)}
+                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                      >
+                        <Database className="w-5 h-5" />
+                        <span className="hidden md:inline">Drive</span>
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayCircle, Tv, Star, Calendar, Download, ChevronDown, Magnet, Database } from 'lucide-react';
+import { PlayCircle, Tv, Star, Calendar, Download } from 'lucide-react';
 import { useMedia } from '../api/hooks/useMedia';
 import { getImageUrl } from '../api/config';
 import { cn } from '../lib/utils';
@@ -12,7 +12,6 @@ import WatchlistButton from '../components/WatchlistButton';
 import RelatedVideos from '../components/RelatedVideos';
 import SimilarContent from '../components/SimilarContent';
 import TorrentDownloader from '../components/TorrentDownloader';
-import DriveBrowser from '../components/DriveBrowser';
 
 const TVDetails = () => {
   const { id } = useParams();
@@ -21,7 +20,6 @@ const TVDetails = () => {
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [isEpisodeSelectorOpen, setIsEpisodeSelectorOpen] = useState(false);
   const [isTorrentMenuOpen, setIsTorrentMenuOpen] = useState(false);
-  const [isDriveBrowserOpen, setIsDriveBrowserOpen] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const textRef = useRef<HTMLParagraphElement>(null);
@@ -100,41 +98,35 @@ const TVDetails = () => {
     removeFromWatchlist(Number(id), 'tv');
   };
 
+  const handleDownload = () => {
+    setIsTorrentMenuOpen(true);
+  };
+
   if (isLoading || !details) return <div>Loading...</div>;
 
   const year = new Date(details.first_air_date).getFullYear();
 
   return (
-    <div className="min-h-screen">
-      <div className="relative min-h-[90vh]">
-        {/* Full-screen background */}
-        <div className="absolute inset-0">
-          <img
-            src={getImageUrl(details.backdrop_path)}
-            alt={details.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/40" />
-        </div>
+    <>
+      <div className="min-h-screen">
+        <div className="relative min-h-[90vh]">
+          {/* Full-screen background */}
+          <div className="absolute inset-0">
+            <img
+              src={getImageUrl(details.backdrop_path)}
+              alt={details.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/40" />
+          </div>
 
-        {/* Content Container */}
-        <div className="relative min-h-[90vh] flex flex-col">
-          <div className="container mx-auto px-4 py-8 flex flex-col items-center md:items-start flex-grow">
-            {/* Mobile Layout */}
-            <div className="mt-auto w-full">
-              {/* Centered Poster */}
-              <div className="w-48 mx-auto mb-6 md:hidden">
-                <img
-                  src={getImageUrl(details.poster_path, 'w500')}
-                  alt={details.name}
-                  className="w-full border-2 border-white/10 shadow-2xl"
-                />
-              </div>
-
-              {/* Info Section */}
-              <div className="flex flex-col md:flex-row items-center md:items-end gap-8 pb-8">
-                {/* Desktop Poster */}
-                <div className="hidden md:block w-48">
+          {/* Content Container */}
+          <div className="relative min-h-[90vh] flex flex-col">
+            <div className="container mx-auto px-4 py-8 flex flex-col items-center md:items-start flex-grow">
+              {/* Mobile Layout */}
+              <div className="mt-auto w-full">
+                {/* Centered Poster */}
+                <div className="w-48 mx-auto mb-6 md:hidden">
                   <img
                     src={getImageUrl(details.poster_path, 'w500')}
                     alt={details.name}
@@ -142,98 +134,99 @@ const TVDetails = () => {
                   />
                 </div>
 
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
-                    <div className="flex items-center gap-2">
-                      <Tv className="w-5 h-5 text-white" />
-                      <span className="text-white font-medium">TV Show</span>
-                    </div>
-                    <div className="w-px h-5 bg-white/20" />
-                    <WatchlistButton
-                      watchlistItem={watchlistItem}
-                      onAdd={handleWatchlistAdd}
-                      onRemove={handleWatchlistRemove}
-                      darkMode={true}
+                {/* Info Section */}
+                <div className="flex flex-col md:flex-row items-center md:items-end gap-8 pb-8">
+                  {/* Desktop Poster */}
+                  <div className="hidden md:block w-48">
+                    <img
+                      src={getImageUrl(details.poster_path, 'w500')}
+                      alt={details.name}
+                      className="w-full border-2 border-white/10 shadow-2xl"
                     />
                   </div>
 
-                  <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-                    {details.name} <span className="text-gray-300">({year})</span>
-                  </h1>
-                  
-                  <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
-                    <div className="flex items-center flex-shrink-0">
-                      <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
-                      <span className="text-white ml-2 text-xl font-medium">
-                        {details.vote_average.toFixed(1)}
-                      </span>
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
+                      <div className="flex items-center gap-2">
+                        <Tv className="w-5 h-5 text-white" />
+                        <span className="text-white font-medium">TV Show</span>
+                      </div>
+                      <div className="w-px h-5 bg-white/20" />
+                      <WatchlistButton
+                        watchlistItem={watchlistItem}
+                        onAdd={handleWatchlistAdd}
+                        onRemove={handleWatchlistRemove}
+                        darkMode={true}
+                      />
                     </div>
-                    {details.number_of_seasons > 0 && (
+
+                    <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
+                      {details.name} <span className="text-gray-300">({year})</span>
+                    </h1>
+                    
+                    <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
                       <div className="flex items-center flex-shrink-0">
-                        <Calendar className="w-5 h-5 text-white" />
-                        <span className="text-white ml-2">
-                          {details.number_of_seasons} {details.number_of_seasons === 1 ? 'Season' : 'Seasons'}
+                        <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+                        <span className="text-white ml-2 text-xl font-medium">
+                          {details.vote_average.toFixed(1)}
                         </span>
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
-                    {details.genres?.map((genre) => (
-                      <span key={genre.id} className="px-3 py-1 bg-white/10 rounded-full text-white text-sm backdrop-blur-sm whitespace-nowrap flex-shrink-0">
-                        {genre.name}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="relative mb-8">
-                    <div className={cn(
-                      "relative text-gray-100 text-base md:text-lg",
-                      !isExpanded && "max-h-[4.5em] overflow-hidden"
-                    )}>
-                      <p ref={textRef} className="leading-relaxed">
-                        {details.overview}
-                      </p>
-                      {needsExpansion && !isExpanded && (
-                        <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black to-transparent" />
+                      {details.number_of_seasons > 0 && (
+                        <div className="flex items-center flex-shrink-0">
+                          <Calendar className="w-5 h-5 text-white" />
+                          <span className="text-white ml-2">
+                            {details.number_of_seasons} {details.number_of_seasons === 1 ? 'Season' : 'Seasons'}
+                          </span>
+                        </div>
                       )}
                     </div>
-                    {needsExpansion && (
-                      <button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="text-white/80 hover:text-white text-sm font-medium mt-2"
-                      >
-                        {isExpanded ? 'Show less' : 'Read more'}
-                      </button>
-                    )}
-                  </div>
+                    
+                    <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
+                      {details.genres?.map((genre) => (
+                        <span key={genre.id} className="px-3 py-1 bg-white/10 rounded-full text-white text-sm backdrop-blur-sm whitespace-nowrap flex-shrink-0">
+                          {genre.name}
+                        </span>
+                      ))}
+                    </div>
 
-                  {/* Buttons */}
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <button
-                      onClick={handleWatch}
-                      className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30 relative group"
-                    >
-                      <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                      Watch Now
-                    </button>
+                    <div className="relative mb-8">
+                      <div className={cn(
+                        "relative text-gray-100 text-base md:text-lg",
+                        !isExpanded && "max-h-[4.5em] overflow-hidden"
+                      )}>
+                        <p ref={textRef} className="leading-relaxed">
+                          {details.overview}
+                        </p>
+                        {needsExpansion && !isExpanded && (
+                          <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black to-transparent" />
+                        )}
+                      </div>
+                      {needsExpansion && (
+                        <button
+                          onClick={() => setIsExpanded(!isExpanded)}
+                          className="text-white/80 hover:text-white text-sm font-medium mt-2"
+                        >
+                          {isExpanded ? 'Show less' : 'Read more'}
+                        </button>
+                      )}
+                    </div>
 
-                    {/* Download Options */}
-                    <div className="grid grid-cols-2 gap-2 md:w-auto">
+                    {/* Buttons */}
+                    <div className="flex flex-col md:flex-row gap-3">
                       <button
-                        onClick={() => setIsTorrentMenuOpen(true)}
-                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                        onClick={handleWatch}
+                        className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30 relative group"
                       >
-                        <Magnet className="w-5 h-5" />
-                        <span className="hidden md:inline">Torrent</span>
+                        <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Watch Now
                       </button>
-                      
+
                       <button
-                        onClick={() => setIsDriveBrowserOpen(true)}
-                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                        onClick={handleDownload}
+                        className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
                       >
-                        <Database className="w-5 h-5" />
-                        <span className="hidden md:inline">Drive</span>
+                        <Download className="w-5 h-5" />
+                        <span>Download</span>
                       </button>
                     </div>
                   </div>
@@ -275,19 +268,7 @@ const TVDetails = () => {
         season={selectedSeason}
         episode={selectedEpisode}
       />
-
-      {/* Drive Browser */}
-      <DriveBrowser
-        isOpen={isDriveBrowserOpen}
-        onClose={() => setIsDriveBrowserOpen(false)}
-        title={details.name}
-        releaseYear={year.toString()}
-        isShow={true}
-        tvId={Number(id)}
-        season={selectedSeason}
-        episode={selectedEpisode}
-      />
-    </div>
+    </>
   );
 };
 
