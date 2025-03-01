@@ -307,6 +307,7 @@ const MovieDetails = () => {
         title={details.title}
         releaseYear={year.toString()}
         isShow={false}
+        movieId={Number(id)}
       />
     </div>
   );
