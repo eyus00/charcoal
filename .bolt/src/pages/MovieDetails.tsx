@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayCircle, Film, RotateCcw, Star, Clock, Download } from 'lucide-react';
+import { PlayCircle, Film, RotateCcw, Star, Clock, Download, FolderOpen, ChevronDown, Database, Magnet } from 'lucide-react';
 import { useMedia } from '../api/hooks/useMedia';
 import { getImageUrl } from '../api/config';
 import { cn } from '../lib/utils';
@@ -9,6 +9,7 @@ import WatchlistButton from '../components/WatchlistButton';
 import RelatedVideos from '../components/RelatedVideos';
 import SimilarContent from '../components/SimilarContent';
 import TorrentDownloader from '../components/TorrentDownloader';
+import DriveBrowser from '../components/DriveBrowser';
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -16,6 +17,7 @@ const MovieDetails = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [isTorrentMenuOpen, setIsTorrentMenuOpen] = useState(false);
+  const [isDriveBrowserOpen, setIsDriveBrowserOpen] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
   const { data: details, isLoading } = useMedia.useDetails('movie', Number(id));
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
@@ -213,13 +215,24 @@ const MovieDetails = () => {
                       </button>
                     </div>
                     
-                    <button
-                      onClick={() => setIsTorrentMenuOpen(true)}
-                      className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
-                    >
-                      <Download className="w-5 h-5" />
-                      <span>Download</span>
-                    </button>
+                    {/* Download Options */}
+                    <div className="grid grid-cols-2 gap-2 md:w-auto">
+                      <button
+                        onClick={() => setIsTorrentMenuOpen(true)}
+                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                      >
+                        <Magnet className="w-5 h-5" />
+                        <span className="hidden md:inline">Torrent</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setIsDriveBrowserOpen(true)}
+                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                      >
+                        <Database className="w-5 h-5" />
+                        <span className="hidden md:inline">Drive</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -248,6 +261,16 @@ const MovieDetails = () => {
         title={details.title}
         releaseYear={year.toString()}
         isShow={false}
+      />
+
+      {/* Drive Browser */}
+      <DriveBrowser
+        isOpen={isDriveBrowserOpen}
+        onClose={() => setIsDriveBrowserOpen(false)}
+        title={details.title}
+        releaseYear={year.toString()}
+        isShow={false}
+        movieId={Number(id)}
       />
     </div>
   );

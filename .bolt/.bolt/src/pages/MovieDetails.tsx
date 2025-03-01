@@ -1,50 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayCircle, Tv, Star, Calendar, Download, ChevronDown, Magnet, Database } from 'lucide-react';
+import { PlayCircle, Film, RotateCcw, Star, Clock, Download } from 'lucide-react';
 import { useMedia } from '../api/hooks/useMedia';
 import { getImageUrl } from '../api/config';
 import { cn } from '../lib/utils';
-import EpisodeSelector from '../components/EpisodeSelector';
-import { useQueries } from '@tanstack/react-query';
-import { mediaService } from '../api/services/media';
 import { useStore, WatchStatus } from '../store/useStore';
 import WatchlistButton from '../components/WatchlistButton';
 import RelatedVideos from '../components/RelatedVideos';
 import SimilarContent from '../components/SimilarContent';
 import TorrentDownloader from '../components/TorrentDownloader';
-import DriveBrowser from '../components/DriveBrowser';
 
-const TVDetails = () => {
+const MovieDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
-  const [isEpisodeSelectorOpen, setIsEpisodeSelectorOpen] = useState(false);
   const [isTorrentMenuOpen, setIsTorrentMenuOpen] = useState(false);
-  const [isDriveBrowserOpen, setIsDriveBrowserOpen] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState<number>(1);
-  const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const textRef = useRef<HTMLParagraphElement>(null);
-  const { data: details, isLoading } = useMedia.useDetails('tv', Number(id));
+  const { data: details, isLoading } = useMedia.useDetails('movie', Number(id));
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
 
-  const watchlistItem = getWatchlistItem(Number(id), 'tv');
+  const watchlistItem = getWatchlistItem(Number(id), 'movie');
   const watchHistoryItem = watchHistory.find(
-    item => item.id === Number(id) && item.mediaType === 'tv'
+    item => item.id === Number(id) && item.mediaType === 'movie'
   );
 
-  const seasonQueries = useQueries({
-    queries: (details?.seasons ?? []).map(season => ({
-      queryKey: ['season', id, season.season_number],
-      queryFn: () => mediaService.getTVSeasonDetails(Number(id), season.season_number),
-      enabled: !!details
-    }))
-  });
-
-  // Scroll to top when component mounts
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const watchProgress = watchHistoryItem?.progress
+    ? Math.round((watchHistoryItem.progress.watched / watchHistoryItem.progress.duration) * 100)
+    : 0;
 
   useEffect(() => {
     const checkTextHeight = () => {
@@ -60,36 +43,24 @@ const TVDetails = () => {
     return () => window.removeEventListener('resize', checkTextHeight);
   }, [details?.overview]);
 
-  // Set initial season and episode from watch history if available
+  // Scroll to top when component mounts
   useEffect(() => {
-    if (watchHistoryItem && watchHistoryItem.season && watchHistoryItem.episode) {
-      setSelectedSeason(watchHistoryItem.season);
-      setSelectedEpisode(watchHistoryItem.episode);
-    }
-  }, [watchHistoryItem]);
+    window.scrollTo(0, 0);
+  }, []);
 
-  const seasons = seasonQueries
-    .filter(query => query.data)
-    .map(query => query.data);
+  if (isLoading || !details) return <div>Loading...</div>;
+
+  const year = new Date(details.release_date).getFullYear();
 
   const handleWatch = () => {
-    setIsEpisodeSelectorOpen(true);
-  };
-
-  const handleEpisodeSelect = (season: number, episode: number) => {
-    setSelectedSeason(season);
-    setSelectedEpisode(episode);
-    setIsEpisodeSelectorOpen(false);
-    navigate(`/watch/tv/${id}?season=${season}&episode=${episode}`);
+    navigate(`/watch/movie/${id}`);
   };
 
   const handleWatchlistAdd = (status: WatchStatus) => {
-    if (!details) return;
-    
     addToWatchlist({
       id: Number(id),
-      mediaType: 'tv',
-      title: details.name,
+      mediaType: 'movie',
+      title: details.title,
       posterPath: details.poster_path,
       addedAt: Date.now(),
       status,
@@ -97,12 +68,15 @@ const TVDetails = () => {
   };
 
   const handleWatchlistRemove = () => {
-    removeFromWatchlist(Number(id), 'tv');
+    removeFromWatchlist(Number(id), 'movie');
   };
 
-  if (isLoading || !details) return <div>Loading...</div>;
-
-  const year = new Date(details.first_air_date).getFullYear();
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return null;
+    return minutes >= 60 
+      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+      : `${minutes}m`;
+  };
 
   return (
     <div className="min-h-screen">
@@ -111,7 +85,7 @@ const TVDetails = () => {
         <div className="absolute inset-0">
           <img
             src={getImageUrl(details.backdrop_path)}
-            alt={details.name}
+            alt={details.title}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-black/40" />
@@ -126,7 +100,7 @@ const TVDetails = () => {
               <div className="w-48 mx-auto mb-6 md:hidden">
                 <img
                   src={getImageUrl(details.poster_path, 'w500')}
-                  alt={details.name}
+                  alt={details.title}
                   className="w-full border-2 border-white/10 shadow-2xl"
                 />
               </div>
@@ -137,7 +111,7 @@ const TVDetails = () => {
                 <div className="hidden md:block w-48">
                   <img
                     src={getImageUrl(details.poster_path, 'w500')}
-                    alt={details.name}
+                    alt={details.title}
                     className="w-full border-2 border-white/10 shadow-2xl"
                   />
                 </div>
@@ -145,8 +119,8 @@ const TVDetails = () => {
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
                     <div className="flex items-center gap-2">
-                      <Tv className="w-5 h-5 text-white" />
-                      <span className="text-white font-medium">TV Show</span>
+                      <Film className="w-5 h-5 text-white" />
+                      <span className="text-white font-medium">Movie</span>
                     </div>
                     <div className="w-px h-5 bg-white/20" />
                     <WatchlistButton
@@ -158,7 +132,7 @@ const TVDetails = () => {
                   </div>
 
                   <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-                    {details.name} <span className="text-gray-300">({year})</span>
+                    {details.title} <span className="text-gray-300">({year})</span>
                   </h1>
                   
                   <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
@@ -168,11 +142,11 @@ const TVDetails = () => {
                         {details.vote_average.toFixed(1)}
                       </span>
                     </div>
-                    {details.number_of_seasons > 0 && (
+                    {details.runtime > 0 && (
                       <div className="flex items-center flex-shrink-0">
-                        <Calendar className="w-5 h-5 text-white" />
+                        <Clock className="w-5 h-5 text-white" />
                         <span className="text-white ml-2">
-                          {details.number_of_seasons} {details.number_of_seasons === 1 ? 'Season' : 'Seasons'}
+                          {formatDuration(details.runtime)}
                         </span>
                       </div>
                     )}
@@ -210,32 +184,42 @@ const TVDetails = () => {
 
                   {/* Buttons */}
                   <div className="flex flex-col md:flex-row gap-3">
-                    <button
-                      onClick={handleWatch}
-                      className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30 relative group"
-                    >
-                      <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                      Watch Now
-                    </button>
-
-                    {/* Download Options */}
-                    <div className="grid grid-cols-2 gap-2 md:w-auto">
+                    <div className="relative flex-1 md:flex-none">
                       <button
-                        onClick={() => setIsTorrentMenuOpen(true)}
-                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                        onClick={handleWatch}
+                        className="w-full md:w-auto"
                       >
-                        <Magnet className="w-5 h-5" />
-                        <span className="hidden md:inline">Torrent</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => setIsDriveBrowserOpen(true)}
-                        className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
-                      >
-                        <Database className="w-5 h-5" />
-                        <span className="hidden md:inline">Drive</span>
+                        <div className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-red-600/20 hover:shadow-red-600/30">
+                          {watchHistoryItem ? (
+                            <>
+                              <RotateCcw className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                              <span>Resume</span>
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                              <span>Watch Now</span>
+                            </>
+                          )}
+                        </div>
+                        {watchProgress > 0 && (
+                          <div className="absolute left-0 right-0 bottom-0 h-1 bg-white/10 rounded-b-md overflow-hidden">
+                            <div 
+                              className="absolute inset-y-0 left-0 bg-white/30 transition-all duration-300"
+                              style={{ width: `${watchProgress}%` }}
+                            />
+                          </div>
+                        )}
                       </button>
                     </div>
+                    
+                    <button
+                      onClick={() => setIsTorrentMenuOpen(true)}
+                      className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                    >
+                      <Download className="w-5 h-5" />
+                      <span>Download</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -251,44 +235,22 @@ const TVDetails = () => {
             <RelatedVideos videos={details.videos?.results || []} />
             <SimilarContent 
               items={details.similar?.results || details.recommendations?.results || []} 
-              type="tv" 
+              type="movie" 
             />
           </div>
         </div>
       </div>
 
-      <EpisodeSelector
-        isOpen={isEpisodeSelectorOpen}
-        onClose={() => setIsEpisodeSelectorOpen(false)}
-        seasons={seasons}
-        tvId={Number(id)}
-        onEpisodeSelect={handleEpisodeSelect}
-      />
-
       {/* Torrent Downloader */}
       <TorrentDownloader
         isOpen={isTorrentMenuOpen}
         onClose={() => setIsTorrentMenuOpen(false)}
-        title={details.name}
+        title={details.title}
         releaseYear={year.toString()}
-        isShow={true}
-        season={selectedSeason}
-        episode={selectedEpisode}
-      />
-
-      {/* Drive Browser */}
-      <DriveBrowser
-        isOpen={isDriveBrowserOpen}
-        onClose={() => setIsDriveBrowserOpen(false)}
-        title={details.name}
-        releaseYear={year.toString()}
-        isShow={true}
-        tvId={Number(id)}
-        season={selectedSeason}
-        episode={selectedEpisode}
+        isShow={false}
       />
     </div>
   );
 };
 
-export default TVDetails;
+export default MovieDetails;
