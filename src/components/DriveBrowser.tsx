@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video } from 'lucide-react';
+import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video, Globe, Play } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
 import { 
@@ -57,11 +57,23 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const [filteredVideoFiles, setFilteredVideoFiles] = useState<FileItem[]>([]);
   const [hasVideoFiles, setHasVideoFiles] = useState(false);
   const [groupedVideoFiles, setGroupedVideoFiles] = useState<{[key: number]: FileItem[]}>({});
+  const [isMobile, setIsMobile] = useState(false);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const seasonDropdownRef = useRef<HTMLDivElement>(null);
   const episodeDropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchHistoryRef = useRef<HTMLDivElement>(null);
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch movie release year from TMDB if not provided
   useEffect(() => {
@@ -496,6 +508,14 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     } else if (file.isDirectory) {
       navigateTo(file.url);
     }
+  };
+
+  const handleOpenInBrowser = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const handleOpenInOutPlayer = (url: string) => {
+    window.location.href = `outplayer://${url}`;
   };
 
   const handleDirectorySelect = (dirName: string) => {
@@ -988,10 +1008,9 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                               const videoSource = getVideoSource(file.name);
                               
                               return (
-                                <button
+                                <div
                                   key={index}
-                                  onClick={() => handleFileClick(file)}
-                                  className="w-full p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
+                                  className="p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
                                 >
                                   <div className="flex items-start gap-2.5">
                                     <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
@@ -1025,7 +1044,34 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                                       </div>
                                     </div>
                                   </div>
-                                </button>
+                                  <div className="flex mt-2 gap-2">
+                                    <button
+                                      onClick={() => handleFileClick(file)}
+                                      className="flex-1 px-2 py-1 bg-light-surface dark:bg-dark-surface hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded text-sm transition-colors flex items-center justify-center gap-1"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                      Download
+                                    </button>
+                                    {isMobile && (
+                                      <>
+                                        <button
+                                          onClick={() => handleOpenInBrowser(file.url)}
+                                          className="px-2 py-1 bg-light-surface dark:bg-dark-surface hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded text-sm transition-colors flex items-center justify-center gap-1"
+                                          title="Open in browser"
+                                        >
+                                          <Globe className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleOpenInOutPlayer(file.url)}
+                                          className="px-2 py-1 bg-light-surface dark:bg-dark-surface hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded text-sm transition-colors flex items-center justify-center gap-1"
+                                          title="Open in OutPlayer"
+                                        >
+                                          <Play className="w-3.5 h-3.5" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
                               );
                             })}
                           </div>
@@ -1045,51 +1091,77 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                   <div className="space-y-1.5">
                     {videoFiles.map((file, index) => {
                       // Get file metadata
-                      const fileExt = getFileExtension(file.name);
-                      const fileSize = formatFileSize(file.size);
-                      const videoQuality = getVideoQuality(file.name);
-                      const videoSource = getVideoSource(file.name);
+const fileExt = getFileExtension(file.name);
+const fileSize = formatFileSize(file.size);
+const videoQuality = getVideoQuality(file.name);
+const videoSource = getVideoSource(file.name);
                       
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => handleFileClick(file)}
-                          className="w-full p-2.5 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
-                              <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
-                            </div>
-                            <div className="flex-1 min-w-0 text-left">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="font-medium truncate">{file.name}</div>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                                {fileExt && (
-                                  <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
-                                    {fileExt}
-                                  </span>
-                                )}
-                                {videoQuality && (
-                                  <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
-                                    {videoQuality}
-                                  </span>
-                                )}
-                                {videoSource && (
-                                  <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
-                                    {videoSource}
-                                  </span>
-                                )}
-                                {fileSize && (
-                                  <span className="ml-auto">
-                                    {fileSize}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      );
+return (
+  <div
+    key={index}
+    className="p-2.5 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
+  >
+    <div className="flex items-start gap-2.5">
+      <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
+        <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="font-medium truncate">{file.name}</div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
+          {fileExt && (
+            <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
+              {fileExt}
+            </span>
+          )}
+          {videoQuality && (
+            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
+              {videoQuality}
+            </span>
+          )}
+          {videoSource && (
+            <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+              {videoSource}
+            </span>
+          )}
+          {fileSize && (
+            <span className="ml-auto">
+              {fileSize}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+    <div className="flex mt-2 gap-2">
+      <button
+        onClick={() => handleFileClick(file)}
+        className="flex-1 px-2 py-1 bg-light-bg dark:bg-dark-bg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded text-sm transition-colors flex items-center justify-center gap-1"
+      >
+        <Download className="w-3.5 h-3.5" />
+        Download
+      </button>
+      {isMobile && (
+        <>
+          <button
+            onClick={() => handleOpenInBrowser(file.url)}
+            className="px-2 py-1 bg-light-bg dark:bg-dark-bg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded text-sm transition-colors flex items-center justify-center gap-1"
+            title="Open in browser"
+          >
+            <Globe className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handleOpenInOutPlayer(file.url)}
+            className="px-2 py-1 bg-light-bg dark:bg-dark-bg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded text-sm transition-colors flex items-center justify-center gap-1"
+            title="Open in OutPlayer"
+          >
+            <Play className="w-3.5 h-3.5" />
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+);
                     })}
                   </div>
                 </div>
