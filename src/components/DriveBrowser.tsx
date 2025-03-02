@@ -56,6 +56,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const [filteredDirectories, setFilteredDirectories] = useState<string[]>([]);
   const [filteredVideoFiles, setFilteredVideoFiles] = useState<FileItem[]>([]);
   const [hasVideoFiles, setHasVideoFiles] = useState(false);
+  const [groupedVideoFiles, setGroupedVideoFiles] = useState<{[key: number]: FileItem[]}>({});
   const linkInputRef = useRef<HTMLInputElement>(null);
   const seasonDropdownRef = useRef<HTMLDivElement>(null);
   const episodeDropdownRef = useRef<HTMLDivElement>(null);
@@ -216,6 +217,38 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
       }
     }
   }, [isOpen, title, movieYear, isShow, selectedSeason, selectedEpisode, isManualSearch]);
+
+  // Group video files by episode number when they change
+  useEffect(() => {
+    if (files.length > 0 && isShow) {
+      const videoFiles = files.filter(file => file.isVideo);
+      
+      // Group files by episode number
+      const grouped: {[key: number]: FileItem[]} = {};
+      
+      videoFiles.forEach(file => {
+        const episodeNum = file.episodeNumber;
+        if (episodeNum) {
+          if (!grouped[episodeNum]) {
+            grouped[episodeNum] = [];
+          }
+          grouped[episodeNum].push(file);
+        } else {
+          // For files without episode number, put in a special group
+          if (!grouped[0]) {
+            grouped[0] = [];
+          }
+          grouped[0].push(file);
+        }
+      });
+      
+      setGroupedVideoFiles(grouped);
+      setHasVideoFiles(videoFiles.length > 0);
+    } else {
+      setGroupedVideoFiles({});
+      setHasVideoFiles(false);
+    }
+  }, [files, isShow]);
 
   // Filter video files when search query changes
   useEffect(() => {
@@ -600,7 +633,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
 
       {/* Modal */}
       <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-xl md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg md:max-h-[90vh] shadow-xl">
-        {/* Header */}
         <div className="p-3 border-b border-border-light dark:border-border-dark flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <FolderOpen className="w-5 h-5" />
@@ -643,75 +675,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Season & Episode Selector for TV Shows */}
-        {isShow && !isManualSearch && hasVideoFiles && (
-          <div className="p-3 border-b border-border-light dark:border-border-dark">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Season Selector */}
-              <div ref={seasonDropdownRef} className="relative">
-                <button
-                  onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
-                  className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded-lg flex items-center justify-between"
-                >
-                  <span>{selectedSeason ? `Season ${selectedSeason}` : 'Select Season'}</span>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 transition-transform",
-                    showSeasonDropdown && "transform rotate-180"
-                  )} />
-                </button>
-                
-                {showSeasonDropdown && (
-                  <div className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {seasons.map((season) => (
-                      <button
-                        key={season.season_number}
-                        onClick={() => handleSeasonSelect(season.season_number)}
-                        className={cn(
-                          "w-full px-4 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface",
-                          selectedSeason === season.season_number && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
-                        )}
-                      >
-                        Season {season.season_number}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {/* Episode Selector */}
-              <div ref={episodeDropdownRef} className="relative">
-                <button
-                  onClick={() => setShowEpisodeDropdown(!showEpisodeDropdown)}
-                  className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded-lg flex items-center justify-between"
-                >
-                  <span>{selectedEpisode ? `Episode ${selectedEpisode}` : 'Select Episode'}</span>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 transition-transform",
-                    showEpisodeDropdown && "transform rotate-180"
-                  )} />
-                </button>
-                
-                {showEpisodeDropdown && (
-                  <div className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {Array.from({ length: episodeCount }, (_, i) => i + 1).map((episodeNum) => (
-                      <button
-                        key={episodeNum}
-                        onClick={() => handleEpisodeSelect(episodeNum)}
-                        className={cn(
-                          "w-full px-4 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface",
-                          selectedEpisode === episodeNum && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
-                        )}
-                      >
-                        Episode {episodeNum}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Combined Navigation Bar and Path Input */}
         <div className="p-3 border-b border-border-light dark:border-border-dark">
@@ -786,6 +749,75 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
           </form>
         </div>
 
+        {/* Season & Episode Selector for TV Shows */}
+        {isShow && !isManualSearch && (
+          <div className="p-3 border-b border-border-light dark:border-border-dark">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Season Selector */}
+              <div ref={seasonDropdownRef} className="relative">
+                <button
+                  onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
+                  className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded-lg flex items-center justify-between"
+                >
+                  <span>{selectedSeason ? `Season ${selectedSeason}` : 'Select Season'}</span>
+                  <ChevronDown className={cn(
+                    "w-4 h-4 transition-transform",
+                    showSeasonDropdown && "transform rotate-180"
+                  )} />
+                </button>
+                
+                {showSeasonDropdown && (
+                  <div className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {seasons.map((season) => (
+                      <button
+                        key={season.season_number}
+                        onClick={() => handleSeasonSelect(season.season_number)}
+                        className={cn(
+                          "w-full px-4 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface",
+                          selectedSeason === season.season_number && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
+                        )}
+                      >
+                        Season {season.season_number}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Episode Selector */}
+              <div ref={episodeDropdownRef} className="relative">
+                <button
+                  onClick={() => setShowEpisodeDropdown(!showEpisodeDropdown)}
+                  className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded-lg flex items-center justify-between"
+                >
+                  <span>{selectedEpisode ? `Episode ${selectedEpisode}` : 'Select Episode'}</span>
+                  <ChevronDown className={cn(
+                    "w-4 h-4 transition-transform",
+                    showEpisodeDropdown && "transform rotate-180"
+                  )} />
+                </button>
+                
+                {showEpisodeDropdown && (
+                  <div className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {Array.from({ length: episodeCount }, (_, i) => i + 1).map((episodeNum) => (
+                      <button
+                        key={episodeNum}
+                        onClick={() => handleEpisodeSelect(episodeNum)}
+                        className={cn(
+                          "w-full px-4 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface",
+                          selectedEpisode === episodeNum && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
+                        )}
+                      >
+                        Episode {episodeNum}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Search Bar */}
         <div className="p-3 border-b border-border-light dark:border-border-dark">
           <div className="relative">
@@ -813,7 +845,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
               </div>
               <button
                 onClick={handleSearch}
-                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex-shrink-0"
+                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center justify-center gap-1.5 transition-colors flex-shrink-0"
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -901,17 +933,100 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                 </div>
               )}
 
-              {/* Video Files Section - Prioritized */}
-              {videoFiles.length > 0 && (
+              {/* Video Files Section - Grouped by Episode */}
+              {isShow && Object.keys(groupedVideoFiles).length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">
+                    Video Files {searchQuery && `matching "${searchQuery}"`}
+                  </h3>
+                  <div className="space-y-4">
+                    {Object.entries(groupedVideoFiles).map(([episodeNumStr, files]) => {
+                      const episodeNum = parseInt(episodeNumStr);
+                      const isSelectedEpisode = episodeNum === selectedEpisode;
+                      
+                      return (
+                        <div 
+                          key={episodeNumStr} 
+                          className={cn(
+                            "rounded-lg overflow-hidden border",
+                            isSelectedEpisode 
+                              ? "border-red-500 dark:border-red-500" 
+                              : "border-border-light dark:border-border-dark"
+                          )}
+                        >
+                          <div className={cn(
+                            "px-3 py-2 font-medium text-sm",
+                            isSelectedEpisode 
+                              ? "bg-red-600/10 dark:bg-red-500/10 text-red-600 dark:text-red-500" 
+                              : "bg-light-surface dark:bg-dark-surface"
+                          )}>
+                            {episodeNum > 0 ? `Episode ${episodeNum}` : 'Other Videos'}
+                          </div>
+                          <div className="divide-y divide-border-light dark:divide-border-dark">
+                            {files.map((file, index) => {
+                              // Get file metadata
+                              const fileExt = getFileExtension(file.name);
+                              const fileSize = formatFileSize(file.size);
+                              const videoQuality = getVideoQuality(file.name);
+                              const videoSource = getVideoSource(file.name);
+                              
+                              return (
+                                <button
+                                  key={index}
+                                  onClick={() => handleFileClick(file)}
+                                  className="w-full p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
+                                >
+                                  <div className="flex items-start gap-2.5">
+                                    <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
+                                      <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 text-left">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <div className="font-medium truncate">{file.name}</div>
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                                        {fileExt && (
+                                          <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
+                                            {fileExt}
+                                          </span>
+                                        )}
+                                        {videoQuality && (
+                                          <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
+                                            {videoQuality}
+                                          </span>
+                                        )}
+                                        {videoSource && (
+                                          <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+                                            {videoSource}
+                                          </span>
+                                        )}
+                                        {fileSize && (
+                                          <span className="ml-auto">
+                                            {fileSize}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Video Files Section - Non-grouped (for movies) */}
+              {!isShow && videoFiles.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-2">
                     Video Files {searchQuery && `matching "${searchQuery}"`}
                   </h3>
                   <div className="space-y-1.5">
                     {videoFiles.map((file, index) => {
-                      // Determine if this file matches the selected episode
-                      const isExactMatch = file.episodeNumber === selectedEpisode && file.matchScore && file.matchScore >= 90;
-                      
                       // Get file metadata
                       const fileExt = getFileExtension(file.name);
                       const fileSize = formatFileSize(file.size);
@@ -922,26 +1037,11 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                         <button
                           key={index}
                           onClick={() => handleFileClick(file)}
-                          className={cn(
-                            "w-full p-2.5 rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors",
-                            isExactMatch 
-                              ? "bg-red-600/20 dark:bg-red-500/20 border border-red-600/30 dark:border-red-500/30" 
-                              : "bg-light-surface dark:bg-dark-surface"
-                          )}
+                          className="w-full p-2.5 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
                         >
                           <div className="flex items-start gap-2.5">
-                            <div className={cn(
-                              "p-1.5 rounded-md flex-shrink-0",
-                              isExactMatch
-                                ? "bg-red-600/10 dark:bg-red-500/10" 
-                                : "bg-light-text-secondary/10 dark:bg-dark-text-secondary/10"
-                            )}>
-                              <Video className={cn(
-                                "w-4 h-4",
-                                isExactMatch
-                                  ? "text-red-600 dark:text-red-500" 
-                                  : "text-light-text-secondary dark:text-dark-text-secondary"
-                              )} />
+                            <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
+                              <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                               <div className="flex items-center gap-2 mb-1">
@@ -961,11 +1061,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                                 {videoSource && (
                                   <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
                                     {videoSource}
-                                  </span>
-                                )}
-                                {isExactMatch && (
-                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-700 dark:text-red-400 rounded">
-                                    Episode {selectedEpisode}
                                   </span>
                                 )}
                                 {fileSize && (
