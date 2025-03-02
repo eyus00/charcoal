@@ -242,13 +242,26 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
         }
       });
       
-      setGroupedVideoFiles(grouped);
+      // Sort the keys so the selected episode is first
+      const sortedKeys = Object.keys(grouped).map(Number).sort((a, b) => {
+        if (a === selectedEpisode) return -1;
+        if (b === selectedEpisode) return 1;
+        return a - b;
+      });
+      
+      // Create a new ordered grouped object
+      const orderedGrouped: {[key: number]: FileItem[]} = {};
+      sortedKeys.forEach(key => {
+        orderedGrouped[key] = grouped[key];
+      });
+      
+      setGroupedVideoFiles(orderedGrouped);
       setHasVideoFiles(videoFiles.length > 0);
     } else {
       setGroupedVideoFiles({});
       setHasVideoFiles(false);
     }
-  }, [files, isShow]);
+  }, [files, isShow, selectedEpisode]);
 
   // Filter video files when search query changes
   useEffect(() => {
@@ -600,13 +613,13 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   // Get video quality from filename
   const getVideoQuality = (filename: string): string => {
     const qualityMatch = filename.match(/\b(720p|1080p|2160p|4K)\b/i);
-    return qualityMatch ? qualityMatch[0].toUpperCase() : '';
+    return qualityMatch ? qualityMatch[1].toUpperCase() : '';
   };
 
   // Get video source from filename
   const getVideoSource = (filename: string): string => {
     const sourceMatch = filename.match(/\b(BluRay|WEBDL|WEB-DL|WEBRip|HDRip|BRRip|DVDRip)\b/i);
-    return sourceMatch ? sourceMatch[0] : '';
+    return sourceMatch ? sourceMatch[1].replace('WEBDL', 'WEB-DL') : '';
   };
 
   if (!isOpen) return null;
@@ -622,6 +635,10 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const directoriesToDisplay = isManualSearch && (currentPath === `${BASE_URL}movies/` || currentPath === `${BASE_URL}tvs/`)
     ? filteredDirectories
     : directories.map(dir => dir.name);
+
+  // Determine if we should show the directories section
+  // Hide directories if we have video files and we're not in manual search mode
+  const shouldShowDirectories = !hasVideoFiles || isManualSearch;
 
   return (
     <>
@@ -1078,8 +1095,8 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                 </div>
               )}
 
-              {/* Directories Section */}
-              {(isManualSearch && (currentPath === `${BASE_URL}movies/` || currentPath === `${BASE_URL}tvs/`)) ? (
+              {/* Directories Section - Only show if no video files or in manual search mode */}
+              {shouldShowDirectories && (isManualSearch && (currentPath === `${BASE_URL}movies/` || currentPath === `${BASE_URL}tvs/`)) ? (
                 <div className={videoFiles.length > 0 ? "mt-4" : ""}>
                   <h3 className="text-sm font-semibold mb-2">Folders</h3>
                   <div className="space-y-1.5">
@@ -1095,7 +1112,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                     ))}
                   </div>
                 </div>
-              ) : directories.length > 0 && (
+              ) : shouldShowDirectories && directories.length > 0 && (
                 <div className={videoFiles.length > 0 ? "mt-4" : ""}>
                   <h3 className="text-sm font-semibold mb-2">Folders</h3>
                   <div className="space-y-1.5">
