@@ -6,7 +6,6 @@ export const BASE_URL = "https://a.datadiff.us.kg/";
 export interface FileItem {
   name: string;
   url: string;
-  size?: number;
   isVideo: boolean;
   isDirectory: boolean;
   episodeNumber?: number;
@@ -108,27 +107,9 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
       // Check if it's a video file
       const isVideo = /\.(mkv|mp4|avi|mov|webm)$/i.test(href);
       
-      // Extract file size from the HTML
-      let fileSize: number | undefined = undefined;
-      
-      // Find the parent row element
-      const parentRow = link.closest('tr');
-      if (parentRow) {
-        // Look for the size column (typically the 4th column in most directory listings)
-        const sizeCell = parentRow.querySelector('td:nth-child(4)');
-        if (sizeCell) {
-          const sizeText = sizeCell.textContent?.trim();
-          if (sizeText) {
-            // Convert size text to bytes
-            fileSize = parseFileSizeToBytes(sizeText);
-          }
-        }
-      }
-      
       const fileItem: FileItem = {
         name,
         url: path + href,
-        size: fileSize,
         isVideo,
         isDirectory,
       };
@@ -181,39 +162,6 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
 }
 
 /**
- * Converts file size string to bytes
- */
-function parseFileSizeToBytes(sizeStr: string): number | undefined {
-  // Remove any HTML tags that might be present
-  sizeStr = sizeStr.replace(/<[^>]*>/g, '');
-  
-  // Common file size patterns
-  const match = sizeStr.match(/^([\d,.]+)\s*([KMGT]?B)$/i);
-  if (!match) return undefined;
-  
-  let size = parseFloat(match[1].replace(/,/g, ''));
-  const unit = match[2].toUpperCase();
-  
-  // Convert to bytes based on unit
-  switch (unit) {
-    case 'KB':
-      size *= 1024;
-      break;
-    case 'MB':
-      size *= 1024 * 1024;
-      break;
-    case 'GB':
-      size *= 1024 * 1024 * 1024;
-      break;
-    case 'TB':
-      size *= 1024 * 1024 * 1024 * 1024;
-      break;
-  }
-  
-  return Math.round(size);
-}
-
-/**
  * Creates a folder path for a TV show based on title and season
  */
 export function createTVShowPath(title: string, season?: number): string {
@@ -240,15 +188,11 @@ export function createMoviePath(title: string, year?: string): string {
  */
 export async function fetchTVShowSeasons(tvId: number): Promise<SeasonInfo[]> {
   try {
-    // Use the existing TMDB API client from the project
-    const response = await axios.get(`https://api.themoviedb.org/3/tv/${tvId}`, {
-      params: {
-        api_key: '50404130561567acf3e0725aeb09ec5d'
-      }
-    });
+    const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}?api_key=50404130561567acf3e0725aeb09ec5d`);
+    const data = await response.json();
     
-    if (response.data && response.data.seasons) {
-      return response.data.seasons.map((season: any) => ({
+    if (data && data.seasons) {
+      return data.seasons.map((season: any) => ({
         season_number: season.season_number,
         name: season.name,
         episode_count: season.episode_count

@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video } from 'lucide-react';
-import { cn } from '../lib/utils';
-import axios from 'axios';
+import { FolderOpen, X, Loader2, AlertCircle, ExternalLink, RefreshCw, Search, ArrowLeft, Home, History, Video } from 'lucide-react';
+import { cn } from '../../lib/utils';
 import { 
   BASE_URL, 
   fetchDirectoryContents, 
   createTVShowPath, 
   createMoviePath, 
-  FileItem, 
-  calculateEpisodeMatchScore 
-} from '../lib/drive';
+  FileItem
+} from './utils';
+import DirectoryList from './DirectoryList';
+import VideoFileList from './VideoFileList';
+import SearchBar from './SearchBar';
+import NavigationBar from './NavigationBar';
+import SeasonEpisodeSelector from './SeasonEpisodeSelector';
 
 interface DriveBrowserProps {
   isOpen: boolean;
@@ -42,8 +45,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [selectedSeason, setSelectedSeason] = useState<number | undefined>(initialSeason);
   const [selectedEpisode, setSelectedEpisode] = useState<number | undefined>(initialEpisode);
-  const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
-  const [showEpisodeDropdown, setShowEpisodeDropdown] = useState(false);
   const [movieYear, setMovieYear] = useState<string | undefined>(releaseYear);
   const [seasons, setSeasons] = useState<{season_number: number; name: string; episode_count: number}[]>([]);
   const [episodeCount, setEpisodeCount] = useState<number>(0);
@@ -57,8 +58,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const [filteredVideoFiles, setFilteredVideoFiles] = useState<FileItem[]>([]);
   const [hasVideoFiles, setHasVideoFiles] = useState(false);
   const linkInputRef = useRef<HTMLInputElement>(null);
-  const seasonDropdownRef = useRef<HTMLDivElement>(null);
-  const episodeDropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchHistoryRef = useRef<HTMLDivElement>(null);
 
@@ -67,14 +66,11 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     if (isOpen && !isShow && movieId && !releaseYear) {
       const fetchYear = async () => {
         try {
-          const response = await axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
-            params: {
-              api_key: '50404130561567acf3e0725aeb09ec5d'
-            }
-          });
+          const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=50404130561567acf3e0725aeb09ec5d`);
+          const data = await response.json();
           
-          if (response.data?.release_date) {
-            const year = new Date(response.data.release_date).getFullYear().toString();
+          if (data?.release_date) {
+            const year = new Date(data.release_date).getFullYear().toString();
             setMovieYear(year);
           }
         } catch (error) {
@@ -93,15 +89,12 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     if (isOpen && isShow && tvId) {
       const fetchSeasons = async () => {
         try {
-          const response = await axios.get(`https://api.themoviedb.org/3/tv/${tvId}`, {
-            params: {
-              api_key: '50404130561567acf3e0725aeb09ec5d'
-            }
-          });
+          const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}?api_key=50404130561567acf3e0725aeb09ec5d`);
+          const data = await response.json();
           
-          if (response.data?.seasons) {
+          if (data?.seasons) {
             // Filter out specials (season 0)
-            const filteredSeasons = response.data.seasons.filter(
+            const filteredSeasons = data.seasons.filter(
               (season: any) => season.season_number > 0
             );
             setSeasons(filteredSeasons);
@@ -125,17 +118,14 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     if (isShow && tvId && selectedSeason) {
       const fetchEpisodeCount = async () => {
         try {
-          const response = await axios.get(`https://api.themoviedb.org/3/tv/${tvId}/season/${selectedSeason}`, {
-            params: {
-              api_key: '50404130561567acf3e0725aeb09ec5d'
-            }
-          });
+          const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${selectedSeason}?api_key=50404130561567acf3e0725aeb09ec5d`);
+          const data = await response.json();
           
-          if (response.data?.episodes) {
-            setEpisodeCount(response.data.episodes.length);
+          if (data?.episodes) {
+            setEpisodeCount(data.episodes.length);
             
             // Set initial episode if not already set
-            if (!selectedEpisode && response.data.episodes.length > 0) {
+            if (!selectedEpisode && data.episodes.length > 0) {
               setSelectedEpisode(1);
             }
           }
@@ -151,14 +141,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (seasonDropdownRef.current && !seasonDropdownRef.current.contains(event.target as Node)) {
-        setShowSeasonDropdown(false);
-      }
-      
-      if (episodeDropdownRef.current && !episodeDropdownRef.current.contains(event.target as Node)) {
-        setShowEpisodeDropdown(false);
-      }
-      
       if (searchHistoryRef.current && !searchHistoryRef.current.contains(event.target as Node) && 
           searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
         setShowSearchHistory(false);
@@ -459,11 +441,9 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
 
   const handleSeasonSelect = (seasonNumber: number) => {
     setSelectedSeason(seasonNumber);
-    setShowSeasonDropdown(false);
     
     // Reset episode selection when season changes
     setSelectedEpisode(1);
-    setShowEpisodeDropdown(false);
     
     // Update path for the new season
     const newPath = createTVShowPath(title, seasonNumber);
@@ -472,7 +452,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
 
   const handleEpisodeSelect = (episodeNumber: number) => {
     setSelectedEpisode(episodeNumber);
-    setShowEpisodeDropdown(false);
     
     // Reload current directory to highlight the selected episode
     loadDirectoryContents(currentPath);
@@ -544,38 +523,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     }
   };
 
-  // Get file extension from filename
-  const getFileExtension = (filename: string): string => {
-    const match = filename.match(/\.([^.]+)$/);
-    return match ? match[1].toUpperCase() : '';
-  };
-
-  // Format file size from bytes to human-readable format
-  const formatFileSize = (bytes?: number): string => {
-    if (!bytes) return '';
-    
-    if (bytes >= 1e9) {
-      return (bytes / 1e9).toFixed(2) + " GB";
-    } else if (bytes >= 1e6) {
-      return (bytes / 1e6).toFixed(2) + " MB";
-    } else if (bytes >= 1e3) {
-      return (bytes / 1e3).toFixed(2) + " KB";
-    }
-    return bytes + " Bytes";
-  };
-
-  // Get video quality from filename
-  const getVideoQuality = (filename: string): string => {
-    const qualityMatch = filename.match(/\b(720p|1080p|2160p|4K)\b/i);
-    return qualityMatch ? qualityMatch[0].toUpperCase() : '';
-  };
-
-  // Get video source from filename
-  const getVideoSource = (filename: string): string => {
-    const sourceMatch = filename.match(/\b(BluRay|WEBDL|WEB-DL|WEBRip|HDRip|BRRip|DVDRip)\b/i);
-    return sourceMatch ? sourceMatch[0] : '';
-  };
-
   if (!isOpen) return null;
 
   // Separate video files from directories
@@ -644,201 +591,47 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
           </div>
         </div>
 
-        {/* Season & Episode Selector for TV Shows (only show in automatic mode and when video files are present) */}
+        {/* Season & Episode Selector for TV Shows */}
         {isShow && !isManualSearch && hasVideoFiles && (
-          <div className="p-3 border-b border-border-light dark:border-border-dark">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Season Selector */}
-              <div ref={seasonDropdownRef} className="relative">
-                <button
-                  onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
-                  className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded-lg flex items-center justify-between"
-                >
-                  <span>{selectedSeason ? `Season ${selectedSeason}` : 'Select Season'}</span>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 transition-transform",
-                    showSeasonDropdown && "transform rotate-180"
-                  )} />
-                </button>
-                
-                {showSeasonDropdown && (
-                  <div className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {seasons.map((season) => (
-                      <button
-                        key={season.season_number}
-                        onClick={() => handleSeasonSelect(season.season_number)}
-                        className={cn(
-                          "w-full px-4 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface",
-                          selectedSeason === season.season_number && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
-                        )}
-                      >
-                        Season {season.season_number}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {/* Episode Selector */}
-              <div ref={episodeDropdownRef} className="relative">
-                <button
-                  onClick={() => setShowEpisodeDropdown(!showEpisodeDropdown)}
-                  className="w-full px-3 py-2 bg-light-surface dark:bg-dark-surface rounded-lg flex items-center justify-between"
-                >
-                  <span>{selectedEpisode ? `Episode ${selectedEpisode}` : 'Select Episode'}</span>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 transition-transform",
-                    showEpisodeDropdown && "transform rotate-180"
-                  )} />
-                </button>
-                
-                {showEpisodeDropdown && (
-                  <div className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {Array.from({ length: episodeCount }, (_, i) => i + 1).map((episodeNum) => (
-                      <button
-                        key={episodeNum}
-                        onClick={() => handleEpisodeSelect(episodeNum)}
-                        className={cn(
-                          "w-full px-4 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface",
-                          selectedEpisode === episodeNum && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
-                        )}
-                      >
-                        Episode {episodeNum}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <SeasonEpisodeSelector
+            seasons={seasons}
+            selectedSeason={selectedSeason}
+            selectedEpisode={selectedEpisode}
+            episodeCount={episodeCount}
+            onSeasonSelect={handleSeasonSelect}
+            onEpisodeSelect={handleEpisodeSelect}
+          />
         )}
 
-        {/* Combined Navigation Bar and Path Input */}
-        <div className="p-3 border-b border-border-light dark:border-border-dark">
-          <form onSubmit={handleManualPathSubmit} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
-                <button 
-                  type="button"
-                  onClick={navigateBack}
-                  disabled={historyIndex <= 0}
-                  className="p-2 hover:bg-light-surface dark:hover:bg-dark-surface disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Back"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="w-px h-6 bg-border-light dark:bg-border-dark" />
-                <button 
-                  type="button"
-                  onClick={navigateForward}
-                  disabled={historyIndex >= navigationHistory.length - 1}
-                  className="p-2 hover:bg-light-surface dark:hover:bg-dark-surface disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Forward"
-                >
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
-                </button>
-                <div className="w-px h-6 bg-border-light dark:bg-border-dark" />
-                <button 
-                  type="button"
-                  onClick={navigateHome}
-                  className="p-2 hover:bg-light-surface dark:hover:bg-dark-surface"
-                  title="Home"
-                >
-                  <Home className="w-4 h-4" />
-                </button>
-                <div className="w-px h-6 bg-border-light dark:bg-border-dark" />
-                <button 
-                  type="button"
-                  onClick={refetchDirectory}
-                  className="p-2 hover:bg-light-surface dark:hover:bg-dark-surface"
-                  title="Refresh"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-              
-              <button
-                type="button"
-                onClick={openLinkInNewTab}
-                className="p-2 border border-border-light dark:border-border-dark rounded-lg hover:bg-light-surface dark:hover:bg-dark-surface"
-                title="Open in new tab"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                ref={linkInputRef}
-                type="text"
-                value={currentPath}
-                onChange={(e) => setCurrentPath(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500"
-                placeholder="Enter path..."
-              />
-              <button
-                type="submit"
-                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Go
-              </button>
-            </div>
-          </form>
-        </div>
+        {/* Navigation Bar */}
+        <NavigationBar
+          currentPath={currentPath}
+          setCurrentPath={setCurrentPath}
+          navigateBack={navigateBack}
+          navigateForward={navigateForward}
+          navigateHome={navigateHome}
+          refetchDirectory={refetchDirectory}
+          openLinkInNewTab={openLinkInNewTab}
+          handleManualPathSubmit={handleManualPathSubmit}
+          linkInputRef={linkInputRef}
+          canGoBack={historyIndex > 0}
+          canGoForward={historyIndex < navigationHistory.length - 1}
+        />
 
         {/* Search Bar */}
-        <div className="p-3 border-b border-border-light dark:border-border-dark">
-          <div className="relative">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchInputChange}
-                  onFocus={() => searchHistory.length > 0 && setShowSearchHistory(true)}
-                  placeholder={hasVideoFiles ? "Search files and directories..." : "Search directories..."}
-                  className="w-full px-3 py-2 text-sm bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 pr-8"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                {searchHistory.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowSearchHistory(!showSearchHistory)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded transition-colors"
-                  >
-                    <History className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={handleSearch}
-                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex-shrink-0"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {/* Search History Dropdown */}
-            {showSearchHistory && searchHistory.length > 0 && (
-              <div 
-                ref={searchHistoryRef}
-                className="absolute z-10 mt-1 w-full bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg max-h-48 overflow-y-auto"
-              >
-                {searchHistory.map((query, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSearchHistorySelect(query)}
-                    className="w-full px-3 py-2 text-left hover:bg-light-surface dark:hover:bg-dark-surface flex items-center gap-2"
-                  >
-                    <History className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />
-                    <span className="truncate">{query}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          handleSearch={handleSearch}
+          handleSearchInputChange={handleSearchInputChange}
+          searchHistory={searchHistory}
+          showSearchHistory={showSearchHistory}
+          setShowSearchHistory={setShowSearchHistory}
+          handleSearchHistorySelect={handleSearchHistorySelect}
+          searchInputRef={searchInputRef}
+          searchHistoryRef={searchHistoryRef}
+          hasVideoFiles={hasVideoFiles}
+        />
 
         {/* Content */}
         <div className="max-h-[55vh] md:max-h-[45vh] overflow-y-auto scrollbar-thin p-3">
@@ -903,124 +696,24 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
 
               {/* Video Files Section - Prioritized */}
               {videoFiles.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">
-                    Video Files {searchQuery && `matching "${searchQuery}"`}
-                  </h3>
-                  <div className="space-y-1.5">
-                    {videoFiles.map((file, index) => {
-                      // Determine highlight intensity based on match score
-                      let highlightClass = "";
-                      if (file.matchScore && file.matchScore > 0) {
-                        if (file.matchScore >= 90) {
-                          highlightClass = "bg-red-600/20 dark:bg-red-500/20 border border-red-600/30 dark:border-red-500/30";
-                        } else if (file.matchScore >= 50) {
-                          highlightClass = "bg-red-600/10 dark:bg-red-500/10 border border-red-600/20 dark:border-red-500/20";
-                        }
-                      }
-                      
-                      const fileExt = getFileExtension(file.name);
-                      const fileSize = formatFileSize(file.size);
-                      const videoQuality = getVideoQuality(file.name);
-                      const videoSource = getVideoSource(file.name);
-                      
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => handleFileClick(file)}
-                          className={cn(
-                            "w-full p-2.5 rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors",
-                            file.matchScore && file.matchScore > 0 ? highlightClass : "bg-light-surface dark:bg-dark-surface"
-                          )}
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <div className={cn(
-                              "p-1.5 rounded-md flex-shrink-0",
-                              file.matchScore && file.matchScore > 0
-                                ? "bg-red-600/10 dark:bg-red-500/10" 
-                                : "bg-light-text-secondary/10 dark:bg-dark-text-secondary/10"
-                            )}>
-                              <Video className={cn(
-                                "w-4 h-4",
-                                file.matchScore && file.matchScore > 0
-                                  ? "text-red-600 dark:text-red-500" 
-                                  : "text-light-text-secondary dark:text-dark-text-secondary"
-                              )} />
-                            </div>
-                            <div className="flex-1 min-w-0 text-left">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="font-medium truncate">{file.name}</div>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                                {fileExt && (
-                                  <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
-                                    {fileExt}
-                                  </span>
-                                )}
-                                {videoQuality && (
-                                  <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
-                                    {videoQuality}
-                                  </span>
-                                )}
-                                {videoSource && (
-                                  <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
-                                    {videoSource}
-                                  </span>
-                                )}
-                                {file.matchScore && file.matchScore >= 90 && (
-                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-700 dark:text-red-400 rounded">
-                                    Episode {selectedEpisode}
-                                  </span>
-                                )}
-                                {fileSize && (
-                                  <span className="ml-auto">
-                                    {fileSize}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <VideoFileList 
+                  videoFiles={videoFiles} 
+                  selectedEpisode={selectedEpisode} 
+                  onFileClick={handleFileClick}
+                  searchQuery={searchQuery}
+                />
               )}
 
               {/* Directories Section */}
-              {(isManualSearch && (currentPath === `${BASE_URL}movies/` || currentPath === `${BASE_URL}tvs/`)) ? (
-                <div className={videoFiles.length > 0 ? "mt-4" : ""}>
-                  <h3 className="text-sm font-semibold mb-2">Folders</h3>
-                  <div className="space-y-1.5">
-                    {filteredDirectories.map((dirName, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleDirectorySelect(dirName)}
-                        className="w-full p-2.5 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors flex items-center gap-3 text-left"
-                      >
-                        <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-500 flex-shrink-0" />
-                        <div className="flex-1 min-w-0 truncate">{dirName}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : directories.length > 0 && (
-                <div className={videoFiles.length > 0 ? "mt-4" : ""}>
-                  <h3 className="text-sm font-semibold mb-2">Folders</h3>
-                  <div className="space-y-1.5">
-                    {directories.map((dir, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleFileClick(dir)}
-                        className="w-full p-2.5 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors flex items-center gap-3 text-left"
-                      >
-                        <FolderOpen className="w-5 h-5 text-blue-600 dark:text-blue-500 flex-shrink-0" />
-                        <div className="flex-1 min-w-0 truncate">{dir.name}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <DirectoryList
+                directories={directoriesToDisplay}
+                onDirectorySelect={handleDirectorySelect}
+                isManualSearch={isManualSearch}
+                currentPath={currentPath}
+                BASE_URL={BASE_URL}
+                directories={directories}
+                onFileClick={handleFileClick}
+              />
 
               {/* Empty State */}
               {files.length === 0 && searchResults.length === 0 && !error && !isLoading && (
