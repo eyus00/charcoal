@@ -644,7 +644,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
           </div>
         </div>
 
-        {/* Season & Episode Selector for TV Shows (only show in automatic mode and when video files are present) */}
+        {/* Season & Episode Selector for TV Shows */}
         {isShow && !isManualSearch && hasVideoFiles && (
           <div className="p-3 border-b border-border-light dark:border-border-dark">
             <div className="grid grid-cols-2 gap-3">
@@ -909,16 +909,10 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                   </h3>
                   <div className="space-y-1.5">
                     {videoFiles.map((file, index) => {
-                      // Determine highlight intensity based on match score
-                      let highlightClass = "";
-                      if (file.matchScore && file.matchScore > 0) {
-                        if (file.matchScore >= 90) {
-                          highlightClass = "bg-red-600/20 dark:bg-red-500/20 border border-red-600/30 dark:border-red-500/30";
-                        } else if (file.matchScore >= 50) {
-                          highlightClass = "bg-red-600/10 dark:bg-red-500/10 border border-red-600/20 dark:border-red-500/20";
-                        }
-                      }
+                      // Determine if this file matches the selected episode
+                      const isExactMatch = file.episodeNumber === selectedEpisode && file.matchScore && file.matchScore >= 90;
                       
+                      // Get file metadata
                       const fileExt = getFileExtension(file.name);
                       const fileSize = formatFileSize(file.size);
                       const videoQuality = getVideoQuality(file.name);
@@ -930,19 +924,21 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                           onClick={() => handleFileClick(file)}
                           className={cn(
                             "w-full p-2.5 rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors",
-                            file.matchScore && file.matchScore > 0 ? highlightClass : "bg-light-surface dark:bg-dark-surface"
+                            isExactMatch 
+                              ? "bg-red-600/20 dark:bg-red-500/20 border border-red-600/30 dark:border-red-500/30" 
+                              : "bg-light-surface dark:bg-dark-surface"
                           )}
                         >
                           <div className="flex items-start gap-2.5">
                             <div className={cn(
                               "p-1.5 rounded-md flex-shrink-0",
-                              file.matchScore && file.matchScore > 0
+                              isExactMatch
                                 ? "bg-red-600/10 dark:bg-red-500/10" 
                                 : "bg-light-text-secondary/10 dark:bg-dark-text-secondary/10"
                             )}>
                               <Video className={cn(
                                 "w-4 h-4",
-                                file.matchScore && file.matchScore > 0
+                                isExactMatch
                                   ? "text-red-600 dark:text-red-500" 
                                   : "text-light-text-secondary dark:text-dark-text-secondary"
                               )} />
@@ -967,7 +963,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                                     {videoSource}
                                   </span>
                                 )}
-                                {file.matchScore && file.matchScore >= 90 && (
+                                {isExactMatch && (
                                   <span className="px-1.5 py-0.5 bg-red-500/10 text-red-700 dark:text-red-400 rounded">
                                     Episode {selectedEpisode}
                                   </span>
