@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video, Download, Share } from 'lucide-react';
+import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
 import { 
@@ -57,23 +57,11 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const [filteredVideoFiles, setFilteredVideoFiles] = useState<FileItem[]>([]);
   const [hasVideoFiles, setHasVideoFiles] = useState(false);
   const [groupedVideoFiles, setGroupedVideoFiles] = useState<{[key: number]: FileItem[]}>({});
-  const [isPWA, setIsPWA] = useState(false);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const seasonDropdownRef = useRef<HTMLDivElement>(null);
   const episodeDropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchHistoryRef = useRef<HTMLDivElement>(null);
-
-  // Check if running as PWA
-  useEffect(() => {
-    // Check if the app is running in standalone mode (PWA)
-    const isInStandaloneMode = () => 
-      window.matchMedia('(display-mode: standalone)').matches || 
-      (window.navigator as any).standalone || 
-      document.referrer.includes('ios-app://');
-    
-    setIsPWA(isInStandaloneMode());
-  }, []);
 
   // Fetch movie release year from TMDB if not provided
   useEffect(() => {
@@ -498,39 +486,15 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   // Event handlers
   const handleFileClick = (file: FileItem) => {
     if (file.isVideo) {
-      if (isPWA) {
-        // For PWA on iOS, we need a different approach
-        handlePWAFileDownload(file);
-      } else {
-        // Regular browser download
-        const a = document.createElement('a');
-        a.href = file.url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
+      // Create an anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = file.url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } else if (file.isDirectory) {
       navigateTo(file.url);
-    }
-  };
-
-  // Handle file download for PWA on iOS
-  const handlePWAFileDownload = (file: FileItem) => {
-    // Option 1: Open in new tab/window
-    window.open(file.url, '_blank');
-    
-    // Option 2: Use the Web Share API if available
-    if (navigator.share) {
-      navigator.share({
-        title: file.name,
-        text: 'Download this file',
-        url: file.url
-      }).catch(err => {
-        console.error('Error sharing:', err);
-        // Fallback to opening in new tab
-        window.open(file.url, '_blank');
-      });
     }
   };
 
@@ -1024,8 +988,9 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                               const videoSource = getVideoSource(file.name);
                               
                               return (
-                                <div
+                                <button
                                   key={index}
+                                  onClick={() => handleFileClick(file)}
                                   className="w-full p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
                                 >
                                   <div className="flex items-start gap-2.5">
@@ -1060,43 +1025,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex gap-2 mt-2">
-                                    {isPWA ? (
-                                      <>
-                                        <button
-                                          onClick={() => window.open(file.url, '_blank')}
-                                          className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center justify-center gap-1.5 transition-colors"
-                                        >
-                                          <ExternalLink className="w-4 h-4" />
-                                          Open in Browser
-                                        </button>
-                                        {navigator.share && (
-                                          <button
-                                            onClick={() => {
-                                              navigator.share({
-                                                title: file.name,
-                                                text: 'Download this file',
-                                                url: file.url
-                                              }).catch(console.error);
-                                            }}
-                                            className="px-3 py-1.5 bg-light-surface dark:bg-dark-surface hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 text-sm rounded flex items-center justify-center gap-1.5 transition-colors"
-                                          >
-                                            <Share className="w-4 h-4" />
-                                            Share
-                                          </button>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleFileClick(file)}
-                                        className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center justify-center gap-1.5 transition-colors"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                        Download
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
+                                </button>
                               );
                             })}
                           </div>
@@ -1122,8 +1051,9 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                       const videoSource = getVideoSource(file.name);
                       
                       return (
-                        <div
+                        <button
                           key={index}
+                          onClick={() => handleFileClick(file)}
                           className="w-full p-2.5 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
                         >
                           <div className="flex items-start gap-2.5">
@@ -1158,43 +1088,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2 mt-2">
-                            {isPWA ? (
-                              <>
-                                <button
-                                  onClick={() => window.open(file.url, '_blank')}
-                                  className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center justify-center gap-1.5 transition-colors"
-                                >
-                                  <ExternalLink className="w-4 h-4" />
-                                  Open in Browser
-                                </button>
-                                {navigator.share && (
-                                  <button
-                                    onClick={() => {
-                                      navigator.share({
-                                        title: file.name,
-                                        text: 'Download this file',
-                                        url: file.url
-                                      }).catch(console.error);
-                                    }}
-                                    className="px-3 py-1.5 bg-light-surface dark:bg-dark-surface hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 text-sm rounded flex items-center justify-center gap-1.5 transition-colors"
-                                  >
-                                    <Share className="w-4 h-4" />
-                                    Share
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => handleFileClick(file)}
-                                className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center justify-center gap-1.5 transition-colors"
-                              >
-                                <Download className="w-4 h-4" />
-                                Download
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -1270,15 +1164,9 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
 
         {/* Footer */}
         <div className="p-3 border-t border-border-light dark:border-border-dark text-xs text-light-text-secondary dark:text-dark-text-secondary">
-          {isPWA ? (
-            <p>
-              <strong>PWA Mode:</strong> Use "Open in Browser" or "Share" options to download files.
-            </p>
-          ) : (
-            <p>
-              Note: Direct file access depends on server availability. If files don't load, try the torrent option instead.
-            </p>
-          )}
+          <p>
+            Note: Direct file access depends on server availability. If files don't load, try the torrent option instead.
+          </p>
         </div>
       </div>
     </>
