@@ -12,7 +12,7 @@ import WatchlistButton from '../components/WatchlistButton';
 import RelatedVideos from '../components/RelatedVideos';
 import SimilarContent from '../components/SimilarContent';
 import TorrentDownloader from '../components/TorrentDownloader';
-import DriveBrowser from '../components/DriveBrowser';
+import DriveBrowser from '../components/drive';
 
 const TVDetails = () => {
   const { id } = useParams();
