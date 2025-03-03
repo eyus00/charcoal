@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video } from 'lucide-react';
+import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video, ExternalLink as OutPlayerIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
 import { 
@@ -498,6 +498,14 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     }
   };
 
+  const handleOutPlayerClick = (url: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Open the URL with outplayer:// protocol
+    window.location.href = `outplayer://${url}`;
+  };
+
   const handleDirectorySelect = (dirName: string) => {
     const newPath = `${currentPath}${dirName}`;
     navigateTo(newPath);
@@ -596,20 +604,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     return match ? match[1].toUpperCase() : '';
   };
 
-  // Format file size from bytes to human-readable format
-  const formatFileSize = (bytes?: number): string => {
-    if (!bytes) return '';
-    
-    if (bytes >= 1e9) {
-      return (bytes / 1e9).toFixed(2) + " GB";
-    } else if (bytes >= 1e6) {
-      return (bytes / 1e6).toFixed(2) + " MB";
-    } else if (bytes >= 1e3) {
-      return (bytes / 1e3).toFixed(2) + " KB";
-    }
-    return bytes + " Bytes";
-  };
-
   // Get video quality from filename
   const getVideoQuality = (filename: string): string => {
     const qualityMatch = filename.match(/\b(720p|1080p|2160p|4K)\b/i);
@@ -620,6 +614,31 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   const getVideoSource = (filename: string): string => {
     const sourceMatch = filename.match(/\b(BluRay|WEBDL|WEB-DL|WEBRip|HDRip|BRRip|DVDRip)\b/i);
     return sourceMatch ? sourceMatch[1].replace('WEBDL', 'WEB-DL') : '';
+  };
+
+  // Format file size for display
+  const formatFileSize = (size: string | undefined): string => {
+    if (!size) return 'Unknown size';
+    
+    // Check if it's already formatted (e.g., "1.5 GB")
+    if (/^\d+(\.\d+)?\s*(KB|MB|GB|TB)/i.test(size)) {
+      return size;
+    }
+    
+    // Try to parse as a number
+    const sizeNum = parseInt(size, 10);
+    if (isNaN(sizeNum)) return size;
+    
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let unitIndex = 0;
+    let formattedSize = sizeNum;
+    
+    while (formattedSize >= 1024 && unitIndex < units.length - 1) {
+      formattedSize /= 1024;
+      unitIndex++;
+    }
+    
+    return `${formattedSize.toFixed(2)} ${units[unitIndex]}`;
   };
 
   if (!isOpen) return null;
@@ -639,6 +658,9 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
   // Determine if we should show the directories section
   // Hide directories if we have video files and we're not in manual search mode
   const shouldShowDirectories = !hasVideoFiles || isManualSearch;
+
+  // Determine if we should show the selected episode group at the top
+  const hasSelectedEpisodeGroup = isShow && selectedEpisode && groupedVideoFiles[selectedEpisode]?.length > 0;
 
   return (
     <>
@@ -753,7 +775,7 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                 type="text"
                 value={currentPath}
                 onChange={(e) => setCurrentPath(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="flex-1 px-3 py-2 text-sm bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark outline-none focus:border-accent rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500"
                 placeholder="Enter path..."
               />
               <button
@@ -950,88 +972,159 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                 </div>
               )}
 
-              {/* Video Files Section - Grouped by Episode */}
+              {/* Selected Episode Group - Always show at the top if available */}
+              {hasSelectedEpisodeGroup && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold mb-2">
+                    Episode {selectedEpisode} Files
+                  </h3>
+                  <div 
+                    className="rounded-lg overflow-hidden border border-red-500 dark:border-red-500"
+                  >
+                    <div className="px-3 py-2 font-medium text-sm bg-red-600/10 dark:bg-red-500/10 text-red-600 dark:text-red-500">
+                      Episode {selectedEpisode}
+                    </div>
+                    <div className="divide-y divide-border-light dark:divide-border-dark">
+                      {groupedVideoFiles[selectedEpisode].map((file, index) => {
+                        // Get file metadata
+                        const fileExt = getFileExtension(file.name);
+                        const videoQuality = getVideoQuality(file.name);
+                        const videoSource = getVideoSource(file.name);
+                        
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => handleFileClick(file)}
+                            className="w-full p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
+                                <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
+                              </div>
+                              <div className="flex-1 min-w-0 text-left">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="font-medium truncate">{file.name}</div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                                  {fileExt && (
+                                    <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
+                                      {fileExt}
+                                    </span>
+                                  )}
+                                  {videoQuality && (
+                                    <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
+                                      {videoQuality}
+                                    </span>
+                                  )}
+                                  {videoSource && (
+                                    <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+                                      {videoSource}
+                                    </span>
+                                  )}
+                                  {file.size && (
+                                    <span className="px-1.5 py-0.5 bg-green-500/10 text-green-700 dark:text-green-400 rounded">
+                                      {formatFileSize(file.size)}
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={(e) => handleOutPlayerClick(file.url, e)}
+                                    className="px-1.5 py-0.5 bg-orange-500/10 text-orange-700 dark:text-orange-400 rounded flex items-center gap-1"
+                                    title="Open in OutPlayer"
+                                  >
+                                    <OutPlayerIcon className="w-3 h-3" />
+                                    OutPlayer
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Video Files Section - Grouped by Episode (excluding the selected episode) */}
               {isShow && Object.keys(groupedVideoFiles).length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-2">
                     Video Files {searchQuery && `matching "${searchQuery}"`}
                   </h3>
                   <div className="space-y-4">
-                    {Object.entries(groupedVideoFiles).map(([episodeNumStr, files]) => {
-                      const episodeNum = parseInt(episodeNumStr);
-                      const isSelectedEpisode = episodeNum === selectedEpisode;
-                      
-                      return (
-                        <div 
-                          key={episodeNumStr} 
-                          className={cn(
-                            "rounded-lg overflow-hidden border",
-                            isSelectedEpisode 
-                              ? "border-red-500 dark:border-red-500" 
-                              : "border-border-light dark:border-border-dark"
-                          )}
-                        >
-                          <div className={cn(
-                            "px-3 py-2 font-medium text-sm",
-                            isSelectedEpisode 
-                              ? "bg-red-600/10 dark:bg-red-500/10 text-red-600 dark:text-red-500" 
-                              : "bg-light-surface dark:bg-dark-surface"
-                          )}>
-                            {episodeNum > 0 ? `Episode ${episodeNum}` : 'Other Videos'}
-                          </div>
-                          <div className="divide-y divide-border-light dark:divide-border-dark">
-                            {files.map((file, index) => {
-                              // Get file metadata
-                              const fileExt = getFileExtension(file.name);
-                              const fileSize = formatFileSize(file.size);
-                              const videoQuality = getVideoQuality(file.name);
-                              const videoSource = getVideoSource(file.name);
-                              
-                              return (
-                                <button
-                                  key={index}
-                                  onClick={() => handleFileClick(file)}
-                                  className="w-full p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
-                                >
-                                  <div className="flex items-start gap-2.5">
-                                    <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
-                                      <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
-                                    </div>
-                                    <div className="flex-1 min-w-0 text-left">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <div className="font-medium truncate">{file.name}</div>
+                    {Object.entries(groupedVideoFiles)
+                      .filter(([episodeNumStr]) => Number(episodeNumStr) !== selectedEpisode) // Filter out the selected episode
+                      .map(([episodeNumStr, files]) => {
+                        const episodeNum = parseInt(episodeNumStr);
+                        
+                        return (
+                          <div 
+                            key={episodeNumStr} 
+                            className="rounded-lg overflow-hidden border border-border-light dark:border-border-dark"
+                          >
+                            <div className="px-3 py-2 font-medium text-sm bg-light-surface dark:bg-dark-surface">
+                              {episodeNum > 0 ? `Episode ${episodeNum}` : 'Other Videos'}
+                            </div>
+                            <div className="divide-y divide-border-light dark:divide-border-dark">
+                              {files.map((file, index) => {
+                                // Get file metadata
+                                const fileExt = getFileExtension(file.name);
+                                const videoQuality = getVideoQuality(file.name);
+                                const videoSource = getVideoSource(file.name);
+                                
+                                return (
+                                  <button
+                                    key={index}
+                                    onClick={() => handleFileClick(file)}
+                                    className="w-full p-2.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
+                                  >
+                                    <div className="flex items-start gap-2.5">
+                                      <div className="p-1.5 rounded-md bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 flex-shrink-0">
+                                        <Video className="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
                                       </div>
-                                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                                        {fileExt && (
-                                          <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
-                                            {fileExt}
-                                          </span>
-                                        )}
-                                        {videoQuality && (
-                                          <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
-                                            {videoQuality}
-                                          </span>
-                                        )}
-                                        {videoSource && (
-                                          <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
-                                            {videoSource}
-                                          </span>
-                                        )}
-                                        {fileSize && (
-                                          <span className="ml-auto">
-                                            {fileSize}
-                                          </span>
-                                        )}
+                                      <div className="flex-1 min-w-0 text-left">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <div className="font-medium truncate">{file.name}</div>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                                          {fileExt && (
+                                            <span className="px-1.5 py-0.5 bg-light-text-secondary/10 dark:bg-dark-text-secondary/10 rounded">
+                                              {fileExt}
+                                            </span>
+                                          )}
+                                          {videoQuality && (
+                                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
+                                              {videoQuality}
+                                            </span>
+                                          )}
+                                          {videoSource && (
+                                            <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+                                              {videoSource}
+                                            </span>
+                                          )}
+                                          {file.size && (
+                                            <span className="px-1.5 py-0.5 bg-green-500/10 text-green-700 dark:text-green-400 rounded">
+                                              {formatFileSize(file.size)}
+                                            </span>
+                                          )}
+                                          <button
+                                            onClick={(e) => handleOutPlayerClick(file.url, e)}
+                                            className="px-1.5 py-0.5 bg-orange-500/10 text-orange-700 dark:text-orange-400 rounded flex items-center gap-1"
+                                            title="Open in OutPlayer"
+                                          >
+                                            <OutPlayerIcon className="w-3 h-3" />
+                                            OutPlayer
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -1046,7 +1139,6 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                     {videoFiles.map((file, index) => {
                       // Get file metadata
                       const fileExt = getFileExtension(file.name);
-                      const fileSize = formatFileSize(file.size);
                       const videoQuality = getVideoQuality(file.name);
                       const videoSource = getVideoSource(file.name);
                       
@@ -1080,11 +1172,19 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
                                     {videoSource}
                                   </span>
                                 )}
-                                {fileSize && (
-                                  <span className="ml-auto">
-                                    {fileSize}
+                                {file.size && (
+                                  <span className="px-1.5 py-0.5 bg-green-500/10 text-green-700 dark:text-green-400 rounded">
+                                    {formatFileSize(file.size)}
                                   </span>
                                 )}
+                                <button
+                                  onClick={(e) => handleOutPlayerClick(file.url, e)}
+                                  className="px-1.5 py-0.5 bg-orange-500/10 text-orange-700 dark:text-orange-400 rounded flex items-center gap-1"
+                                  title="Open in OutPlayer"
+                                >
+                                  <OutPlayerIcon className="w-3 h-3" />
+                                  OutPlayer
+                                </button>
                               </div>
                             </div>
                           </div>

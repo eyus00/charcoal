@@ -6,11 +6,11 @@ export const BASE_URL = "https://a.datadiff.us.kg/";
 export interface FileItem {
   name: string;
   url: string;
-  size?: number;
   isVideo: boolean;
   isDirectory: boolean;
   episodeNumber?: number;
   matchScore?: number;
+  size?: string; // Added size property
 }
 
 export interface SeasonInfo {
@@ -76,6 +76,30 @@ export const calculateEpisodeMatchScore = (filename: string, episodeNumber: numb
 };
 
 /**
+ * Parses file size from HTML content
+ */
+export const parseFileSize = (html: string, fileName: string): string | undefined => {
+  // Look for size information in the HTML near the file name
+  const fileNameEscaped = fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const sizeRegex = new RegExp(`${fileNameEscaped}.*?(?:Size|size)\\s*:\\s*([\\d.]+)\\s*(KB|MB|GB|TB)`, 'i');
+  const match = html.match(sizeRegex);
+  
+  if (match && match[1] && match[2]) {
+    return `${match[1]} ${match[2]}`;
+  }
+  
+  // Try a more general approach to find size
+  const generalSizeRegex = new RegExp(`${fileNameEscaped}.*?([\\d.]+)\\s*(KB|MB|GB|TB)`, 'i');
+  const generalMatch = html.match(generalSizeRegex);
+  
+  if (generalMatch && generalMatch[1] && generalMatch[2]) {
+    return `${generalMatch[1]} ${generalMatch[2]}`;
+  }
+  
+  return undefined;
+}
+
+/**
  * Fetches directory contents from the server
  */
 export async function fetchDirectoryContents(path: string, selectedEpisode?: number, selectedSeason?: number): Promise<FileItem[]> {
@@ -108,29 +132,15 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
       // Check if it's a video file
       const isVideo = /\.(mkv|mp4|avi|mov|webm)$/i.test(href);
       
-      // Extract file size from the HTML
-      let fileSize: number | undefined = undefined;
-      
-      // Find the parent row element
-      const parentRow = link.closest('tr');
-      if (parentRow) {
-        // Look for the size column (typically the 4th column in most directory listings)
-        const sizeCell = parentRow.querySelector('td:nth-child(4)');
-        if (sizeCell) {
-          const sizeText = sizeCell.textContent?.trim();
-          if (sizeText) {
-            // Convert size text to bytes
-            fileSize = parseFileSizeToBytes(sizeText);
-          }
-        }
-      }
+      // Extract file size from HTML
+      const size = parseFileSize(html, name);
       
       const fileItem: FileItem = {
         name,
         url: path + href,
-        size: fileSize,
         isVideo,
         isDirectory,
+        size,
       };
       
       // Extract episode number and calculate match score for video files
@@ -178,39 +188,6 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
     console.error("Error fetching directory:", error);
     throw new Error("Failed to access directory. The server might be unavailable or the content doesn't exist.");
   }
-}
-
-/**
- * Converts file size string to bytes
- */
-function parseFileSizeToBytes(sizeStr: string): number | undefined {
-  // Remove any HTML tags that might be present
-  sizeStr = sizeStr.replace(/<[^>]*>/g, '');
-  
-  // Common file size patterns
-  const match = sizeStr.match(/^([\d,.]+)\s*([KMGT]?B)$/i);
-  if (!match) return undefined;
-  
-  let size = parseFloat(match[1].replace(/,/g, ''));
-  const unit = match[2].toUpperCase();
-  
-  // Convert to bytes based on unit
-  switch (unit) {
-    case 'KB':
-      size *= 1024;
-      break;
-    case 'MB':
-      size *= 1024 * 1024;
-      break;
-    case 'GB':
-      size *= 1024 * 1024 * 1024;
-      break;
-    case 'TB':
-      size *= 1024 * 1024 * 1024 * 1024;
-      break;
-  }
-  
-  return Math.round(size);
 }
 
 /**
