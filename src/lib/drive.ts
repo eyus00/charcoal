@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { DriveCache } from './driveCache';
 
 // Base URL for the file server
 export const BASE_URL = "https://a.datadiff.us.kg/";
@@ -10,7 +11,9 @@ export interface FileItem {
   isDirectory: boolean;
   episodeNumber?: number;
   matchScore?: number;
-  size?: string; // Added size property
+  size?: string;
+  lastModified?: string;
+  isCached?: boolean;
 }
 
 export interface SeasonInfo {
@@ -54,12 +57,12 @@ export const calculateEpisodeMatchScore = (filename: string, episodeNumber: numb
   // Exact episode number patterns
   if (seasonNumber) {
     const seasonStr = String(seasonNumber).padStart(2, '0');
-    if (new RegExp(`[Ss]${seasonStr}[Ee]${episodeStr}\\b`, 'i').test(filename)) score += 100; // S01E05 format
-    if (new RegExp(`\\bS${seasonNumber}E${episodeStr}\\b`, 'i').test(filename)) score += 100; // S1E5 format
-    if (new RegExp(`\\b${seasonNumber}x${episodeStr}\\b`, 'i').test(filename)) score += 100; // 1x05 format
+    if (new RegExp(`[Ss]${seasonStr}[Ee]${episodeStr}\\b`, 'i').test(filename)) score += 100;
+    if (new RegExp(`\\bS${seasonNumber}E${episodeStr}\\b`, 'i').test(filename)) score += 100;
+    if (new RegExp(`\\b${seasonNumber}x${episodeStr}\\b`, 'i').test(filename)) score += 100;
   } else {
-    if (new RegExp(`[Ss]\\d+[Ee]${episodeStr}\\b`, 'i').test(filename)) score += 90; // S01E05 format
-    if (new RegExp(`\\bS\\d+E${episodeStr}\\b`, 'i').test(filename)) score += 90; // S1E5 format
+    if (new RegExp(`[Ss]\\d+[Ee]${episodeStr}\\b`, 'i').test(filename)) score += 90;
+    if (new RegExp(`\\bS\\d+E${episodeStr}\\b`, 'i').test(filename)) score += 90;
   }
   
   // Episode with number
@@ -99,14 +102,72 @@ export const parseFileSize = (html: string, fileName: string): string | undefine
   return undefined;
 }
 
+// Debounce function for API calls
+const debounce = <F extends (...args: any[]) => any>(
+  func: F,
+  waitFor: number
+) => {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): Promise<ReturnType<F>> => {
+    return new Promise((resolve) => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(() => {
+        resolve(func(...args));
+      }, waitFor);
+    });
+  };
+};
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+const retryWithDelay = async <T>(
+  fn: () => Promise<T>,
+  retries: number = MAX_RETRIES,
+  delay: number = RETRY_DELAY
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryWithDelay(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+};
+
 /**
  * Fetches directory contents from the server
  */
-export async function fetchDirectoryContents(path: string, selectedEpisode?: number, selectedSeason?: number): Promise<FileItem[]> {
+export async function fetchDirectoryContents(
+  path: string,
+  selectedEpisode?: number,
+  selectedSeason?: number,
+  isManualMode: boolean = false,
+  forceRefresh: boolean = false
+): Promise<FileItem[]> {
   try {
+    // Check cache first
+    const cacheStatus = DriveCache.getCacheStatus(path);
+    
+    if (!forceRefresh && cacheStatus.isCached && !cacheStatus.isExpired) {
+      const cachedData = DriveCache.getEntry(isManualMode ? `drive_cache_manual_${path}` : path);
+      if (cachedData) {
+        return cachedData.data.map(item => ({ ...item, isCached: true }));
+      }
+    }
+
     // Use a CORS proxy to access the directory
     const corsProxy = 'https://api.allorigins.win/raw?url=';
-    const response = await fetch(corsProxy + encodeURIComponent(path));
+    const response = await retryWithDelay(() => 
+      fetch(corsProxy + encodeURIComponent(path))
+    );
     
     if (!response.ok) {
       throw new Error("Directory not found or inaccessible");
@@ -135,12 +196,19 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
       // Extract file size from HTML
       const size = parseFileSize(html, name);
       
+      // Extract last modified date
+      const row = link.closest('tr');
+      const dateCell = row?.querySelector('td:nth-child(3)');
+      const lastModified = dateCell?.textContent?.trim();
+      
       const fileItem: FileItem = {
         name,
         url: path + href,
         isVideo,
         isDirectory,
         size,
+        lastModified,
+        isCached: false,
       };
       
       // Extract episode number and calculate match score for video files
@@ -156,7 +224,7 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
     });
     
     // Sort files: directories first, then by match score for the selected episode, then by episode number, then by name
-    return fileItems.sort((a, b) => {
+    const sortedFiles = fileItems.sort((a, b) => {
       // First sort directories to the top
       if (a.isDirectory && !b.isDirectory) return -1;
       if (!a.isDirectory && b.isDirectory) return 1;
@@ -184,11 +252,31 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
       // Finally sort by name
       return a.name.localeCompare(b.name);
     });
+
+    // Cache the results
+    DriveCache.setEntry(
+      isManualMode ? `drive_cache_manual_${path}` : path,
+      sortedFiles,
+      path,
+      isManualMode
+    );
+
+    return sortedFiles;
   } catch (error) {
     console.error("Error fetching directory:", error);
+    
+    // Try to return cached data even if expired
+    const cachedData = DriveCache.getEntry(isManualMode ? `drive_cache_manual_${path}` : path);
+    if (cachedData) {
+      return cachedData.data.map(item => ({ ...item, isCached: true }));
+    }
+    
     throw new Error("Failed to access directory. The server might be unavailable or the content doesn't exist.");
   }
 }
+
+// Debounced version of fetchDirectoryContents for search operations
+export const debouncedFetchDirectoryContents = debounce(fetchDirectoryContents, 300);
 
 /**
  * Creates a folder path for a TV show based on title and season

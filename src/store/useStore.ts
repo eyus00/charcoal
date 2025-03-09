@@ -1,22 +1,26 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Cache size limits
+const WATCH_HISTORY_LIMIT = 50;
+const WATCHLIST_LIMIT = 100;
+const RECENT_WATCH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export type WatchStatus = 'watching' | 'planned' | 'completed';
+
 export interface WatchHistoryItem {
   id: number;
   mediaType: 'movie' | 'tv';
   title: string;
   posterPath: string;
-  lastWatched: number; // timestamp
+  lastWatched: number;
   progress?: {
     watched: number;
     duration: number;
   };
-  // For TV Shows
   season?: number;
   episode?: number;
 }
-
-export type WatchStatus = 'watching' | 'planned' | 'completed';
 
 export interface WatchlistItem {
   id: number;
@@ -43,9 +47,15 @@ interface SearchStore {
   getWatchlistItem: (id: number, mediaType: 'movie' | 'tv') => WatchlistItem | undefined;
   darkMode: boolean;
   toggleDarkMode: () => void;
+  // Cache for API responses
+  cache: Record<string, { data: any; timestamp: number }>;
+  setCache: (key: string, data: any) => void;
+  getCache: (key: string) => any;
+  clearCache: () => void;
 }
 
-const RECENT_WATCH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+// Cache expiration time (30 minutes)
+const CACHE_EXPIRATION = 30 * 60 * 1000;
 
 export const useStore = create<SearchStore>()(
   persist(
@@ -62,7 +72,6 @@ export const useStore = create<SearchStore>()(
               !(historyItem.id === item.id && historyItem.mediaType === item.mediaType)
           );
 
-          // Auto-add to watchlist as "watching" if recently watched
           const now = Date.now();
           if (now - item.lastWatched < RECENT_WATCH_THRESHOLD) {
             const existingWatchlistItem = state.watchlist.find(
@@ -79,7 +88,6 @@ export const useStore = create<SearchStore>()(
                 status: 'watching',
               });
             } else if (existingWatchlistItem.status === 'planned') {
-              // Update status to watching if it was planned
               state.watchlist = state.watchlist.map((watchItem) =>
                 watchItem.id === item.id && watchItem.mediaType === item.mediaType
                   ? { ...watchItem, status: 'watching' }
@@ -89,8 +97,8 @@ export const useStore = create<SearchStore>()(
           }
 
           return {
-            watchHistory: [item, ...history].slice(0, 50), // Keep only last 50 items
-            watchlist: state.watchlist,
+            watchHistory: [item, ...history].slice(0, WATCH_HISTORY_LIMIT),
+            watchlist: state.watchlist.slice(0, WATCHLIST_LIMIT),
           };
         }),
       removeFromWatchHistory: (id, mediaType) =>
@@ -108,7 +116,7 @@ export const useStore = create<SearchStore>()(
               !(listItem.id === item.id && listItem.mediaType === item.mediaType)
           );
           return {
-            watchlist: [item, ...watchlist],
+            watchlist: [item, ...watchlist].slice(0, WATCHLIST_LIMIT),
           };
         }),
       removeFromWatchlist: (id, mediaType) =>
@@ -133,9 +141,41 @@ export const useStore = create<SearchStore>()(
       },
       darkMode: false,
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+      // Cache implementation
+      cache: {},
+      setCache: (key: string, data: any) => 
+        set((state) => ({
+          cache: {
+            ...state.cache,
+            [key]: { data, timestamp: Date.now() }
+          }
+        })),
+      getCache: (key: string) => {
+        const state = get();
+        const cached = state.cache[key];
+        if (!cached) return null;
+        
+        // Check if cache is expired
+        if (Date.now() - cached.timestamp > CACHE_EXPIRATION) {
+          // Remove expired cache
+          set((state) => {
+            const { [key]: _, ...rest } = state.cache;
+            return { cache: rest };
+          });
+          return null;
+        }
+        
+        return cached.data;
+      },
+      clearCache: () => set({ cache: {} })
     }),
     {
-      name: 'watch-history',
+      name: 'app-storage',
+      partialize: (state) => ({
+        watchHistory: state.watchHistory,
+        watchlist: state.watchlist,
+        darkMode: state.darkMode
+      })
     }
   )
 );
