@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FolderOpen, File, X, Loader2, AlertCircle, ExternalLink, ChevronDown, RefreshCw, Search, ArrowLeft, Home, History, Film, Video, ExternalLink as OutPlayerIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
+import DriveBrowserUI  from './DriveBrowserUI';
 import { 
   BASE_URL, 
   fetchDirectoryContents, 
@@ -10,7 +11,6 @@ import {
   FileItem, 
   calculateEpisodeMatchScore 
 } from '../lib/drive';
-import DriveBrowserUI from './DriveBrowserUI';
 
 interface DriveBrowserProps {
   isOpen: boolean;
@@ -599,130 +599,46 @@ const DriveBrowser: React.FC<DriveBrowserProps> = ({
     }
   };
 
-  // Get file extension from filename
-  const getFileExtension = (filename: string): string => {
-    const match = filename.match(/\.([^.]+)$/);
-    return match ? match[1].toUpperCase() : '';
-  };
-
-  // Get video quality from filename
-  const getVideoQuality = (filename: string): string => {
-    const qualityMatch = filename.match(/\b(720p|1080p|2160p|4K)\b/i);
-    return qualityMatch ? qualityMatch[1].toUpperCase() : '';
-  };
-
-  // Get video source from filename
-  const getVideoSource = (filename: string): string => {
-    const sourceMatch = filename.match(/\b(BluRay|WEBDL|WEB-DL|WEBRip|HDRip|BRRip|DVDRip)\b/i);
-    return sourceMatch ? sourceMatch[1].replace('WEBDL', 'WEB-DL') : '';
-  };
-
-  // Format file size for display
-  const formatFileSize = (size: string | undefined): string => {
-    if (!size) return 'Unknown size';
-    
-    // Check if it's already formatted (e.g., "1.5 GB")
-    if (/^\d+(\.\d+)?\s*(KB|MB|GB|TB)/i.test(size)) {
-      return size;
-    }
-    
-    // Try to parse as a number
-    const sizeNum = parseInt(size, 10);
-    if (isNaN(sizeNum)) return size;
-    
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let unitIndex = 0;
-    let formattedSize = sizeNum;
-    
-    while (formattedSize >= 1024 && unitIndex < units.length - 1) {
-      formattedSize /= 1024;
-      unitIndex++;
-    }
-    
-    return `${formattedSize.toFixed(2)} ${units[unitIndex]}`;
-  };
-
-  if (!isOpen) return null;
-
-  // Separate video files from directories
-  const videoFiles = filteredVideoFiles;
-  const directories = files.filter(file => file.isDirectory);
-
-  // Format the current path for display
-  const displayPath = currentPath.replace(BASE_URL, '');
-
-  // Determine which directories to display
-  const directoriesToDisplay = isManualSearch && (currentPath === `${BASE_URL}movies/` || currentPath === `${BASE_URL}tvs/`)
-    ? filteredDirectories
-    : directories.map(dir => dir.name);
-
-  // Determine if we should show the directories section
-  // Hide directories if we have video files and we're not in manual search mode
-  const shouldShowDirectories = !hasVideoFiles || isManualSearch;
-
-  // Determine if we should show the selected episode group at the top
-  const hasSelectedEpisodeGroup = isShow && selectedEpisode && groupedVideoFiles[selectedEpisode]?.length > 0;
-
   return (
     <DriveBrowserUI
       isOpen={isOpen}
       onClose={onClose}
-      title={title}
       isLoading={isLoading}
       error={error}
       files={files}
       currentPath={currentPath}
-      navigationHistory={navigationHistory}
-      historyIndex={historyIndex}
+      showLeftArrow={historyIndex > 0}
+      showRightArrow={historyIndex < navigationHistory.length - 1}
+      searchQuery={searchQuery}
+      showSearchHistory={showSearchHistory}
+      searchHistory={searchHistory}
+      hasVideoFiles={hasVideoFiles}
+      filteredVideoFiles={filteredVideoFiles}
+      filteredDirectories={filteredDirectories}
+      groupedVideoFiles={groupedVideoFiles}
       selectedSeason={selectedSeason}
       selectedEpisode={selectedEpisode}
       showSeasonDropdown={showSeasonDropdown}
       showEpisodeDropdown={showEpisodeDropdown}
-      seasons={seasons}
+      seasonOptions={seasons}
       episodeCount={episodeCount}
-      searchQuery={searchQuery}
       isManualSearch={isManualSearch}
-      searchResults={searchResults}
-      searchHistory={searchHistory}
-      showSearchHistory={showSearchHistory}
-      filteredDirectories={filteredDirectories}
-      filteredVideoFiles={filteredVideoFiles}
-      hasVideoFiles={hasVideoFiles}
-      groupedVideoFiles={groupedVideoFiles}
-      seasonDropdownRef={seasonDropdownRef}
-      episodeDropdownRef={episodeDropdownRef}
-      searchInputRef={searchInputRef}
-      searchHistoryRef={searchHistoryRef}
-      linkInputRef={linkInputRef}
-      navigateBack={navigateBack}
-      navigateForward={navigateForward}
-      navigateHome={navigateHome}
-      refetchDirectory={refetchDirectory}
-      handleManualPathSubmit={handleManualPathSubmit}
-      handleSeasonSelect={handleSeasonSelect}
-      handleEpisodeSelect={handleEpisodeSelect}
-      handleSearchInputChange={handleSearchInputChange}
-      handleSearch={handleSearch}
-      handleSearchHistorySelect={handleSearchHistorySelect}
-      handleFileClick={handleFileClick}
-      handleOutPlayerClick={handleOutPlayerClick}
-      handleDirectorySelect={handleDirectorySelect}
-      openLinkInNewTab={openLinkInNewTab}
-      toggleManualSearch={toggleManualSearch}
-      setShowSeasonDropdown={setShowSeasonDropdown}
-      setShowEpisodeDropdown={setShowEpisodeDropdown}
-      setShowSearchHistory={setShowSearchHistory}
-      setCurrentPath={setCurrentPath}
-      getFileExtension={getFileExtension}
-      getVideoQuality={getVideoQuality}
-      getVideoSource={getVideoSource}
-      formatFileSize={formatFileSize}
-      shouldShowDirectories={shouldShowDirectories}
-      hasSelectedEpisodeGroup={hasSelectedEpisodeGroup}
-      directoriesToDisplay={directoriesToDisplay}
-      videoFiles={videoFiles}
-      directories={directories}
-      displayPath={displayPath}
+      onNavigateBack={navigateBack}
+      onNavigateForward={navigateForward}
+      onNavigateHome={navigateHome}
+      onRefreshDirectory={refetchDirectory}
+      onOpenInNewTab={openLinkInNewTab}
+      onSearchQueryChange={handleSearchInputChange}
+      onSearch={handleSearch}
+      onSearchHistorySelect={handleSearchHistorySelect}
+      onSeasonSelect={handleSeasonSelect}
+      onEpisodeSelect={handleEpisodeSelect}
+      onDirectorySelect={handleDirectorySelect}
+      onFileClick={handleFileClick}
+      onOutPlayerClick={handleOutPlayerClick}
+      onManualPathSubmit={handleManualPathSubmit}
+      onCurrentPathChange={setCurrentPath}
+      onToggleManualSearch={toggleManualSearch}
     />
   );
 };

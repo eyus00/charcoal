@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 // Base URL for the file server
 export const BASE_URL = "https://a.datadiff.us.kg/";
 
@@ -9,12 +11,7 @@ export interface FileItem {
   episodeNumber?: number;
   matchScore?: number;
   size?: string;
-}
-
-export interface SeasonInfo {
-  season_number: number;
-  name: string;
-  episode_count: number;
+  type?: string;
 }
 
 /**
@@ -74,31 +71,7 @@ export const calculateEpisodeMatchScore = (filename: string, episodeNumber: numb
 };
 
 /**
- * Parses file size from HTML content
- */
-export const parseFileSize = (html: string, fileName: string): string | undefined => {
-  // Look for size information in the HTML near the file name
-  const fileNameEscaped = fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const sizeRegex = new RegExp(`${fileNameEscaped}.*?(?:Size|size)\\s*:\\s*([\\d.]+)\\s*(KB|MB|GB|TB)`, 'i');
-  const match = html.match(sizeRegex);
-  
-  if (match && match[1] && match[2]) {
-    return `${match[1]} ${match[2]}`;
-  }
-  
-  // Try a more general approach to find size
-  const generalSizeRegex = new RegExp(`${fileNameEscaped}.*?([\\d.]+)\\s*(KB|MB|GB|TB)`, 'i');
-  const generalMatch = html.match(generalSizeRegex);
-  
-  if (generalMatch && generalMatch[1] && generalMatch[2]) {
-    return `${generalMatch[1]} ${generalMatch[2]}`;
-  }
-  
-  return undefined;
-}
-
-/**
- * Fetches directory contents from the server with pagination
+ * Fetches directory contents from the server
  */
 export async function fetchDirectoryContents(path: string, selectedEpisode?: number, selectedSeason?: number): Promise<FileItem[]> {
   try {
@@ -117,55 +90,44 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
     const doc = parser.parseFromString(html, 'text/html');
     
     // Extract file and directory links
-    const links = doc.querySelectorAll('a');
+    const links = doc.querySelectorAll('tr.file');
     const fileItems: FileItem[] = [];
     
-    // Process links in chunks to avoid blocking the UI
-    const chunkSize = 50;
-    const linksArray = Array.from(links);
-    
-    for (let i = 0; i < linksArray.length; i += chunkSize) {
-      const chunk = linksArray.slice(i, i + chunkSize);
+    links.forEach((row) => {
+      const nameElement = row.querySelector('.name a');
+      const sizeElement = row.querySelector('size');
       
-      // Process each chunk asynchronously
-      await new Promise<void>(resolve => {
-        setTimeout(() => {
-          chunk.forEach((link) => {
-            const href = link.getAttribute('href');
-            if (!href || href === '../' || href === './') return;
-            
-            const name = link.textContent?.trim() || href;
-            const isDirectory = href.endsWith('/');
-            
-            // Check if it's a video file
-            const isVideo = /\.(mkv|mp4|avi|mov|webm)$/i.test(href);
-            
-            // Extract file size from HTML
-            const size = parseFileSize(html, name);
-            
-            const fileItem: FileItem = {
-              name,
-              url: path + href,
-              isVideo,
-              isDirectory,
-              size,
-            };
-            
-            // Extract episode number and calculate match score for video files
-            if (isVideo) {
-              fileItem.episodeNumber = extractEpisodeNumber(name);
-              
-              if (selectedEpisode) {
-                fileItem.matchScore = calculateEpisodeMatchScore(name, selectedEpisode, selectedSeason);
-              }
-            }
-            
-            fileItems.push(fileItem);
-          });
-          resolve();
-        }, 0);
-      });
-    }
+      if (!nameElement) return;
+      
+      const name = nameElement.textContent?.trim() || '';
+      const href = nameElement.getAttribute('href');
+      if (!href || href === '../' || href === './') return;
+      
+      const isDirectory = href.endsWith('/');
+      const isVideo = /\.(mkv|mp4|avi|mov|webm)$/i.test(href);
+      const size = sizeElement ? sizeElement.textContent?.trim() : '';
+      const type = name.split('.').pop()?.toUpperCase() || '';
+      
+      const fileItem: FileItem = {
+        name,
+        url: path + href,
+        isVideo,
+        isDirectory,
+        size,
+        type: isVideo ? type : undefined
+      };
+      
+      // Extract episode number and calculate match score for video files
+      if (isVideo) {
+        fileItem.episodeNumber = extractEpisodeNumber(name);
+        
+        if (selectedEpisode) {
+          fileItem.matchScore = calculateEpisodeMatchScore(name, selectedEpisode, selectedSeason);
+        }
+      }
+      
+      fileItems.push(fileItem);
+    });
     
     // Sort files: directories first, then by match score for the selected episode, then by episode number, then by name
     return fileItems.sort((a, b) => {
@@ -249,4 +211,10 @@ export async function fetchTVShowSeasons(tvId: number): Promise<SeasonInfo[]> {
     console.error("Error fetching TV show seasons:", error);
     return [];
   }
+}
+
+export interface SeasonInfo {
+  season_number: number;
+  name: string;
+  episode_count: number;
 }
