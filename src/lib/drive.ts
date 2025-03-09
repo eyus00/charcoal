@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 // Base URL for the file server
 export const BASE_URL = "https://a.datadiff.us.kg/";
 
@@ -10,7 +8,7 @@ export interface FileItem {
   isDirectory: boolean;
   episodeNumber?: number;
   matchScore?: number;
-  size?: string; // Added size property
+  size?: string;
 }
 
 export interface SeasonInfo {
@@ -100,7 +98,7 @@ export const parseFileSize = (html: string, fileName: string): string | undefine
 }
 
 /**
- * Fetches directory contents from the server
+ * Fetches directory contents from the server with pagination
  */
 export async function fetchDirectoryContents(path: string, selectedEpisode?: number, selectedSeason?: number): Promise<FileItem[]> {
   try {
@@ -122,38 +120,52 @@ export async function fetchDirectoryContents(path: string, selectedEpisode?: num
     const links = doc.querySelectorAll('a');
     const fileItems: FileItem[] = [];
     
-    links.forEach((link) => {
-      const href = link.getAttribute('href');
-      if (!href || href === '../' || href === './') return;
+    // Process links in chunks to avoid blocking the UI
+    const chunkSize = 50;
+    const linksArray = Array.from(links);
+    
+    for (let i = 0; i < linksArray.length; i += chunkSize) {
+      const chunk = linksArray.slice(i, i + chunkSize);
       
-      const name = link.textContent?.trim() || href;
-      const isDirectory = href.endsWith('/');
-      
-      // Check if it's a video file
-      const isVideo = /\.(mkv|mp4|avi|mov|webm)$/i.test(href);
-      
-      // Extract file size from HTML
-      const size = parseFileSize(html, name);
-      
-      const fileItem: FileItem = {
-        name,
-        url: path + href,
-        isVideo,
-        isDirectory,
-        size,
-      };
-      
-      // Extract episode number and calculate match score for video files
-      if (isVideo) {
-        fileItem.episodeNumber = extractEpisodeNumber(name);
-        
-        if (selectedEpisode) {
-          fileItem.matchScore = calculateEpisodeMatchScore(name, selectedEpisode, selectedSeason);
-        }
-      }
-      
-      fileItems.push(fileItem);
-    });
+      // Process each chunk asynchronously
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          chunk.forEach((link) => {
+            const href = link.getAttribute('href');
+            if (!href || href === '../' || href === './') return;
+            
+            const name = link.textContent?.trim() || href;
+            const isDirectory = href.endsWith('/');
+            
+            // Check if it's a video file
+            const isVideo = /\.(mkv|mp4|avi|mov|webm)$/i.test(href);
+            
+            // Extract file size from HTML
+            const size = parseFileSize(html, name);
+            
+            const fileItem: FileItem = {
+              name,
+              url: path + href,
+              isVideo,
+              isDirectory,
+              size,
+            };
+            
+            // Extract episode number and calculate match score for video files
+            if (isVideo) {
+              fileItem.episodeNumber = extractEpisodeNumber(name);
+              
+              if (selectedEpisode) {
+                fileItem.matchScore = calculateEpisodeMatchScore(name, selectedEpisode, selectedSeason);
+              }
+            }
+            
+            fileItems.push(fileItem);
+          });
+          resolve();
+        }, 0);
+      });
+    }
     
     // Sort files: directories first, then by match score for the selected episode, then by episode number, then by name
     return fileItems.sort((a, b) => {
