@@ -116,10 +116,8 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
         className="relative overflow-x-auto scrollbar-thin"
         onMouseDown={startDrag}
         onMouseUp={endDrag}
+        onMouseLeave={endDrag}
         onMouseMove={dragMove}
-        style={{
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }}
       >
         <div className="flex gap-6">
           {items.map((media) => {
@@ -132,14 +130,14 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
               <div key={media.id} className="w-[300px] flex-shrink-0">
                 <Link
                   to={`/${isMovie ? 'movie' : 'tv'}/${media.id}`}
-                  className="block group"
+                  className="block"
                 >
-                  <div className="relative border border-border-light dark:border-border-dark overflow-hidden transition-all hover:border-gray-400 dark:hover:border-gray-600">
+                  <div className="relative border-2 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors overflow-hidden">
                     <div className="aspect-video">
                       <img
                         src={getImageUrl(media.backdrop_path, 'w780')}
                         alt={title}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />

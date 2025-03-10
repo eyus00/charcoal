@@ -86,10 +86,8 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
   };
 
   const onDrag = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || !containerRef.current) return;
     e.preventDefault();
-    
-    if (!containerRef.current) return;
     
     const x = e.pageX - containerRef.current.offsetLeft;
     const dragDistance = (x - startX);
@@ -131,10 +129,11 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
               key={item.id}
               to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
               className={cn(
-                "absolute inset-0 transition-all duration-1000 ease-in-out",
+                "absolute inset-0 transition-opacity duration-500",
+                "border-2 border-transparent hover:border-red-600 dark:hover:border-red-500",
                 index === currentSlide 
-                  ? "opacity-100 scale-100 pointer-events-auto" 
-                  : "opacity-0 scale-105 pointer-events-none"
+                  ? "opacity-100 pointer-events-auto" 
+                  : "opacity-0 pointer-events-none"
               )}
               onClick={(e) => {
                 if (isDragging) {
@@ -146,16 +145,14 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                 <img
                   src={getImageUrl(item.backdrop_path)}
                   alt={title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-cover"
                   draggable={false}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                 <div 
                   className={cn(
-                    "absolute bottom-0 left-0 right-0 p-4 md:p-6 transition-all duration-1000 ease-in-out",
-                    index === currentSlide 
-                      ? "translate-y-0 opacity-100" 
-                      : "translate-y-4 opacity-0"
+                    "absolute bottom-0 left-0 right-0 p-4 md:p-6",
+                    index === currentSlide ? "opacity-100" : "opacity-0"
                   )}
                 >
                   <div className="max-w-2xl">

@@ -36,12 +36,14 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
                 <span className="font-bold text-2xl text-light-text-secondary/60 dark:text-dark-text-secondary/80 w-8 flex-shrink-0">
                   {(index + 1).toString().padStart(2, '0')}
                 </span>
-                <div className="relative aspect-[2/3] w-16 flex-shrink-0 border border-border-light dark:border-border-dark group-hover:border-gray-400 dark:group-hover:border-gray-600 transition-colors">
-                  <img
-                    src={getImageUrl(media.poster_path, 'w185')}
-                    alt={title}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="flex-shrink-0 border-2 border-transparent group-hover:border-red-600 dark:group-hover:border-red-500 transition-colors">
+                  <div className="relative aspect-[2/3] w-16">
+                    <img
+                      src={getImageUrl(media.poster_path, 'w185')}
+                      alt={title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   {isMovie ? (

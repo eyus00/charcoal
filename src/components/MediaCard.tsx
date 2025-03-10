@@ -17,8 +17,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ media, type }) => {
   const displayYear = !isNaN(year as number) ? year : '';
 
   return (
-    <Link to={`/${type}/${media.id}`} className="group">
-      <div className="relative overflow-hidden border border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600 transition-colors">
+    <Link to={`/${type}/${media.id}`} className="block group">
+      <div className="relative overflow-hidden border-2 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors">
         <div className="aspect-[2/3]">
           <img
             src={getImageUrl(media.poster_path, 'w500')}
