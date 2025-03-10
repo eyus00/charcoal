@@ -16,9 +16,6 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
 
   return (
     <div className="border border-border-light dark:border-border-dark h-full flex flex-col bg-light-bg dark:bg-dark-bg">
-      <h3 className="px-4 py-3 border-b border-border-light dark:border-border-dark font-semibold flex-shrink-0">
-        Trending This Month
-      </h3>
       <div className="overflow-y-auto scrollbar-thin h-[400px]">
         <div className="divide-y divide-border-light dark:divide-border-dark">
           {items.map((media, index) => {

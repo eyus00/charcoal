@@ -199,16 +199,16 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
         >
           <ArrowLeft />
         </button>
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 md:gap-1">
           {items.map((_, index) => (
             <button
               key={index}
               onClick={(e) => { e.preventDefault(); onSlideSelect(index); }}
               className={cn(
-                "h-1 transition-all duration-300",
+                "h-0.5 md:h-1 transition-all duration-300",
                 currentSlide === index 
-                  ? "bg-white w-4" 
-                  : "bg-white/50 w-1 hover:bg-white/75"
+                  ? "bg-white w-3 md:w-4" 
+                  : "bg-white/50 w-0.5 md:w-1 hover:bg-white/75"
               )}
             />
           ))}
@@ -224,4 +224,4 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
   );
 };
 
-export default FeaturedSlider
+export default FeaturedSlider;

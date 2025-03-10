@@ -52,6 +52,7 @@ const Home = () => {
         </div>
 
         <div className="col-span-12 lg:col-span-4">
+          <h3 className="text-xl font-semibold mb-4">Trending This Month</h3>
           <TrendingMonth items={trendingMonth} genres={genres} />
         </div>
       </div>
