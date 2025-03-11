@@ -10,7 +10,7 @@ import MovieDetails from './pages/MovieDetails';
 import TVDetails from './pages/TVDetails';
 import WatchPage from './pages/WatchPage';
 import Profile from './pages/Profile';
-import ScrollToTop from './components/ScrollToTop';
+import ScrollHandle from './components/ScrollHandle';
 import { useStore } from './store/useStore';
 
 const queryClient = new QueryClient();
@@ -41,10 +41,10 @@ function App() {
           </Route>
           <Route path="/watch/:mediaType/:id" element={<WatchPage />} />
         </Routes>
-        <ScrollToTop />
+        <ScrollHandle />
       </Router>
     </QueryClientProvider>
   );
 }
 
-export default App;
+export default App
