@@ -109,7 +109,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative border border-border-light dark:border-border-dark group select-none"
+      className="relative border border-border-light dark:border-border-dark shadow-lg group select-none h-[calc(100vh-13rem)] md:h-[500px] bg-light-bg dark:bg-dark-bg"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -118,22 +118,26 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
       onMouseLeave={stopDrag}
       onMouseMove={onDrag}
     >
-      <div className="relative aspect-[16/9] overflow-hidden">
+      <div className="relative h-full overflow-hidden">
         {items.map((item, index) => {
           const isMovie = 'title' in item;
           const title = isMovie ? item.title : item.name;
           const releaseDate = isMovie ? item.release_date : item.first_air_date;
+          const year = new Date(releaseDate).getFullYear();
 
           return (
             <Link
               key={item.id}
               to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
               className={cn(
-                "absolute inset-0 transition-opacity duration-500",
-                "border-2 border-transparent hover:border-red-600 dark:hover:border-red-500",
+                "absolute inset-0 transition-all duration-500 ease-out transform",
+                "border-4 border-transparent hover:border-red-600 dark:hover:border-red-500",
                 index === currentSlide 
-                  ? "opacity-100 pointer-events-auto" 
-                  : "opacity-0 pointer-events-none"
+                  ? "opacity-100 translate-x-0 scale-100" 
+                  : index < currentSlide
+                    ? "opacity-0 -translate-x-full scale-95"
+                    : "opacity-0 translate-x-full scale-95",
+                "hover:scale-[1.01] transition-all duration-300 ease-out"
               )}
               onClick={(e) => {
                 if (isDragging) {
@@ -151,33 +155,35 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                 <div 
                   className={cn(
-                    "absolute bottom-0 left-0 right-0 p-4 md:p-6",
-                    index === currentSlide ? "opacity-100" : "opacity-0"
+                    "absolute bottom-0 left-0 right-0 p-6 md:p-8",
+                    "transform transition-all duration-500 ease-out",
+                    index === currentSlide 
+                      ? "translate-y-0 opacity-100" 
+                      : "translate-y-8 opacity-0"
                   )}
                 >
                   <div className="max-w-2xl">
                     {isMovie ? (
-                      <Film className="w-5 h-5 text-white mb-2" />
+                      <Film className="w-5 h-5 text-white mb-3" />
                     ) : (
-                      <Tv className="w-5 h-5 text-white mb-2" />
+                      <Tv className="w-5 h-5 text-white mb-3" />
                     )}
-                    <h2 className="text-xl md:text-3xl font-bold text-white mb-2">{title}</h2>
+                    <h2 className="text-2xl md:text-4xl font-bold text-white mb-3">{title}</h2>
                     
-                    {/* Hide description on mobile */}
-                    <p className="text-gray-200 text-sm md:text-base mb-3 line-clamp-2 md:line-clamp-3 hidden md:block">
+                    <p className="text-gray-200 text-sm md:text-base mb-4 line-clamp-2 md:line-clamp-3 hidden md:block">
                       {item.overview}
                     </p>
                     
-                    <div className="flex items-center gap-4 mb-3">
+                    <div className="flex items-center gap-4 mb-4">
                       <div className="flex items-center">
                         <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
-                        <span className="text-white ml-1 text-sm md:text-lg">{item.vote_average.toFixed(1)}</span>
+                        <span className="text-white ml-1 text-sm md:text-lg font-medium">{item.vote_average.toFixed(1)}</span>
                       </div>
-                      <span className="text-white text-sm md:text-lg">{new Date(releaseDate).getFullYear()}</span>
+                      <span className="text-white text-sm md:text-lg">{year}</span>
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                      {item.genre_ids.slice(0, 2).map((genreId) => (
+                      {item.genre_ids.slice(0, 3).map((genreId) => (
                         <span key={genreId} className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white">
                           {getGenreName(genreId)}
                         </span>
@@ -191,31 +197,31 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
         })}
       </div>
 
-      {/* Navigation - Hidden on mobile */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+      {/* Navigation */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
         <button 
           onClick={(e) => { e.preventDefault(); onPrevSlide(); }} 
-          className="opacity-0 group-hover:opacity-100 transition duration-300 p-1 hidden md:block"
+          className="opacity-0 group-hover:opacity-100 transition duration-300 p-2 hidden md:block"
         >
           <ArrowLeft />
         </button>
-        <div className="flex gap-0.5 md:gap-1">
+        <div className="flex gap-1">
           {items.map((_, index) => (
             <button
               key={index}
               onClick={(e) => { e.preventDefault(); onSlideSelect(index); }}
               className={cn(
-                "h-0.5 md:h-1 transition-all duration-300",
+                "h-1 transition-all duration-300 rounded-full",
                 currentSlide === index 
-                  ? "bg-white w-3 md:w-4" 
-                  : "bg-white/50 w-0.5 md:w-1 hover:bg-white/75"
+                  ? "bg-white w-6" 
+                  : "bg-white/50 w-1.5 hover:bg-white/75"
               )}
             />
           ))}
         </div>
         <button 
           onClick={(e) => { e.preventDefault(); onNextSlide(); }} 
-          className="opacity-0 group-hover:opacity-100 transition duration-300 p-1 hidden md:block"
+          className="opacity-0 group-hover:opacity-100 transition duration-300 p-2 hidden md:block"
         >
           <ArrowRight />
         </button>

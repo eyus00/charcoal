@@ -4,8 +4,8 @@ import { useStore } from '../store/useStore';
 import { useMedia } from '../api/hooks/useMedia';
 import { genreService } from '../api/services/genres';
 import FeaturedSlider from '../components/home/FeaturedSlider';
-import TrendingMonth from '../components/home/TrendingMonth';
 import TrendingWeek from '../components/home/TrendingWeek';
+import TrendingMonth from '../components/home/TrendingMonth';
 
 const Home = () => {
   const [currentSlide, setCurrentSlide] = React.useState(0);
@@ -13,8 +13,8 @@ const Home = () => {
   // Use separate queries for movies and TV shows
   const { data: trendingMovies } = useMedia.useTrending('movie', 'day');
   const { data: trendingTVShows } = useMedia.useTrending('tv', 'day');
-  const { data: trendingWeek } = useMedia.useCombinedTrending('week', 7);
-  const { data: trendingMonth } = useMedia.useCombinedTrending('week', 10);
+  const { data: trendingWeek } = useMedia.useCombinedTrending('week', 10);
+  const { data: trendingMonth } = useMedia.useCombinedTrending('week', 7);
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
@@ -52,15 +52,14 @@ const Home = () => {
         </div>
 
         <div className="col-span-12 lg:col-span-4">
-          <h3 className="text-xl font-semibold mb-4">Trending This Month</h3>
-          <TrendingMonth items={trendingMonth} genres={genres} />
+          <h3 className="text-xl font-semibold mb-4">Trending This Week</h3>
+          <TrendingWeek items={trendingWeek} genres={genres} />
         </div>
       </div>
 
-      <TrendingWeek
-        items={trendingWeek}
-        genres={genres}
-      />
+      <div>
+        <TrendingMonth items={trendingMonth} genres={genres} />
+      </div>
     </div>
   );
 };
