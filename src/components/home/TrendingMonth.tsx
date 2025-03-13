@@ -69,6 +69,7 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
                         alt={title}
                         className="w-full h-full object-cover"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent shadow-[inset_0_-2rem_2rem_rgba(0,0,0,0.5)]" />
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       {isMovie ? <Film className="w-4 h-4 text-white mb-1" /> : <Tv className="w-4 h-4 text-white mb-1" />}

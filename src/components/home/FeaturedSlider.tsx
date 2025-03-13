@@ -14,18 +14,6 @@ interface FeaturedSliderProps {
   genres: Genre[];
 }
 
-const ArrowLeft = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter">
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
-);
-
-const ArrowRight = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter">
-    <path d="M9 6l6 6-6 6" />
-  </svg>
-);
-
 const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
   items,
   currentSlide,
@@ -40,15 +28,28 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+  const [showControls, setShowControls] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      onNextSlide();
+      if (!isHovering) {
+        onNextSlide();
+      }
     }, 6000);
     return () => clearInterval(timer);
-  }, [onNextSlide]);
+  }, [onNextSlide, isHovering]);
 
-  // Touch handlers for mobile
+  useEffect(() => {
+    setShowControls(true);
+    const timer = setTimeout(() => {
+      if (!isHovering) {
+        setShowControls(false);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [currentSlide, isHovering]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -74,7 +75,6 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
     setTouchEnd(null);
   };
 
-  // Mouse drag handlers for desktop
   const startDrag = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartX(e.pageX - (containerRef.current?.offsetLeft || 0));
@@ -117,8 +117,17 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
       onMouseUp={stopDrag}
       onMouseLeave={stopDrag}
       onMouseMove={onDrag}
+      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      onMouseEnter={() => {
+        setIsHovering(true);
+        setShowControls(true);
+      }}
+      onMouseLeave={() => {
+        setIsHovering(false);
+        setShowControls(false);
+      }}
     >
-      <div className="relative h-full overflow-hidden">
+      <div className="relative h-full">
         {items.map((item, index) => {
           const isMovie = 'title' in item;
           const title = isMovie ? item.title : item.name;
@@ -130,14 +139,13 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
               key={item.id}
               to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
               className={cn(
-                "absolute inset-0 transition-all duration-500 ease-out transform",
-                "border-4 border-transparent hover:border-red-600 dark:hover:border-red-500",
+                "absolute inset-0 transition-all duration-500 ease-in-out transform",
+                "hover:scale-[1.02] hover:z-20",
                 index === currentSlide 
-                  ? "opacity-100 translate-x-0 scale-100" 
+                  ? "opacity-100 translate-x-0 z-10" 
                   : index < currentSlide
-                    ? "opacity-0 -translate-x-full scale-95"
-                    : "opacity-0 translate-x-full scale-95",
-                "hover:scale-[1.01] transition-all duration-300 ease-out"
+                    ? "opacity-0 -translate-x-full z-0"
+                    : "opacity-0 translate-x-full z-0"
               )}
               onClick={(e) => {
                 if (isDragging) {
@@ -145,7 +153,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                 }
               }}
             >
-              <div className="relative h-full">
+              <div className="relative h-full border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors">
                 <img
                   src={getImageUrl(item.backdrop_path)}
                   alt={title}
@@ -155,26 +163,26 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                 <div 
                   className={cn(
-                    "absolute bottom-0 left-0 right-0 p-6 md:p-8",
+                    "absolute bottom-0 left-0 right-0 p-4 md:p-8",
                     "transform transition-all duration-500 ease-out",
                     index === currentSlide 
                       ? "translate-y-0 opacity-100" 
-                      : "translate-y-8 opacity-0"
+                      : "translate-y-4 opacity-0"
                   )}
                 >
                   <div className="max-w-2xl">
                     {isMovie ? (
-                      <Film className="w-5 h-5 text-white mb-3" />
+                      <Film className="w-5 h-5 text-white mb-2" />
                     ) : (
-                      <Tv className="w-5 h-5 text-white mb-3" />
+                      <Tv className="w-5 h-5 text-white mb-2" />
                     )}
-                    <h2 className="text-2xl md:text-4xl font-bold text-white mb-3">{title}</h2>
+                    <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 md:mb-3">{title}</h2>
                     
-                    <p className="text-gray-200 text-sm md:text-base mb-4 line-clamp-2 md:line-clamp-3 hidden md:block">
+                    <p className="text-gray-200 text-base md:text-lg mb-4 line-clamp-2 hidden lg:block">
                       {item.overview}
                     </p>
                     
-                    <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-4 mb-2 md:mb-4">
                       <div className="flex items-center">
                         <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
                         <span className="text-white ml-1 text-sm md:text-lg font-medium">{item.vote_average.toFixed(1)}</span>
@@ -189,42 +197,27 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                         </span>
                       ))}
                     </div>
+
+                    <div className="flex items-center gap-2 mt-6">
+                      {items.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => { e.preventDefault(); onSlideSelect(index); }}
+                          className={cn(
+                            "w-2 h-2 rounded-full transition-all duration-500",
+                            currentSlide === index 
+                              ? "bg-white w-6" 
+                              : "bg-white/50 hover:bg-white/75"
+                          )}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </Link>
           );
         })}
-      </div>
-
-      {/* Navigation */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-        <button 
-          onClick={(e) => { e.preventDefault(); onPrevSlide(); }} 
-          className="opacity-0 group-hover:opacity-100 transition duration-300 p-2 hidden md:block"
-        >
-          <ArrowLeft />
-        </button>
-        <div className="flex gap-1">
-          {items.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => { e.preventDefault(); onSlideSelect(index); }}
-              className={cn(
-                "h-1 transition-all duration-300 rounded-full",
-                currentSlide === index 
-                  ? "bg-white w-6" 
-                  : "bg-white/50 w-1.5 hover:bg-white/75"
-              )}
-            />
-          ))}
-        </div>
-        <button 
-          onClick={(e) => { e.preventDefault(); onNextSlide(); }} 
-          className="opacity-0 group-hover:opacity-100 transition duration-300 p-2 hidden md:block"
-        >
-          <ArrowRight />
-        </button>
       </div>
     </div>
   );

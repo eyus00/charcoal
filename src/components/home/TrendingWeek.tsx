@@ -27,7 +27,7 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
               <Link
                 key={media.id}
                 to={`/${isMovie ? 'movie' : 'tv'}/${media.id}`}
-                className="flex gap-3 items-center border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors hover:scale-105 transition-transform group p-2"
+                className="flex gap-3 items-center border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors hover:scale-[1.02] transition-transform group p-2 mx-2"
               >
                 <span className="text-5xl font-extrabold text-dark-text-secondary dark:text-light-text-secondary drop-shadow-md">
                   {(index + 1).toString().padStart(2, '0')}
