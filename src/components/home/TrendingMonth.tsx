@@ -57,10 +57,10 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
             const isMovie = 'title' in media;
             const title = isMovie ? media.title : media.name;
             const releaseDate = isMovie ? media.release_date : media.first_air_date;
-            const year = new Date(releaseDate).getFullYear();
+            const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
 
             return (
-              <div key={media.id} className="w-[350px] flex-shrink-0 shadow-lg border border-border-light dark:border-border-dark hover:scale-105 transition-transform">
+              <div key={media.id} className="w-[350px] flex-shrink-0">
                 <Link to={`/${isMovie ? 'movie' : 'tv'}/${media.id}`} className="block group">
                   <div className="relative border-4 border-transparent group-hover:border-red-600 dark:group-hover:border-red-500 transition-all duration-200 transform overflow-visible">
                     <div className="aspect-video relative">
@@ -71,7 +71,7 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent shadow-[inset_0_-2rem_2rem_rgba(0,0,0,0.5)]" />
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
                       {isMovie ? <Film className="w-4 h-4 text-white mb-1" /> : <Tv className="w-4 h-4 text-white mb-1" />}
                       <h4 className="text-white font-medium text-lg mb-2">{title}</h4>
 

@@ -13,7 +13,7 @@ const Home = () => {
   // Use separate queries for movies and TV shows
   const { data: trendingMovies } = useMedia.useTrending('movie', 'day');
   const { data: trendingTVShows } = useMedia.useTrending('tv', 'day');
-  const { data: trendingWeek } = useMedia.useCombinedTrending('week', 10);
+  const { data: trendingWeek } = useMedia.useCombinedTrending('week', 7);
   const { data: trendingMonth } = useMedia.useCombinedTrending('week', 7);
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
@@ -37,26 +37,32 @@ const Home = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8">
+    <div className="space-y-8">
+      {/* Featured Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 h-[calc(100vh-13rem)] lg:h-[600px]">
           <h3 className="text-xl font-semibold mb-4">Trending Today</h3>
-          <FeaturedSlider
-            items={trendingToday}
-            currentSlide={currentSlide}
-            onPrevSlide={() => setCurrentSlide((prev) => (prev - 1 + trendingToday.length) % trendingToday.length)}
-            onNextSlide={() => setCurrentSlide((prev) => (prev + 1) % trendingToday.length)}
-            onSlideSelect={setCurrentSlide}
-            genres={genres}
-          />
+          <div className="h-full">
+            <FeaturedSlider
+              items={trendingToday}
+              currentSlide={currentSlide}
+              onPrevSlide={() => setCurrentSlide((prev) => (prev - 1 + trendingToday.length) % trendingToday.length)}
+              onNextSlide={() => setCurrentSlide((prev) => (prev + 1) % trendingToday.length)}
+              onSlideSelect={setCurrentSlide}
+              genres={genres}
+            />
+          </div>
         </div>
 
-        <div className="col-span-12 lg:col-span-4">
+        <div className="lg:col-span-4 h-[calc(100vh-13rem)] lg:h-[600px]">
           <h3 className="text-xl font-semibold mb-4">Trending This Week</h3>
-          <TrendingWeek items={trendingWeek} genres={genres} />
+          <div className="h-full">
+            <TrendingWeek items={trendingWeek} genres={genres} />
+          </div>
         </div>
       </div>
 
+      {/* Trending Month Section */}
       <div>
         <TrendingMonth items={trendingMonth} genres={genres} />
       </div>

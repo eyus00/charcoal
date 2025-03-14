@@ -109,7 +109,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative border border-border-light dark:border-border-dark shadow-lg group select-none h-[calc(100vh-13rem)] md:h-[500px] bg-light-bg dark:bg-dark-bg"
+      className="relative h-full bg-light-bg dark:bg-dark-bg overflow-hidden border border-border-light dark:border-border-dark shadow-lg group select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -139,13 +139,12 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
               key={item.id}
               to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
               className={cn(
-                "absolute inset-0 transition-all duration-500 ease-in-out transform",
-                "hover:scale-[1.02] hover:z-20",
+                "absolute inset-0 transition-all duration-500 ease-in-out transform z-0 overflow-visible",
                 index === currentSlide 
                   ? "opacity-100 translate-x-0 z-10" 
                   : index < currentSlide
-                    ? "opacity-0 -translate-x-full z-0"
-                    : "opacity-0 translate-x-full z-0"
+                    ? "opacity-0 -translate-x-full"
+                    : "opacity-0 translate-x-full"
               )}
               onClick={(e) => {
                 if (isDragging) {
@@ -153,14 +152,16 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                 }
               }}
             >
-              <div className="relative h-full border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors">
-                <img
-                  src={getImageUrl(item.backdrop_path)}
-                  alt={title}
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+              <div className="relative h-full border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors overflow-visible">
+                <div className="absolute inset-0 scale-[1.02] transition-transform duration-300 group-hover:scale-[1.04] origin-center">
+                  <img
+                    src={getImageUrl(item.backdrop_path)}
+                    alt={title}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                </div>
                 <div 
                   className={cn(
                     "absolute bottom-0 left-0 right-0 p-4 md:p-8",
@@ -192,7 +193,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                     
                     <div className="flex flex-wrap gap-2">
                       {item.genre_ids.slice(0, 3).map((genreId) => (
-                        <span key={genreId} className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white">
+                        <span key={genreId} className="px-3 py-1 bg-white/10 backdrop-blur-sm text-sm text-white">
                           {getGenreName(genreId)}
                         </span>
                       ))}
@@ -204,7 +205,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({
                           key={index}
                           onClick={(e) => { e.preventDefault(); onSlideSelect(index); }}
                           className={cn(
-                            "w-2 h-2 rounded-full transition-all duration-500",
+                            "w-2 h-2 transition-all duration-500",
                             currentSlide === index 
                               ? "bg-white w-6" 
                               : "bg-white/50 hover:bg-white/75"
