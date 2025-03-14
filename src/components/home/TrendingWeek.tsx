@@ -16,7 +16,7 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
   return (
     <div className="border border-border-light dark:border-border-dark h-[calc(100vh-13rem)] md:h-[500px] bg-light-bg dark:bg-dark-bg">
       <div className="overflow-y-auto scrollbar-thin h-full">
-        <div className="flex flex-col gap-4 p-3">
+        <div className="grid grid-cols-1 gap-4 p-3">
           {items.map((media, index) => {
             const isMovie = 'title' in media;
             const title = isMovie ? media.title : media.name;
@@ -27,13 +27,10 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
               <Link
                 key={media.id}
                 to={`/${isMovie ? 'movie' : 'tv'}/${media.id}`}
-                className="flex gap-3 items-center border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors hover:scale-[1.02] transition-transform group p-2 mx-2"
+                className="relative flex flex-col md:flex-row items-start md:items-center border-4 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors hover:scale-[1.02] transition-transform group p-2 mx-2 shadow-md"
               >
-                <span className="text-5xl font-extrabold text-dark-text-secondary dark:text-light-text-secondary drop-shadow-md">
-                  {(index + 1).toString().padStart(2, '0')}
-                </span>
-                <div className="flex-shrink-0 border-4 border-border-light dark:border-border-dark shadow-lg">
-                  <div className="relative aspect-[2/3] w-20">
+                <div className="relative flex-shrink-0 border-4 border-border-light dark:border-border-dark shadow-lg">
+                  <div className="relative aspect-[2/3] w-24">
                     <img
                       src={getImageUrl(media.poster_path, 'w185')}
                       alt={title}
@@ -41,7 +38,8 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
                     />
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="w-1 bg-red-600 dark:bg-red-500 mx-3"></div>
+                <div className="flex-1 min-w-0 relative z-10">
                   <div className="flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary mb-1">
                     {isMovie ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
                   </div>
@@ -57,11 +55,14 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
                     {media.genre_ids.slice(0, 2).map((genreId) => (
                       <span
                         key={genreId}
-                        className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface text-light-text-secondary dark:text-dark-text-secondary rounded-full text-xs"
+                        className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface text-light-text-secondary dark:text-dark-text-secondary text-xs rounded-full"
                       >
                         {getGenreName(genreId)}
                       </span>
                     ))}
+                  </div>
+                  <div className="absolute bottom-2 right-4 text-[5rem] md:text-[6rem] font-extrabold text-dark-text-secondary dark:text-light-text-secondary opacity-10">
+                    {(index + 1).toString().padStart(2, '0')}
                   </div>
                 </div>
               </Link>
