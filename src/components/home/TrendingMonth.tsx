@@ -62,7 +62,7 @@ const TrendingMonth: React.FC<TrendingMonthProps> = ({ items, genres }) => {
             return (
               <div key={media.id} className="w-[350px] flex-shrink-0">
                 <Link to={`/${isMovie ? 'movie' : 'tv'}/${media.id}`} className="block group">
-                  <div className="relative border-4 border-transparent group-hover:border-red-600 dark:group-hover:border-red-500 transition-all duration-200 transform overflow-visible">
+                  <div className="relative border-4 border-transparent group-hover:border-red-600 dark:group-hover:border-red-500 transition-all duration-200 transform overflow-hidden">
                     <div className="aspect-video relative">
                       <img
                         src={getImageUrl(media.backdrop_path, 'w780')}

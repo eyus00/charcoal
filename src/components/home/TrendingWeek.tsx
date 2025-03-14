@@ -55,7 +55,7 @@ const TrendingWeek: React.FC<TrendingWeekProps> = ({ items, genres }) => {
                     {media.genre_ids.slice(0, 2).map((genreId) => (
                       <span
                         key={genreId}
-                        className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface text-light-text-secondary dark:text-dark-text-secondary text-xs"
+                        className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface text-light-text-secondary dark:text-dark-text-secondary text-xs rounded-full"
                       >
                         {getGenreName(genreId)}
                       </span>
