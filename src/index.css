@@ -38,3 +38,22 @@
     @apply bg-light-text-secondary dark:bg-dark-text-secondary;
   }
 }
+
+@keyframes highlight {
+  0% {
+    border-color: rgba(220, 38, 38, 0);
+    background-color: transparent;
+  }
+  50% {
+    border-color: rgba(220, 38, 38, 0.5);
+    background-color: rgba(220, 38, 38, 0.1);
+  }
+  100% {
+    border-color: rgba(220, 38, 38, 0);
+    background-color: transparent;
+  }
+}
+
+.highlight-animation {
+  animation: highlight 1s ease-in-out;
+}

@@ -22,7 +22,7 @@ export const mediaService = {
       `/${mediaType}/${id}`,
       {
         params: {
-          append_to_response: 'videos,seasons,similar,recommendations'
+          append_to_response: 'videos,seasons,similar,recommendations,images'
         }
       }
     );
@@ -58,5 +58,12 @@ export const mediaService = {
       { params: { page } }
     );
     return data.results;
+  },
+
+  getImages: async (mediaType: MediaType, id: number) => {
+    const { data } = await tmdbClient.get(
+      `/${mediaType}/${id}/images`
+    );
+    return data;
   }
 };
