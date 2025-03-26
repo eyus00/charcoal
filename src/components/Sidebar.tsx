@@ -60,6 +60,7 @@ const Sidebar = () => {
     <aside
       className={cn(
         'fixed left-0 top-14 bottom-0 w-56 bg-light-bg dark:bg-dark-bg border-r border-border-light dark:border-border-dark transition-transform duration-200 hidden md:block overflow-y-auto',
+        'z-40', // Add higher z-index to ensure sidebar stays on top
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >

@@ -77,9 +77,10 @@ const Layout = () => {
       {/* Main Content */}
       <main
         className={cn(
-          "min-h-screen pt-20 pb-24 md:pb-8 transition-all duration-200",
+          "min-h-screen pt-20 pb-24 md:pb-8 transition-all duration-200 relative",
           sidebarOpen ? "md:ml-56" : "md:ml-0"
         )}
+        style={{ zIndex: 0 }} // Ensure main content has lower z-index
       >
         <div className="px-4 md:px-8">
           <Outlet />
