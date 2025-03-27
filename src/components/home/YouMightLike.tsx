@@ -1,12 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Play, Plus } from 'lucide-react';
 import { Movie, TVShow } from '../../api/types';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { genreService } from '../../api/services/genres';
 import { mediaService } from '../../api/services/media';
+import WatchlistMenu from '../WatchlistMenu';
+import { useStore, WatchStatus } from '../../store/useStore';
 
 interface YouMightLikeProps {
   items: (Movie | TVShow)[];
@@ -14,12 +16,40 @@ interface YouMightLikeProps {
 
 const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { addToWatchlist, removeFromWatchlist, getWatchlistItem } = useStore();
+  const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   // Fetch genres
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
+
+  // Check scroll position
+  const checkScrollPosition = () => {
+    if (!containerRef.current) return;
+    
+    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScrollPosition);
+      // Initial check
+      checkScrollPosition();
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', checkScrollPosition);
+      }
+    };
+  }, [items]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
@@ -41,21 +71,29 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white/20 dark:bg-white/5 backdrop-blur-md border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
-      <div className="p-4 border-b-2 border-gray-400/50 dark:border-white/20 flex items-center justify-between">
+    <div className="h-full flex flex-col bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+      <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
         <h2 className="text-xl font-semibold">You Might Like</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={() => scroll('left')}
-            className="p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors"
+            className={cn(
+              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              !canScrollLeft && "opacity-50 cursor-not-allowed"
+            )}
+            disabled={!canScrollLeft}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => scroll('right')}
-            className="p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors"
+            className={cn(
+              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              !canScrollRight && "opacity-50 cursor-not-allowed"
+            )}
+            disabled={!canScrollRight}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -72,6 +110,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
               const title = isMovie ? item.title : item.name;
               const releaseDate = isMovie ? item.release_date : item.first_air_date;
               const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
+              const watchlistItem = getWatchlistItem(item.id, isMovie ? 'movie' : 'tv');
 
               // Query for images
               const { data: images } = useQuery({
@@ -84,13 +123,32 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                 logo.iso_639_1 === 'en' || !logo.iso_639_1
               );
 
+              const handleWatchlistAdd = (status: WatchStatus) => {
+                addToWatchlist({
+                  id: item.id,
+                  mediaType: isMovie ? 'movie' : 'tv',
+                  title,
+                  posterPath: item.poster_path,
+                  addedAt: Date.now(),
+                  status,
+                });
+                setActiveMenu(null);
+              };
+
+              const handleWatchlistRemove = () => {
+                removeFromWatchlist(item.id, isMovie ? 'movie' : 'tv');
+                setActiveMenu(null);
+              };
+
               return (
-                <Link
+                <div
                   key={item.id}
-                  to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
-                  className="flex-shrink-0 w-[350px] group/card"
+                  className="flex-shrink-0 w-[350px] group/card relative"
                 >
-                  <div className="relative border border-gray-400/50 dark:border-white/20 rounded-xl overflow-hidden hover:border-red-500/50 transition-all duration-200">
+                  <Link
+                    to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
+                    className="relative border border-border-light dark:border-border-dark rounded-lg overflow-hidden hover:border-red-500/50 transition-all duration-200 block"
+                  >
                     <div className="aspect-video relative">
                       <img
                         src={getImageUrl(item.backdrop_path, 'w780')}
@@ -117,8 +175,44 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                             </span>
                           ))}
                         </div>
+
+                        {/* Action Buttons */}
+                        <div className="absolute bottom-4 right-4 flex items-center gap-2 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity z-20" onClick={e => e.preventDefault()}>
+                          <Link
+                            to={`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`}
+                            className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors"
+                          >
+                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                          </Link>
+
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveMenu(activeMenu === item.id ? null : item.id);
+                              }}
+                              className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                                watchlistItem
+                                  ? "bg-red-600 hover:bg-red-700"
+                                  : "bg-white/20 hover:bg-white/30"
+                              )}
+                            >
+                              <Plus className="w-4 h-4 text-white" />
+                            </button>
+
+                            <WatchlistMenu
+                              isOpen={activeMenu === item.id}
+                              onClose={() => setActiveMenu(null)}
+                              onAdd={handleWatchlistAdd}
+                              onRemove={handleWatchlistRemove}
+                              currentStatus={watchlistItem?.status}
+                              position="top-right"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      
+
                       {/* Logo Watermark */}
                       {logo && (
                         <img
@@ -128,8 +222,8 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                         />
                       )}
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               );
             })}
           </div>

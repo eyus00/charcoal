@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Play, Plus, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { Movie, TVShow } from '../../api/types';
 import { getImageUrl } from '../../api/config';
@@ -15,9 +15,11 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
+  const watchlistButtonRef = useRef<HTMLDivElement>(null);
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem } = useStore();
 
   // Fetch genres
@@ -35,20 +37,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      handleNext();
+      handleNavigation();
     }, 6000);
 
     return () => clearInterval(interval);
   }, [currentIndex]);
 
-  const handlePrev = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1));
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  const handleNext = () => {
+  const handleNavigation = () => {
     if (isAnimating) return;
     setIsAnimating(true);
     setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
@@ -81,6 +76,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
     setIsWatchlistOpen(false);
   };
 
+  const handleContentClick = () => {
+    navigate(`/${isMovie ? 'movie' : 'tv'}/${currentItem.id}`);
+  };
+
   // Get genre names instead of IDs
   const getGenreNames = (genreIds: number[]) => {
     return genreIds.map(id => genres.find(g => g.id === id)?.name).filter(Boolean);
@@ -100,7 +99,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
           alt={title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/60 to-black" />
       </div>
 
       {/* Logo Watermark */}
@@ -115,7 +114,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
       )}
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end p-4 md:p-8">
+      <div 
+        className="absolute inset-0 flex flex-col justify-end p-4 md:p-8 cursor-pointer"
+        onClick={handleContentClick}
+      >
         <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 md:mb-4">{title}</h2>
 
         <div className="flex items-center gap-4 mb-2 md:mb-3">
@@ -135,7 +137,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
           <Link
             to={`/watch/${isMovie ? 'movie' : 'tv'}/${currentItem.id}`}
             className="w-10 h-10 md:w-12 md:h-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors"
@@ -143,46 +145,49 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
             <Play className="w-5 h-5 md:w-6 md:h-6 text-white fill-white ml-1" />
           </Link>
 
-          <button
-            onClick={() => setIsWatchlistOpen(true)}
-            className="w-10 h-10 md:w-12 md:h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors relative"
-          >
-            <Plus className="w-5 h-5 md:w-6 md:h-6 text-white" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
+              className="w-10 h-10 md:w-12 md:h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
+            >
+              <Plus className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            </button>
 
-          <WatchlistMenu
-            isOpen={isWatchlistOpen}
-            onClose={() => setIsWatchlistOpen(false)}
-            onAdd={handleWatchlistAdd}
-            onRemove={handleWatchlistRemove}
-            currentStatus={watchlistItem?.status}
-          />
+            <WatchlistMenu
+              isOpen={isWatchlistOpen}
+              onClose={() => setIsWatchlistOpen(false)}
+              onAdd={handleWatchlistAdd}
+              onRemove={handleWatchlistRemove}
+              currentStatus={watchlistItem?.status}
+              position="top-left"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="absolute bottom-8 right-8 flex items-center gap-2">
-        <button
-          onClick={handlePrev}
-          className="p-2 md:p-3 bg-black/60 rounded-full text-white transform transition-all duration-200 hover:bg-black/80"
-        >
-          <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-        </button>
-
-        <button
-          onClick={handleNext}
-          className="p-2 md:p-3 bg-black/60 rounded-full text-white transform transition-all duration-200 hover:bg-black/80"
-        >
-          <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-        </button>
-      </div>
+      {/* Navigation Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleNavigation();
+        }}
+        className="absolute bottom-8 right-8 p-2 bg-black/60 rounded-xl text-white transform transition-all duration-200 hover:bg-black/80 z-20"
+      >
+        <div className="flex items-center gap-1">
+          <ChevronLeft className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5" />
+        </div>
+      </button>
 
       {/* Indicators */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1 z-20">
         {items.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentIndex(index)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIndex(index);
+            }}
             className={cn(
               "w-1.5 h-1.5 rounded-full transition-all",
               index === currentIndex ? "bg-red-600 w-4" : "bg-white/50"
