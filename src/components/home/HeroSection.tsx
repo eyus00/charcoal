@@ -118,15 +118,35 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
         className="absolute inset-0 flex flex-col justify-end p-4 md:p-8 cursor-pointer"
         onClick={handleContentClick}
       >
-        <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 md:mb-4">{title}</h2>
-
-        <div className="flex items-center gap-4 mb-2 md:mb-3">
-          <div className="flex items-center">
-            <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
-            <span className="text-white ml-1 text-sm md:text-lg">{currentItem.vote_average.toFixed(1)}</span>
-          </div>
-          {year && <span className="text-white text-sm md:text-lg">{year}</span>}
+        {/* Navigation Buttons */}
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIndex(prev => (prev === 0 ? items.length - 1 : prev - 1));
+            }}
+            className={cn(
+              "p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors",
+              "backdrop-blur-sm text-white"
+            )}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIndex(prev => (prev === items.length - 1 ? 0 : prev + 1));
+            }}
+            className={cn(
+              "p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors",
+              "backdrop-blur-sm text-white"
+            )}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
+
+        <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 md:mb-4">{title}</h2>
 
         <div className="flex flex-wrap gap-2 mb-4 md:mb-6">
           {getGenreNames(currentItem.genre_ids).slice(0, 3).map((genreName) => (
@@ -134,6 +154,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
               {genreName}
             </span>
           ))}
+        </div>
+
+        <div className="flex items-center gap-4 mb-2 md:mb-3">
+          <div className="flex items-center">
+            <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
+            <span className="text-white ml-1 text-sm md:text-lg">{currentItem.vote_average.toFixed(1)}</span>
+          </div>
+          {year && <span className="text-white text-sm md:text-lg">{year}</span>}
         </div>
 
         {/* Action Buttons */}
@@ -159,25 +187,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
               onAdd={handleWatchlistAdd}
               onRemove={handleWatchlistRemove}
               currentStatus={watchlistItem?.status}
-              position="top-left"
+              position="top-right"
             />
           </div>
         </div>
       </div>
-
-      {/* Navigation Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleNavigation();
-        }}
-        className="absolute bottom-8 right-8 p-2 bg-black/60 rounded-xl text-white transform transition-all duration-200 hover:bg-black/80 z-20"
-      >
-        <div className="flex items-center gap-1">
-          <ChevronLeft className="w-5 h-5" />
-          <ChevronRight className="w-5 h-5" />
-        </div>
-      </button>
 
       {/* Indicators */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1 z-20">

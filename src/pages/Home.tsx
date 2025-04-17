@@ -2,11 +2,10 @@ import React from 'react';
 import { useMedia } from '../api/hooks/useMedia';
 import { useQuery } from '@tanstack/react-query';
 import { genreService } from '../api/services/genres';
-import { cn } from '../lib/utils';
+import { useStore } from '../store/useStore';
 import HeroSection from '../components/home/HeroSection';
 import YouMightLike from '../components/home/YouMightLike';
-import SidePanel from '../components/home/SidePanel';
-import { useStore } from '../store/useStore';
+import ContinueWatchingSection from '../components/home/ContinueWatchingSection';
 
 const Home = () => {
   const { data: trendingMovies } = useMedia.useTrending('movie', 'day');
@@ -16,7 +15,7 @@ const Home = () => {
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
-  const { sidePanelOpen, setSidePanelOpen } = useStore();
+  const { watchHistory } = useStore();
 
   // Combine and process trending items for featured slider
   const featuredItems = React.useMemo(() => {
@@ -41,31 +40,23 @@ const Home = () => {
   }
 
   return (
-    <div className="relative">
-      {/* Main Content */}
-      <div className={cn(
-        "space-y-8 transition-all duration-300",
-        sidePanelOpen ? "mr-[400px]" : "mr-0"
-      )}>
-        {/* Hero Section */}
-        <div className="bg-white/20 dark:bg-white/5 backdrop-blur-md border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
-          <HeroSection items={featuredItems} />
-        </div>
-
-        {/* You Might Like Section */}
-        <div className="bg-white/20 dark:bg-white/5 backdrop-blur-md border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
-          <YouMightLike items={trendingMonth} />
-        </div>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="bg-white/20 dark:bg-white/5 backdrop-blur-md border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
+        <HeroSection items={featuredItems} />
       </div>
 
-      {/* Side Panel */}
-      <SidePanel
-        isOpen={sidePanelOpen}
-        onClose={() => setSidePanelOpen(false)}
-        updates={trendingMonth}
-      />
+      {/* Continue Watching Section */}
+      {watchHistory.length > 0 && (
+        <ContinueWatchingSection items={watchHistory.slice(0, 10)} />
+      )}
+
+      {/* You Might Like Section */}
+      <div className="bg-white/20 dark:bg-white/5 backdrop-blur-md border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
+        <YouMightLike items={trendingMonth} />
+      </div>
     </div>
   );
-};
+}
 
 export default Home;

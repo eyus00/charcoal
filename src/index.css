@@ -54,6 +54,15 @@
   }
 }
 
+@keyframes gradient {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .highlight-animation {
   animation: highlight 1s ease-in-out;
 }

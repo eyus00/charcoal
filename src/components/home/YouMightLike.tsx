@@ -103,6 +103,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
         <div 
           ref={containerRef}
           className="overflow-x-auto scrollbar-thin"
+          style={{ scrollPaddingRight: '1rem' }}
         >
           <div className="flex gap-4">
             {items.map((item) => {
@@ -143,7 +144,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
               return (
                 <div
                   key={item.id}
-                  className="flex-shrink-0 w-[350px] group/card relative"
+                  className="flex-shrink-0 w-[65vw] sm:w-[350px] lg:w-[400px] group/card relative"
                 >
                   <Link
                     to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
@@ -159,6 +160,14 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                       
                       <div className="absolute inset-0 p-4 flex flex-col justify-end">
                         <h3 className="text-white font-medium text-lg mb-2 line-clamp-1">{title}</h3>
+
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {getGenreNames(item.genre_ids).slice(0, 2).map((genreName) => (
+                            <span key={genreName} className="px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full">
+                              {genreName}
+                            </span>
+                          ))}
+                        </div>
                         
                         <div className="flex items-center gap-2 mb-2">
                           <div className="flex items-center">
@@ -168,16 +177,8 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                           {year && <span className="text-sm text-white/80">{year}</span>}
                         </div>
 
-                        <div className="flex flex-wrap gap-1">
-                          {getGenreNames(item.genre_ids).slice(0, 2).map((genreName) => (
-                            <span key={genreName} className="px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full">
-                              {genreName}
-                            </span>
-                          ))}
-                        </div>
-
                         {/* Action Buttons */}
-                        <div className="absolute bottom-4 right-4 flex items-center gap-2 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity z-20" onClick={e => e.preventDefault()}>
+                        <div className="flex items-center gap-2" onClick={e => e.preventDefault()}>
                           <Link
                             to={`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`}
                             className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors"
@@ -207,7 +208,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                               onAdd={handleWatchlistAdd}
                               onRemove={handleWatchlistRemove}
                               currentStatus={watchlistItem?.status}
-                              position="top-right"
+                              position="top-left"
                             />
                           </div>
                         </div>

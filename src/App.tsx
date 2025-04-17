@@ -13,7 +13,18 @@ import Profile from './pages/Profile';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './store/useStore';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // Data remains fresh for 5 minutes
+      cacheTime: 1000 * 60 * 30, // Cache persists for 30 minutes
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      refetchOnMount: false, // Don't refetch when component mounts if data exists
+      retry: 2, // Retry failed requests twice
+      keepPreviousData: true, // Keep showing old data while fetching new data
+    },
+  },
+});
 
 function App() {
   const { darkMode } = useStore();

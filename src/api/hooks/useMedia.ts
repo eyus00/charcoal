@@ -7,12 +7,16 @@ export const useMedia = {
     useQuery({
       queryKey: ['trending', mediaType, timeWindow],
       queryFn: () => mediaService.getTrending(mediaType, timeWindow),
+      suspense: false,
+      enabled: true,
     }),
 
   usePopular: (mediaType?: MediaType, page?: number) =>
     useQuery({
       queryKey: ['popular', mediaType, page],
       queryFn: () => mediaService.getPopular(mediaType, page),
+      suspense: false,
+      enabled: true,
     }),
 
   useDetails: (mediaType: MediaType, id: number) =>
@@ -20,6 +24,7 @@ export const useMedia = {
       queryKey: [mediaType, id],
       queryFn: () => mediaService.getDetails(mediaType, id),
       enabled: !!id,
+      suspense: false,
     }),
 
   useSearch: (query: string, page?: number) =>
@@ -27,6 +32,7 @@ export const useMedia = {
       queryKey: ['search', query, page],
       queryFn: () => mediaService.search(query, page),
       enabled: !!query,
+      suspense: false,
     }),
 
   useCombinedTrending: (timeWindow: TimeWindow = 'week', limit: number = 10) =>
@@ -41,5 +47,7 @@ export const useMedia = {
           .sort(() => Math.random() - 0.5)
           .slice(0, limit);
       },
+      suspense: false,
+      enabled: true,
     }),
 };

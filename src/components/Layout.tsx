@@ -1,15 +1,14 @@
 import React from 'react';
-import { Menu, Search, Mail, UserCircle } from 'lucide-react';
+import { Menu, Search, UserCircle } from 'lucide-react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import { cn } from '../lib/utils';
-import SidePanel from './home/SidePanel';
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery, sidebarOpen, setSidebarOpen, sidePanelOpen, setSidePanelOpen } = useStore();
+  const { searchQuery, setSearchQuery, sidebarOpen, setSidebarOpen } = useStore();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,15 +51,6 @@ const Layout = () => {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-2 ml-auto">
-            {/* Notifications */}
-            <button
-              onClick={() => setSidePanelOpen(!sidePanelOpen)}
-              className="p-1.5 hover:bg-light-surface dark:hover:bg-dark-surface rounded-lg relative"
-            >
-              <Mail className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
-
             {/* Profile */}
             <Link
               to="/profile"
@@ -88,13 +78,6 @@ const Layout = () => {
           <Outlet />
         </div>
       </main>
-
-      {/* Side Panel */}
-      <SidePanel
-        isOpen={sidePanelOpen}
-        onClose={() => setSidePanelOpen(false)}
-        updates={[]}
-      />
 
       {/* Mobile Navigation */}
       <MobileNav />
