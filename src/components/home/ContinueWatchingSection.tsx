@@ -88,13 +88,13 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
 
   return (
     <div className="h-full flex flex-col bg-light-bg dark:bg-dark-bg border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+      <div className="p-3 border-b border-border-light dark:border-border-dark flex items-center justify-between">
         <h2 className="text-xl font-semibold">Continue Watching</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={() => scroll('left')}
             className={cn(
-              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors",
               !canScrollLeft && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollLeft}
@@ -104,7 +104,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
           <button
             onClick={() => scroll('right')}
             className={cn(
-              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors",
               !canScrollLeft && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollRight}
@@ -114,13 +114,13 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
         </div>
       </div>
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-3">
         <div 
           ref={containerRef}
           className="overflow-x-auto scrollbar-thin"
           style={{ scrollPaddingRight: '1rem' }}
         >
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {items.map((item, index) => {
               const episodeDetails = item.mediaType === 'tv' ? episodeQueries.data?.[index] : null;
               const progress = item.progress
@@ -136,7 +136,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                   to={`/watch/${item.mediaType}/${item.id}${
                     item.mediaType === 'tv' ? `?season=${item.season}&episode=${item.episode}` : ''
                   }`}
-                  className="flex-shrink-0 w-[65vw] sm:w-[350px] lg:w-[400px] relative"
+                  className="flex-shrink-0 w-[75vw] sm:w-[400px] lg:w-[450px] relative"
                 >
                   <div className="relative border border-border-light dark:border-border-dark rounded-lg overflow-hidden hover:border-red-500/50 transition-all duration-200">
                     <div className="aspect-video relative">
@@ -152,8 +152,8 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                       
-                      <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                        <div className="flex items-center gap-2 mb-1.5">
+                      <div className="absolute inset-0 p-3 flex flex-col justify-end">
+                        <div className="flex items-center gap-2 mb-1">
                           {item.mediaType === 'movie' ? (
                             <Film className="w-3.5 h-3.5 text-white" />
                           ) : (
@@ -166,12 +166,12 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                         </h3>
 
                         {item.mediaType === 'tv' && item.season && item.episode && episodeDetails && (
-                          <span className="text-white/80 text-xs sm:text-sm mb-2 line-clamp-1">
+                          <span className="text-white/80 text-xs sm:text-sm mb-1.5 line-clamp-1">
                             {formatSeasonEpisode(item.season, item.episode)} • {episodeDetails.name}
                           </span>
                         )}
                         
-                        <div className="flex items-center gap-2 mb-2 text-xs">
+                        <div className="flex items-center gap-2 mb-1.5 text-xs">
                           {item.progress && (
                             <div className="flex items-center gap-2 text-white/80 w-full">
                               <div className="px-1.5 py-0.5 bg-red-600 text-white text-[10px] rounded">

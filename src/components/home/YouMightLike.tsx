@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Star, Play, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Play, Bookmark } from 'lucide-react';
 import { Movie, TVShow } from '../../api/types';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
@@ -40,7 +40,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScrollPosition);
-      // Initial check
       checkScrollPosition();
     }
 
@@ -72,42 +71,39 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
 
   return (
     <div className="h-full flex flex-col bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+      <div className="p-3 border-b border-border-light dark:border-border-dark flex items-center justify-between">
         <h2 className="text-xl font-semibold">You Might Like</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={() => scroll('left')}
             className={cn(
-              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-[8px] transition-colors",
+              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors",
               !canScrollLeft && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollLeft}
-            style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => scroll('right')}
             className={cn(
-              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-[8px] transition-colors",
+              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors",
               !canScrollRight && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollRight}
-            style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 p-4">
-        {/* Scrollable Container */}
+      <div className="flex-1 p-3">
         <div 
           ref={containerRef}
           className="overflow-x-auto scrollbar-thin"
           style={{ scrollPaddingRight: '1rem' }}
         >
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {items.map((item) => {
               const isMovie = 'title' in item;
               const title = isMovie ? item.title : item.name;
@@ -135,7 +131,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
               return (
                 <div
                   key={item.id}
-                  className="flex-shrink-0 w-[65vw] sm:w-[350px] lg:w-[400px] group/card relative"
+                  className="flex-shrink-0 w-[75vw] sm:w-[400px] lg:w-[450px] group/card relative"
                 >
                   <Link
                     to={`/${isMovie ? 'movie' : 'tv'}/${item.id}`}
@@ -149,10 +145,10 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                       
-                      <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                        <h3 className="text-white font-medium text-lg mb-2 line-clamp-1">{title}</h3>
+                      <div className="absolute inset-0 p-3 flex flex-col justify-end">
+                        <h3 className="text-white font-medium text-lg mb-1.5 line-clamp-1">{title}</h3>
 
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-1.5">
                           <div className="flex items-center">
                             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                             <span className="text-white text-sm ml-1">{item.vote_average.toFixed(1)}</span>
@@ -169,13 +165,12 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="absolute bottom-4 right-4 flex flex-col gap-2" onClick={e => e.preventDefault()}>
+                        <div className="absolute bottom-3 right-3 flex flex-col gap-2" onClick={e => e.preventDefault()}>
                           <Link
                             to={`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`}
-                            className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-[8px] flex items-center justify-center transition-colors shadow-lg"
-                            style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
+                            className="w-9 h-9 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center transition-colors shadow-lg group/watch"
                           >
-                            <Play className="w-4 h-4 text-white fill-white" />
+                            <Play className="w-5 h-5 text-white group-hover/watch:scale-110 transition-transform" />
                           </Link>
 
                           <div className="relative">
@@ -185,14 +180,16 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                                 setActiveMenu(activeMenu === item.id ? null : item.id);
                               }}
                               className={cn(
-                                "w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors shadow-md",
+                                "w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md",
                                 watchlistItem
                                   ? "bg-red-600 hover:bg-red-700"
                                   : "bg-white/20 hover:bg-white/30"
                               )}
-                              style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
                             >
-                              <Plus className="w-4 h-4 text-white" />
+                              <Bookmark className={cn(
+                                "w-5 h-5 transition-transform",
+                                watchlistItem ? "text-white fill-white" : "text-white"
+                              )} />
                             </button>
 
                             <WatchlistMenu

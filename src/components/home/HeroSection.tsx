@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Play, Plus, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { Play, Bookmark, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { Movie, TVShow } from '../../api/types';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
@@ -132,8 +132,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
               <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
               <span className="text-white ml-1 text-sm md:text-lg">{currentItem.vote_average.toFixed(1)}</span>
             </div>
-            {year && <span className="text-white text-sm md:text-lg">{year}</span>}
-            <span className="text-white text-sm md:text-lg">{getContentRating()}</span>
+            {year && <span className="text-white text-sm md:text-lg opacity-80">{year}</span>}
+            <span className="text-white text-sm md:text-lg border border-white/50 rounded px-1">{getContentRating()}</span>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
@@ -146,22 +146,28 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
               <Link
                 to={`/watch/${isMovie ? 'movie' : 'tv'}/${currentItem.id}`}
-                className="h-8 md:h-14 aspect-square bg-red-600 hover:bg-red-700 rounded-[8px] flex items-center justify-center transition-colors shadow-lg"
-                style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
+                className="w-10 h-10 md:w-12 md:h-12 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center transition-colors shadow-lg group/watch"
               >
-                <Play className="w-4 h-4 md:w-6 md:h-6 text-white fill-white" />
+                <Play className="w-5 h-5 md:w-6 md:h-6 text-white group-hover/watch:scale-110 transition-transform" />
               </Link>
 
               <div className="relative">
                 <button
                   onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
-                  className="w-8 h-8 md:w-14 md:h-14 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-[8px] flex items-center justify-center transition-colors shadow-md"
-                  style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
+                  className={cn(
+                    "w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center transition-colors shadow-md",
+                    watchlistItem
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-white/20 hover:bg-white/30 backdrop-blur-sm"
+                  )}
                 >
-                  <Plus className="w-5 h-5 md:w-7 md:h-7 text-white stroke-[3]" />
+                  <Bookmark className={cn(
+                    "w-5 h-5 md:w-6 md:h-6 transition-transform",
+                    watchlistItem ? "text-white fill-white" : "text-white"
+                  )} />
                 </button>
 
                 <WatchlistMenu
@@ -176,30 +182,24 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center gap-2 h-8 md:h-14">
+            <div className="flex items-center gap-2 h-10 md:h-12">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setCurrentIndex(prev => (prev === 0 ? items.length - 1 : prev - 1));
                 }}
-                className={cn(
-                  "p-2 bg-white/10 hover:bg-white/20 rounded-[8px] transition-colors backdrop-blur-sm text-white"
-                )}
-                style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
+                className="w-10 md:w-12 h-10 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm text-white"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setCurrentIndex(prev => (prev === items.length - 1 ? 0 : prev + 1));
                 }}
-                className={cn(
-                  "p-2 bg-white/10 hover:bg-white/20 rounded-[8px] transition-colors backdrop-blur-sm text-white"
-                )}
-                style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
+                className="w-10 md:w-12 h-10 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm text-white"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
