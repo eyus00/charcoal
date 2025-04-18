@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { PlayCircle, Star, Clock, Film, Tv, Calendar } from 'lucide-react';
+import { PlayCircle, Film, Tv, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { mediaService } from '../../api/services/media';
 import { getImageUrl } from '../../api/config';
@@ -12,6 +12,10 @@ interface ContinueWatchingSectionProps {
 }
 
 const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
   // Fetch episode details for TV shows
   const episodeQueries = useQuery({
     queryKey: ['episodes', items.map(item => `${item.id}-${item.season}-${item.episode}`)],
@@ -29,6 +33,43 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
     enabled: items.some(item => item.mediaType === 'tv'),
   });
 
+  // Check scroll position
+  const checkScrollPosition = () => {
+    if (!containerRef.current) return;
+    
+    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScrollPosition);
+      checkScrollPosition();
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', checkScrollPosition);
+      }
+    };
+  }, [items]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (!containerRef.current) return;
+    
+    const scrollAmount = containerRef.current.clientWidth * 0.8;
+    const newScrollLeft = direction === 'left' 
+      ? containerRef.current.scrollLeft - scrollAmount 
+      : containerRef.current.scrollLeft + scrollAmount;
+    
+    containerRef.current.scrollTo({
+      left: newScrollLeft,
+      behavior: 'smooth'
+    });
+  };
+
   if (items.length === 0) return null;
 
   const formatDuration = (seconds: number) => {
@@ -41,27 +82,41 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
     return `${minutes}m`;
   };
 
-  const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now();
-    const seconds = Math.floor((now - timestamp) / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+  const formatSeasonEpisode = (season: number, episode: number) => {
+    return `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="h-full flex flex-col bg-white/20 dark:bg-white/5 backdrop-blur-md border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
+    <div className="h-full flex flex-col bg-light-bg dark:bg-dark-bg border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
         <h2 className="text-xl font-semibold">Continue Watching</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => scroll('left')}
+            className={cn(
+              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              !canScrollLeft && "opacity-50 cursor-not-allowed"
+            )}
+            disabled={!canScrollLeft}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            className={cn(
+              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              !canScrollLeft && "opacity-50 cursor-not-allowed"
+            )}
+            disabled={!canScrollRight}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 p-4">
         <div 
+          ref={containerRef}
           className="overflow-x-auto scrollbar-thin"
           style={{ scrollPaddingRight: '1rem' }}
         >
@@ -98,13 +153,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                       
                       <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                        {/* Status Tag */}
-                        <div className="absolute top-3 left-3">
-                          <span className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
-                            {progress >= 90 ? 'Completed' : 'Watching'}
-                          </span>
-                        </div>
-
                         <div className="flex items-center gap-2 mb-1.5">
                           {item.mediaType === 'movie' ? (
                             <Film className="w-3.5 h-3.5 text-white" />
@@ -113,29 +161,20 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                           )}
                         </div>
 
-                        <h3 className="text-white font-medium text-base sm:text-lg mb-1.5 line-clamp-1">
+                        <h3 className="text-white font-medium text-base sm:text-lg mb-1 line-clamp-1">
                           {item.title}
-                          {item.mediaType === 'tv' && item.season && item.episode && (
-                            <span className="text-white/80 ml-2 text-sm">
-                              S{item.season}:E{item.episode}
-                            </span>
-                          )}
-                          {item.mediaType === 'tv' && episodeDetails && (
-                            <span className="block text-xs sm:text-sm text-white/80 mt-0.5">
-                              {episodeDetails.name}
-                            </span>
-                          )}
                         </h3>
+
+                        {item.mediaType === 'tv' && item.season && item.episode && episodeDetails && (
+                          <span className="text-white/80 text-xs sm:text-sm mb-2 line-clamp-1">
+                            {formatSeasonEpisode(item.season, item.episode)} • {episodeDetails.name}
+                          </span>
+                        )}
                         
                         <div className="flex items-center gap-2 mb-2 text-xs">
                           {item.progress && (
                             <div className="flex items-center gap-2 text-white/80 w-full">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3.5 h-3.5" />
-                                <span>{formatTimeAgo(item.lastWatched)}</span>
-                              </div>
-                              <div className="w-px h-2.5 bg-white/20" />
-                              <div className="px-1.5 py-0.5 bg-red-600/70 text-white text-[10px] rounded">
+                              <div className="px-1.5 py-0.5 bg-red-600 text-white text-[10px] rounded">
                                 {formatDuration(remaining)} left
                               </div>
                               <div className="ml-auto text-[10px] text-white/60">

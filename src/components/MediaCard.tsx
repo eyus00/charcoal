@@ -18,7 +18,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ media, type }) => {
 
   return (
     <Link to={`/${type}/${media.id}`} className="block group">
-      <div className="relative overflow-hidden border-2 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors">
+      <div className="relative overflow-hidden rounded-lg border-2 border-transparent hover:border-red-600 dark:hover:border-red-500 transition-colors">
         <div className="aspect-[2/3]">
           <img
             src={getImageUrl(media.poster_path, 'w500')}
@@ -43,4 +43,4 @@ const MediaCard: React.FC<MediaCardProps> = ({ media, type }) => {
   );
 };
 
-export default MediaCard
+export default MediaCard;

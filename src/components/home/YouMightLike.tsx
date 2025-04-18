@@ -78,20 +78,22 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
           <button
             onClick={() => scroll('left')}
             className={cn(
-              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-[8px] transition-colors",
               !canScrollLeft && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollLeft}
+            style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => scroll('right')}
             className={cn(
-              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-xl transition-colors",
+              "p-2 hover:bg-light-surface dark:hover:bg-dark-surface rounded-[8px] transition-colors",
               !canScrollRight && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollRight}
+            style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -112,17 +114,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
               const releaseDate = isMovie ? item.release_date : item.first_air_date;
               const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
               const watchlistItem = getWatchlistItem(item.id, isMovie ? 'movie' : 'tv');
-
-              // Query for images
-              const { data: images } = useQuery({
-                queryKey: ['images', item.id],
-                queryFn: () => mediaService.getImages(isMovie ? 'movie' : 'tv', item.id),
-              });
-
-              // Find the best logo
-              const logo = images?.logos?.find(logo => 
-                logo.iso_639_1 === 'en' || !logo.iso_639_1
-              );
 
               const handleWatchlistAdd = (status: WatchStatus) => {
                 addToWatchlist({
@@ -161,29 +152,30 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                       <div className="absolute inset-0 p-4 flex flex-col justify-end">
                         <h3 className="text-white font-medium text-lg mb-2 line-clamp-1">{title}</h3>
 
-                        <div className="flex flex-wrap gap-1 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                            <span className="text-white text-sm ml-1">{item.vote_average.toFixed(1)}</span>
+                          </div>
+                          {year && <span className="text-white text-sm">{year}</span>}
+                        </div>
+
+                        <div className="flex flex-wrap gap-1">
                           {getGenreNames(item.genre_ids).slice(0, 2).map((genreName) => (
                             <span key={genreName} className="px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full">
                               {genreName}
                             </span>
                           ))}
                         </div>
-                        
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex items-center">
-                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                            <span className="ml-1 text-sm text-white">{item.vote_average.toFixed(1)}</span>
-                          </div>
-                          {year && <span className="text-sm text-white/80">{year}</span>}
-                        </div>
 
                         {/* Action Buttons */}
-                        <div className="flex items-center gap-2" onClick={e => e.preventDefault()}>
+                        <div className="absolute bottom-4 right-4 flex flex-col gap-2" onClick={e => e.preventDefault()}>
                           <Link
                             to={`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`}
-                            className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors"
+                            className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-[8px] flex items-center justify-center transition-colors shadow-lg"
+                            style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
                           >
-                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                            <Play className="w-4 h-4 text-white fill-white" />
                           </Link>
 
                           <div className="relative">
@@ -193,11 +185,12 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                                 setActiveMenu(activeMenu === item.id ? null : item.id);
                               }}
                               className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                                "w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors shadow-md",
                                 watchlistItem
                                   ? "bg-red-600 hover:bg-red-700"
                                   : "bg-white/20 hover:bg-white/30"
                               )}
+                              style={{ clipPath: 'inset(0 0 0 0 round 8px)' }}
                             >
                               <Plus className="w-4 h-4 text-white" />
                             </button>
@@ -213,15 +206,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                           </div>
                         </div>
                       </div>
-
-                      {/* Logo Watermark */}
-                      {logo && (
-                        <img
-                          src={getImageUrl(logo.file_path, 'w300')}
-                          alt={title}
-                          className="absolute bottom-3 right-3 h-5 max-w-[80px] object-contain opacity-30"
-                        />
-                      )}
                     </div>
                   </Link>
                 </div>
