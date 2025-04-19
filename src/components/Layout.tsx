@@ -1,6 +1,6 @@
 import React from 'react';
-import { Menu, Search, UserCircle } from 'lucide-react';
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { Menu, Search, UserCircle, Moon, Sun } from 'lucide-react';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
@@ -8,7 +8,7 @@ import { cn } from '../lib/utils';
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery, sidebarOpen, setSidebarOpen } = useStore();
+  const { searchQuery, setSearchQuery, sidebarOpen, setSidebarOpen, darkMode, toggleDarkMode } = useStore();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,21 +21,26 @@ const Layout = () => {
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-200">
       {/* Top Navigation Bar */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-light-bg dark:bg-dark-bg z-50 border-b border-border-light dark:border-border-dark">
-        <div className="h-full flex items-center px-4 gap-4">
-          {/* Menu Toggle - Hidden on Mobile */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 hover:bg-light-surface dark:hover:bg-dark-surface rounded-lg hidden md:block"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+        <div className="h-full flex items-center justify-between px-4 gap-4">
+          {/* Left Section: Menu Toggle and Logo */}
+          <div className="flex items-center gap-4">
+            {/* Menu Toggle - Hidden on Mobile */}
+            <div className="p-1 bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark rounded-md hidden md:flex">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-1.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded-md transition-colors"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+            </div>
 
-          {/* Logo */}
-          <Link to="/" className="text-xl font-bold">
-            Charcoal
-          </Link>
+            {/* Logo */}
+            <Link to="/" className="text-xl font-bold">
+              Charcoal
+            </Link>
+          </div>
 
-          {/* Search Bar - Hidden on Mobile */}
+          {/* Search Bar - Centered, Hidden on Mobile */}
           <form onSubmit={handleSearch} className="flex-1 max-w-xl mx-auto hidden md:block">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
@@ -50,14 +55,23 @@ const Layout = () => {
           </form>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Profile */}
+          <div className="flex items-center gap-1.5 p-1 bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark rounded-md">
+            <button
+              onClick={toggleDarkMode}
+              className="p-1.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded-md transition-colors"
+            >
+              {darkMode ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </button>
+            <div className="w-px h-4 bg-border-light dark:bg-border-dark" />
             <Link
               to="/profile"
-              className="p-1.5 hover:bg-light-surface dark:hover:bg-dark-surface rounded-lg flex items-center gap-2"
+              className="p-1.5 hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 rounded-md transition-colors"
             >
-              <UserCircle className="w-5 h-5" />
-              <span className="hidden md:block">Profile</span>
+              <UserCircle className="w-4 h-4" />
             </Link>
           </div>
         </div>

@@ -16,37 +16,22 @@ const Sidebar = () => {
         { icon: Grid, label: 'Discover', path: '/' },
         { icon: Film, label: 'Movies', path: '/movies' },
         { icon: Tv, label: 'TV Shows', path: '/tv' },
-      ]
+      ],
     },
     {
       title: 'Profile',
       items: [
-        { 
-          icon: User, 
-          label: 'User', 
-          path: '/profile',
-          hash: '#profile'
-        },
-        { 
-          icon: Clock, 
-          label: 'History', 
-          path: '/profile', 
-          hash: '#history' 
-        },
-        { 
-          icon: Bookmark, 
-          label: 'Watchlist', 
-          path: '/profile', 
-          hash: '#watchlist' 
-        },
-      ]
+        { icon: User, label: 'User', path: '/profile', hash: '#profile' },
+        { icon: Clock, label: 'History', path: '/profile', hash: '#history' },
+        { icon: Bookmark, label: 'Watchlist', path: '/profile', hash: '#watchlist' },
+      ],
     },
     {
       title: 'General',
       items: [
         { icon: Settings, label: 'Settings', path: '/settings' },
-      ]
-    }
+      ],
+    },
   ];
 
   const isActive = (path: string, itemHash?: string) => {
@@ -60,14 +45,19 @@ const Sidebar = () => {
     <aside
       className={cn(
         'fixed left-0 top-14 bottom-0 w-56 bg-light-bg dark:bg-dark-bg border-r border-border-light dark:border-border-dark transition-transform duration-200 hidden md:block overflow-y-auto',
-        'z-40', // Add higher z-index to ensure sidebar stays on top
+        'z-40',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
       <div className="py-4">
         {menuItems.map((section, index) => (
-          <div key={index} className="mb-8">
-            <h3 className="text-xs font-semibold text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider mb-4 px-4">
+          <div
+            key={index}
+            className={cn(
+              index !== 0 && 'mt-4 pt-4 border-t border-border-light/30 dark:border-border-dark/30'
+            )}
+          >
+            <h3 className="text-xs font-semibold text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider mb-2 px-4">
               {section.title}
             </h3>
             <nav>
@@ -76,18 +66,20 @@ const Sidebar = () => {
                   key={itemIndex}
                   to={item.path + (item.hash || '')}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-2 transition-colors relative group w-full",
+                    'flex items-center gap-3 py-2 pl-4 pr-2 transition-colors relative group w-full',
                     isActive(item.path, item.hash)
-                      ? "text-accent bg-red-50 dark:bg-red-500/10 border-l-2 border-red-600 dark:border-red-500"
-                      : "text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text-primary dark:hover:text-dark-text-primary hover:bg-light-surface dark:hover:bg-dark-surface border-l-2 border-transparent"
+                      ? 'text-accent bg-red-50 dark:bg-red-500/10 border-l-2 border-red-600 dark:border-red-500'
+                      : 'text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text-primary dark:hover:text-dark-text-primary hover:bg-light-surface dark:hover:bg-dark-surface border-l-2 border-transparent'
                   )}
                 >
-                  <item.icon className={cn(
-                    "w-5 h-5 transition-colors",
-                    isActive(item.path, item.hash)
-                      ? "text-accent"
-                      : "text-light-text-secondary dark:text-dark-text-secondary group-hover:text-light-text-primary dark:group-hover:text-dark-text-primary"
-                  )} />
+                  <item.icon
+                    className={cn(
+                      'w-5 h-5 transition-colors',
+                      isActive(item.path, item.hash)
+                        ? 'text-accent'
+                        : 'text-light-text-secondary dark:text-dark-text-secondary group-hover:text-light-text-primary dark:group-hover:text-dark-text-primary'
+                    )}
+                  />
                   <span className="font-medium">{item.label}</span>
                 </Link>
               ))}
