@@ -6,7 +6,6 @@ import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { genreService } from '../../api/services/genres';
-import { mediaService } from '../../api/services/media';
 import WatchlistMenu from '../WatchlistMenu';
 import { useStore, WatchStatus } from '../../store/useStore';
 
@@ -21,13 +20,11 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Fetch genres
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
 
-  // Add content rating query
   const contentRatingQueries = useQueries({
     queries: items.map(item => ({
       queryKey: ['contentRating', item.id],
@@ -52,10 +49,8 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
     }))
   });
 
-  // Check scroll position
   const checkScrollPosition = () => {
     if (!containerRef.current) return;
-    
     const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
     setCanScrollLeft(scrollLeft > 0);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
@@ -77,19 +72,18 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
-    
     const scrollAmount = containerRef.current.clientWidth * 0.8;
-    const newScrollLeft = direction === 'left' 
-      ? containerRef.current.scrollLeft - scrollAmount 
-      : containerRef.current.scrollLeft + scrollAmount;
-    
+    const newScrollLeft =
+      direction === 'left'
+        ? containerRef.current.scrollLeft - scrollAmount
+        : containerRef.current.scrollLeft + scrollAmount;
+
     containerRef.current.scrollTo({
       left: newScrollLeft,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   };
 
-  // Get genre names instead of IDs
   const getGenreNames = (genreIds: number[]) => {
     return genreIds.map(id => genres.find(g => g.id === id)?.name).filter(Boolean);
   };
@@ -123,7 +117,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
       </div>
 
       <div className="flex-1 p-3">
-        <div 
+        <div
           ref={containerRef}
           className="overflow-x-auto scrollbar-thin"
           style={{ scrollPaddingRight: '1rem' }}
@@ -170,7 +164,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                      
+
                       <div className="absolute inset-0 p-3 flex flex-col justify-end">
                         <div className="flex items-center gap-2 mb-2">
                           {isMovie ? (
@@ -178,9 +172,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                           ) : (
                             <Tv className="w-4 h-4 text-white" />
                           )}
-                          <span className="text-white text-sm">
-                            {isMovie ? 'Movie' : 'TV Show'}
-                          </span>
                         </div>
 
                         <h3 className="text-white font-medium text-lg mb-2 line-clamp-1">{title}</h3>
@@ -206,7 +197,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                           ))}
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="absolute bottom-3 right-3 flex flex-col gap-2" onClick={e => e.preventDefault()}>
                           <Link
                             to={`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`}

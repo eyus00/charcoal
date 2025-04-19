@@ -141,7 +141,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
             ) : (
               <Tv className="w-4 h-4 text-white" />
             )}
-            <span className="text-white text-sm">{isMovie ? 'Movie' : 'TV Show'}</span>
           </div>
 
           <h2 className="text-2xl md:text-4xl font-bold text-white mb-3">{title}</h2>
@@ -203,7 +202,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
               </div>
             </div>
 
-            {/* 👇 Updated Navigation Buttons (Smaller + Aligned) */}
             <div className="flex items-center gap-2 h-10 md:h-12">
               <button
                 onClick={(e) => {

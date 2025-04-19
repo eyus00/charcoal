@@ -11,12 +11,14 @@ interface ContinueWatchingSectionProps {
   items: WatchHistoryItem[];
 }
 
+// ...imports unchanged
+
 const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Fetch episode details for TV shows
+  // Fetch episode details unchanged
   const episodeQueries = useQuery({
     queryKey: ['episodes', items.map(item => `${item.id}-${item.season}-${item.episode}`)],
     queryFn: async () => {
@@ -33,10 +35,9 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
     enabled: items.some(item => item.mediaType === 'tv'),
   });
 
-  // Check scroll position
   const checkScrollPosition = () => {
     if (!containerRef.current) return;
-    
+
     const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
     setCanScrollLeft(scrollLeft > 0);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
@@ -46,7 +47,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScrollPosition);
-      checkScrollPosition();
+      checkScrollPosition(); // Initial check
     }
 
     return () => {
@@ -58,12 +59,12 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
-    
+
     const scrollAmount = containerRef.current.clientWidth * 0.8;
-    const newScrollLeft = direction === 'left' 
-      ? containerRef.current.scrollLeft - scrollAmount 
+    const newScrollLeft = direction === 'left'
+      ? containerRef.current.scrollLeft - scrollAmount
       : containerRef.current.scrollLeft + scrollAmount;
-    
+
     containerRef.current.scrollTo({
       left: newScrollLeft,
       behavior: 'smooth'
@@ -94,7 +95,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
           <button
             onClick={() => scroll('left')}
             className={cn(
-              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors",
+              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors border border-border-light dark:border-border-dark",
               !canScrollLeft && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollLeft}
@@ -104,8 +105,8 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
           <button
             onClick={() => scroll('right')}
             className={cn(
-              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors",
-              !canScrollLeft && "opacity-50 cursor-not-allowed"
+              "w-8 h-8 flex items-center justify-center hover:bg-light-surface dark:hover:bg-dark-surface rounded-full transition-colors border border-border-light dark:border-border-dark",
+              !canScrollRight && "opacity-50 cursor-not-allowed"
             )}
             disabled={!canScrollRight}
           >
@@ -138,7 +139,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                   }`}
                   className="flex-shrink-0 w-[75vw] sm:w-[400px] lg:w-[450px] relative"
                 >
-                  <div className="relative border border-border-light dark:border-border-dark rounded-lg overflow-hidden hover:border-red-500/50 transition-all duration-200">
+                  <div className="relative border border-border-light dark:border-border-dark rounded-lg overflow-hidden hover:border-red-500/50 transition-all duration-200 group">
                     <div className="aspect-video relative">
                       <img
                         src={getImageUrl(
@@ -151,7 +152,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                      
+
                       <div className="absolute inset-0 p-3 flex flex-col justify-end">
                         <div className="flex items-center gap-2 mb-1">
                           {item.mediaType === 'movie' ? (
@@ -170,7 +171,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                             {formatSeasonEpisode(item.season, item.episode)} • {episodeDetails.name}
                           </span>
                         )}
-                        
+
                         <div className="flex items-center gap-2 mb-1.5 text-xs">
                           {item.progress && (
                             <div className="flex items-center gap-2 text-white/80 w-full">
