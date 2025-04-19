@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Film, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getImageUrl } from '../api/config';
+import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface Video {
@@ -39,7 +38,6 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScroll);
-      // Initial check
       checkScroll();
     }
 
@@ -85,12 +83,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
   };
 
   if (!videos || videos.length === 0) {
-    return (
-      <div className="border border-border-light dark:border-border-dark p-4 bg-light-surface dark:bg-dark-surface text-center">
-        <Film className="w-8 h-8 mx-auto text-light-text-secondary dark:text-dark-text-secondary mb-2" />
-        <p className="text-light-text-secondary dark:text-dark-text-secondary">No videos available</p>
-      </div>
-    );
+    return null;
   }
 
   // Sort videos to prioritize trailers
@@ -102,9 +95,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
   });
 
   return (
-    <div className="space-y-4 relative">
-      <h3 className="text-xl font-semibold">Related Videos</h3>
-      
+    <div className="relative">
       {/* Navigation Arrows */}
       <button
         onClick={() => scroll('left')}

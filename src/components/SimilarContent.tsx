@@ -32,7 +32,6 @@ const SimilarContent: React.FC<SimilarContentProps> = ({ items, type }) => {
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScroll);
-      // Initial check
       checkScroll();
     }
 
@@ -78,17 +77,11 @@ const SimilarContent: React.FC<SimilarContentProps> = ({ items, type }) => {
   };
 
   if (!items || items.length === 0) {
-    return (
-      <div className="border border-border-light dark:border-border-dark p-4 bg-light-surface dark:bg-dark-surface text-center">
-        <p className="text-light-text-secondary dark:text-dark-text-secondary">No similar content available</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="space-y-4 relative">
-      <h3 className="text-xl font-semibold">You May Also Like</h3>
-      
+    <div className="relative">
       {/* Navigation Arrows */}
       <button
         onClick={() => scroll('left')}
