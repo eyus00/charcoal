@@ -87,10 +87,9 @@ const SimilarContent: React.FC<SimilarContentProps> = ({ items, type }) => {
         onClick={() => scroll('left')}
         className={cn(
           "absolute left-0 top-1/2 z-10 p-2 bg-black/60 rounded-full text-white transform -translate-y-4 transition-all duration-200",
-          "hover:bg-black/80 hover:scale-110 hover:shadow-lg",
+          "hover:bg-black/80 hover:scale-110",
           showLeftArrow ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
         )}
-        aria-label="Scroll left"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
@@ -99,10 +98,9 @@ const SimilarContent: React.FC<SimilarContentProps> = ({ items, type }) => {
         onClick={() => scroll('right')}
         className={cn(
           "absolute right-0 top-1/2 z-10 p-2 bg-black/60 rounded-full text-white transform -translate-y-4 transition-all duration-200",
-          "hover:bg-black/80 hover:scale-110 hover:shadow-lg",
+          "hover:bg-black/80 hover:scale-110",
           showRightArrow ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
         )}
-        aria-label="Scroll right"
       >
         <ChevronRight className="w-5 h-5" />
       </button>
@@ -110,14 +108,14 @@ const SimilarContent: React.FC<SimilarContentProps> = ({ items, type }) => {
       {/* Scrollable Container */}
       <div 
         ref={containerRef}
-        className="overflow-x-auto scrollbar-thin pb-4 -mx-2 px-2"
+        className="overflow-x-auto scrollbar-thin -mx-2 px-2"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           {items.map((item) => {
             const title = 'title' in item ? item.title : item.name;
             const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
@@ -140,7 +138,7 @@ const SimilarContent: React.FC<SimilarContentProps> = ({ items, type }) => {
                     alt={title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
                     <h4 className="text-white font-medium text-sm truncate">{title}</h4>
                     <div className="flex items-center mt-1">
                       <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />

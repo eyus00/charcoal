@@ -100,11 +100,10 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
       <button
         onClick={() => scroll('left')}
         className={cn(
-          "absolute left-0 top-1/2 z-10 p-2 bg-black/60 rounded-full text-white transform -translate-y-4 transition-all duration-200",
-          "hover:bg-black/80 hover:scale-110 hover:shadow-lg",
+          "absolute left-0 top-1/2 z-10 p-2 bg-black/60 rounded-full text-white transform -translate-y-1/2 transition-all duration-200",
+          "hover:bg-black/80 hover:scale-110",
           showLeftArrow ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
         )}
-        aria-label="Scroll left"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
@@ -112,11 +111,10 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
       <button
         onClick={() => scroll('right')}
         className={cn(
-          "absolute right-0 top-1/2 z-10 p-2 bg-black/60 rounded-full text-white transform -translate-y-4 transition-all duration-200",
-          "hover:bg-black/80 hover:scale-110 hover:shadow-lg",
+          "absolute right-0 top-1/2 z-10 p-2 bg-black/60 rounded-full text-white transform -translate-y-1/2 transition-all duration-200",
+          "hover:bg-black/80 hover:scale-110",
           showRightArrow ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
         )}
-        aria-label="Scroll right"
       >
         <ChevronRight className="w-5 h-5" />
       </button>
@@ -124,14 +122,14 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
       {/* Scrollable Container */}
       <div 
         ref={containerRef}
-        className="overflow-x-auto scrollbar-thin pb-4 -mx-2 px-2"
+        className="overflow-x-auto scrollbar-thin -mx-2 px-2"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           {sortedVideos.map((video) => (
             <a
               key={video.id}
@@ -166,7 +164,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
                   {video.type}
                 </div>
               </div>
-              <div className="p-3">
+              <div className="p-2">
                 <h4 className="font-medium text-sm line-clamp-1">{video.name}</h4>
               </div>
             </a>
