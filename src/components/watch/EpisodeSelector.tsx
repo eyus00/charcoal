@@ -3,6 +3,7 @@ import { ChevronDown, List, X, Play, Check, StepForward } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { getImageUrl } from '../../api/config';
 import { useStore } from '../../store/useStore';
+import { getVideoProgress } from '../../lib/watch';
 
 interface Episode {
   episode_number: number;
@@ -29,6 +30,7 @@ interface EpisodeSelectorProps {
   onSeasonChange: (season: number) => void;
   onEpisodeSelect: (season: number, episode: number) => void;
   tvId: number;
+  isLandscape?: boolean;
 }
 
 const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
@@ -41,6 +43,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   onSeasonChange,
   onEpisodeSelect,
   tvId,
+  isLandscape,
 }) => {
   const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
   const { watchHistory } = useStore();
@@ -66,7 +69,9 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   };
 
   const getEpisodeProgress = (seasonNumber: number, episodeNumber: number) => {
-    const episodeHistory = watchHistory.find(
+    // Check both sources for progress
+    const videoProgress = getVideoProgress();
+    const historyProgress = watchHistory.find(
       item => 
         item.mediaType === 'tv' && 
         item.id === tvId && 
@@ -74,18 +79,33 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         item.episode === episodeNumber
     );
 
-    if (!episodeHistory?.progress) return null;
+    // Use video progress if it's more recent
+    if (videoProgress?.id === tvId && 
+        videoProgress?.season === seasonNumber && 
+        videoProgress?.episode === episodeNumber) {
+      return {
+        progress: (videoProgress.timestamp / videoProgress.duration) * 100,
+        isCompleted: videoProgress.isCompleted || (videoProgress.timestamp / videoProgress.duration) >= 0.9,
+        isWatching: !videoProgress.isCompleted && videoProgress.timestamp > 0,
+        remainingTime: formatDuration(Math.floor((videoProgress.duration - videoProgress.timestamp) / 60))
+      };
+    }
 
-    const watched = episodeHistory.progress.watched;
-    const duration = episodeHistory.progress.duration;
-    const remaining = Math.max(0, duration - watched);
+    // Fall back to history progress
+    if (historyProgress?.progress) {
+      const watched = historyProgress.progress.watched;
+      const duration = historyProgress.progress.duration;
+      const remaining = Math.max(0, duration - watched);
 
-    return {
-      progress: (watched / duration) * 100,
-      isCompleted: episodeHistory.isCompleted || (watched / duration) >= 0.9,
-      isWatching: !episodeHistory.isCompleted && watched > 0,
-      remainingTime: formatDuration(Math.floor(remaining / 60))
-    };
+      return {
+        progress: (watched / duration) * 100,
+        isCompleted: historyProgress.isCompleted || (watched / duration) >= 0.9,
+        isWatching: !historyProgress.isCompleted && watched > 0,
+        remainingTime: formatDuration(Math.floor(remaining / 60))
+      };
+    }
+
+    return null;
   };
 
   const handleEpisodeClick = (season: number, episode: number, isCurrent: boolean) => {
@@ -95,11 +115,24 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     }
   };
 
+  // Sort episodes by watched status
+  const sortedEpisodes = React.useMemo(() => {
+    if (!currentSeasonData?.episodes) return [];
+    
+    return [...currentSeasonData.episodes].sort((a, b) => {
+      const progressA = getEpisodeProgress(selectedSeason, a.episode_number);
+      const progressB = getEpisodeProgress(selectedSeason, b.episode_number);
+      
+      if (progressA?.isCompleted && !progressB?.isCompleted) return 1;
+      if (!progressA?.isCompleted && progressB?.isCompleted) return -1;
+      return a.episode_number - b.episode_number;
+    });
+  }, [currentSeasonData, selectedSeason, watchHistory]);
+
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className={cn(
           "fixed inset-0 bg-black/50 z-40 transition-opacity duration-200",
@@ -108,29 +141,35 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         onClick={onClose}
       />
 
-      {/* Mobile Bottom Sheet */}
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:hidden",
-          isOpen ? "translate-y-0" : "translate-y-full"
+          "fixed z-50 bg-light-bg dark:bg-dark-bg border border-gray-400/50 dark:border-white/20 transition-all duration-300 shadow-xl flex flex-col",
+          isLandscape ? (
+            "top-full left-1/2 -translate-x-1/2 mt-0 w-[80%] max-w-[600px] h-[85vh] rounded-md"
+          ) : (
+            "bottom-0 left-0 right-0 h-[80vh] rounded-t-2xl translate-y-0"
+          ),
+          isOpen ? "opacity-100" : "opacity-0 translate-y-full pointer-events-none"
         )}
       >
-        <div className="flex flex-col">
-          <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <List className="w-5 h-5 text-light-text-primary dark:text-white" />
-              <h3 className="text-lg font-semibold text-light-text-primary dark:text-white">Select Episode</h3>
+        <div className="flex flex-col h-full">
+          {!isLandscape && (
+            <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <List className="w-5 h-5 text-white" />
+                <h3 className="text-lg font-semibold text-white">Select Episode</h3>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 bg-white/10 dark:bg-dark-surface hover:bg-white/20 dark:hover:bg-dark-surface/80 rounded-md border border-gray-400/50 dark:border-white/20 transition-all"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 bg-light-surface dark:bg-white/10 hover:bg-light-text-secondary/10 dark:hover:bg-white/20 rounded-md border border-border-light dark:border-white/20 transition-all"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4 text-light-text-primary dark:text-white" />
-            </button>
-          </div>
+          )}
 
-          <div className="p-4 border-b border-border-light dark:border-border-dark">
+          <div className="p-4 border-b border-gray-400/50 dark:border-white/20">
             <div className="relative">
               <select
                 value={selectedSeason}
@@ -139,220 +178,101 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                   onSeasonChange(newSeason);
                   onEpisodeSelect(newSeason, 1);
                 }}
-                className="w-full px-4 py-2.5 bg-light-surface dark:bg-white/10 hover:bg-light-text-secondary/10 dark:hover:bg-white/20 text-light-text-primary dark:text-white border border-border-light dark:border-white/20 rounded-lg appearance-none focus:outline-none transition-all pr-10"
+                className="w-full px-4 py-2.5 bg-white/10 dark:bg-dark-surface hover:bg-white/20 dark:hover:bg-dark-surface/80 hover:border-red-600 dark:hover:border-red-500 border border-gray-400/50 dark:border-white/20 rounded-md text-white appearance-none focus:outline-none transition-all pr-10"
               >
                 {seasons.map((season) => (
                   <option
                     key={season.season_number}
                     value={season.season_number}
-                    className="bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-white"
+                    className="bg-light-bg dark:bg-dark-bg text-white"
                   >
                     {season.name}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-light-text-primary dark:text-white pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[60vh]">
-            {currentSeasonData?.episodes.map((episode, index) => {
-              const duration = formatDuration(episode.runtime);
-              const isCurrent = selectedSeason === Number(currentSeason) && episode.episode_number === Number(currentEpisode);
-              const isLast = index === (currentSeasonData?.episodes.length || 0) - 1;
-              const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="space-y-0">
+              {sortedEpisodes.map((episode, index) => {
+                const duration = formatDuration(episode.runtime);
+                const isCurrent = selectedSeason === Number(currentSeason) && episode.episode_number === Number(currentEpisode);
+                const isLast = index === (sortedEpisodes.length || 0) - 1;
+                const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
 
-              return (
-                <button
-                  key={episode.episode_number}
-                  onClick={() => handleEpisodeClick(selectedSeason, episode.episode_number, isCurrent)}
-                  className={cn(
-                    "w-full px-4 py-4 hover:bg-light-surface dark:hover:bg-white/10 flex gap-4 group relative",
-                    isCurrent && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500",
-                    !isLast && "border-b border-border-light dark:border-border-dark"
-                  )}
-                >
-                  <div className="w-28 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded-md border border-border-light dark:border-white/20 overflow-hidden relative">
-                    {episode.still_path ? (
-                      <img
-                        src={getImageUrl(episode.still_path, 'w300')}
-                        alt={episode.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-light-surface dark:bg-dark-surface" />
+                return (
+                  <button
+                    key={episode.episode_number}
+                    onClick={() => handleEpisodeClick(selectedSeason, episode.episode_number, isCurrent)}
+                    className={cn(
+                      "w-full px-4 py-4 hover:bg-white/10 dark:hover:bg-dark-surface/80 flex gap-4 group relative",
+                      isCurrent && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500",
+                      !isLast && "border-b border-gray-400/50 dark:border-white/20",
+                      progress?.isCompleted && "opacity-60"
                     )}
-                    {duration && (
-                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-red-600 dark:bg-red-500 rounded-md border border-white/20 text-xs text-white">
-                        {duration}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-md flex items-center justify-center transition-colors shadow-lg border border-white/20">
-                        {progress?.isCompleted ? (
-                          <Check className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        ) : (isCurrent || progress?.isWatching) ? (
-                          <StepForward className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        ) : (
-                          <Play className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={cn(
-                        "font-medium truncate max-w-[200px] text-light-text-primary dark:text-white",
-                        isCurrent && "text-red-600 dark:text-red-500"
-                      )}>
-                        {episode.episode_number}. {episode.name}
-                      </span>
-                    </div>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2">
-                      {episode.overview}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60 mt-1">
-                      <span>{formatAirDate(episode.air_date)}</span>
-                      {progress?.remainingTime && (
-                        <span>{progress.remainingTime} left</span>
-                      )}
-                    </div>
-                    {progress && (
-                      <div className="mt-1">
-                        <div className="h-1 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-red-600 dark:bg-red-500 transition-all duration-300"
-                            style={{ width: `${Math.min(progress.progress, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Menu */}
-      <div className="absolute bottom-full left-0 right-0 mb-2 bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-xl overflow-hidden hidden md:block">
-        <div className="flex flex-col">
-          <div className="p-4 flex items-center justify-between border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-2">
-              <List className="w-5 h-5 text-light-text-primary dark:text-white" />
-              <h3 className="text-lg font-semibold text-light-text-primary dark:text-white">Select Episode</h3>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 bg-light-surface dark:bg-white/10 hover:bg-light-text-secondary/10 dark:hover:bg-white/20 rounded-md border border-border-light dark:border-white/20 transition-all"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4 text-light-text-primary dark:text-white" />
-            </button>
-          </div>
-
-          <div className="p-4 border-b border-border-light dark:border-border-dark">
-            <div className="relative">
-              <select
-                value={selectedSeason}
-                onChange={(e) => {
-                  const newSeason = parseInt(e.target.value);
-                  onSeasonChange(newSeason);
-                  onEpisodeSelect(newSeason, 1);
-                }}
-                className="w-full px-4 py-2.5 bg-light-surface dark:bg-white/10 hover:bg-light-text-secondary/10 dark:hover:bg-white/20 text-light-text-primary dark:text-white border border-border-light dark:border-white/20 rounded-lg appearance-none focus:outline-none transition-all pr-10"
-              >
-                {seasons.map((season) => (
-                  <option
-                    key={season.season_number}
-                    value={season.season_number}
-                    className="bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-white"
                   >
-                    {season.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-light-text-primary dark:text-white pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="overflow-y-auto scrollbar-thin max-h-[300px]">
-            {currentSeasonData?.episodes.map((episode, index) => {
-              const duration = formatDuration(episode.runtime);
-              const isCurrent = selectedSeason === Number(currentSeason) && episode.episode_number === Number(currentEpisode);
-              const isLast = index === (currentSeasonData?.episodes.length || 0) - 1;
-              const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
-
-              return (
-                <button
-                  key={episode.episode_number}
-                  onClick={() => handleEpisodeClick(selectedSeason, episode.episode_number, isCurrent)}
-                  className={cn(
-                    "w-full px-4 py-3 hover:bg-light-surface dark:hover:bg-white/10 flex gap-4 group relative",
-                    isCurrent && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500",
-                    !isLast && "border-b border-border-light dark:border-border-dark"
-                  )}
-                >
-                  <div className="w-24 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded-md border border-border-light dark:border-white/20 overflow-hidden relative">
-                    {episode.still_path ? (
-                      <img
-                        src={getImageUrl(episode.still_path, 'w300')}
-                        alt={episode.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-light-surface dark:bg-dark-surface" />
-                    )}
-                    {duration && (
-                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-red-600 dark:bg-red-500 rounded-md border border-white/20 text-xs text-white">
-                        {duration}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-md flex items-center justify-center transition-colors shadow-lg border border-white/20">
-                        {progress?.isCompleted ? (
-                          <Check className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        ) : (isCurrent || progress?.isWatching) ? (
-                          <StepForward className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        ) : (
-                          <Play className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={cn(
-                        "font-medium truncate max-w-[200px] text-light-text-primary dark:text-white",
-                        isCurrent && "text-red-600 dark:text-red-500"
-                      )}>
-                        {episode.episode_number}. {episode.name}
-                      </span>
-                    </div>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2">
-                      {episode.overview}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60 mt-1">
-                      <span>{formatAirDate(episode.air_date)}</span>
-                      {progress?.remainingTime && (
-                        <span>{progress.remainingTime} left</span>
+                    <div className="w-28 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded-md border border-gray-400/50 dark:border-white/20 overflow-hidden relative">
+                      {episode.still_path ? (
+                        <img
+                          src={getImageUrl(episode.still_path, 'w300')}
+                          alt={episode.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-light-surface dark:bg-dark-surface" />
                       )}
-                    </div>
-                    {progress && (
-                      <div className="mt-1">
-                        <div className="h-1 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-red-600 dark:bg-red-500 transition-all duration-300"
-                            style={{ width: `${Math.min(progress.progress, 100)}%` }}
-                          />
+                      {duration && (
+                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-red-600 dark:bg-red-500 rounded-md border border-gray-400/50 dark:border-white/20 text-xs text-white">
+                          {duration}
+                        </span>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-md flex items-center justify-center transition-colors shadow-lg border border-white/20">
+                          {progress?.isCompleted ? (
+                            <Check className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
+                          ) : (isCurrent || progress?.isWatching) ? (
+                            <StepForward className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
+                          ) : (
+                            <Play className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn(
+                          "font-medium truncate max-w-[200px] text-white",
+                          isCurrent && "text-red-600 dark:text-red-500"
+                        )}>
+                          {episode.episode_number}. {episode.name}
+                        </span>
+                      </div>
+                      <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2">
+                        {episode.overview}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60 mt-1">
+                        <span>{formatAirDate(episode.air_date)}</span>
+                        {progress?.remainingTime && (
+                          <span>{progress.remainingTime} left</span>
+                        )}
+                      </div>
+                      {progress && (
+                        <div className="mt-1">
+                          <div className="h-1 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-red-600 dark:bg-red-500 transition-all duration-300"
+                              style={{ width: `${Math.min(progress.progress, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

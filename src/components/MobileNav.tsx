@@ -66,69 +66,62 @@ const MobileNav = () => {
       </div>
 
       {/* Floating Bottom Nav */}
-      <div className="fixed bottom-6 left-4 right-4 md:hidden z-50 pt-6">
-        <div
-          className="bg-light-bg dark:bg-dark-bg border-2 border-gray-400/50 dark:border-white/20 rounded-2xl backdrop-blur-md shadow-lg transition-all duration-200 relative"
-        >
-          <div className="relative grid grid-cols-5 h-14">
-            <Link
-              to="/"
-              className={cn(
-                'flex flex-col items-center justify-center gap-0.5',
-                location.pathname === '/' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
-              )}
-            >
-              <Grid className="w-6 h-6" />
-              <span className="text-[9px]">Browse</span>
-            </Link>
+      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 bg-light-bg dark:bg-dark-bg border-t-2 border-gray-400/50 dark:border-white/20">
+        <div className="relative grid grid-cols-5 h-16">
+          <Link
+            to="/"
+            className={cn(
+              'flex flex-col items-center justify-center gap-0.5',
+              location.pathname === '/' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
+            )}
+          >
+            <Grid className="w-6 h-6" />
+            <span className="text-[9px]">Browse</span>
+          </Link>
 
-            <Link
-              to="/movies"
-              className={cn(
-                'flex flex-col items-center justify-center gap-0.5',
-                location.pathname === '/movies' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
-              )}
-            >
-              <Film className="w-6 h-6" />
-              <span className="text-[9px]">Movies</span>
-            </Link>
+          <Link
+            to="/movies"
+            className={cn(
+              'flex flex-col items-center justify-center gap-0.5',
+              location.pathname === '/movies' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
+            )}
+          >
+            <Film className="w-6 h-6" />
+            <span className="text-[9px]">Movies</span>
+          </Link>
 
-            {/* Floating Search Button */}
-            <div className="relative col-span-1 flex items-center justify-center">
-              <button
-                onClick={handleSearchClick}
-                className="flex flex-col items-center justify-center gap-0.5 text-light-text-secondary dark:text-dark-text-secondary"
-                style={{ position: 'absolute', top: '-24px', zIndex: 20 }}
-              >
-                <div className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center shadow-md border-2 border-gray-400/50 dark:border-white/20">
-                  <Search className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-[9px] mt-1">Search</span>
-              </button>
+          {/* Search Button */}
+          <button
+            onClick={handleSearchClick}
+            className="flex flex-col items-center justify-center gap-0.5 text-light-text-secondary dark:text-dark-text-secondary"
+          >
+            <div className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center shadow-md border-2 border-gray-400/50 dark:border-white/20 -mt-6">
+              <Search className="w-6 h-6 text-white" />
             </div>
+            <span className="text-[9px] mt-1">Search</span>
+          </button>
 
-            <Link
-              to="/tv"
-              className={cn(
-                'flex flex-col items-center justify-center gap-0.5',
-                location.pathname === '/tv' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
-              )}
-            >
-              <Tv className="w-6 h-6" />
-              <span className="text-[9px]">TV Shows</span>
-            </Link>
+          <Link
+            to="/tv"
+            className={cn(
+              'flex flex-col items-center justify-center gap-0.5',
+              location.pathname === '/tv' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
+            )}
+          >
+            <Tv className="w-6 h-6" />
+            <span className="text-[9px]">TV Shows</span>
+          </Link>
 
-            <Link
-              to="/sports"
-              className={cn(
-                'flex flex-col items-center justify-center gap-0.5',
-                location.pathname === '/sports' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
-              )}
-            >
-              <Dumbbell className="w-6 h-6" />
-              <span className="text-[9px]">Sports</span>
-            </Link>
-          </div>
+          <Link
+            to="/sports"
+            className={cn(
+              'flex flex-col items-center justify-center gap-0.5',
+              location.pathname === '/sports' ? 'text-red-600' : 'text-light-text-secondary dark:text-dark-text-secondary'
+            )}
+          >
+            <Dumbbell className="w-6 h-6" />
+            <span className="text-[9px]">Sports</span>
+          </Link>
         </div>
       </div>
     </>

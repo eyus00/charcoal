@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X, StepForward, ChevronDown, List, Play, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, StepForward, ChevronDown, List, Play, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getImageUrl } from '../api/config';
 import { useStore } from '../store/useStore';
+import { getVideoProgress } from '../lib/watch';
 
 interface Episode {
   episode_number: number;
@@ -40,10 +41,16 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
   const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
   const { watchHistory } = useStore();
 
-  // Get resume info from watch history
-  const resumeInfo = watchHistory.find(
+  // Get resume info from both sources
+  const resumeInfo = getVideoProgress();
+  const historyInfo = watchHistory.find(
     item => item.mediaType === 'tv' && item.id === tvId
   );
+
+  // Use the most recent progress
+  const currentProgress = resumeInfo?.id === tvId && resumeInfo?.mediaType === 'tv'
+    ? resumeInfo
+    : historyInfo;
 
   React.useEffect(() => {
     if (seasons.length > 0 && seasons[0]) {
@@ -72,7 +79,9 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
   };
 
   const getEpisodeProgress = (seasonNumber: number, episodeNumber: number) => {
-    const episodeHistory = watchHistory.find(
+    // Check both sources for progress
+    const videoProgress = getVideoProgress();
+    const historyProgress = watchHistory.find(
       item => 
         item.mediaType === 'tv' && 
         item.id === tvId && 
@@ -80,62 +89,39 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
         item.episode === episodeNumber
     );
 
-    if (!episodeHistory?.progress) return null;
+    // Use video progress if it's more recent
+    if (videoProgress?.id === tvId && 
+        videoProgress?.season === seasonNumber && 
+        videoProgress?.episode === episodeNumber) {
+      return {
+        progress: (videoProgress.timestamp / videoProgress.duration) * 100,
+        isCompleted: videoProgress.isCompleted || (videoProgress.timestamp / videoProgress.duration) >= 0.9,
+        isWatching: !videoProgress.isCompleted && videoProgress.timestamp > 0,
+        remainingTime: formatDuration(Math.floor((videoProgress.duration - videoProgress.timestamp) / 60))
+      };
+    }
 
-    const watched = episodeHistory.progress.watched;
-    const duration = episodeHistory.progress.duration;
-    const remaining = Math.max(0, duration - watched);
+    // Fall back to history progress
+    if (historyProgress?.progress) {
+      const watched = historyProgress.progress.watched;
+      const duration = historyProgress.progress.duration;
+      const remaining = Math.max(0, duration - watched);
 
-    return {
-      progress: (watched / duration) * 100,
-      isCompleted: episodeHistory.isCompleted || (watched / duration) >= 0.9,
-      isWatching: !episodeHistory.isCompleted && watched > 0,
-      remainingTime: formatDuration(Math.floor(remaining / 60))
-    };
+      return {
+        progress: (watched / duration) * 100,
+        isCompleted: historyProgress.isCompleted || (watched / duration) >= 0.9,
+        isWatching: !historyProgress.isCompleted && watched > 0,
+        remainingTime: formatDuration(Math.floor(remaining / 60))
+      };
+    }
+
+    return null;
   };
 
   const handleEpisodeSelect = (season: number, episode: number) => {
     navigate(`/watch/tv/${tvId}?season=${season}&episode=${episode}`);
     onClose();
   };
-
-  const handlePrevious = () => {
-    if (resumeInfo?.season && resumeInfo?.episode) {
-      if (resumeInfo.episode > 1) {
-        handleEpisodeSelect(resumeInfo.season, resumeInfo.episode - 1);
-      } else if (resumeInfo.season > 1) {
-        const prevSeason = seasons.find(s => s.season_number === resumeInfo.season - 1);
-        if (prevSeason) {
-          handleEpisodeSelect(resumeInfo.season - 1, prevSeason.episodes.length);
-        }
-      }
-    }
-  };
-
-  const handleNext = () => {
-    if (resumeInfo?.season && resumeInfo?.episode) {
-      const currentSeason = seasons.find(s => s.season_number === resumeInfo.season);
-      if (currentSeason && resumeInfo.episode < currentSeason.episodes.length) {
-        handleEpisodeSelect(resumeInfo.season, resumeInfo.episode + 1);
-      } else if (resumeInfo.season < seasons.length) {
-        handleEpisodeSelect(resumeInfo.season + 1, 1);
-      }
-    }
-  };
-
-  // Sort episodes by watched status
-  const sortedEpisodes = React.useMemo(() => {
-    if (!currentSeasonData?.episodes) return [];
-    
-    return [...currentSeasonData.episodes].sort((a, b) => {
-      const progressA = getEpisodeProgress(selectedSeason, a.episode_number);
-      const progressB = getEpisodeProgress(selectedSeason, b.episode_number);
-      
-      if (progressA?.isCompleted && !progressB?.isCompleted) return 1;
-      if (!progressA?.isCompleted && progressB?.isCompleted) return -1;
-      return a.episode_number - b.episode_number;
-    });
-  }, [currentSeasonData, selectedSeason, watchHistory]);
 
   if (!isOpen) return null;
 
@@ -146,11 +132,11 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
         onClick={onClose}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-xl md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col max-h-[85vh] md:max-h-[90vh] overflow-hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-xl md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg md:max-h-[90vh] shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col">
         <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <List className="w-5 h-5" />
-            <h3 className="text-lg font-semibold">Select Episode</h3>
+            <h2 className="text-lg font-semibold">Select Episode</h2>
           </div>
           <button
             onClick={onClose}
@@ -160,54 +146,38 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
           </button>
         </div>
 
-        {resumeInfo && (
-          <div className="mx-4 mt-4 mb-2 flex items-center gap-2">
-            <button
-              onClick={handlePrevious}
-              disabled={resumeInfo.season === 1 && resumeInfo.episode === 1}
-              className="w-10 h-10 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 text-light-text-primary dark:text-white rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-gray-400/50 dark:border-white/20 hover:border-red-600 dark:hover:border-red-500"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleEpisodeSelect(resumeInfo.season!, resumeInfo.episode!)}
-              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/20"
-            >
-              <StepForward className="w-4 h-4" />
-              Resume S{resumeInfo.season}:E{resumeInfo.episode}
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={resumeInfo.season === seasons.length && resumeInfo.episode === currentSeasonData?.episodes.length}
-              className="w-10 h-10 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 text-light-text-primary dark:text-white rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-gray-400/50 dark:border-white/20 hover:border-red-600 dark:hover:border-red-500"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            {resumeInfo?.progress && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 Bg-white/10 rounded-b overflow-hidden">
+        {currentProgress && (
+          <button
+            onClick={() => handleEpisodeSelect(currentProgress.season!, currentProgress.episode!)}
+            className="mx-4 mt-4 mb-2 px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+          >
+            <StepForward className="w-5 h-5" />
+            Resume S{currentProgress.season}:E{currentProgress.episode}
+            {currentProgress.progress && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 rounded-b-lg overflow-hidden">
                 <div
                   className="h-full bg-white/30"
                   style={{
-                    width: `${(resumeInfo.progress.watched / resumeInfo.progress.duration) * 100}%`
+                    width: `${(currentProgress.progress.watched / currentProgress.progress.duration) * 100}%`
                   }}
                 />
               </div>
             )}
-          </div>
+          </button>
         )}
 
-        <div className="p-4 border-b border-gray-400/50 dark:border-white/20">
+        <div className="px-4 py-3 border-b border-gray-400/50 dark:border-white/20">
           <div className="relative">
             <select
               value={selectedSeason}
               onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              className="w-full px-4 py-2.5 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 hover:border-red-600 dark:hover:border-red-500 border border-gray-400/50 dark:border-white/20 rounded-md text-light-text-primary dark:text-white appearance-none focus:outline-none transition-all pr-10"
+              className="w-full px-4 py-2.5 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 hover:border-red-600 dark:hover:border-red-500 border border-gray-400/50 dark:border-white/20 rounded-md text-light-text-primary dark:text-dark-text-primary appearance-none focus:outline-none transition-all pr-10"
             >
               {seasons.map((season) => (
                 <option
                   key={season.season_number}
                   value={season.season_number}
-                  className="bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-white"
+                  className="bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary"
                 >
                   {season.name}
                 </option>
@@ -219,18 +189,19 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
 
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <div className="space-y-0">
-            {sortedEpisodes.map((episode, index) => {
+            {currentSeasonData?.episodes.map((episode, index) => {
               const duration = formatDuration(episode.runtime);
               const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
               const isLast = index === (currentSeasonData?.episodes.length || 0) - 1;
-              const isCurrent = resumeInfo?.season === selectedSeason && resumeInfo?.episode === episode.episode_number;
+              const isCurrent = currentProgress?.season === selectedSeason && 
+                              currentProgress?.episode === episode.episode_number;
 
               return (
                 <button
                   key={episode.episode_number}
                   onClick={() => handleEpisodeSelect(selectedSeason, episode.episode_number)}
                   className={cn(
-                    "w-full px-4 py-3 hover:bg-light-surface dark:hover:bg-dark-surface/80 flex gap-4 group relative",
+                    "w-full px-4 py-4 hover:bg-light-surface dark:hover:bg-dark-surface/80 flex gap-4 group relative",
                     isCurrent && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500",
                     !isLast && "border-b border-gray-400/50 dark:border-white/20",
                     progress?.isCompleted && "opacity-60"
@@ -266,7 +237,7 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={cn(
-                        "font-medium truncate max-w-[200px] text-light-text-primary dark:text-white",
+                        "font-medium truncate max-w-[200px] text-light-text-primary dark:text-dark-text-primary",
                         isCurrent && "text-red-600 dark:text-red-500"
                       )}>
                         {episode.episode_number}. {episode.name}

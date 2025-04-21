@@ -6,11 +6,11 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl }) => {
   return (
-    <div className="relative w-full" style={{ height: 'calc(100vh - 56px)' }}>
+    <div className="absolute inset-0">
       <iframe
         key={videoUrl}
         src={videoUrl}
-        className="absolute inset-0 w-full h-full"
+        className="w-full h-full"
         allowFullScreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       />

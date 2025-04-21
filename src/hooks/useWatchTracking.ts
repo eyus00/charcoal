@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { WatchHistoryItem, WatchStatus } from '../store/useStore';
+import { getVideoProgress } from '../lib/watch';
 
 const MINIMUM_WATCH_TIME = 30; // 30 seconds to count as "watched"
 const COMPLETION_THRESHOLD = 0.9; // 90% completion to mark as completed
@@ -44,57 +45,92 @@ export const useWatchTracking = ({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Handle VidLink tracking
+  // Shared progress update handler
+  const handleProgressUpdate = (currentTime: number, duration: number) => {
+    if (!title || !posterPath) return;
+
+    const watched = Math.max(0, Math.min(currentTime, duration));
+    const completionRatio = watched / duration;
+    const isCompleted = completionRatio >= COMPLETION_THRESHOLD;
+
+    // Only update if we have valid data and minimum watch time is met
+    if (watched > MINIMUM_WATCH_TIME && duration > 0) {
+      // Add to watch history
+      onAddToHistory({
+        id: Number(id),
+        mediaType: mediaType as 'movie' | 'tv',
+        title,
+        posterPath,
+        lastWatched: Date.now(),
+        progress: {
+          watched,
+          duration
+        },
+        ...(mediaType === 'tv' && {
+          season: Number(season),
+          episode: Number(episode),
+        }),
+        isCompleted
+      });
+
+      // Update watchlist status based on completion
+      if (isCompleted) {
+        if (mediaType === 'movie') {
+          onUpdateWatchlist(Number(id), 'movie', 'completed');
+        } else if (mediaType === 'tv') {
+          onUpdateWatchlist(Number(id), 'tv', 'watching');
+        }
+      } else if (completionRatio > 0.1) {
+        onUpdateWatchlist(Number(id), mediaType as 'movie' | 'tv', 'watching');
+      }
+
+      // Store progress in a unified format for both players
+      const progressData = {
+        id: Number(id),
+        mediaType,
+        timestamp: watched,
+        duration,
+        progress: completionRatio,
+        ...(mediaType === 'tv' && {
+          season: Number(season),
+          episode: Number(episode)
+        }),
+        isCompleted
+      };
+
+      localStorage.setItem('vidLinkProgress', JSON.stringify(progressData));
+      localStorage.setItem('videasyProgress', JSON.stringify(progressData));
+    }
+  };
+
+  // Handle VidLink and VIDEASY tracking
   useEffect(() => {
     const handlePlayerEvent = (event: MessageEvent) => {
-      if (event.origin !== 'https://vidlink.pro') return;
-      
-      if (event.data?.type === 'MEDIA_DATA') {
-        const mediaData = event.data.data;
-        localStorage.setItem('vidLinkProgress', JSON.stringify(mediaData));
+      // Handle VidLink events
+      if (event.origin === 'https://vidlink.pro') {
+        if (event.data?.type === 'PLAYER_EVENT') {
+          const { event: eventType, currentTime, duration } = event.data.data;
+          
+          if (eventType === 'timeupdate' || eventType === 'pause' || eventType === 'ended') {
+            handleProgressUpdate(currentTime, duration);
+          }
+        }
       }
-      
-      if (event.data?.type === 'PLAYER_EVENT' && title && posterPath) {
-        const { event: eventType, currentTime, duration } = event.data.data;
-        
-        if (eventType === 'timeupdate' || eventType === 'pause' || eventType === 'ended') {
-          const watched = Math.max(0, Math.min(currentTime, duration));
-          const completionRatio = watched / duration;
-          const isCompleted = completionRatio >= COMPLETION_THRESHOLD;
 
-          // Only update if we have valid data and minimum watch time is met
-          if (watched > MINIMUM_WATCH_TIME && duration > 0) {
-            // Add to watch history
-            onAddToHistory({
-              id: Number(id),
-              mediaType: mediaType as 'movie' | 'tv',
-              title,
-              posterPath,
-              lastWatched: Date.now(),
-              progress: {
-                watched,
-                duration
-              },
-              ...(mediaType === 'tv' && {
-                season: Number(season),
-                episode: Number(episode),
-              }),
-              isCompleted
-            });
-
-            // Update watchlist status based on completion
-            if (isCompleted) {
-              if (mediaType === 'movie') {
-                onUpdateWatchlist(Number(id), 'movie', 'completed');
-              } else if (mediaType === 'tv') {
-                // For TV shows, only mark as completed if it's the last episode
-                // For now, just mark as watching
-                onUpdateWatchlist(Number(id), 'tv', 'watching');
-              }
-            } else if (completionRatio > 0.1) { // If they've watched more than 10%, mark as watching
-              onUpdateWatchlist(Number(id), mediaType as 'movie' | 'tv', 'watching');
+      // Handle VIDEASY events
+      if (event.origin === 'https://player.videasy.net') {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data && typeof data === 'object') {
+            const { timestamp, duration, progress, type } = data;
+            
+            if (type === mediaType && timestamp !== undefined && duration) {
+              handleProgressUpdate(timestamp, duration);
             }
           }
+        } catch (e) {
+          console.warn('Invalid VIDEASY message:', e);
         }
       }
     };
@@ -102,4 +138,12 @@ export const useWatchTracking = ({
     window.addEventListener('message', handlePlayerEvent);
     return () => window.removeEventListener('message', handlePlayerEvent);
   }, [title, posterPath, mediaType, id, season, episode, onAddToHistory, onUpdateWatchlist]);
+
+  // Check for existing progress on mount
+  useEffect(() => {
+    const progress = getVideoProgress();
+    if (progress && progress.id === id && progress.mediaType === mediaType) {
+      handleProgressUpdate(progress.timestamp, progress.duration);
+    }
+  }, []);
 };

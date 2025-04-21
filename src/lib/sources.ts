@@ -12,11 +12,18 @@ const vidLinkParams = '?primaryColor=3b82f6&poster=true&autoplay=false';
 
 export const SOURCES: Source[] = [
   {
+    id: 'videasy.net',
+    name: 'VIDEASY',
+    movieUrl: 'https://player.videasy.net/movie/{id}?color=DC2626&nextEpisode=true&episodeSelector=true&autoplay=true',
+    tvUrl: 'https://player.videasy.net/tv/{id}/{season}/{episode}?color=DC2626&nextEpisode=true&episodeSelector=true&autoplayNextEpisode=true',
+    rank: 100, // Highest rank to ensure it's first
+  },
+  {
     id: 'vidlink.pro',
     name: 'Vid Link',
     movieUrl: `https://vidlink.pro/movie/{id}${vidLinkParams}`,
     tvUrl: `https://vidlink.pro/tv/{id}/{season}/{episode}${vidLinkParams}`,
-    rank: 100, // Highest rank to ensure it's first
+    rank: 90,
   },
   {
     id: 'vidsrc.pro',

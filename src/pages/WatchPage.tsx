@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useMedia } from '../api/hooks/useMedia';
 import { SOURCES, getMovieUrl, getTvUrl } from '../lib/sources';
@@ -6,6 +6,7 @@ import { useWatchTracking } from '../hooks/useWatchTracking';
 import { useStore } from '../store/useStore';
 import { useQueries } from '@tanstack/react-query';
 import { mediaService } from '../api/services/media';
+import { cn } from '../lib/utils';
 import VideoPlayer from '../components/watch/VideoPlayer';
 import BottomBar from '../components/watch/BottomBar';
 
@@ -17,8 +18,24 @@ const WatchPage: React.FC = () => {
   const episode = searchParams.get('episode');
   const [selectedSource, setSelectedSource] = useState(SOURCES[0].id);
   const [selectedSeason, setSelectedSeason] = useState(Number(season) || 1);
+  const [isLandscape, setIsLandscape] = useState(false);
 
   const { addToWatchHistory, updateWatchlistStatus } = useStore();
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+
+    return () => {
+      window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('orientationchange', checkOrientation);
+    };
+  }, []);
 
   const { data: details } = useMedia.useDetails(
     mediaType as 'movie' | 'tv',
@@ -90,8 +107,13 @@ const WatchPage: React.FC = () => {
   const isLastEpisode = Number(season) === seasons?.length && Number(episode) === currentSeasonData?.episodes.length;
 
   return (
-    <div className="h-screen flex flex-col bg-black overflow-hidden">
-      <VideoPlayer videoUrl={videoUrl} />
+    <div className={cn(
+      "fixed inset-0 flex flex-col bg-black",
+      isLandscape && "flex-col-reverse"
+    )}>
+      <div className="relative flex-1">
+        <VideoPlayer videoUrl={videoUrl} />
+      </div>
       <BottomBar
         onBack={() => navigate(backUrl)}
         backUrl={backUrl}
@@ -111,6 +133,7 @@ const WatchPage: React.FC = () => {
         isLastEpisode={isLastEpisode}
         tvId={Number(id)}
         isMovie={mediaType === 'movie'}
+        isLandscape={isLandscape}
       />
     </div>
   );
