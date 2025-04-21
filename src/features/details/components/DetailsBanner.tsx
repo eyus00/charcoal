@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Film, Tv, Star, Clock, Play, Bookmark } from 'lucide-react';
+import { Film, Tv, Star, Clock, Play, Bookmark, StepForward } from 'lucide-react';
 import { getImageUrl } from '../../../api/config';
 import { cn } from '../../../lib/utils';
 import { WatchStatus } from '../../../store/useStore';
 import WatchlistMenu from '../../../components/WatchlistMenu';
+import { getResumeInfo } from '../../../lib/watch';
 
 interface DetailsBannerProps {
   type: 'movie' | 'tv';
@@ -23,6 +24,9 @@ interface DetailsBannerProps {
   id: string;
   season?: string;
   episode?: string;
+  watchHistory: WatchHistoryItem[];
+  onPlayClick?: (e: React.MouseEvent) => void;
+  numberOfSeasons?: number;
 }
 
 const DetailsBanner: React.FC<DetailsBannerProps> = ({
@@ -42,11 +46,16 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
   id,
   season,
   episode,
+  watchHistory,
+  onPlayClick,
+  numberOfSeasons,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
+
+  const resumeInfo = getResumeInfo(type, Number(id), watchHistory);
 
   useEffect(() => {
     const checkTextHeight = () => {
@@ -67,6 +76,18 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
     return minutes >= 60 
       ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
       : `${minutes}m`;
+  };
+
+  const getWatchUrl = () => {
+    if (type === 'movie') {
+      return `/watch/movie/${id}`;
+    }
+    
+    if (resumeInfo?.season && resumeInfo?.episode) {
+      return `/watch/tv/${id}?season=${resumeInfo.season}&episode=${resumeInfo.episode}`;
+    }
+    
+    return `/watch/tv/${id}?season=${season || '1'}&episode=${episode || '1'}`;
   };
 
   return (
@@ -106,11 +127,19 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                 <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                 <span className="ml-1 text-white text-base">{rating.toFixed(1)}</span>
               </div>
-              {runtime > 0 && (
-                <div className="flex items-center text-white">
-                  <Clock className="w-5 h-5" />
-                  <span className="ml-2">{formatDuration(runtime)}</span>
-                </div>
+              {type === 'movie' ? (
+                runtime > 0 && (
+                  <div className="flex items-center text-white">
+                    <Clock className="w-5 h-5" />
+                    <span className="ml-2">{formatDuration(runtime)}</span>
+                  </div>
+                )
+              ) : (
+                numberOfSeasons && (
+                  <div className="flex items-center text-white">
+                    <span>{numberOfSeasons} Season{numberOfSeasons > 1 ? 's' : ''}</span>
+                  </div>
+                )
               )}
               {contentRating && (
                 <span className="text-white text-sm px-2 py-0.5 border border-white/20 rounded">
@@ -150,15 +179,41 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
             </div>
 
             <div className="flex justify-center md:justify-start items-center gap-2">
-              <Link
-                to={`/watch/${type}/${id}${type === 'tv' ? `?season=${season}&episode=${episode}` : ''}`}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg border border-white/20"
-              >
-                <Play className="w-5 h-5 text-white" />
-                <span className="text-white font-medium">
-                  {watchlistItem?.status === 'watching' ? 'Resume' : 'Play'}
-                </span>
-              </Link>
+              {type === 'movie' ? (
+                <Link
+                  to={getWatchUrl()}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg border border-white/20"
+                >
+                  {resumeInfo && !resumeInfo.isCompleted ? (
+                    <>
+                      <StepForward className="w-5 h-5 text-white" />
+                      <span className="text-white font-medium">Resume</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 text-white" />
+                      <span className="text-white font-medium">Play</span>
+                    </>
+                  )}
+                </Link>
+              ) : (
+                <button
+                  onClick={onPlayClick}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg border border-white/20"
+                >
+                  {resumeInfo && !resumeInfo.isCompleted ? (
+                    <>
+                      <StepForward className="w-5 h-5 text-white" />
+                      <span className="text-white font-medium">Resume</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 text-white" />
+                      <span className="text-white font-medium">Play</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               <div className="relative">
                 <button

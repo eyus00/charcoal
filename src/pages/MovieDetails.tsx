@@ -1,33 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useStore, WatchStatus } from '../store/useStore';
-import { SOURCES, getMovieUrl } from '../lib/sources';
-import { useWatchTracking } from '../hooks/useWatchTracking';
 import { useMovieDetails } from '../features/details/api/useMovieDetails';
 import DetailsBanner from '../features/details/components/DetailsBanner';
-import PlayerSection from '../features/details/components/PlayerSection';
 import RelatedContent from '../features/details/components/RelatedContent';
 
 const MovieDetails = () => {
   const { id } = useParams();
-  const [selectedSource, setSelectedSource] = useState(SOURCES[0].id);
   const { details, isLoading, contentRating } = useMovieDetails(id);
-  const { addToWatchlist, removeFromWatchlist, getWatchlistItem, addToWatchHistory } = useStore();
+  const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
 
   const watchlistItem = getWatchlistItem(Number(id), 'movie');
-
-  useWatchTracking({
-    mediaType: 'movie',
-    id: Number(id),
-    title: details?.title,
-    posterPath: details?.poster_path,
-    onAddToHistory: addToWatchHistory,
-    onUpdateWatchlist: (id, mediaType, status) => {
-      if (status === 'watching') {
-        handleWatchlistAdd('watching');
-      }
-    },
-  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -36,7 +19,6 @@ const MovieDetails = () => {
   if (isLoading || !details) return <div>Loading...</div>;
 
   const year = new Date(details.release_date).getFullYear();
-  const videoUrl = getMovieUrl(selectedSource, Number(id));
 
   const handleWatchlistAdd = (status: WatchStatus) => {
     addToWatchlist({
@@ -66,12 +48,7 @@ const MovieDetails = () => {
         onWatchlistAdd={handleWatchlistAdd}
         onWatchlistRemove={() => removeFromWatchlist(Number(id), 'movie')}
         id={id!}
-      />
-
-      <PlayerSection
-        videoUrl={videoUrl}
-        selectedSource={selectedSource}
-        onSourceSelect={setSelectedSource}
+        watchHistory={watchHistory}
       />
 
       <RelatedContent

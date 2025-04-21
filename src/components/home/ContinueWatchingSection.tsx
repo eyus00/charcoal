@@ -11,14 +11,11 @@ interface ContinueWatchingSectionProps {
   items: WatchHistoryItem[];
 }
 
-// ...imports unchanged
-
 const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Fetch episode details unchanged
   const episodeQueries = useQuery({
     queryKey: ['episodes', items.map(item => `${item.id}-${item.season}-${item.episode}`)],
     queryFn: async () => {
@@ -37,7 +34,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
 
   const checkScrollPosition = () => {
     if (!containerRef.current) return;
-
     const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
     setCanScrollLeft(scrollLeft > 0);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
@@ -47,9 +43,8 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScrollPosition);
-      checkScrollPosition(); // Initial check
+      checkScrollPosition();
     }
-
     return () => {
       if (container) {
         container.removeEventListener('scroll', checkScrollPosition);
@@ -59,7 +54,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
-
     const scrollAmount = containerRef.current.clientWidth * 0.8;
     const newScrollLeft = direction === 'left'
       ? containerRef.current.scrollLeft - scrollAmount
@@ -70,8 +64,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
       behavior: 'smooth'
     });
   };
-
-  if (items.length === 0) return null;
 
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -86,6 +78,8 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
   const formatSeasonEpisode = (season: number, episode: number) => {
     return `S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
   };
+
+  if (items.length === 0) return null;
 
   return (
     <div className="h-full flex flex-col bg-light-bg dark:bg-dark-bg border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">

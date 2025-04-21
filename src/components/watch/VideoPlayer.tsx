@@ -1,16 +1,16 @@
 import React from 'react';
 
 interface VideoPlayerProps {
-  url: string;
+  videoUrl: string;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ url }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl }) => {
   return (
-    <div className="h-screen pb-14 md:pb-0 md:pt-14">
+    <div className="relative w-full" style={{ height: 'calc(100vh - 56px)' }}>
       <iframe
-        key={url}
-        src={url}
-        className="w-full h-full"
+        key={videoUrl}
+        src={videoUrl}
+        className="absolute inset-0 w-full h-full"
         allowFullScreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       />

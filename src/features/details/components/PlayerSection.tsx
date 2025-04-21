@@ -152,40 +152,34 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
               <Server className="w-4 h-4" />
               <span className="font-medium text-sm">Source</span>
             </button>
-            <div className="flex items-center justify-center gap-2 flex-1">
+            <div className="flex items-center gap-1 bg-white/5 rounded-md p-1 border border-white/20 w-[min(400px,80vw)] md:w-[min(400px,50vw)]">
               {seasons && (
-                <button
-                  onClick={handlePrevious}
-                  disabled={currentSeason === 1 && currentEpisode === 1}
-                  className="p-2 bg-white/10 dark:bg-dark-surface hover:bg-white/20 dark:hover:bg-dark-surface/80 rounded-md border border-gray-400/50 dark:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Previous Episode"
-                >
-                  <ChevronLeft className="w-4 h-4 text-white" />
-                </button>
-              )}
-              <span className="text-white font-medium text-sm truncate max-w-[300px] text-center">
-                {displayTitle}
-              </span>
-              {seasons && (
-                <button
-                  onClick={handleNext}
-                  disabled={currentSeason === seasons.length && currentEpisode === currentSeasonData?.episodes.length}
-                  className="p-2 bg-white/10 dark:bg-dark-surface hover:bg-white/20 dark:hover:bg-dark-surface/80 rounded-md border border-gray-400/50 dark:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Next Episode"
-                >
-                  <ChevronRight className="w-4 h-4 text-white" />
-                </button>
+                <>
+                  <button
+                    onClick={handlePrevious}
+                    disabled={currentSeason === 1 && currentEpisode === 1}
+                    className="px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center transition-all duration-200 border border-white/20 hover:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsEpisodesOpen(!isEpisodesOpen)}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-200 border border-white/20 hover:border-red-500 flex-1"
+                  >
+                    <span className="text-white font-medium text-sm truncate">
+                      {displayTitle}
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    disabled={currentSeason === seasons.length && currentEpisode === currentSeasonData?.episodes.length}
+                    className="px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center transition-all duration-200 border border-white/20 hover:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
               )}
             </div>
-            {seasons && (
-              <button
-                onClick={() => setIsEpisodesOpen(!isEpisodesOpen)}
-                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center justify-center gap-2 transition-all duration-200 border border-white/20 hover:border-red-500"
-              >
-                <List className="w-4 h-4" />
-                <span className="font-medium text-sm">Episodes</span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -193,15 +187,13 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
           <div
             ref={episodeMenuRef}
             className={cn(
-              "absolute right-4 bottom-14 h-[60%] w-[min(400px,80vw)] bg-light-bg dark:bg-dark-bg border border-gray-400/50 dark:border-white/20 rounded-md transition-transform duration-300 z-20 shadow-xl",
-              isEpisodesOpen ? "translate-x-0" : "translate-x-[calc(100%+16px)]",
+              "absolute right-2 bottom-14 h-[60%] w-[min(400px,80vw)] bg-light-bg dark:bg-dark-bg border border-gray-400/50 dark:border-white/20 rounded-md transition-all duration-300 z-20 shadow-xl",
+              isEpisodesOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none",
               "md:w-[min(400px,50vw)]",
-              "bottom-14 top-auto h-[70vh] w-[calc(100%-16px)] mx-2 rounded-md md:h-[60%] md:mx-0 md:w-[min(400px,50vw)] md:rounded-md md:bottom-14 md:top-auto",
-              isEpisodesOpen ? "md:translate-y-0 translate-y-0" : "md:translate-y-0 translate-y-full"
+              "bottom-14 top-auto h-[70vh] w-[calc(100%-16px)] mx-2 rounded-md md:h-[60%] md:mx-0 md:w-[min(400px,50vw)] md:rounded-md md:bottom-14 md:top-auto"
             )}
           >
             <div className="flex flex-col h-full">
-              {/* Header */}
               <div className="p-4 flex items-center justify-between border-b border-gray-400/50 dark:border-white/20">
                 <div className="flex items-center gap-2">
                   <List className="w-5 h-5 text-white" />
@@ -216,7 +208,6 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
                 </button>
               </div>
 
-              {/* Content */}
               <div className="p-4 border-b border-gray-400/50 dark:border-white/20">
                 <div className="relative">
                   <select
@@ -242,7 +233,6 @@ const PlayerSection: React.FC<PlayerSectionProps> = ({
                 </div>
               </div>
 
-              {/* Episode List */}
               <div className="flex-1 overflow-y-auto scrollbar-thin">
                 <div className="space-y-0">
                   {currentSeasonData?.episodes.map((episode, index) => {

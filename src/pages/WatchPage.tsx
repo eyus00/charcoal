@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useMedia } from '../api/hooks/useMedia';
-import { SOURCES, getSource, getMovieUrl, getTvUrl } from '../lib/sources';
-import { useStore, WatchStatus } from '../store/useStore';
+import { SOURCES, getMovieUrl, getTvUrl } from '../lib/sources';
+import { useWatchTracking } from '../hooks/useWatchTracking';
+import { useStore } from '../store/useStore';
 import { useQueries } from '@tanstack/react-query';
 import { mediaService } from '../api/services/media';
-import EpisodeMenu from '../components/EpisodeMenu';
-import WatchHeader from '../components/watch/WatchHeader';
-import SourcesMenu from '../components/watch/SourcesMenu';
 import VideoPlayer from '../components/watch/VideoPlayer';
-import { useWatchTracking } from '../hooks/useWatchTracking';
+import BottomBar from '../components/watch/BottomBar';
 
 const WatchPage: React.FC = () => {
   const { mediaType, id } = useParams();
@@ -18,15 +16,9 @@ const WatchPage: React.FC = () => {
   const season = searchParams.get('season');
   const episode = searchParams.get('episode');
   const [selectedSource, setSelectedSource] = useState(SOURCES[0].id);
-  const [isEpisodeMenuOpen, setIsEpisodeMenuOpen] = useState(false);
-  const [isSourcesMenuOpen, setIsSourcesMenuOpen] = useState(false);
-  const { 
-    addToWatchHistory, 
-    addToWatchlist, 
-    removeFromWatchlist, 
-    getWatchlistItem,
-    updateWatchlistStatus 
-  } = useStore();
+  const [selectedSeason, setSelectedSeason] = useState(Number(season) || 1);
+
+  const { addToWatchHistory, updateWatchlistStatus } = useStore();
 
   const { data: details } = useMedia.useDetails(
     mediaType as 'movie' | 'tv',
@@ -45,9 +37,6 @@ const WatchPage: React.FC = () => {
     .filter(query => query.data)
     .map(query => query.data);
 
-  const watchlistItem = getWatchlistItem(Number(id), mediaType as 'movie' | 'tv');
-
-  // Track watch time and history
   useWatchTracking({
     mediaType,
     id: Number(id),
@@ -67,7 +56,6 @@ const WatchPage: React.FC = () => {
     return <div>Invalid media type or missing parameters</div>;
   }
 
-  const title = mediaType === 'movie' ? details?.title : details?.name;
   const backUrl = mediaType === 'movie' ? `/movie/${id}` : `/tv/${id}`;
 
   const handlePrevious = () => {
@@ -95,57 +83,35 @@ const WatchPage: React.FC = () => {
     navigate(`/watch/tv/${id}?season=${season}&episode=${episode}`);
   };
 
-  const handleWatchlistAdd = (status: WatchStatus) => {
-    if (!details) return;
-    
-    addToWatchlist({
-      id: Number(id),
-      mediaType: mediaType as 'movie' | 'tv',
-      title: mediaType === 'movie' ? details.title : details.name,
-      posterPath: details.poster_path,
-      addedAt: Date.now(),
-      status,
-    });
-  };
+  const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
+  const currentEpisodeData = currentSeasonData?.episodes.find(e => e.episode_number === Number(episode));
+
+  const isFirstEpisode = Number(season) === 1 && Number(episode) === 1;
+  const isLastEpisode = Number(season) === seasons?.length && Number(episode) === currentSeasonData?.episodes.length;
 
   return (
-    <div className="min-h-screen bg-black">
-      <WatchHeader
-        title={title}
-        mediaType={mediaType!}
-        season={season}
-        episode={episode}
+    <div className="h-screen flex flex-col bg-black overflow-hidden">
+      <VideoPlayer videoUrl={videoUrl} />
+      <BottomBar
+        onBack={() => navigate(backUrl)}
         backUrl={backUrl}
-        watchlistItem={watchlistItem}
-        onWatchlistAdd={handleWatchlistAdd}
-        onWatchlistRemove={() => removeFromWatchlist(Number(id), mediaType as 'movie' | 'tv')}
-        onSourcesOpen={() => setIsSourcesMenuOpen(true)}
-        onEpisodesOpen={() => setIsEpisodeMenuOpen(true)}
-      />
-
-      <VideoPlayer url={videoUrl} />
-
-      <SourcesMenu
-        isOpen={isSourcesMenuOpen}
-        onClose={() => setIsSourcesMenuOpen(false)}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+        onSourceChange={setSelectedSource}
         selectedSource={selectedSource}
-        onSourceSelect={setSelectedSource}
+        showTitle={mediaType === 'movie' ? details?.title : details?.name}
+        episodeTitle={currentEpisodeData?.name}
+        seasons={seasons}
+        currentSeason={season}
+        currentEpisode={episode}
+        selectedSeason={selectedSeason}
+        onSeasonChange={setSelectedSeason}
+        onEpisodeSelect={handleEpisodeSelect}
+        isFirstEpisode={isFirstEpisode}
+        isLastEpisode={isLastEpisode}
+        tvId={Number(id)}
+        isMovie={mediaType === 'movie'}
       />
-
-      {mediaType === 'tv' && details && (
-        <EpisodeMenu
-          isOpen={isEpisodeMenuOpen}
-          onClose={() => setIsEpisodeMenuOpen(false)}
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-          onEpisodeSelect={handleEpisodeSelect}
-          seasons={seasons}
-          currentSeason={Number(season)}
-          currentEpisode={Number(episode)}
-          totalSeasons={details.number_of_seasons}
-          totalEpisodes={details.seasons?.[Number(season) - 1]?.episode_count}
-        />
-      )}
     </div>
   );
 };

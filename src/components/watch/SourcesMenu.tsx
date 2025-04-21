@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Server } from 'lucide-react';
+import { Server, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { SOURCES } from '../../lib/sources';
 
@@ -16,72 +16,65 @@ const SourcesMenu: React.FC<SourcesMenuProps> = ({
   selectedSource,
   onSourceSelect,
 }) => {
+  if (!isOpen) return null;
+
   return (
     <>
-      {/* Backdrop */}
       <div
-        className={cn(
-          'fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 ease-in-out',
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
+        className="fixed inset-0 bg-black/50 z-[100] transition-opacity duration-200"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div
-        className={cn(
-          'fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out',
-          isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
-        )}
-      >
-        <div className="bg-light-bg dark:bg-dark-bg border border-gray-400/50 dark:border-white/20 rounded-lg shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
-          {/* Header */}
-          <div className="p-4 flex items-center justify-between border-b border-gray-400/50 dark:border-white/20">
+      <div className="fixed inset-x-0 bottom-0 z-[100] bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-md md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg shadow-xl border-2 border-gray-400/50 dark:border-white/20">
+        <div className="flex flex-col">
+          <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Server className="w-5 h-5 text-white" />
-              <h3 className="text-lg font-semibold text-white">
-                Select Source
-              </h3>
+              <Server className="w-5 h-5" />
+              <h3 className="text-lg font-semibold">Select Source</h3>
             </div>
             <button
               onClick={onClose}
-              className="p-2 bg-white/10 dark:bg-dark-surface hover:bg-white/20 dark:hover:bg-dark-surface/80 rounded-lg border border-gray-400/50 dark:border-white/20 transition-all"
-              aria-label="Close"
+              className="p-2 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 rounded-md border border-gray-400/50 dark:border-white/20 transition-all"
             >
-              <X className="w-4 h-4 text-white" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-4 overflow-y-auto">
-            <div className="space-y-2">
-              {SOURCES.map((source) => (
+          <div className="overflow-y-auto max-h-[60vh] md:max-h-[400px]">
+            {SOURCES.map((source, index) => (
+              <div key={source.id}>
                 <button
-                  key={source.id}
-                  onClick={() => {
-                    onSourceSelect(source.id);
-                    onClose();
-                  }}
+                  onClick={() => onSourceSelect(source.id)}
                   className={cn(
-                    'w-full flex items-center justify-between px-3 py-2 rounded-lg border border-gray-400/50 dark:border-white/20 transition-all duration-200 backdrop-blur-sm relative',
-                    'hover:bg-white/10 dark:hover:bg-dark-surface/80 hover:border-red-600 dark:hover:border-red-500',
-                    selectedSource === source.id
-                      ? 'bg-red-600/10 dark:bg-red-500/10 after:content-[""] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500 after:rounded-l-lg'
-                      : 'bg-white/10 dark:bg-dark-surface text-white'
+                    "w-full px-4 py-4 hover:bg-light-surface dark:hover:bg-dark-surface/80 flex items-center justify-between group relative",
+                    selectedSource === source.id && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500"
                   )}
                 >
-                  <span className="font-medium text-sm text-white">{source.name}</span>
-                  <div
-                    className={cn(
-                      'w-4 h-4 rounded-full transition-all duration-200',
-                      selectedSource === source.id
-                        ? 'bg-red-600 dark:bg-red-500 ring-2 ring-red-600/50 dark:ring-red-500/50'
-                        : 'border-2 border-gray-400/50 dark:border-white/20'
+                  <div className="flex flex-col items-start gap-1">
+                    <span className={cn(
+                      "font-medium",
+                      selectedSource === source.id && "text-red-600 dark:text-red-500"
+                    )}>
+                      {source.name}
+                    </span>
+                    {source.id === 'vidlink.pro' && (
+                      <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                        Recommended
+                      </span>
                     )}
-                  />
+                  </div>
+                  <div className={cn(
+                    "w-3 h-3 rounded-full border-2 transition-colors",
+                    selectedSource === source.id 
+                      ? "bg-red-600 border-red-600 dark:bg-red-500 dark:border-red-500" 
+                      : "border-light-text-secondary/50 dark:border-white/50"
+                  )} />
                 </button>
-              ))}
-            </div>
+                {index < SOURCES.length - 1 && (
+                  <div className="border-b border-gray-400/50 dark:border-white/20" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>

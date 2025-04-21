@@ -1,38 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useStore, WatchStatus } from '../store/useStore';
-import { SOURCES, getTvUrl } from '../lib/sources';
-import { useWatchTracking } from '../hooks/useWatchTracking';
 import { useTVDetails } from '../features/details/api/useTVDetails';
 import DetailsBanner from '../features/details/components/DetailsBanner';
-import PlayerSection from '../features/details/components/PlayerSection';
 import RelatedContent from '../features/details/components/RelatedContent';
+import TVEpisodeSelector from '../components/TVEpisodeSelector';
 
 const TVDetails = () => {
   const { id } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedSource, setSelectedSource] = useState(SOURCES[0].id);
+  const [searchParams] = useSearchParams();
   const { details, isLoading, contentRating, seasons } = useTVDetails(id);
-  const { addToWatchlist, removeFromWatchlist, getWatchlistItem, addToWatchHistory, sidebarOpen } = useStore();
+  const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
+  const [isEpisodeSelectorOpen, setIsEpisodeSelectorOpen] = useState(false);
 
   const season = searchParams.get('season') || '1';
   const episode = searchParams.get('episode') || '1';
   const watchlistItem = getWatchlistItem(Number(id), 'tv');
-
-  useWatchTracking({
-    mediaType: 'tv',
-    id: Number(id),
-    title: details?.name,
-    posterPath: details?.poster_path,
-    season,
-    episode,
-    onAddToHistory: addToWatchHistory,
-    onUpdateWatchlist: (id, mediaType, status) => {
-      if (status === 'watching') {
-        handleWatchlistAdd('watching');
-      }
-    },
-  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -41,7 +24,6 @@ const TVDetails = () => {
   if (isLoading || !details) return <div>Loading...</div>;
 
   const year = new Date(details.first_air_date).getFullYear();
-  const videoUrl = getTvUrl(selectedSource, Number(id), Number(season), Number(episode));
 
   const handleWatchlistAdd = (status: WatchStatus) => {
     addToWatchlist({
@@ -54,8 +36,9 @@ const TVDetails = () => {
     });
   };
 
-  const handleEpisodeSelect = (season: number, episode: number) => {
-    setSearchParams({ season: season.toString(), episode: episode.toString() });
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsEpisodeSelectorOpen(true);
   };
 
   return (
@@ -76,17 +59,9 @@ const TVDetails = () => {
         id={id!}
         season={season}
         episode={episode}
-      />
-
-      <PlayerSection
-        videoUrl={videoUrl}
-        selectedSource={selectedSource}
-        onSourceSelect={setSelectedSource}
-        seasons={seasons}
-        currentSeason={Number(season)}
-        currentEpisode={Number(episode)}
-        onEpisodeSelect={handleEpisodeSelect}
-        sidebarOpen={sidebarOpen}
+        watchHistory={watchHistory}
+        onPlayClick={handlePlayClick}
+        numberOfSeasons={details.number_of_seasons}
       />
 
       <RelatedContent
@@ -94,6 +69,14 @@ const TVDetails = () => {
         similar={details.similar}
         recommendations={details.recommendations}
         type="tv"
+      />
+
+      <TVEpisodeSelector
+        isOpen={isEpisodeSelectorOpen}
+        onClose={() => setIsEpisodeSelectorOpen(false)}
+        seasons={seasons}
+        tvId={Number(id)}
+        title={details.name}
       />
     </div>
   );

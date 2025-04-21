@@ -11,6 +11,7 @@ export interface WatchHistoryItem {
     watched: number;
     duration: number;
   };
+  isCompleted?: boolean;
   // For TV Shows
   season?: number;
   episode?: number;
@@ -57,46 +58,45 @@ export const useStore = create<SearchStore>()(
       watchHistory: [],
       addToWatchHistory: (item) =>
         set((state) => {
-          const history = state.watchHistory.filter(
-            (historyItem) => 
-              !(historyItem.id === item.id && historyItem.mediaType === item.mediaType)
+          // Get existing history items for this content
+          const existingItems = state.watchHistory.filter(
+            historyItem => historyItem.id === item.id && historyItem.mediaType === item.mediaType
           );
 
-          // Auto-add to watchlist as "watching" if recently watched
-          const now = Date.now();
-          if (now - item.lastWatched < RECENT_WATCH_THRESHOLD) {
-            const existingWatchlistItem = state.watchlist.find(
-              (watchItem) => watchItem.id === item.id && watchItem.mediaType === item.mediaType
-            );
+          // For TV shows, keep track of all episodes
+          const otherEpisodes = item.mediaType === 'tv' 
+            ? state.watchHistory.filter(
+                historyItem => 
+                  historyItem.id === item.id && 
+                  historyItem.mediaType === 'tv' &&
+                  (historyItem.season !== item.season || historyItem.episode !== item.episode)
+              )
+            : [];
 
-            if (!existingWatchlistItem) {
-              state.watchlist.unshift({
-                id: item.id,
-                mediaType: item.mediaType,
-                title: item.title,
-                posterPath: item.posterPath,
-                addedAt: now,
-                status: 'watching',
-              });
-            } else if (existingWatchlistItem.status === 'planned') {
-              // Update status to watching if it was planned
-              state.watchlist = state.watchlist.map((watchItem) =>
-                watchItem.id === item.id && watchItem.mediaType === item.mediaType
-                  ? { ...watchItem, status: 'watching' }
-                  : watchItem
-              );
-            }
-          }
+          // Filter out old entries for this specific episode/movie
+          const filteredHistory = state.watchHistory.filter(
+            historyItem => 
+              !(historyItem.id === item.id && 
+                historyItem.mediaType === item.mediaType &&
+                (historyItem.mediaType === 'movie' || 
+                 (historyItem.season === item.season && historyItem.episode === item.episode))
+              )
+          );
 
+          // Add the new item
           return {
-            watchHistory: [item, ...history].slice(0, 50), // Keep only last 50 items
-            watchlist: state.watchlist,
+            watchHistory: [item, ...filteredHistory]
+              .filter(historyItem => {
+                const now = Date.now();
+                return !historyItem.isCompleted || now - historyItem.lastWatched < RECENT_WATCH_THRESHOLD;
+              })
+              .slice(0, 50), // Keep only last 50 items
           };
         }),
       removeFromWatchHistory: (id, mediaType) =>
         set((state) => ({
           watchHistory: state.watchHistory.filter(
-            (item) => !(item.id === id && item.mediaType === item.mediaType)
+            (item) => !(item.id === id && item.mediaType === mediaType)
           ),
         })),
       clearWatchHistory: () => set({ watchHistory: [] }),
@@ -114,7 +114,7 @@ export const useStore = create<SearchStore>()(
       removeFromWatchlist: (id, mediaType) =>
         set((state) => ({
           watchlist: state.watchlist.filter(
-            (item) => !(item.id === id && item.mediaType === item.mediaType)
+            (item) => !(item.id === id && item.mediaType === mediaType)
           ),
         })),
       updateWatchlistStatus: (id, mediaType, status) =>
