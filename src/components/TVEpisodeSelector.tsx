@@ -142,11 +142,11 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 z-[100] transition-opacity duration-200"
+        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
         onClick={onClose}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-[100] bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-xl md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col max-h-[85vh] md:max-h-[90vh] overflow-hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-xl md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col max-h-[85vh] md:max-h-[90vh] overflow-hidden">
         <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <List className="w-5 h-5" />
@@ -232,7 +232,8 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
                   className={cn(
                     "w-full px-4 py-3 hover:bg-light-surface dark:hover:bg-dark-surface/80 flex gap-4 group relative",
                     isCurrent && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500",
-                    !isLast && "border-b border-gray-400/50 dark:border-white/20"
+                    !isLast && "border-b border-gray-400/50 dark:border-white/20",
+                    progress?.isCompleted && "opacity-60"
                   )}
                 >
                   <div className="w-28 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded-md border border-gray-400/50 dark:border-white/20 overflow-hidden relative">
