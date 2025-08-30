@@ -127,13 +127,16 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
 
   return (
     <>
+      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
         onClick={onClose}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 md:max-w-xl md:right-auto md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:rounded-lg md:max-h-[90vh] shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col">
-        <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between">
+      {/* Bottom Sheet */}
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <List className="w-5 h-5" />
             <h2 className="text-lg font-semibold">Select Episode</h2>
@@ -146,27 +149,31 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
           </button>
         </div>
 
+        {/* Resume Button */}
         {currentProgress && (
-          <button
-            onClick={() => handleEpisodeSelect(currentProgress.season!, currentProgress.episode!)}
-            className="mx-4 mt-4 mb-2 px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
-          >
-            <StepForward className="w-5 h-5" />
-            Resume S{currentProgress.season}:E{currentProgress.episode}
-            {currentProgress.progress && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 rounded-b-lg overflow-hidden">
-                <div
-                  className="h-full bg-white/30"
-                  style={{
-                    width: `${(currentProgress.progress.watched / currentProgress.progress.duration) * 100}%`
-                  }}
-                />
-              </div>
-            )}
-          </button>
+          <div className="px-4 pt-4 flex-shrink-0">
+            <button
+              onClick={() => handleEpisodeSelect(currentProgress.season!, currentProgress.episode!)}
+              className="w-full px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors relative"
+            >
+              <StepForward className="w-5 h-5" />
+              Resume S{currentProgress.season}:E{currentProgress.episode}
+              {currentProgress.progress && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 rounded-b-lg overflow-hidden">
+                  <div
+                    className="h-full bg-white/30"
+                    style={{
+                      width: `${(currentProgress.progress.watched / currentProgress.progress.duration) * 100}%`
+                    }}
+                  />
+                </div>
+              )}
+            </button>
+          </div>
         )}
 
-        <div className="px-4 py-3 border-b border-gray-400/50 dark:border-white/20">
+        {/* Season Selector */}
+        <div className="px-4 py-3 border-b border-gray-400/50 dark:border-white/20 flex-shrink-0">
           <div className="relative">
             <select
               value={selectedSeason}
@@ -187,6 +194,7 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
           </div>
         </div>
 
+        {/* Episodes List */}
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <div className="space-y-0">
             {currentSeasonData?.episodes.map((episode, index) => {
