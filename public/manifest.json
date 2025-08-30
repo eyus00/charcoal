@@ -1,22 +1,21 @@
 {
-  "name": "Charcoal - Movie & TV Streaming",
-  "short_name": "Charcoal",
-  "description": "Stream movies and TV shows with Charcoal",
+  "name": "StreamVibe",
+  "short_name": "StreamVibe",
+  "description": "Your ultimate streaming companion",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#DC2626",
+  "background_color": "#0f0f23",
+  "theme_color": "#e50914",
   "orientation": "portrait-primary",
-  "scope": "/",
   "icons": [
     {
-      "src": "/pwa-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/pwa-512x512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -32,7 +31,7 @@
     },
     {
       "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
+      "sizes": "375x812",
       "type": "image/png",
       "form_factor": "narrow"
     }

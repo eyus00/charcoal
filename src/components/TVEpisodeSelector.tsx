@@ -4,7 +4,8 @@ import { X, StepForward, ChevronDown, List, Play, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getImageUrl } from '../api/config';
 import { useStore } from '../store/useStore';
-import { getVideoProgress } from '../lib/watch';
+import { ChevronDown, Play } from 'lucide-react';
+import { BottomSheet } from './BottomSheet';
 
 interface Episode {
   episode_number: number;
@@ -36,12 +37,19 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
   tvId,
   title,
 }) => {
-  const navigate = useNavigate();
-  const [selectedSeason, setSelectedSeason] = React.useState(1);
+  const [isSeasonOpen, setIsSeasonOpen] = useState(false);
+  const [isEpisodeOpen, setIsEpisodeOpen] = useState(false);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
   const { watchHistory } = useStore();
 
   // Get resume info from both sources
+  const handleMobileEpisodeSelect = (seasonNum: number, episodeNum: number) => {
+    onSeasonChange(seasonNum);
+    onEpisodeChange(episodeNum);
+    setIsMobileSheetOpen(false);
+  };
+
   const resumeInfo = getVideoProgress();
   const historyInfo = watchHistory.find(
     item => item.mediaType === 'tv' && item.id === tvId
@@ -127,6 +135,141 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
 
   return (
     <>
+      {/* Desktop Version */}
+      <div className="hidden lg:block space-y-4">
+        {/* Season Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setIsSeasonOpen(!isSeasonOpen)}
+            className="w-full flex items-center justify-between bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            <span>Season {selectedSeason}</span>
+            <ChevronDown className={`w-5 h-5 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isSeasonOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+              {seasons.map((season) => (
+                <button
+                  key={season.season_number}
+                  onClick={() => {
+                    onSeasonChange(season.season_number);
+                    setIsSeasonOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-700 transition-colors ${
+                    season.season_number === selectedSeason ? 'bg-red-600' : ''
+                  }`}
+                >
+                  Season {season.season_number}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Episode Selector */}
+        {currentSeason && (
+          <div className="relative">
+            <button
+              onClick={() => setIsEpisodeOpen(!isEpisodeOpen)}
+              className="w-full flex items-center justify-between bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <span>Episode {selectedEpisode}: {currentEpisode?.name}</span>
+              <ChevronDown className={`w-5 h-5 transition-transform ${isEpisodeOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isEpisodeOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                {currentSeason.episodes.map((episode) => (
+                  <button
+                    key={episode.episode_number}
+                    onClick={() => {
+                      onEpisodeChange(episode.episode_number);
+                      setIsEpisodeOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-700 transition-colors ${
+                      episode.episode_number === selectedEpisode ? 'bg-red-600' : ''
+                    }`}
+                  >
+                    <div className="font-medium">Episode {episode.episode_number}: {episode.name}</div>
+                    {episode.overview && (
+                      <div className="text-sm text-gray-400 mt-1 line-clamp-2">{episode.overview}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Version */}
+      <div className="lg:hidden">
+        <button
+          onClick={() => setIsMobileSheetOpen(true)}
+          className="w-full flex items-center justify-between bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          <div className="text-left">
+            <div className="font-medium">Season {selectedSeason}, Episode {selectedEpisode}</div>
+            <div className="text-sm text-gray-400">{currentEpisode?.name}</div>
+          </div>
+          <ChevronDown className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Mobile Bottom Sheet */}
+      <BottomSheet
+        isOpen={isMobileSheetOpen}
+        onClose={() => setIsMobileSheetOpen(false)}
+        title="Select Episode"
+      >
+        <div className="p-6 space-y-6">
+          {seasons.map((season) => (
+            <div key={season.season_number} className="space-y-3">
+              <h4 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
+                Season {season.season_number}
+              </h4>
+              <div className="space-y-2">
+                {season.episodes.map((episode) => (
+                  <button
+                    key={episode.episode_number}
+                    onClick={() => handleMobileEpisodeSelect(season.season_number, episode.episode_number)}
+                    className={`w-full text-left p-4 rounded-lg transition-colors ${
+                      season.season_number === selectedSeason && episode.episode_number === selectedEpisode
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <Play size={16} className="text-red-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">
+                          Episode {episode.episode_number}: {episode.name}
+                        </div>
+                        {episode.overview && (
+                          <div className="text-sm text-gray-400 mt-1 line-clamp-3">
+                            {episode.overview}
+                          </div>
+                        )}
+                        {episode.runtime && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {episode.runtime} min
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </BottomSheet>
+    </>
+  );
+};
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
