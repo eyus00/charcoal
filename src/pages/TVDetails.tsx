@@ -5,6 +5,7 @@ import { useTVDetails } from '../features/details/api/useTVDetails';
 import DetailsBanner from '../features/details/components/DetailsBanner';
 import RelatedContent from '../features/details/components/RelatedContent';
 import TVEpisodeSelector from '../components/TVEpisodeSelector';
+import { getVideoProgress } from '../lib/watch';
 
 const TVDetails = () => {
   const { id } = useParams();
@@ -12,15 +13,25 @@ const TVDetails = () => {
   const { details, isLoading, contentRating, seasons } = useTVDetails(id);
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem, watchHistory } = useStore();
   const [isEpisodeSelectorOpen, setIsEpisodeSelectorOpen] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState(1);
 
   const season = searchParams.get('season') || '1';
   const episode = searchParams.get('episode') || '1';
   const watchlistItem = getWatchlistItem(Number(id), 'tv');
+  const currentSeason = seasons?.find(s => s.season_number === selectedSeason);
+  const currentEpisode = currentSeason?.episodes?.find(e => e.episode_number === selectedEpisode);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+    if (seasons && seasons.length > 0) {
+      setSelectedSeason(Number(season));
+      setSelectedEpisode(Number(episode));
+    }
+  }, [seasons, season, episode]);
   if (isLoading || !details) return <div>Loading...</div>;
 
   const year = new Date(details.first_air_date).getFullYear();
@@ -77,6 +88,13 @@ const TVDetails = () => {
         seasons={seasons}
         tvId={Number(id)}
         title={details.name}
+        selectedSeason={selectedSeason}
+        selectedEpisode={selectedEpisode}
+        onSeasonChange={setSelectedSeason}
+        onEpisodeChange={setSelectedEpisode}
+        currentSeason={currentSeason}
+        currentEpisode={currentEpisode}
+        getVideoProgress={getVideoProgress}
       />
     </div>
   );
