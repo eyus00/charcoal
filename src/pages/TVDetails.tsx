@@ -4,7 +4,7 @@ import { useStore, WatchStatus } from '../store/useStore';
 import { useTVDetails } from '../features/details/api/useTVDetails';
 import DetailsBanner from '../features/details/components/DetailsBanner';
 import RelatedContent from '../features/details/components/RelatedContent';
-import TVEpisodeSelector from '../components/TVEpisodeSelector';
+import TVEpisodeSelector from '../components/EpisodeSelector';
 
 const TVDetails = () => {
   const { id } = useParams();
