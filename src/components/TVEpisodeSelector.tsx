@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { X, StepForward, ChevronDown, List, Play, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getImageUrl } from '../api/config';
@@ -52,16 +52,15 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
 }) => {
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
   const [isEpisodeOpen, setIsEpisodeOpen] = useState(false);
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
   const { watchHistory } = useStore();
   const navigate = useNavigate();
 
-  // Get resume info from both sources
-  const handleMobileEpisodeSelect = (seasonNum: number, episodeNum: number) => {
+  const handleEpisodeSelect = (seasonNum: number, episodeNum: number) => {
     onSeasonChange(seasonNum);
     onEpisodeChange(episodeNum);
-    setIsMobileSheetOpen(false);
+    navigate(`/watch/tv/${tvId}?season=${seasonNum}&episode=${episodeNum}`);
+    onClose();
   };
 
   const resumeInfo = getVideoProgress();
@@ -140,11 +139,6 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
     return null;
   };
 
-  const handleEpisodeSelect = (season: number, episode: number) => {
-    navigate(`/watch/tv/${tvId}?season=${season}&episode=${episode}`);
-    onClose();
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -155,14 +149,14 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
         <div className="relative">
           <button
             onClick={() => setIsSeasonOpen(!isSeasonOpen)}
-            className="w-full flex items-center justify-between bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+            className="w-full flex items-center justify-between bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark px-4 py-3 rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
           >
             <span>Season {selectedSeason}</span>
             <ChevronDown className={`w-5 h-5 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} />
           </button>
           
           {isSeasonOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
               {seasons.map((season) => (
                 <button
                   key={season.season_number}
@@ -170,9 +164,10 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
                     onSeasonChange(season.season_number);
                     setIsSeasonOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-700 transition-colors ${
-                    season.season_number === selectedSeason ? 'bg-red-600' : ''
-                  }`}
+                  className={cn(
+                    "w-full text-left px-4 py-3 hover:bg-light-surface dark:hover:bg-dark-surface transition-colors",
+                    season.season_number === selectedSeason && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
+                  )}
                 >
                   Season {season.season_number}
                 </button>
@@ -186,14 +181,14 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
           <div className="relative">
             <button
               onClick={() => setIsEpisodeOpen(!isEpisodeOpen)}
-              className="w-full flex items-center justify-between bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+              className="w-full flex items-center justify-between bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark px-4 py-3 rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
             >
               <span>Episode {selectedEpisode}: {currentEpisode?.name}</span>
               <ChevronDown className={`w-5 h-5 transition-transform ${isEpisodeOpen ? 'rotate-180' : ''}`} />
             </button>
             
             {isEpisodeOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-light-bg dark:bg-dark-bg border border-border-light dark:border-border-dark rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                 {currentSeason.episodes.map((episode) => (
                   <button
                     key={episode.episode_number}
@@ -201,13 +196,14 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
                       onEpisodeChange(episode.episode_number);
                       setIsEpisodeOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-3 hover:bg-gray-700 transition-colors ${
-                      episode.episode_number === selectedEpisode ? 'bg-red-600' : ''
-                    }`}
+                    className={cn(
+                      "w-full text-left px-4 py-3 hover:bg-light-surface dark:hover:bg-dark-surface transition-colors",
+                      episode.episode_number === selectedEpisode && "bg-red-600/10 text-red-600 dark:bg-red-500/10 dark:text-red-500"
+                    )}
                   >
                     <div className="font-medium">Episode {episode.episode_number}: {episode.name}</div>
                     {episode.overview && (
-                      <div className="text-sm text-gray-400 mt-1 line-clamp-2">{episode.overview}</div>
+                      <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1 line-clamp-2">{episode.overview}</div>
                     )}
                   </button>
                 ))}
@@ -220,12 +216,12 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
       {/* Mobile Version */}
       <div className="lg:hidden">
         <button
-          onClick={() => setIsMobileSheetOpen(true)}
-          className="w-full flex items-center justify-between bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+          onClick={() => {}}
+          className="w-full flex items-center justify-between bg-light-surface dark:bg-dark-surface border border-border-light dark:border-border-dark px-4 py-3 rounded-lg hover:bg-light-text-secondary/10 dark:hover:bg-dark-text-secondary/10 transition-colors"
         >
           <div className="text-left">
             <div className="font-medium">Season {selectedSeason}, Episode {selectedEpisode}</div>
-            <div className="text-sm text-gray-400">{currentEpisode?.name}</div>
+            <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{currentEpisode?.name}</div>
           </div>
           <ChevronDown className="w-5 h-5" />
         </button>
@@ -233,80 +229,13 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
 
       {/* Mobile Bottom Sheet */}
       <BottomSheet
-        isOpen={isMobileSheetOpen}
-        onClose={() => setIsMobileSheetOpen(false)}
+        isOpen={isOpen}
+        onClose={onClose}
         title="Select Episode"
       >
         <div className="p-6 space-y-6">
-          {seasons.map((season) => (
-            <div key={season.season_number} className="space-y-3">
-              <h4 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
-                Season {season.season_number}
-              </h4>
-              <div className="space-y-2">
-                {season.episodes.map((episode) => (
-                  <button
-                    key={episode.episode_number}
-                    onClick={() => handleMobileEpisodeSelect(season.season_number, episode.episode_number)}
-                    className={`w-full text-left p-4 rounded-lg transition-colors ${
-                      season.season_number === selectedSeason && episode.episode_number === selectedEpisode
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <Play size={16} className="text-red-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">
-                          Episode {episode.episode_number}: {episode.name}
-                        </div>
-                        {episode.overview && (
-                          <div className="text-sm text-gray-400 mt-1 line-clamp-3">
-                            {episode.overview}
-                          </div>
-                        )}
-                        {episode.runtime && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {episode.runtime} min
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </BottomSheet>
-
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
-        onClick={onClose}
-      />
-
-      {/* Bottom Sheet */}
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-light-bg dark:bg-dark-bg rounded-t-2xl transition-transform duration-300 shadow-xl border-2 border-gray-400/50 dark:border-white/20 flex flex-col max-h-[85vh]">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-400/50 dark:border-white/20 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <List className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">Select Episode</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 rounded-md border border-gray-400/50 dark:border-white/20 transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Resume Button */}
-        {currentProgress && (
-          <div className="px-4 pt-4 flex-shrink-0">
+          {/* Resume Button */}
+          {currentProgress && (
             <button
               onClick={() => handleEpisodeSelect(currentProgress.season!, currentProgress.episode!)}
               className="w-full px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors relative"
@@ -324,118 +253,80 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
                 </div>
               )}
             </button>
-          </div>
-        )}
+          )}
 
-        {/* Season Selector */}
-        <div className="px-4 py-3 border-b border-gray-400/50 dark:border-white/20 flex-shrink-0">
-          <div className="relative">
-            <select
-              value={selectedSeason}
-              onChange={(e) => onSeasonChange(Number(e.target.value))}
-              className="w-full px-4 py-2.5 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 hover:border-red-600 dark:hover:border-red-500 border border-gray-400/50 dark:border-white/20 rounded-md text-light-text-primary dark:text-dark-text-primary appearance-none focus:outline-none transition-all pr-10"
-            >
-              {seasons.map((season) => (
-                <option
-                  key={season.season_number}
-                  value={season.season_number}
-                  className="bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary"
-                >
-                  {season.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none" />
-          </div>
-        </div>
+          {seasons.map((season) => (
+            <div key={season.season_number} className="space-y-3">
+              <h4 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">
+                Season {season.season_number}
+              </h4>
+              <div className="space-y-2">
+                {season.episodes.map((episode) => {
+                  const progress = getEpisodeProgress(season.season_number, episode.episode_number);
+                  const duration = formatDuration(episode.runtime);
+                  const isCurrent = season.season_number === selectedSeason && episode.episode_number === selectedEpisode;
 
-        {/* Episodes List */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="space-y-0">
-            {currentSeasonData?.episodes.map((episode, index) => {
-              const duration = formatDuration(episode.runtime);
-              const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
-              const isLast = index === (currentSeasonData?.episodes.length || 0) - 1;
-              const isCurrent = currentProgress?.season === selectedSeason && 
-                              currentProgress?.episode === episode.episode_number;
-
-              return (
-                <button
-                  key={episode.episode_number}
-                  onClick={() => handleEpisodeSelect(selectedSeason, episode.episode_number)}
-                  className={cn(
-                    "w-full px-4 py-4 hover:bg-light-surface dark:hover:bg-dark-surface/80 flex gap-4 group relative",
-                    isCurrent && "bg-red-600/10 dark:bg-red-500/10 after:content-[''] after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-red-600 dark:after:bg-red-500",
-                    !isLast && "border-b border-gray-400/50 dark:border-white/20",
-                    progress?.isCompleted && "opacity-60"
-                  )}
-                >
-                  <div className="w-28 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded-md border border-gray-400/50 dark:border-white/20 overflow-hidden relative">
-                    {episode.still_path ? (
-                      <img
-                        src={getImageUrl(episode.still_path, 'w300')}
-                        alt={episode.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-light-surface dark:bg-dark-surface" />
-                    )}
-                    {duration && (
-                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-red-600 dark:bg-red-500 rounded-md border border-gray-400/50 dark:border-white/20 text-xs text-white">
-                        {duration}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-md flex items-center justify-center transition-colors shadow-lg border border-white/20">
-                        {progress?.isCompleted ? (
-                          <Check className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        ) : (isCurrent || progress?.isWatching) ? (
-                          <StepForward className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        ) : (
-                          <Play className="w-4 h-4 text-white scale-100 group-hover:scale-110 transition-transform" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={cn(
-                        "font-medium truncate max-w-[200px] text-light-text-primary dark:text-dark-text-primary",
-                        isCurrent && "text-red-600 dark:text-red-500"
-                      )}>
-                        {episode.episode_number}. {episode.name}
-                      </span>
-                    </div>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2 mb-0.5">
-                      {episode.overview}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60">
-                        {formatAirDate(episode.air_date)}
-                      </span>
-                      {progress?.remainingTime && (
-                        <span className="text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60">
-                          {progress.remainingTime} left
-                        </span>
+                  return (
+                    <button
+                      key={episode.episode_number}
+                      onClick={() => handleEpisodeSelect(season.season_number, episode.episode_number)}
+                      className={cn(
+                        "w-full text-left p-4 rounded-lg transition-colors relative",
+                        isCurrent
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700',
+                        progress?.isCompleted && "opacity-60"
                       )}
-                    </div>
-                    {progress && (
-                      <div className="mt-1">
-                        <div className="h-1 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-red-600 dark:bg-red-500 transition-all duration-300"
-                            style={{ width: `${Math.min(progress.progress, 100)}%` }}
-                          />
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          {progress?.isCompleted ? (
+                            <Check className="w-4 h-4 text-green-400" />
+                          ) : progress?.isWatching ? (
+                            <StepForward className="w-4 h-4 text-blue-400" />
+                          ) : (
+                            <Play size={16} className="text-red-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium">
+                            Episode {episode.episode_number}: {episode.name}
+                          </div>
+                          {episode.overview && (
+                            <div className="text-sm text-gray-400 mt-1 line-clamp-3">
+                              {episode.overview}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between mt-2">
+                            {duration && (
+                              <div className="text-xs text-gray-500">
+                                {duration}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500">
+                              {formatAirDate(episode.air_date)}
+                            </div>
+                          </div>
+                          {progress && (
+                            <div className="mt-2">
+                              <div className="h-1 bg-gray-600 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-red-500 transition-all duration-300"
+                                  style={{ width: `${Math.min(progress.progress, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      </BottomSheet>
     </>
   );
 };
