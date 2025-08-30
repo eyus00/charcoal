@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { X, StepForward, ChevronDown, List, Play, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getImageUrl } from '../api/config';
 import { useStore } from '../store/useStore';
-import { ChevronDown, Play } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 
 interface Episode {
@@ -28,6 +27,13 @@ interface TVEpisodeSelectorProps {
   seasons: Season[];
   tvId: number;
   title: string;
+  selectedSeason: number;
+  selectedEpisode: number;
+  onSeasonChange: (season: number) => void;
+  onEpisodeChange: (episode: number) => void;
+  currentSeason: Season | undefined;
+  currentEpisode: Episode | undefined;
+  getVideoProgress: () => any;
 }
 
 const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
@@ -36,12 +42,20 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
   seasons,
   tvId,
   title,
+  selectedSeason,
+  selectedEpisode,
+  onSeasonChange,
+  onEpisodeChange,
+  currentSeason,
+  currentEpisode,
+  getVideoProgress,
 }) => {
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
   const [isEpisodeOpen, setIsEpisodeOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
   const { watchHistory } = useStore();
+  const navigate = useNavigate();
 
   // Get resume info from both sources
   const handleMobileEpisodeSelect = (seasonNum: number, episodeNum: number) => {
@@ -62,9 +76,9 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
 
   React.useEffect(() => {
     if (seasons.length > 0 && seasons[0]) {
-      setSelectedSeason(seasons[0].season_number);
+      onSeasonChange(seasons[0].season_number);
     }
-  }, [seasons]);
+  }, [seasons, onSeasonChange]);
 
   const formatDuration = (minutes?: number) => {
     if (!minutes) return null;
@@ -267,9 +281,7 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
           ))}
         </div>
       </BottomSheet>
-    </>
-  );
-};
+
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
@@ -320,7 +332,7 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
           <div className="relative">
             <select
               value={selectedSeason}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
+              onChange={(e) => onSeasonChange(Number(e.target.value))}
               className="w-full px-4 py-2.5 bg-light-surface/80 dark:bg-dark-surface hover:bg-light-surface dark:hover:bg-dark-surface/80 hover:border-red-600 dark:hover:border-red-500 border border-gray-400/50 dark:border-white/20 rounded-md text-light-text-primary dark:text-dark-text-primary appearance-none focus:outline-none transition-all pr-10"
             >
               {seasons.map((season) => (
