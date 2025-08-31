@@ -149,7 +149,7 @@ const TVEpisodeSelector: React.FC<TVEpisodeSelectorProps> = ({
         {currentProgress && (
           <button
             onClick={() => handleEpisodeSelect(currentProgress.season!, currentProgress.episode!)}
-            className="mx-4 mt-4 mb-2 px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+            className="mx-4 mt-4 mb-2 px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors relative"
           >
             <StepForward className="w-5 h-5" />
             Resume S{currentProgress.season}:E{currentProgress.episode}
