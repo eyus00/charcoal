@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { X, ArrowRightCircle, Star, RotateCcw, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { X, ChevronDown, RotateCcw, Play, Check, StepForward } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getImageUrl } from '../api/config';
+import { useStore } from '../store/useStore';
+import { getVideoProgress } from '../lib/watch';
 
 interface Episode {
   episode_number: number;
@@ -10,6 +12,7 @@ interface Episode {
   overview: string;
   still_path: string;
   runtime?: number;
+  air_date?: string;
 }
 
 interface Season {
@@ -29,52 +32,95 @@ interface EpisodeSelectorProps {
 const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: EpisodeSelectorProps) => {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const navigate = useNavigate();
+  const { watchHistory } = useStore();
   const currentSeason = seasons.find(s => s.season_number === selectedSeason);
 
-  // Set initial season to the first available season if it exists
   useEffect(() => {
     if (seasons.length > 0 && seasons[0]) {
       setSelectedSeason(seasons[0].season_number);
     }
   }, [seasons]);
 
-  // Get the last watched episode from localStorage
-  const progressData = localStorage.getItem('vidLinkProgress');
-  const watchProgress = progressData ? JSON.parse(progressData) : null;
-  const showProgress = watchProgress?.[tvId];
+  const videoProgress = getVideoProgress();
+
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return null;
+    return minutes >= 60
+      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+      : `${minutes}m`;
+  };
+
+  const formatAirDate = (date?: string) => {
+    if (!date) return 'TBA';
+    const airDate = new Date(date);
+    const now = new Date();
+    const isInFuture = airDate > now;
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: airDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    }).format(airDate) + (isInFuture ? ' (Upcoming)' : '');
+  };
+
+  const getEpisodeProgress = (seasonNumber: number, episodeNumber: number) => {
+    if (videoProgress?.id === tvId &&
+        videoProgress?.season === seasonNumber &&
+        videoProgress?.episode === episodeNumber) {
+      return {
+        progress: (videoProgress.timestamp / videoProgress.duration) * 100,
+        isCompleted: videoProgress.isCompleted || (videoProgress.timestamp / videoProgress.duration) >= 0.9,
+        isWatching: !videoProgress.isCompleted && videoProgress.timestamp > 0,
+        remainingTime: formatDuration(Math.floor((videoProgress.duration - videoProgress.timestamp) / 60))
+      };
+    }
+
+    const historyProgress = watchHistory.find(
+      item => item.mediaType === 'tv' && item.id === tvId && item.season === seasonNumber && item.episode === episodeNumber
+    );
+
+    if (historyProgress?.progress) {
+      const watched = historyProgress.progress.watched;
+      const duration = historyProgress.progress.duration;
+      const remaining = Math.max(0, duration - watched);
+
+      return {
+        progress: (watched / duration) * 100,
+        isCompleted: historyProgress.isCompleted || (watched / duration) >= 0.9,
+        isWatching: !historyProgress.isCompleted && watched > 0,
+        remainingTime: formatDuration(Math.floor(remaining / 60))
+      };
+    }
+
+    return null;
+  };
+
+  const sortedEpisodes = useMemo(() => {
+    if (!currentSeason?.episodes) return [];
+
+    return [...currentSeason.episodes].sort((a, b) => {
+      const progressA = getEpisodeProgress(selectedSeason, a.episode_number);
+      const progressB = getEpisodeProgress(selectedSeason, b.episode_number);
+
+      if (progressA?.isCompleted && !progressB?.isCompleted) return 1;
+      if (!progressA?.isCompleted && progressB?.isCompleted) return -1;
+      return a.episode_number - b.episode_number;
+    });
+  }, [currentSeason, selectedSeason, watchHistory, videoProgress]);
 
   const handleEpisodeSelect = (season: number, episode: number) => {
     onEpisodeSelect(season, episode);
     navigate(`/watch/tv/${tvId}?season=${season}&episode=${episode}`);
   };
 
-  const handleContinueWatching = () => {
-    if (showProgress?.last_season_watched && showProgress?.last_episode_watched) {
-      handleEpisodeSelect(
-        Number(showProgress.last_season_watched),
-        Number(showProgress.last_episode_watched)
-      );
-    }
-  };
-
-  const formatDuration = (minutes?: number) => {
-    if (!minutes) return null;
-    return minutes >= 60 
-      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-      : `${minutes}m`;
-  };
-
-  const isCurrentEpisode = (season: number, episode: number) => {
-    return showProgress?.last_season_watched === season && 
-           showProgress?.last_episode_watched === episode;
-  };
+  if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
         className={cn(
-          "fixed inset-0 bg-black/50 z-40 transition-opacity duration-200 md:hidden",
+          "fixed inset-0 bg-black/50 z-40 transition-opacity duration-200",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -98,27 +144,6 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
             </button>
           </div>
 
-          {showProgress && (
-            <button
-              onClick={handleContinueWatching}
-              className="mx-4 mt-4 mb-2 px-4 py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
-            >
-              <RotateCcw className="w-5 h-5" />
-              Resume S{showProgress.last_season_watched}:E{showProgress.last_episode_watched}
-              {showProgress?.show_progress?.[`s${showProgress.last_season_watched}e${showProgress.last_episode_watched}`]?.progress && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 rounded-b-lg overflow-hidden">
-                  <div
-                    className="h-full bg-white/30"
-                    style={{
-                      width: `${(showProgress.show_progress[`s${showProgress.last_season_watched}e${showProgress.last_episode_watched}`].progress.watched / 
-                              showProgress.show_progress[`s${showProgress.last_season_watched}e${showProgress.last_episode_watched}`].progress.duration) * 100}%`
-                    }}
-                  />
-                </div>
-              )}
-            </button>
-          )}
-
           <div className="px-4 py-3 border-b border-border-light dark:border-border-dark">
             <div className="relative">
               <select
@@ -139,11 +164,12 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin">
-            {currentSeason?.episodes.map((episode) => {
-              const episodeProgress = showProgress?.show_progress?.[`s${selectedSeason}e${episode.episode_number}`];
-              const progress = episodeProgress?.progress?.watched / episodeProgress?.progress?.duration * 100 || 0;
+            {sortedEpisodes.map((episode) => {
               const duration = formatDuration(episode.runtime);
-              const isCurrent = isCurrentEpisode(selectedSeason, episode.episode_number);
+              const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
+              const isCurrent = videoProgress?.id === tvId &&
+                                videoProgress?.season === selectedSeason &&
+                                videoProgress?.episode === episode.episode_number;
 
               return (
                 <button
@@ -154,7 +180,7 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
                     isCurrent && "bg-red-600/10 dark:bg-red-500/10"
                   )}
                 >
-                  <div className="w-32 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded overflow-hidden">
+                  <div className="w-32 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded overflow-hidden relative">
                     {episode.still_path ? (
                       <img
                         src={getImageUrl(episode.still_path, 'w300')}
@@ -164,33 +190,50 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
                     ) : (
                       <div className="w-full h-full bg-light-surface dark:bg-dark-surface" />
                     )}
+                    {duration && (
+                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-red-600 dark:bg-red-500 rounded text-xs text-white">
+                        {duration}
+                      </span>
+                    )}
                   </div>
+
                   <div className="flex-1 text-left min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={cn(
                         "font-medium truncate",
                         isCurrent && "text-red-600 dark:text-red-500"
                       )}>
-                        {episode.name}
+                        {episode.episode_number}. {episode.name}
                       </span>
-                      {duration && (
-                        <span className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface rounded text-xs text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0">
-                          {duration}
-                        </span>
-                      )}
                     </div>
                     <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2">
                       {episode.overview}
                     </p>
-                  </div>
-                  {progress > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-light-surface dark:bg-dark-surface">
-                      <div
-                        className="h-full bg-red-600 dark:bg-red-500"
-                        style={{ width: `${progress}%` }}
-                      />
+                    <div className="flex items-center justify-between text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60 mt-1">
+                      <span>{formatAirDate(episode.air_date)}</span>
+                      {progress?.remainingTime && <span>{progress.remainingTime} left</span>}
                     </div>
-                  )}
+                    {progress && (
+                      <div className="mt-1">
+                        <div className="h-1 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-red-600 dark:bg-red-500"
+                            style={{ width: `${Math.min(progress.progress, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="absolute inset-y-0 right-4 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {progress?.isCompleted ? (
+                      <Check className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    ) : (isCurrent || progress?.isWatching) ? (
+                      <StepForward className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    ) : (
+                      <Play className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -216,27 +259,6 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
             </button>
           </div>
 
-          {showProgress && (
-            <button
-              onClick={handleContinueWatching}
-              className="mx-4 mt-4 mb-2 px-4 py-2 bg-red-600 text-white rounded flex items-center justify-center gap-2 hover:bg-red-700 transition-colors relative"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Resume S{showProgress.last_season_watched}:E{showProgress.last_episode_watched}
-              {showProgress?.show_progress?.[`s${showProgress.last_season_watched}e${showProgress.last_episode_watched}`]?.progress && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 rounded-b overflow-hidden">
-                  <div
-                    className="h-full bg-white/30"
-                    style={{
-                      width: `${(showProgress.show_progress[`s${showProgress.last_season_watched}e${showProgress.last_episode_watched}`].progress.watched / 
-                              showProgress.show_progress[`s${showProgress.last_season_watched}e${showProgress.last_episode_watched}`].progress.duration) * 100}%`
-                    }}
-                  />
-                </div>
-              )}
-            </button>
-          )}
-
           <div className="p-4 border-b border-border-light dark:border-border-dark">
             <div className="relative">
               <select
@@ -257,11 +279,12 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin">
-            {currentSeason?.episodes.map((episode) => {
-              const episodeProgress = showProgress?.show_progress?.[`s${selectedSeason}e${episode.episode_number}`];
-              const progress = episodeProgress?.progress?.watched / episodeProgress?.progress?.duration * 100 || 0;
+            {sortedEpisodes.map((episode) => {
               const duration = formatDuration(episode.runtime);
-              const isCurrent = isCurrentEpisode(selectedSeason, episode.episode_number);
+              const progress = getEpisodeProgress(selectedSeason, episode.episode_number);
+              const isCurrent = videoProgress?.id === tvId &&
+                                videoProgress?.season === selectedSeason &&
+                                videoProgress?.episode === episode.episode_number;
 
               return (
                 <button
@@ -272,7 +295,7 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
                     isCurrent && "bg-red-600/10 dark:bg-red-500/10"
                   )}
                 >
-                  <div className="w-24 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded overflow-hidden">
+                  <div className="w-24 aspect-video bg-light-surface dark:bg-dark-surface flex-shrink-0 rounded overflow-hidden relative">
                     {episode.still_path ? (
                       <img
                         src={getImageUrl(episode.still_path, 'w300')}
@@ -282,33 +305,50 @@ const EpisodeSelector = ({ isOpen, onClose, seasons, tvId, onEpisodeSelect }: Ep
                     ) : (
                       <div className="w-full h-full bg-light-surface dark:bg-dark-surface" />
                     )}
+                    {duration && (
+                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-red-600 dark:bg-red-500 rounded text-xs text-white">
+                        {duration}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex-1 text-left">
+
+                  <div className="flex-1 text-left min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={cn(
-                        "font-medium",
+                        "font-medium truncate",
                         isCurrent && "text-red-600 dark:text-red-500"
                       )}>
-                        {episode.name}
+                        {episode.episode_number}. {episode.name}
                       </span>
-                      {duration && (
-                        <span className="px-2 py-0.5 bg-light-surface dark:bg-dark-surface rounded text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                          {duration}
-                        </span>
-                      )}
                     </div>
                     <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary line-clamp-2">
                       {episode.overview}
                     </p>
-                  </div>
-                  {progress > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-light-surface dark:bg-dark-surface">
-                      <div
-                        className="h-full bg-red-600 dark:bg-red-500"
-                        style={{ width: `${progress}%` }}
-                      />
+                    <div className="flex items-center justify-between text-xs text-light-text-secondary/60 dark:text-dark-text-secondary/60 mt-1">
+                      <span>{formatAirDate(episode.air_date)}</span>
+                      {progress?.remainingTime && <span>{progress.remainingTime} left</span>}
                     </div>
-                  )}
+                    {progress && (
+                      <div className="mt-1">
+                        <div className="h-1 bg-light-surface dark:bg-dark-surface rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-red-600 dark:bg-red-500"
+                            style={{ width: `${Math.min(progress.progress, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="absolute inset-y-0 right-4 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {progress?.isCompleted ? (
+                      <Check className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    ) : (isCurrent || progress?.isWatching) ? (
+                      <StepForward className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    ) : (
+                      <Play className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    )}
+                  </div>
                 </button>
               );
             })}
