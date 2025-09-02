@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useStore, WatchStatus } from '../store/useStore';
-import { useTVDetails } from '../features/details/api/useTVDetails';
-import DetailsBanner from '../features/details/components/DetailsBanner';
-import RelatedVideos from '../components/RelatedVideos';
-import SimilarContent from '../components/SimilarContent';
-import TVEpisodeSelector from '../components/EpisodeSelector';
+import { useTVDetails } from '../api/hooks/useTVDetails';
+import DetailsBanner from '../components/shared/DetailsBanner';
+import RelatedVideos from '../components/shared/RelatedVideos';
+import SimilarContent from '../components/shared/SimilarContent';
+import TVEpisodeSelector from '../components/episode/TVEpisodeSelector';
 
 const TVDetails = () => {
   const { id } = useParams();

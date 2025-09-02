@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { X, StepForward, ChevronDown, List, Play, Check } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { getImageUrl } from '../api/config';
-import { useStore } from '../store/useStore';
-import { getVideoProgress } from '../lib/watch';
+import { cn } from '../../lib/utils';
+import { getImageUrl } from '../../api/config';
+import { useStore } from '../../store/useStore';
+import { getVideoProgress } from '../../lib/watch';
 
 interface Episode {
   episode_number: number;

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Grid, Film, Tv, Clock, Bookmark, Settings, User } from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { cn } from '../lib/utils';
+import { useStore } from '../../store/useStore';
+import { cn } from '../../lib/utils';
 
 const Sidebar = () => {
   const { sidebarOpen } = useStore();

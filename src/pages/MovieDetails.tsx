@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useStore, WatchStatus } from '../store/useStore';
-import { useMovieDetails } from '../features/details/api/useMovieDetails';
-import DetailsBanner from '../features/details/components/DetailsBanner';
-import RelatedVideos from '../components/RelatedVideos';
-import SimilarContent from '../components/SimilarContent';
+import { useMovieDetails } from '../api/hooks/useMovieDetails';
+import DetailsBanner from '../components/shared/DetailsBanner';
+import RelatedVideos from '../components/shared/RelatedVideos';
+import SimilarContent from '../components/shared/SimilarContent';
 
 const MovieDetails = () => {
   const { id } = useParams();

@@ -1,6 +1,6 @@
 import React from 'react';
 import MediaCard from './MediaCard';
-import { Movie, TVShow } from '../api/types';
+import { Movie, TVShow } from '../../api/types';
 
 interface SimilarContentProps {
   similar?: {

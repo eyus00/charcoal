@@ -1,10 +1,10 @@
 import React from 'react';
 import { Menu, Search, UserCircle, Moon, Sun } from 'lucide-react';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
-import { cn } from '../lib/utils';
+import { cn } from '../../lib/utils';
 
 const Layout = () => {
   const navigate = useNavigate();

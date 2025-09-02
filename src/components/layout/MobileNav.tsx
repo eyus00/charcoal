@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Grid, Film, Tv, Search, X, Dumbbell } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { useStore } from '../store/useStore';
+import { cn } from '../../lib/utils';
+import { useStore } from '../../store/useStore';
 
 const MobileNav = () => {
   const location = useLocation();

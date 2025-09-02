@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Layout from './components/Layout';
+import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Movies from './pages/Movies';
 import TVShows from './pages/TVShows';
@@ -10,7 +10,7 @@ import MovieDetails from './pages/MovieDetails';
 import TVDetails from './pages/TVDetails';
 import WatchPage from './pages/WatchPage';
 import Profile from './pages/Profile';
-import ScrollToTop from './components/ScrollToTop';
+import ScrollToTop from './components/layout/ScrollToTop';
 import { useStore } from './store/useStore';
 
 const queryClient = new QueryClient({

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Film, Tv, Star, Clock, Play, Bookmark, StepForward } from 'lucide-react';
-import { getImageUrl } from '../../../api/config';
-import { cn } from '../../../lib/utils';
-import { WatchStatus } from '../../../store/useStore';
-import WatchlistMenu from '../../../components/WatchlistMenu';
-import { getResumeInfo } from '../../../lib/watch';
+import { getImageUrl } from '../../api/config';
+import { cn } from '../../lib/utils';
+import { WatchStatus, WatchHistoryItem } from '../../store/useStore';
+import WatchlistMenu from './WatchlistMenu';
+import { getResumeInfo } from '../../lib/watch';
 
 interface DetailsBannerProps {
   type: 'movie' | 'tv';

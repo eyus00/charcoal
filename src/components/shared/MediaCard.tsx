@@ -1,7 +1,7 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Movie, TVShow, getImageUrl } from '../lib/tmdb';
+import { Movie, TVShow, getImageUrl } from '../../lib/tmdb';
 
 interface MediaCardProps {
   media: Movie | TVShow;

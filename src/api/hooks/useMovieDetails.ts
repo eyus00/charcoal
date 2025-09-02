@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { mediaService } from '../../../api/services/media';
+import { mediaService } from '../services/media';
 
 export const useMovieDetails = (id: string | undefined) => {
   const { data: details, isLoading } = useQuery({

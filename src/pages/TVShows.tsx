@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMedia } from '../api/hooks/useMedia';
-import MediaCard from '../components/MediaCard';
+import MediaCard from '../components/shared/MediaCard';
 
 const TVShows = () => {
   const { data } = useMedia.usePopular('tv');

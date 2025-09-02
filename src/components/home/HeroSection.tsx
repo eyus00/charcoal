@@ -4,7 +4,7 @@ import { Play, Bookmark, ChevronLeft, ChevronRight, Star, Film, Tv } from 'lucid
 import { Movie, TVShow } from '../../api/types';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
-import WatchlistMenu from '../WatchlistMenu';
+import WatchlistMenu from '../shared/WatchlistMenu';
 import { useStore, WatchStatus } from '../../store/useStore';
 import { useQuery } from '@tanstack/react-query';
 import { genreService } from '../../api/services/genres';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Movie, TVShow } from '../../api/types';
-import MediaCard from '../MediaCard';
+import MediaCard from '../shared/MediaCard';
 
 interface SearchResultsProps {
   results: (Movie | TVShow)[];

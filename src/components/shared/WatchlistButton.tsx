@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark } from 'lucide-react';
-import { WatchStatus } from '../store/useStore';
-import { cn } from '../lib/utils';
+import { WatchStatus } from '../../store/useStore';
+import { cn } from '../../lib/utils';
 
 interface WatchlistButtonProps {
   watchlistItem?: {
@@ -161,4 +161,4 @@ const WatchlistButton: React.FC<WatchlistButtonProps> = ({
   );
 };
 
-export default WatchlistButton;
+export default WatchlistMenu;

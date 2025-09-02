@@ -6,7 +6,7 @@ import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { genreService } from '../../api/services/genres';
-import WatchlistMenu from '../WatchlistMenu';
+import WatchlistMenu from '../shared/WatchlistMenu';
 import { useStore, WatchStatus } from '../../store/useStore';
 
 interface YouMightLikeProps {
