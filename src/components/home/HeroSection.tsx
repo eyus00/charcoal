@@ -9,6 +9,7 @@ import { useStore, WatchStatus } from '../../store/useStore';
 import { useQuery } from '@tanstack/react-query';
 import { genreService } from '../../api/services/genres';
 import { mediaService } from '../../api/services/media';
+import { useMedia } from '../../api/hooks/useMedia';
 
 interface HeroSectionProps {
   items: (Movie | TVShow)[];
@@ -27,33 +28,19 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
     queryFn: genreService.getAllGenres,
   });
 
-  const { data: contentRating } = useQuery({
-    queryKey: ['contentRating', items[currentIndex]?.id],
-    queryFn: async () => {
-      const response = await fetch(
-        `https://api.themoviedb.org/3/${'title' in items[currentIndex] ? 'movie' : 'tv'}/${items[currentIndex].id}?api_key=50404130561567acf3e0725aeb09ec5d&append_to_response=release_dates,content_ratings`
-      );
-      const data = await response.json();
+  const currentItem = items[currentIndex];
+  const isMovie = currentItem && 'title' in currentItem;
+  const mediaType = isMovie ? 'movie' : 'tv';
 
-      if ('title' in items[currentIndex]) {
-        const usRating = data.release_dates?.results?.find(
-          (r: any) => r.iso_3166_1 === 'US'
-        )?.release_dates?.[0]?.certification;
-        return usRating || 'NR';
-      }
-
-      const usRating = data.content_ratings?.results?.find(
-        (r: any) => r.iso_3166_1 === 'US'
-      )?.rating;
-      return usRating || 'NR';
-    },
-    enabled: !!items[currentIndex]
-  });
+  const { data: contentRating } = useMedia.useContentRating(
+    mediaType, 
+    currentItem?.id
+  );
 
   const { data: images } = useQuery({
-    queryKey: ['images', items[currentIndex]?.id],
-    queryFn: () => mediaService.getImages('movie' in items[currentIndex] ? 'movie' : 'tv', items[currentIndex].id),
-    enabled: !!items[currentIndex]
+    queryKey: ['images', currentItem?.id],
+    queryFn: () => mediaService.getImages(mediaType, currentItem.id),
+    enabled: !!currentItem
   });
 
   useEffect(() => {
@@ -73,17 +60,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
 
   if (!items.length) return null;
 
-  const currentItem = items[currentIndex];
-  const isMovie = 'title' in currentItem;
   const title = isMovie ? currentItem.title : currentItem.name;
   const releaseDate = isMovie ? currentItem.release_date : currentItem.first_air_date;
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
-  const watchlistItem = getWatchlistItem(currentItem.id, isMovie ? 'movie' : 'tv');
+  const watchlistItem = getWatchlistItem(currentItem.id, mediaType);
 
   const handleWatchlistAdd = (status: WatchStatus) => {
     addToWatchlist({
       id: currentItem.id,
-      mediaType: isMovie ? 'movie' : 'tv',
+      mediaType,
       title,
       posterPath: currentItem.poster_path,
       addedAt: Date.now(),
@@ -93,12 +78,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
   };
 
   const handleWatchlistRemove = () => {
-    removeFromWatchlist(currentItem.id, isMovie ? 'movie' : 'tv');
+    removeFromWatchlist(currentItem.id, mediaType);
     setIsWatchlistOpen(false);
   };
 
   const handleContentClick = () => {
-    navigate(`/${isMovie ? 'movie' : 'tv'}/${currentItem.id}`);
+    navigate(`/${mediaType}/${currentItem.id}`);
   };
 
   const getGenreNames = (genreIds: number[]) => {
@@ -169,7 +154,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
               <Link
-                to={`/watch/${isMovie ? 'movie' : 'tv'}/${currentItem.id}`}
+                to={`/watch/${mediaType}/${currentItem.id}`}
                 className="w-10 h-10 md:w-12 md:h-12 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center transition-colors shadow-lg group/watch border border-white/20"
               >
                 <Play className="w-5 h-5 md:w-6 md:h-6 text-white group-hover/watch:scale-110 transition-transform" />

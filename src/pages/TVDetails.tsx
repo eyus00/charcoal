@@ -5,7 +5,7 @@ import { useTVDetails } from '../api/hooks/useTVDetails';
 import DetailsBanner from '../components/shared/DetailsBanner';
 import RelatedVideos from '../components/shared/RelatedVideos';
 import SimilarContent from '../components/shared/SimilarContent';
-import TVEpisodeSelector from '../components/episode/TVEpisodeSelector';
+import EpisodeSelector from '../components/shared/EpisodeSelector';
 
 const TVDetails = () => {
   const { id } = useParams();
@@ -87,12 +87,14 @@ const TVDetails = () => {
         type="tv"
       />
 
-      <TVEpisodeSelector
+      <EpisodeSelector
         isOpen={isEpisodeSelectorOpen}
         onClose={() => setIsEpisodeSelectorOpen(false)}
         seasons={seasons}
         tvId={Number(id)}
         title={details.name}
+        modalWidth="w-[600px]"
+        hideTitle={true}
       />
     </div>
   );

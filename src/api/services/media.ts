@@ -65,5 +65,29 @@ export const mediaService = {
       `/${mediaType}/${id}/images`
     );
     return data;
+  },
+
+  getContentRating: async (mediaType: MediaType, id: number): Promise<string> => {
+    const appendParam = mediaType === 'movie' ? 'release_dates' : 'content_ratings';
+    const { data } = await tmdbClient.get(
+      `/${mediaType}/${id}`,
+      {
+        params: {
+          append_to_response: appendParam
+        }
+      }
+    );
+
+    if (mediaType === 'movie') {
+      const usRating = data.release_dates?.results?.find(
+        (r: any) => r.iso_3166_1 === 'US'
+      )?.release_dates?.[0]?.certification;
+      return usRating || 'NR';
+    } else {
+      const usRating = data.content_ratings?.results?.find(
+        (r: any) => r.iso_3166_1 === 'US'
+      )?.rating;
+      return usRating || 'NR';
+    }
   }
 };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Server } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import EpisodeSelector from './EpisodeSelector';
+import EpisodeSelector from '../shared/EpisodeSelector';
 import SourcesMenu from './SourcesMenu';
 
 interface BottomBarProps {
@@ -114,6 +114,10 @@ const BottomBar: React.FC<BottomBarProps> = ({
             onEpisodeSelect={onEpisodeSelect}
             tvId={tvId}
             isLandscape={isLandscape}
+            autoNavigate={false}
+            showResumeButton={false}
+            modalOffset={48}
+            modalWidth="w-[600px]"
           />
         )}
       </div>

@@ -50,4 +50,12 @@ export const useMedia = {
       suspense: false,
       enabled: true,
     }),
+
+  useContentRating: (mediaType: MediaType, id: number) =>
+    useQuery({
+      queryKey: ['contentRating', mediaType, id],
+      queryFn: () => mediaService.getContentRating(mediaType, id),
+      enabled: !!id,
+      suspense: false,
+    }),
 };
