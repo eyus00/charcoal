@@ -3,7 +3,8 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useStore, WatchStatus } from '../store/useStore';
 import { useTVDetails } from '../features/details/api/useTVDetails';
 import DetailsBanner from '../features/details/components/DetailsBanner';
-import RelatedContent from '../features/details/components/RelatedContent';
+import RelatedVideos from '../components/RelatedVideos';
+import SimilarContent from '../components/SimilarContent';
 import TVEpisodeSelector from '../components/EpisodeSelector';
 
 const TVDetails = () => {
@@ -64,8 +65,23 @@ const TVDetails = () => {
         numberOfSeasons={details.number_of_seasons}
       />
 
-      <RelatedContent
-        videos={details.videos}
+      {details.videos?.results && (
+        <div className="bg-light-bg dark:bg-dark-bg border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
+          <div className="p-3 border-b border-border-light dark:border-border-dark">
+            <h2 className="text-xl font-semibold">Related Videos</h2>
+          </div>
+          <div className="p-6">
+            <RelatedVideos
+              videos={details.videos.results.filter(video => 
+                video.site === 'YouTube' && 
+                (video.type === 'Trailer' || video.type === 'Teaser')
+              )}
+            />
+          </div>
+        </div>
+      )}
+
+      <SimilarContent
         similar={details.similar}
         recommendations={details.recommendations}
         type="tv"

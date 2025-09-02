@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useStore, WatchStatus } from '../store/useStore';
 import { useMovieDetails } from '../features/details/api/useMovieDetails';
 import DetailsBanner from '../features/details/components/DetailsBanner';
-import RelatedContent from '../features/details/components/RelatedContent';
+import RelatedVideos from '../components/RelatedVideos';
+import SimilarContent from '../components/SimilarContent';
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -51,8 +52,23 @@ const MovieDetails = () => {
         watchHistory={watchHistory}
       />
 
-      <RelatedContent
-        videos={details.videos}
+      {details.videos?.results && (
+        <div className="bg-light-bg dark:bg-dark-bg border-2 border-gray-400/50 dark:border-white/20 rounded-2xl overflow-hidden">
+          <div className="p-3 border-b border-border-light dark:border-border-dark">
+            <h2 className="text-xl font-semibold">Related Videos</h2>
+          </div>
+          <div className="p-6">
+            <RelatedVideos
+              videos={details.videos.results.filter(video => 
+                video.site === 'YouTube' && 
+                (video.type === 'Trailer' || video.type === 'Teaser')
+              )}
+            />
+          </div>
+        </div>
+      )}
+
+      <SimilarContent
         similar={details.similar}
         recommendations={details.recommendations}
         type="movie"
