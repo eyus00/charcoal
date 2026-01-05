@@ -7,9 +7,8 @@ import { useStore } from '../store/useStore';
 import { useQueries } from '@tanstack/react-query';
 import { mediaService } from '../api/services/media';
 import { cn } from '../lib/utils';
-import CustomPlayer from '../components/watch/CustomPlayer';
+import VideoPlayer from '../components/watch/VideoPlayer';
 import BottomBar from '../components/watch/BottomBar';
-import { streamClient } from '../api/streamClient';
 
 const WatchPage: React.FC = () => {
   const { mediaType, id } = useParams();
@@ -20,10 +19,6 @@ const WatchPage: React.FC = () => {
   const [selectedSource, setSelectedSource] = useState(SOURCES[0].id);
   const [selectedSeason, setSelectedSeason] = useState(Number(season) || 1);
   const [isLandscape, setIsLandscape] = useState(false);
-  const [useCustomPlayer, setUseCustomPlayer] = useState(true);
-  const [streamData, setStreamData] = useState<any>(null);
-  const [isLoadingStream, setIsLoadingStream] = useState(false);
-  const [streamError, setStreamError] = useState<string | null>(null);
 
   const { addToWatchHistory, updateWatchlistStatus } = useStore();
 
@@ -41,44 +36,6 @@ const WatchPage: React.FC = () => {
       window.removeEventListener('orientationchange', checkOrientation);
     };
   }, []);
-
-  // Fetch streams from custom server
-  useEffect(() => {
-    const fetchStreams = async () => {
-      if (!id || !mediaType) return;
-
-      setIsLoadingStream(true);
-      setStreamError(null);
-
-      try {
-        const response = await streamClient.getStream(
-          Number(id),
-          mediaType as 'movie' | 'tv',
-          mediaType === 'tv' ? Number(season) : undefined,
-          mediaType === 'tv' ? Number(episode) : undefined,
-          'auto'
-        );
-
-        if (response.success && response.data) {
-          setStreamData(response.data);
-          setUseCustomPlayer(true);
-        } else {
-          // Fallback to old player if custom server fails
-          console.warn('Stream fetch failed, falling back to embedded players:', response.error);
-          setStreamError(response.error);
-          setUseCustomPlayer(false);
-        }
-      } catch (error) {
-        console.error('Failed to fetch streams:', error);
-        setStreamError('Failed to fetch streams. Using embedded player.');
-        setUseCustomPlayer(false);
-      } finally {
-        setIsLoadingStream(false);
-      }
-    };
-
-    fetchStreams();
-  }, [id, mediaType, season, episode]);
 
   const { data: details } = useMedia.useDetails(
     mediaType as 'movie' | 'tv',
@@ -108,15 +65,12 @@ const WatchPage: React.FC = () => {
     onUpdateWatchlist: updateWatchlistStatus,
   });
 
-  // Use custom player if stream data is available, otherwise use embedded players
-  const videoUrl = !useCustomPlayer
-    ? (mediaType === 'movie'
-      ? getMovieUrl(selectedSource, Number(id))
-      : getTvUrl(selectedSource, Number(id), Number(season), Number(episode)))
-    : streamData?.qualities[0]?.url;
+  const videoUrl = mediaType === 'movie'
+    ? getMovieUrl(selectedSource, Number(id))
+    : getTvUrl(selectedSource, Number(id), Number(season), Number(episode));
 
-  if (!videoUrl && !isLoadingStream) {
-    return <div className="w-full h-full flex items-center justify-center bg-black text-white">Invalid media type or missing parameters</div>;
+  if (!videoUrl) {
+    return <div>Invalid media type or missing parameters</div>;
   }
 
   const backUrl = mediaType === 'movie' ? `/movie/${id}` : `/tv/${id}`;
@@ -152,49 +106,13 @@ const WatchPage: React.FC = () => {
   const isFirstEpisode = Number(season) === 1 && Number(episode) === 1;
   const isLastEpisode = Number(season) === seasons?.length && Number(episode) === currentSeasonData?.episodes.length;
 
-  const handlePlayerProgress = (progress: number, duration: number) => {
-    // This is called by CustomPlayer, progress tracking is handled by useWatchTracking hook
-  };
-
-  const handlePlayerEnded = () => {
-    // Auto-play next episode for TV shows
-    if (mediaType === 'tv' && episode && season) {
-      handleNext();
-    }
-  };
-
   return (
     <div className={cn(
       "fixed inset-0 flex flex-col bg-black",
       isLandscape && "flex-col-reverse"
     )}>
       <div className="relative flex-1">
-        {isLoadingStream ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
-          </div>
-        ) : useCustomPlayer && streamData && videoUrl ? (
-          <CustomPlayer
-            streamUrl={videoUrl}
-            qualities={streamData.qualities}
-            captions={streamData.captions}
-            title={mediaType === 'movie' ? details?.title : details?.name}
-            poster={details?.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : undefined}
-            onProgress={handlePlayerProgress}
-            onEnded={handlePlayerEnded}
-          />
-        ) : (
-          // Fallback to embedded player
-          <div className="absolute inset-0">
-            <iframe
-              key={videoUrl}
-              src={videoUrl}
-              className="w-full h-full"
-              allowFullScreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            />
-          </div>
-        )}
+        <VideoPlayer videoUrl={videoUrl} />
       </div>
       <BottomBar
         onBack={() => navigate(backUrl)}

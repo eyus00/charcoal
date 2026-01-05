@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.border.light') transparent;
+  }
+  
+  .dark .scrollbar-thin {
+    scrollbar-color: theme('colors.border.dark') transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border-light dark:bg-border-dark rounded;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-light-text-secondary dark:bg-dark-text-secondary;
+  }
+}
+
+@keyframes highlight {
+  0% {
+    border-color: rgba(220, 38, 38, 0);
+    background-color: transparent;
+  }
+  50% {
+    border-color: rgba(220, 38, 38, 0.5);
+    background-color: rgba(220, 38, 38, 0.1);
+  }
+  100% {
+    border-color: rgba(220, 38, 38, 0);
+    background-color: transparent;
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.highlight-animation {
+  animation: highlight 1s ease-in-out;
+}
