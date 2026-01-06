@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Star, Play, Bookmark, Film, Tv } from 'lucide-react';
 import { Movie, TVShow } from '../../api/types';
 import { getImageUrl } from '../../api/config';
@@ -15,6 +15,7 @@ interface YouMightLikeProps {
 
 const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { addToWatchlist, removeFromWatchlist, getWatchlistItem } = useStore();
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -197,13 +198,17 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                           ))}
                         </div>
 
-                        <div className="absolute bottom-3 right-3 flex flex-col gap-2" onClick={e => e.preventDefault()}>
-                          <Link
-                            to={`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`}
+                        <div className="absolute bottom-3 right-3 flex flex-col gap-2" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              navigate(`/watch/${isMovie ? 'movie' : 'tv'}/${item.id}`);
+                            }}
                             className="w-9 h-9 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center transition-colors shadow-lg group/watch border border-white/20"
                           >
                             <Play className="w-5 h-5 text-white group-hover/watch:scale-110 transition-transform" />
-                          </Link>
+                          </button>
 
                           <div className="relative">
                             <button
