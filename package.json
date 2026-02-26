@@ -9,6 +9,7 @@
   "dependencies": {
     "@omss/framework": "^1.1.11",
     "dotenv": "^16.4.5"
+    "crypto-js": "^4.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
