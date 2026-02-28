@@ -1,3 +1,4 @@
+//pls work
 // src/server.ts
 import { OMSSServer } from '@omss/framework';
 import 'dotenv/config';
