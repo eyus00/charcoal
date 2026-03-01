@@ -194,7 +194,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
               {/* Info Area */}
               <div className="px-1 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-sm leading-tight text-white line-clamp-2 flex-1 pr-2">
+                  <h4 className="font-bold text-sm leading-tight text-white line-clamp-1 flex-1 pr-2">
                     {video.name}
                   </h4>
                   <ExternalLink className="w-4 h-4 text-white/60 flex-shrink-0" />

@@ -209,21 +209,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
                   
-                  {/* Top Badges (TV Info) */}
-                  {item.mediaType === 'tv' && item.season && item.episode && (
-                    <div className="absolute top-3 left-3 max-w-[calc(100%-24px)]">
-                      <div className="px-2 py-1 bg-black/60 backdrop-blur-md text-white rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider border border-white/20 shadow-lg flex items-center gap-2 w-full">
-                        <div className="px-2 py-0.5 bg-accent rounded-lg text-white flex-shrink-0">
-                          S{item.season}E{item.episode}
-                        </div>
-                        {episodeDetails?.name && (
-                          <span className="text-white font-bold tracking-normal truncate min-w-0">
-                            {episodeDetails.name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Bottom Badges */}
                   <div className="absolute bottom-3 left-3 flex gap-2">
@@ -268,11 +253,14 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                 </Link>
 
                 {/* Info Area */}
-                <div className="px-1 pb-1">
+                <div className="px-1 pb-1 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-bold text-base md:text-lg leading-tight text-white truncate">
+                    <Link
+                      to={`/${item.mediaType}/${item.id}`}
+                      className="font-bold text-base md:text-lg leading-tight text-white truncate hover:text-accent transition-colors"
+                    >
                       {item.title}
-                    </h3>
+                    </Link>
                     <div className="flex-shrink-0 p-1.5 bg-white/5 rounded-lg border border-white/10">
                       {item.mediaType === 'movie' ? (
                         <Film className="w-3.5 h-3.5 text-white/60" />
@@ -281,6 +269,12 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                       )}
                     </div>
                   </div>
+                  {/* Season/Episode Info */}
+                  {item.mediaType === 'tv' && item.season && item.episode && (
+                    <div className="text-white/60 text-xs md:text-sm font-bold uppercase tracking-widest">
+                      S{item.season} . E{item.episode}{episodeDetails?.name ? ` . ${episodeDetails.name}` : ''}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

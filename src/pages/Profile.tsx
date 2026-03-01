@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { UserCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import ContinueWatching from '../components/profile/ContinueWatching';
+import ContinueWatchingSection from '../components/home/ContinueWatchingSection';
 import Watchlist from '../components/profile/Watchlist';
 
 const Profile = () => {
@@ -50,13 +50,11 @@ const Profile = () => {
       </div>
 
       {/* History Section */}
-      <div id="history" className="mb-12 scroll-mt-20 p-4 rounded-lg border border-transparent">
-        <ContinueWatching
-          watchHistory={watchHistory}
-          onClearHistory={clearWatchHistory}
-          onRemoveFromHistory={removeFromWatchHistory}
-        />
-      </div>
+      {watchHistory.length > 0 && (
+        <div id="history" className="mb-12 scroll-mt-20">
+          <ContinueWatchingSection items={watchHistory} />
+        </div>
+      )}
 
       {/* Watchlist Section */}
       <div id="watchlist" className="scroll-mt-20 p-4 rounded-lg border border-transparent">
