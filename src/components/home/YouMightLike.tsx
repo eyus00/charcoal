@@ -21,20 +21,18 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
   useEffect(() => {
     const checkScroll = () => {
       if (!containerRef.current) return;
-     
+    
       setShowLeftArrow(containerRef.current.scrollLeft > 0);
       setShowRightArrow(
         containerRef.current.scrollLeft <
         containerRef.current.scrollWidth - containerRef.current.clientWidth - 10
       );
     };
-
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScroll, { passive: true });
       checkScroll();
     }
-
     return () => {
       if (container) {
         container.removeEventListener('scroll', checkScroll);
@@ -44,12 +42,12 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
-   
+  
     const scrollAmount = containerRef.current.clientWidth * 0.8;
     const newScrollLeft = direction === 'left'
       ? containerRef.current.scrollLeft - scrollAmount
       : containerRef.current.scrollLeft + scrollAmount;
-   
+  
     containerRef.current.scrollTo({
       left: newScrollLeft,
       behavior: 'smooth'
@@ -69,7 +67,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
   const onDrag = (e: React.MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
     e.preventDefault();
-   
+  
     const x = e.pageX - (containerRef.current.offsetLeft || 0);
     const walk = (x - startX) * 2;
     containerRef.current.scrollLeft = scrollLeft - walk;
@@ -122,7 +120,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
           </motion.button>
         )}
       </AnimatePresence>
-
       <AnimatePresence>
         {showRightArrow && (
           <motion.button
@@ -136,7 +133,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
           </motion.button>
         )}
       </AnimatePresence>
-     
+    
       {/* Scrollable Container */}
       <div
         ref={containerRef}
@@ -175,10 +172,10 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                     alt={itemTitle}
                     className="w-full h-full object-cover transition-transform duration-500"
                   />
-                  
+                 
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-                  
+                 
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
                     {year && (
@@ -187,7 +184,6 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                       </div>
                     )}
                   </div>
-
                   <div className="absolute top-3 right-3">
                     {item.vote_average > 0 && (
                       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-black/50 backdrop-blur-md text-white rounded-lg border border-white/10 shadow-lg">
@@ -196,14 +192,13 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                       </div>
                     )}
                   </div>
-
                 </Link>
 
                 {/* Info Area */}
                 <div className="px-1 pb-1 flex items-center justify-between gap-3 min-w-0">
                   <Link
                     to={getMediaUrl(item)}
-                    className="font-bold text-base md:text-lg leading-tight text-white truncate hover:text-accent transition-colors"
+                    className="font-bold text-base md:text-lg leading-tight text-white truncate"
                   >
                     {itemTitle}
                   </Link>
