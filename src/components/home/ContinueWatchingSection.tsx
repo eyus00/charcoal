@@ -95,7 +95,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
   };
 
   const formatSeasonEpisode = (season: number, episode: number) => {
-    return `S${season} · E${episode}`;
+    return `S${season}`;
   };
 
   const formatTime = (minutes: number): string => {
@@ -210,18 +210,21 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
                   
                   {/* Top Badges (TV Info) */}
-                  {item.mediaType === 'tv' && item.season && item.episode && (
-                    <div className="absolute top-3 left-3 max-w-[80%]">
-                      <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md text-white rounded-lg text-xs font-black uppercase tracking-wider border border-white/20 shadow-lg inline-flex items-center gap-2">
-                        <span>{formatSeasonEpisode(item.season, item.episode)}</span>
+                    <div className="absolute top-3 left-3 max-w-[calc(100%-24px)]">
+                      <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md text-white rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider border border-white/20 shadow-lg flex items-center gap-2 w-full">
+                        <span className="whitespace-nowrap">{formatSeasonEpisode(item.season, item.episode)}</span>
+                        <span className="w-2 h-2 bg-white rounded-full flex-shrink-0"></span>
+                        <span className="whitespace-nowrap">E{item.episode}</span>
                         {episodeDetails?.name && (
-                          <span className="text-white/80 font-medium tracking-normal truncate max-w-[180px]">
-                            {episodeDetails.name}
-                          </span>
+                          <>
+                            <span className="w-1.5 h-1.5 bg-white/40 rounded-full flex-shrink-0"></span>
+                            <span className="text-white/80 font-medium tracking-normal truncate min-w-0">
+                              {episodeDetails.name}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
-                  )}
 
                   {/* Bottom Badges */}
                   <div className="absolute bottom-3 left-3 flex gap-2">

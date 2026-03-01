@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Star, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Flame, Film, Tv } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { getImageUrl } from '../../api/config';
@@ -206,14 +206,21 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
                   )}
                 </Link>
 
-                {/* Info Area - single line title with ellipsis, no hover effects */}
-                <div className="px-2 pb-2 flex flex-col gap-1.5 min-h-0">
+                {/* Info Area - single line title with badge */}
+                <div className="px-2 pb-2 flex items-center justify-between gap-2 min-w-0">
                   <Link
                     to={getMediaUrl(item)}
                     className="font-bold text-sm leading-tight text-white line-clamp-1"
                   >
                     {itemTitle}
                   </Link>
+                  <div className="flex-shrink-0 p-1 bg-white/5 rounded-lg border border-white/10">
+                    {item.media_type === 'tv' ? (
+                      <Tv className="w-3 h-3 text-white/60" />
+                    ) : (
+                      <Film className="w-3 h-3 text-white/60" />
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );

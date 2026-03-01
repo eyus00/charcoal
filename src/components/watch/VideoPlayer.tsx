@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VideoPlayer as CustomVideoPlayer } from './CustomVideoPlayer';
+import { VideoPlayer as CustomVideoPlayer } from './VideoPlayer';
 import { BackendApiResponse } from '../../api/player-types';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -51,7 +51,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setSelectedSeason(seasonNumber || 1);
   }, [seasonNumber]);
 
-  if (useCustomPlayer && jellyData) {
+  if (useCustomPlayer) {
+    if (!jellyData) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-accent/40 rounded-full animate-spin-slow"></div>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <h3 className="text-white font-bold text-xl tracking-tight">Trying Jelly Server</h3>
+              <p className="text-white/40 text-sm font-medium animate-pulse">Establishing secure connection...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative w-full h-full bg-black overflow-hidden">
         <CustomVideoPlayer

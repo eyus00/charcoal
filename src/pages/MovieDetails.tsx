@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { Video as VideoIcon, Flame } from 'lucide-react';
 import { useStore, WatchStatus } from '../store/useStore';
 import { useMovieDetails } from '../api/hooks/useMovieDetails';
-import DetailsBanner from '../components/shared/DetailsBanner';
-import RelatedVideos from '../components/shared/RelatedVideos';
-import SimilarContent from '../components/shared/SimilarContent';
+import DetailsBanner from '../components/details/DetailsBanner';
+import RelatedVideos from '../components/details/RelatedVideos';
+import SimilarContent from '../components/details/SimilarContent';
 
 const MovieDetails = () => {
   const { id } = useParams();

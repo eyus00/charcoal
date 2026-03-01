@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import HlsLib from 'hls.js';
-import { BackendApiResponse, BackendSource, BackendSubtitle } from '../../api/player-types';
+import { BackendApiResponse, BackendSource, BackendSubtitle } from '../../../api/player-types';
 import {
   Play,
   Pause,
@@ -17,11 +17,12 @@ import {
   ChevronRight,
   ArrowLeft,
   Monitor,
-  Check,
-  Eye
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { useStore } from '../../store/useStore';
+import { cn } from '../../../lib/utils';
+import { useStore } from '../../../store/useStore';
+import { QualitySelector, formatQuality } from './QualitySelector';
+import SubtitleSelector from './SubtitleSelector';
+import EpisodeSelector from './EpisodeSelector';
 
 const Hls = HlsLib;
 
@@ -44,149 +45,6 @@ interface VideoPlayerProps {
   onTogglePlayer?: () => void;
   onProgress?: (currentTime: number, duration: number) => void;
 }
-
-const formatQuality = (quality: string): string => {
-  if (!quality) return 'Auto';
-  const lower = quality.toLowerCase();
-
-  if (lower === 'unknown' || lower === '') return 'SD';
-  if (lower.includes('up to hd') || lower === 'hd' || (lower.includes('hd') && !lower.match(/\d/))) return 'HD';
-
-  const cleanQuality = lower.replace(/[^0-9]/g, '');
-
-  if (cleanQuality.includes('2160') || lower.includes('4k')) return '4K';
-  if (cleanQuality.includes('1440') || lower.includes('2k')) return '2K';
-  if (cleanQuality.includes('1080')) return '1080p';
-  if (cleanQuality.includes('720')) return '720p';
-  if (cleanQuality.includes('480')) return '480p';
-  if (cleanQuality.includes('360')) return '360p';
-
-  if (cleanQuality) return `${cleanQuality}p`;
-
-  return 'SD';
-};
-
-const QualitySelector = ({
-  sources,
-  currentSource,
-  onSelect
-}: {
-  sources: BackendSource[],
-  currentSource: BackendSource | null,
-  onSelect: (src: BackendSource) => void
-}) => {
-  const groupedSources = useMemo(() => {
-    const groups: Record<string, BackendSource[]> = {};
-    sources.forEach(src => {
-      const q = formatQuality(src.quality);
-      if (!groups[q]) groups[q] = [];
-      groups[q].push(src);
-    });
-
-    // Custom sorting order as requested: HD, 1080p, and then descending quality
-    const sortOrder = ['HD', '1080p', '4K', '2K', '720p', '480p', '360p', 'SD'];
-
-    return Object.keys(groups)
-      .sort((a, b) => {
-        const indexA = sortOrder.indexOf(a);
-        const indexB = sortOrder.indexOf(b);
-
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-
-        // Default to numeric comparison for unknown qualities
-        const valA = parseInt(a) || 0;
-        const valB = parseInt(b) || 0;
-        return valB - valA;
-      })
-      .reduce((acc, key) => {
-        acc[key] = groups[key];
-        return acc;
-      }, {} as Record<string, BackendSource[]>);
-  }, [sources]);
-
-  return (
-    <div className="w-72 max-h-80 overflow-y-auto custom-scrollbar bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-3 shadow-[0_0_40px_rgba(0,0,0,0.7)]">
-      <div className="px-2 py-2 mb-2 text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold">Available Qualities</div>
-      <div className="space-y-3">
-        {Object.entries(groupedSources).map(([quality, items]) => (
-          <div key={quality} className="space-y-1.5 p-1 bg-white/[0.03] rounded-xl border border-white/5">
-            <div className="px-3 py-1 text-xs font-bold text-white/40 flex items-center justify-between">
-              <span>{quality}</span>
-              <span className="text-[10px] opacity-50">{items.length} {items.length > 1 ? 'Sources' : 'Source'}</span>
-            </div>
-            <div className="grid grid-cols-1 gap-1">
-              {items.map((src, i) => (
-                <button
-                  key={`${quality}-${i}`}
-                  onClick={() => onSelect(src)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition-all group relative overflow-hidden",
-                    currentSource?.url === src.url
-                      ? "bg-accent text-white font-bold shadow-lg shadow-accent/20"
-                      : "text-white/60 hover:bg-white/5 hover:text-white"
-                  )}
-                >
-                  <div className="flex items-center gap-3 relative z-10">
-                    <span className="opacity-40 font-mono">#{i + 1}</span>
-                    <span className="uppercase text-[10px] tracking-widest">{src.type}</span>
-                  </div>
-                  <div className="flex items-center gap-2 relative z-10">
-                    {currentSource?.url === src.url && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const SubtitleSelector = ({
-  subtitles,
-  currentSubtitle,
-  onSelect
-}: {
-  subtitles: BackendSubtitle[],
-  currentSubtitle: BackendSubtitle | null,
-  onSelect: (sub: BackendSubtitle | null) => void
-}) => (
-  <div className="w-56 max-h-72 overflow-y-auto custom-scrollbar bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl p-2 shadow-2xl">
-    <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-white/40 font-bold">Subtitles</div>
-    <div className="space-y-1">
-      <button
-        onClick={() => onSelect(null)}
-        className={cn(
-          "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all",
-          currentSubtitle === null 
-            ? "bg-accent/20 text-accent font-semibold" 
-            : "text-white/70 hover:bg-white/5 hover:text-white"
-        )}
-      >
-        <span>Off</span>
-        {currentSubtitle === null && <Check className="w-4 h-4" />}
-      </button>
-      {subtitles.map((sub, i) => (
-        <button
-          key={i}
-          onClick={() => onSelect(sub)}
-          className={cn(
-            "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all",
-            currentSubtitle?.url === sub.url 
-              ? "bg-accent/20 text-accent font-semibold" 
-              : "text-white/70 hover:bg-white/5 hover:text-white"
-          )}
-        >
-          <span>{sub.label}</span>
-          {currentSubtitle?.url === sub.url && <Check className="w-4 h-4" />}
-        </button>
-      ))}
-    </div>
-  </div>
-);
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   id,
@@ -299,10 +157,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (currentSource) {
         setTriedSources(prev => new Set(prev).add(currentSource.url));
 
-        // Find next best source
         const remainingSources = apiResponse.sources.filter(s => !triedSources.has(s.url) && s.url !== currentSource.url);
         if (remainingSources.length > 0) {
-          // Priority: HD, 1080p, others
           const sHD = remainingSources.find(s => formatQuality(s.quality) === 'HD');
           const s1080 = remainingSources.find(s => formatQuality(s.quality) === '1080p');
           setCurrentSource(sHD || s1080 || remainingSources[0]);
@@ -499,7 +355,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
 
           <div className="flex items-center gap-3 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
-             {onTogglePlayer && (
+            {onTogglePlayer && (
               <button
                 onClick={onTogglePlayer}
                 className="px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2.5 active:scale-95"
@@ -513,185 +369,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Modern Landscape Episode Selector */}
+      {/* Episode Selector Modal */}
       {!isMovie && showEpisodeSelector && seasons && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-xl z-50 flex items-center justify-center animate-in fade-in zoom-in duration-300" onClick={(e) => { e.stopPropagation(); setShowEpisodeSelector(false); }}>
-          <div className="w-full max-w-6xl h-[90vh] md:h-[85vh] bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.5)]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b border-white/10 bg-white/5 gap-4">
-              <div className="flex items-center gap-4">
-                <List className="w-5 h-5 md:w-6 md:h-6 text-accent" />
-                <h2 className="text-white font-bold text-lg md:text-2xl tracking-tight">Episodes</h2>
-              </div>
-
-              <div className="flex items-center gap-3 md:gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-                <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
-                   {seasons.map((season) => (
-                    <button
-                      key={season.season_number}
-                      onClick={() => setSelectedSeason(season.season_number)}
-                      className={cn(
-                        "px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-sm transition-all whitespace-nowrap",
-                        selectedSeason === season.season_number
-                          ? "bg-accent text-white shadow-lg shadow-accent/20"
-                          : "text-white/40 hover:text-white/80"
-                      )}
-                    >
-                      S{season.season_number}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setShowEpisodeSelector(false)}
-                  className="p-2 md:p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all active:scale-95 border border-white/5 hover:border-white/10"
-                >
-                  <X className="w-5 h-5 md:w-6 md:h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {currentSeasonData?.episodes.map((episode: any) => {
-                  const airDate = episode.air_date ? new Date(episode.air_date) : null;
-                  const isUpcoming = airDate ? airDate > new Date() : false;
-                  const formattedDate = airDate ? airDate.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: airDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-                  }) : 'TBA';
-
-                  const historyItem = watchHistory.find(h =>
-                    h.id === Number(id) &&
-                    h.mediaType === 'tv' &&
-                    h.season === selectedSeason &&
-                    h.episode === episode.episode_number
-                  );
-
-                  const watchedProgress = historyItem?.progress
-                    ? (historyItem.progress.watched / historyItem.progress.duration) * 100
-                    : 0;
-                  const isCompleted = historyItem?.isCompleted;
-
-                  return (
-                    <button
-                      key={episode.episode_number}
-                      disabled={isUpcoming}
-                      onClick={() => {
-                        onEpisodeSelect?.(selectedSeason, episode.episode_number);
-                        setShowEpisodeSelector(false);
-                      }}
-                      className={cn(
-                        "group flex flex-col gap-3 p-3 rounded-2xl transition-all text-left border relative overflow-hidden",
-                        episodeNumber === episode.episode_number && seasonNumber === selectedSeason
-                          ? "bg-accent/10 border-accent/40 ring-1 ring-accent/20"
-                          : "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10",
-                        isUpcoming && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      <div className="w-full aspect-video bg-white/5 rounded-xl overflow-hidden relative flex-shrink-0 shadow-lg group-hover:scale-[1.02] transition-transform">
-                        {episode.still_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w500${episode.still_path}`}
-                            alt={episode.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/10">
-                            <Play className="w-12 h-12 fill-current" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-
-                        {isUpcoming && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                            <div className="px-3 py-1.5 bg-white/10 border border-white/20 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-2xl">
-                              Upcoming
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="absolute bottom-2 left-2">
-                          {episode.runtime && (
-                            <div className="px-2 py-1 bg-black/80 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                              {episode.runtime}m
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
-                          {isCompleted ? (
-                            <div className="px-2 py-1 bg-green-500/80 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              Watched
-                            </div>
-                          ) : historyItem?.progress && (
-                            <div className="px-2 py-1 bg-accent/80 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                              {Math.max(1, Math.floor((historyItem.progress.duration - historyItem.progress.watched) / 60))}m left
-                            </div>
-                          )}
-                        </div>
-
-                        {episodeNumber === episode.episode_number && seasonNumber === selectedSeason && (
-                          <div className="absolute top-2 left-2 px-2 py-1 bg-accent text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-lg animate-pulse">
-                            Watching
-                          </div>
-                        )}
-
-                        {/* Progress Bar */}
-                        {watchedProgress > 0 && (
-                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-                            <div
-                              className="h-full bg-accent"
-                              style={{ width: `${watchedProgress}%` }}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 px-1">
-                        <h3 className={cn(
-                          "text-sm font-bold leading-tight line-clamp-1 mb-1",
-                          episodeNumber === episode.episode_number && seasonNumber === selectedSeason
-                            ? "text-accent"
-                            : "text-white"
-                        )}>
-                          {episode.episode_number}. {episode.name}
-                        </h3>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">
-                            {formattedDate}
-                          </p>
-                        </div>
-                        <p className="text-[11px] text-white/50 line-clamp-2 mt-2 leading-relaxed">
-                          {episode.overview || "No description available for this episode."}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            
-            <div className="p-4 md:p-6 border-t border-white/10 bg-white/5 flex items-center justify-end gap-3">
-                <button
-                  disabled={isFirstEpisode}
-                  onClick={() => onEpisodePrevious?.()}
-                  className="flex items-center justify-center gap-2 py-2.5 px-5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white rounded-xl border border-white/10 transition-all text-sm font-bold active:scale-95"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </button>
-                <button
-                  disabled={isLastEpisode}
-                  onClick={() => onEpisodeNext?.()}
-                  className="flex items-center justify-center gap-2 py-2.5 px-5 bg-accent hover:bg-accent/90 disabled:opacity-30 text-white rounded-xl shadow-lg shadow-accent/20 transition-all text-sm font-bold active:scale-95"
-                >
-                  Next Episode
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-            </div>
-          </div>
-        </div>
+        <EpisodeSelector
+          isOpen={showEpisodeSelector}
+          onClose={() => setShowEpisodeSelector(false)}
+          seasons={seasons}
+          seasonNumber={seasonNumber}
+          episodeNumber={episodeNumber}
+          id={id}
+          isMovie={isMovie}
+          isFirstEpisode={isFirstEpisode}
+          isLastEpisode={isLastEpisode}
+          onEpisodeSelect={onEpisodeSelect}
+          onEpisodeNext={onEpisodeNext}
+          onEpisodePrevious={onEpisodePrevious}
+          showTitle={showTitle}
+        />
       )}
 
       {/* Main Controls Overlay */}
@@ -708,14 +402,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onClick={handleProgressBarClick}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* Progress Track */}
           <div className="relative h-1 md:h-2 bg-white/10 rounded-full overflow-hidden transition-all group-hover/progress:h-2 md:group-hover/progress:h-3">
             <div
               className="absolute top-0 left-0 h-full bg-accent transition-all duration-100"
               style={{ width: `${progress}%` }}
             />
           </div>
-          {/* Progress Thumb */}
           <div
             className="absolute top-1/2 -translate-y-1/2 w-3 h-3 md:w-5 md:h-5 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-all transform -translate-x-1/2 opacity-0 group-hover/progress:opacity-100 scale-50 group-hover/progress:scale-100"
             style={{ left: `${progress}%` }}
@@ -763,7 +455,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-5">
-             <div className="hidden sm:flex items-center gap-2 group/volume">
+            <div className="hidden sm:flex items-center gap-2 group/volume">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -885,3 +577,5 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     </div>
   );
 };
+
+export default VideoPlayer;
