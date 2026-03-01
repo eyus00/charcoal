@@ -32,9 +32,9 @@ const Profile = () => {
   }, [location.hash]);
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto p-4 md:p-6">
       {/* Profile Header */}
-      <div id="profile" className="flex items-center justify-between mb-8 p-4 rounded-lg border border-transparent">
+      <div id="profile" className="flex items-center justify-between mb-8 rounded-lg border border-transparent">
         <div className="flex items-center gap-6">
           <div className="w-24 h-24 bg-light-surface dark:bg-dark-surface flex items-center justify-center rounded-lg">
             <UserCircle className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary" />
@@ -51,13 +51,13 @@ const Profile = () => {
 
       {/* History Section */}
       {watchHistory.length > 0 && (
-        <div id="history" className="mb-12 scroll-mt-20">
+        <div id="history" className="mb-12 scroll-mt-20 px-2">
           <ContinueWatchingSection items={watchHistory} />
         </div>
       )}
 
       {/* Watchlist Section */}
-      <div id="watchlist" className="scroll-mt-20 p-4 rounded-lg border border-transparent">
+      <div id="watchlist" className="scroll-mt-20">
         <Watchlist
           watchlist={watchlist}
           onRemoveFromWatchlist={removeFromWatchlist}

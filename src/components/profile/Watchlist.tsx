@@ -54,6 +54,26 @@ const Watchlist: React.FC<WatchlistProps> = ({
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
+  const toggleFilter = (filterId: string) => {
+    const newFilters = new Set(activeFilters);
+    if (newFilters.has(filterId)) {
+      newFilters.delete(filterId);
+    } else {
+      newFilters.add(filterId);
+    }
+    setActiveFilters(newFilters);
+  };
+
+  const filteredWatchlist = watchlist.filter(item => {
+    const statusFilters = FILTERS.filter(f => f.type === 'status' && activeFilters.has(f.id)).map(f => f.value);
+    const mediaFilters = FILTERS.filter(f => f.type === 'mediaType' && activeFilters.has(f.id)).map(f => f.value);
+
+    const matchesStatus = statusFilters.length === 0 || statusFilters.includes(item.status as WatchStatus);
+    const matchesMedia = mediaFilters.length === 0 || mediaFilters.includes(item.mediaType);
+
+    return matchesStatus && matchesMedia;
+  });
+
   React.useEffect(() => {
     const checkScroll = () => {
       if (!containerRef.current) return;
@@ -110,26 +130,6 @@ const Watchlist: React.FC<WatchlistProps> = ({
     const walk = (x - startX) * 2;
     containerRef.current.scrollLeft = scrollLeft - walk;
   };
-
-  const toggleFilter = (filterId: string) => {
-    const newFilters = new Set(activeFilters);
-    if (newFilters.has(filterId)) {
-      newFilters.delete(filterId);
-    } else {
-      newFilters.add(filterId);
-    }
-    setActiveFilters(newFilters);
-  };
-
-  const filteredWatchlist = watchlist.filter(item => {
-    const statusFilters = FILTERS.filter(f => f.type === 'status' && activeFilters.has(f.id)).map(f => f.value);
-    const mediaFilters = FILTERS.filter(f => f.type === 'mediaType' && activeFilters.has(f.id)).map(f => f.value);
-
-    const matchesStatus = statusFilters.length === 0 || statusFilters.includes(item.status as WatchStatus);
-    const matchesMedia = mediaFilters.length === 0 || mediaFilters.includes(item.mediaType);
-
-    return matchesStatus && matchesMedia;
-  });
 
   return (
     <div className="relative group/container py-4">
