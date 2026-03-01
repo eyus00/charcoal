@@ -108,7 +108,7 @@ const TopBar = () => {
           </Link>
 
           <Link
-            to="/profile"
+            to="/profile#profile"
             className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
             title="Profile"
           >
