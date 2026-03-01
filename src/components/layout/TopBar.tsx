@@ -27,11 +27,11 @@ const TopBar = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-5 md:px-8 pointer-events-none">
-      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 pointer-events-auto">
+      <div className="mx-auto flex items-center justify-center gap-5 md:gap-6 lg:gap-8 pointer-events-auto">
         {/* LEFT: Search */}
         <form
           onSubmit={handleSearch}
-          className="flex-shrink-0 w-72 md:w-80 hidden md:block"
+          className="flex-shrink-0 w-64 md:w-72 hidden md:block"
         >
           <div
             className={cn(
@@ -55,7 +55,7 @@ const TopBar = () => {
         </form>
 
         {/* CENTER: Navigation */}
-        <nav className="hidden md:flex items-center gap-1.5 lg:gap-3">
+        <nav className="hidden md:flex items-center gap-2 lg:gap-3">
           {navigationItems.map((item) => {
             const active = isActive(item.path);
             return (
@@ -63,7 +63,7 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-4 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center justify-center min-w-[100px]",
+                  "relative px-5 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center justify-center",
                   active
                     ? "bg-white/12 backdrop-blur-xl border border-white/20 text-white shadow-lg shadow-black/15"
                     : "text-white/75 hover:text-white hover:bg-white/8 border border-transparent"
@@ -78,11 +78,10 @@ const TopBar = () => {
         {/* RIGHT: Actions */}
         <div
           className={cn(
-            "flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 h-11",
+            "flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 h-11",
             "hover:bg-white/9 hover:border-white/20 transition-all duration-300"
           )}
         >
-          {/* Notification */}
           <button
             className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white relative hidden md:block"
           >
@@ -90,7 +89,6 @@ const TopBar = () => {
             <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-red-500/40" />
           </button>
 
-          {/* Divider */}
           <div className="h-6 w-px bg-white/15 mx-1.5 hidden md:block" />
 
           <Link
