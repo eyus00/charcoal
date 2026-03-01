@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Film, Tv, Star, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bookmark, Film, Tv, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WatchlistItem, WatchStatus, useStore } from '../../store/useStore';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
-import WatchlistMenu from '../shared/WatchlistMenu';
 
 interface WatchlistProps {
   watchlist: WatchlistItem[];
@@ -20,9 +19,9 @@ interface Filter {
 }
 
 const FILTERS: Filter[] = [
-  { id: 'watching', label: 'Currently Watching', value: 'watching', type: 'status' },
-  { id: 'planned', label: 'Plan to Watch', value: 'planned', type: 'status' },
-  { id: 'completed', label: 'Completed', value: 'completed', type: 'status' },
+  { id: 'watching', label: 'Watching', value: 'watching', type: 'status' },
+  { id: 'planned', label: 'To Watch', value: 'planned', type: 'status' },
+  { id: 'completed', label: 'Watched', value: 'completed', type: 'status' },
   { id: 'movie', label: 'Movies', value: 'movie', type: 'mediaType' },
   { id: 'tv', label: 'TV Shows', value: 'tv', type: 'mediaType' },
 ];
@@ -35,15 +34,14 @@ const STATUS_COLORS = {
 
 const STATUS_LABELS = {
   watching: 'Watching',
-  planned: 'Plan to Watch',
-  completed: 'Completed',
+  planned: 'To Watch',
+  completed: 'Watched',
 };
 
 const Watchlist: React.FC<WatchlistProps> = ({
   watchlist,
   onRemoveFromWatchlist,
 }) => {
-  const { updateWatchlistStatus } = useStore();
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -51,8 +49,6 @@ const Watchlist: React.FC<WatchlistProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
-  const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const toggleFilter = (filterId: string) => {
     const newFilters = new Set(activeFilters);
@@ -159,15 +155,15 @@ const Watchlist: React.FC<WatchlistProps> = ({
       ) : (
         <>
           {/* Filters */}
-          <div className="mb-8 px-2 flex flex-wrap gap-2">
+          <div className="mb-8 px-2 flex flex-wrap gap-3">
             {FILTERS.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => toggleFilter(filter.id)}
                 className={cn(
-                  "px-4 py-2 text-sm font-bold rounded-2xl transition-all border flex items-center gap-2 uppercase tracking-wider",
+                  "px-4 py-2.5 text-sm font-bold rounded-full transition-all border flex items-center gap-2 uppercase tracking-wider",
                   activeFilters.has(filter.id)
-                    ? "bg-accent text-white border-accent/50 shadow-lg shadow-accent/20"
+                    ? "bg-accent text-white border-accent/60 shadow-lg shadow-accent/20"
                     : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
                 )}
               >
@@ -249,9 +245,6 @@ const Watchlist: React.FC<WatchlistProps> = ({
                           "group flex-shrink-0 w-[180px] flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
                           "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
                         )}
-                        ref={(el) => {
-                          if (el) menuRefs.current[itemKey] = el;
-                        }}
                       >
                         {/* Poster Card */}
                         <Link
@@ -263,90 +256,36 @@ const Watchlist: React.FC<WatchlistProps> = ({
                             alt={item.title}
                             className="w-full h-full object-cover"
                           />
-                          
+
                           {/* Overlay */}
                           <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300" />
 
-                          {/* Status Badge - Top Left */}
-                          <div className="absolute top-2 left-2">
+                          {/* Status Badge - Bottom Left */}
+                          <div className="absolute bottom-2 left-2">
                             <div className={cn(
-                              "px-2.5 py-1.5 bg-black/60 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-lg flex items-center gap-1.5",
+                              "px-2.5 py-1.5 bg-black/70 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-lg flex items-center gap-1.5",
                               statusConfig.border
                             )}>
                               <div className={cn("w-2 h-2 rounded-full", statusConfig.icon)} />
                               {STATUS_LABELS[item.status]}
                             </div>
                           </div>
-
-                          {/* Menu Button - Top Right */}
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setMenuOpen(menuOpen === itemKey ? null : itemKey);
-                              }}
-                              className="w-9 h-9 bg-black/60 backdrop-blur-md hover:bg-accent/40 text-white rounded-lg flex items-center justify-center transition-all border border-white/10 hover:border-accent/60"
-                            >
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="5" r="2" />
-                                <circle cx="12" cy="12" r="2" />
-                                <circle cx="12" cy="19" r="2" />
-                              </svg>
-                            </button>
-                            
-                            {menuOpen === itemKey && (
-                              <WatchlistMenu
-                                isOpen={true}
-                                onClose={() => setMenuOpen(null)}
-                                onAdd={(status) => {
-                                  updateWatchlistStatus(item.id, item.mediaType, status);
-                                  setMenuOpen(null);
-                                }}
-                                onRemove={() => {
-                                  onRemoveFromWatchlist(item.id, item.mediaType);
-                                  setMenuOpen(null);
-                                }}
-                                currentStatus={item.status}
-                                containerRef={menuRefs.current[itemKey] ? { current: menuRefs.current[itemKey] } : undefined}
-                                position="top-right"
-                              />
-                            )}
-                          </div>
-
-                          {/* Delete Button - Bottom Right (hover) */}
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              onRemoveFromWatchlist(item.id, item.mediaType);
-                            }}
-                            className="absolute bottom-2 right-2 p-2 bg-black/60 backdrop-blur-md hover:bg-red-500/70 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all border border-white/10 hover:border-red-500/40"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </Link>
 
                         {/* Info Area */}
-                        <div className="px-2 pb-2 flex flex-col gap-2 min-h-[70px]">
+                        <div className="px-2 pb-2 flex items-center justify-between gap-2 min-w-0">
                           <Link
                             to={`/${item.mediaType}/${item.id}`}
-                            className="font-bold text-sm leading-tight text-white line-clamp-2 hover:text-accent transition-colors"
+                            className="font-bold text-sm leading-tight text-white line-clamp-1"
                           >
                             {item.title}
                           </Link>
-
-                          <div className="flex items-center gap-1.5 flex-wrap mt-auto">
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-white/5 rounded-md border border-white/10">
-                              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                              <span className="text-[10px] font-bold text-white/70">8.5</span>
-                            </div>
-                            <div className="flex-shrink-0 p-1 bg-white/5 rounded-md border border-white/10">
-                              {item.mediaType === 'tv' ? (
-                                <Tv className="w-3 h-3 text-white/60" />
-                              ) : (
-                                <Film className="w-3 h-3 text-white/60" />
-                              )}
-                            </div>
+                          <div className="flex-shrink-0 p-1 bg-white/5 rounded-lg border border-white/10">
+                            {item.mediaType === 'tv' ? (
+                              <Tv className="w-3 h-3 text-white/60" />
+                            ) : (
+                              <Film className="w-3 h-3 text-white/60" />
+                            )}
                           </div>
                         </div>
                       </motion.div>

@@ -229,7 +229,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                   {/* Play Button Overlay */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
                     <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center shadow-2xl border-2 border-white/20">
-                      <Play className="w-8 h-8 text-white fill-current ml-1" />
+                      <Play className="w-10 h-10 text-white fill-current" />
                     </div>
                   </div>
                   {/* Progress Bar */}

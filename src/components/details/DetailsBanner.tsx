@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Film, Tv, Star, Clock, Play, Bookmark, SkipForward, Calendar, Layers } from 'lucide-react';
+import { Film, Tv, Star, Clock, Play, Bookmark, Calendar, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
@@ -205,40 +205,22 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center gap-4 flex-wrap">
                 {type === 'movie' ? (
                   <Link
                     to={getWatchUrl()}
                     className="w-full sm:w-auto px-8 py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
                   >
-                    {resumeInfo && !resumeInfo.isCompleted ? (
-                      <>
-                        <SkipForward className="w-5 h-5 fill-current group-hover:translate-x-1 transition-transform" />
-                        <span className="font-bold text-lg uppercase tracking-wide">Resume</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5 fill-current ml-0.5 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-lg uppercase tracking-wide">Play</span>
-                      </>
-                    )}
+                    <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-lg uppercase tracking-wide">Play</span>
                   </Link>
                 ) : (
                   <button
                     onClick={onPlayClick}
                     className="w-full sm:w-auto px-8 py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
                   >
-                    {resumeInfo && !resumeInfo.isCompleted ? (
-                      <>
-                        <SkipForward className="w-5 h-5 fill-current group-hover:translate-x-1 transition-transform" />
-                        <span className="font-bold text-lg uppercase tracking-wide">Resume</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5 fill-current ml-0.5 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-lg uppercase tracking-wide">Play</span>
-                      </>
-                    )}
+                    <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-lg uppercase tracking-wide">Play</span>
                   </button>
                 )}
 
@@ -249,7 +231,7 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                       setActiveMenu(activeMenu === Number(id) ? null : Number(id));
                     }}
                     className={cn(
-                      "w-full sm:w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border",
+                      "w-full sm:w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border hover:scale-105",
                       watchlistItem
                         ? "bg-white/10 border-accent/50 text-accent"
                         : "bg-white/5 border-white/10 text-white hover:bg-white/10"

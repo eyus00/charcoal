@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Video as VideoIcon, List, X, ChevronLeft, ChevronRight, Play, Check, Eye, SkipForward, Flame } from 'lucide-react';
+import { Video as VideoIcon, List, X, ChevronLeft, ChevronRight, Play, Check, Eye, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { useStore } from '../../store/useStore';
@@ -145,7 +145,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-white/10">
-                        <Play className="w-12 h-12 fill-current" />
+                        <Play className="w-16 h-16 fill-current" />
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
@@ -228,7 +228,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
               }}
               className="flex items-center justify-center gap-2 py-2.5 px-5 bg-accent hover:bg-accent/90 text-white rounded-xl shadow-lg shadow-accent/20 transition-all text-sm font-bold active:scale-95"
             >
-              <SkipForward className="w-4 h-4 fill-current" />
+              <Play className="w-5 h-5 fill-current" />
               Resume S{resumeInfo.season}:E{resumeInfo.episode}
             </button>
           )}

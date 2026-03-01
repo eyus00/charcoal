@@ -235,13 +235,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="flex items-center gap-4"
+                className="flex items-center gap-4 flex-wrap"
               >
                 <Link
                   to={`/watch/${mediaType}/${currentItem.id}`}
-                  className="px-8 py-3.5 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
+                  className="px-8 py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
                 >
-                  <Play className="w-5 h-5 fill-current ml-0.5 group-hover:scale-110 transition-transform" />
+                  <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
                   <span className="font-bold text-base uppercase tracking-wider">PLAY</span>
                 </Link>
 
@@ -249,7 +249,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                   <button
                     onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
                     className={cn(
-                      "w-[54px] h-[54px] rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border",
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border hover:scale-105",
                       watchlistItem
                         ? "bg-white/10 border-accent/50 text-accent"
                         : "bg-white/5 border-white/10 text-white hover:bg-white/10"

@@ -20,9 +20,9 @@ const STATUS_CONFIG = {
 };
 
 const STATUS_LABELS = {
-  watching: 'Currently Watching',
-  planned: 'Plan to Watch',
-  completed: 'Completed',
+  watching: 'WATCHING',
+  planned: 'TO WATCH',
+  completed: 'WATCHED',
 };
 
 const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
@@ -43,16 +43,16 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
         className="fixed inset-0 z-40"
         onClick={onClose}
       />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, scale: 0.95, y: -5 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -5 }}
         transition={{ duration: 0.15 }}
         className={cn(
-          "absolute z-50 w-56 bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden",
-          position === 'top-right' && "right-0 bottom-full mb-2",
-          position === 'top-left' && "left-0 bottom-full mb-2"
+          "absolute z-50 w-60 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden",
+          position === 'top-right' && "right-0 bottom-full mb-3",
+          position === 'top-left' && "left-0 bottom-full mb-3"
         )}
         ref={containerRef}
       >
@@ -60,33 +60,33 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
           <div className="divide-y divide-white/10 py-2">
             <button
               onClick={() => onAdd('watching')}
-              className="w-full px-4 py-3 text-left hover:bg-white/10 flex items-center gap-3 group transition-all"
+              className="w-full px-5 py-4 text-left hover:bg-white/10 flex items-center gap-3 group transition-all"
             >
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-400 group-hover:scale-125 transition-transform" />
-              <span className="text-sm font-bold text-white/90 group-hover:text-white">Currently Watching</span>
+              <div className="w-3 h-3 rounded-full bg-blue-400 group-hover:scale-125 transition-transform" />
+              <span className="text-sm font-bold text-white/90 group-hover:text-white uppercase tracking-wide">WATCHING</span>
             </button>
             <button
               onClick={() => onAdd('planned')}
-              className="w-full px-4 py-3 text-left hover:bg-white/10 flex items-center gap-3 group transition-all"
+              className="w-full px-5 py-4 text-left hover:bg-white/10 flex items-center gap-3 group transition-all"
             >
-              <div className="w-2.5 h-2.5 rounded-full bg-purple-400 group-hover:scale-125 transition-transform" />
-              <span className="text-sm font-bold text-white/90 group-hover:text-white">Plan to Watch</span>
+              <div className="w-3 h-3 rounded-full bg-purple-400 group-hover:scale-125 transition-transform" />
+              <span className="text-sm font-bold text-white/90 group-hover:text-white uppercase tracking-wide">TO WATCH</span>
             </button>
             <button
               onClick={() => onAdd('completed')}
-              className="w-full px-4 py-3 text-left hover:bg-white/10 flex items-center gap-3 group transition-all"
+              className="w-full px-5 py-4 text-left hover:bg-white/10 flex items-center gap-3 group transition-all"
             >
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400 group-hover:scale-125 transition-transform" />
-              <span className="text-sm font-bold text-white/90 group-hover:text-white">Completed</span>
+              <div className="w-3 h-3 rounded-full bg-green-400 group-hover:scale-125 transition-transform" />
+              <span className="text-sm font-bold text-white/90 group-hover:text-white uppercase tracking-wide">WATCHED</span>
             </button>
           </div>
         ) : (
           <div className="divide-y divide-white/10">
             {/* Current Status Display */}
-            <div className="px-4 py-3 bg-white/5">
+            <div className="px-5 py-4 bg-white/5">
               <div className="flex items-center gap-3">
-                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG[currentStatus].dotColor)} />
-                <span className="text-xs font-bold uppercase tracking-wider text-white/80">
+                <div className={cn("w-3 h-3 rounded-full", STATUS_CONFIG[currentStatus].dotColor)} />
+                <span className="text-xs font-black uppercase tracking-widest text-white/90">
                   {STATUS_LABELS[currentStatus]}
                 </span>
               </div>
@@ -97,47 +97,47 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
               <button
                 onClick={() => onAdd('watching')}
                 className={cn(
-                  "w-full px-4 py-3 text-left text-sm font-bold transition-all flex items-center gap-3 group",
+                  "w-full px-5 py-4 text-left text-sm font-bold transition-all flex items-center gap-3 group uppercase tracking-wide",
                   currentStatus === 'watching'
-                    ? "bg-blue-500/20 text-blue-300"
+                    ? "bg-blue-500/25 text-blue-300"
                     : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <div className={cn(
-                  "w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125",
+                  "w-3 h-3 rounded-full transition-transform group-hover:scale-125",
                   currentStatus === 'watching' ? "bg-blue-400" : "bg-blue-400/40"
                 )} />
-                Currently Watching
+                WATCHING
               </button>
               <button
                 onClick={() => onAdd('planned')}
                 className={cn(
-                  "w-full px-4 py-3 text-left text-sm font-bold transition-all flex items-center gap-3 group",
+                  "w-full px-5 py-4 text-left text-sm font-bold transition-all flex items-center gap-3 group uppercase tracking-wide",
                   currentStatus === 'planned'
-                    ? "bg-purple-500/20 text-purple-300"
+                    ? "bg-purple-500/25 text-purple-300"
                     : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <div className={cn(
-                  "w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125",
+                  "w-3 h-3 rounded-full transition-transform group-hover:scale-125",
                   currentStatus === 'planned' ? "bg-purple-400" : "bg-purple-400/40"
                 )} />
-                Plan to Watch
+                TO WATCH
               </button>
               <button
                 onClick={() => onAdd('completed')}
                 className={cn(
-                  "w-full px-4 py-3 text-left text-sm font-bold transition-all flex items-center gap-3 group",
+                  "w-full px-5 py-4 text-left text-sm font-bold transition-all flex items-center gap-3 group uppercase tracking-wide",
                   currentStatus === 'completed'
-                    ? "bg-green-500/20 text-green-300"
+                    ? "bg-green-500/25 text-green-300"
                     : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <div className={cn(
-                  "w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125",
+                  "w-3 h-3 rounded-full transition-transform group-hover:scale-125",
                   currentStatus === 'completed' ? "bg-green-400" : "bg-green-400/40"
                 )} />
-                Completed
+                WATCHED
               </button>
             </div>
 
@@ -145,10 +145,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
             <div className="py-2">
               <button
                 onClick={onRemove}
-                className="w-full px-4 py-3 text-left text-sm font-bold text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-3 group"
+                className="w-full px-5 py-4 text-left text-sm font-bold text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-3 group uppercase tracking-wide"
               >
                 <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Remove from Watchlist
+                REMOVE
               </button>
             </div>
           </div>

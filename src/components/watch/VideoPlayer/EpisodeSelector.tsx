@@ -154,7 +154,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-white/10">
-                        <Play className="w-12 h-12 fill-current" />
+                        <Play className="w-16 h-16 fill-current" />
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
