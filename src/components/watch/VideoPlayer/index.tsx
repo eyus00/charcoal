@@ -308,10 +308,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
+                className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 group p-0"
                 title="Back"
               >
-                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 m-auto" />
               </button>
             )}
 
@@ -359,7 +359,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <button
                 onClick={onTogglePlayer}
                 className="px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2.5 active:scale-95"
-                title="Switch Player"
+                title="Switch to Embed Player"
               >
                 <Monitor className="w-5 h-5" />
                 <span className="hidden sm:inline font-bold text-sm">Embed Mode</span>
