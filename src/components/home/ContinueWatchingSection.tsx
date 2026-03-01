@@ -202,10 +202,10 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
-                 
+                
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-                 
+                
                   {/* Bottom Badges */}
                   <div className="absolute bottom-3 left-3 flex gap-2">
                     {durationMinutes > 0 && (
@@ -263,12 +263,17 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                     </div>
                   </div>
 
-                  {/* Season/Episode Info - matched to BottomBar styling + single line */}
+                  {/* Season/Episode Info - fixed ellipsis, no extra space before ... */}
                   {item.mediaType === 'tv' && item.season && item.episode && (
-                    <p className="text-white/40 text-[9px] md:text-xs font-bold uppercase tracking-wider truncate">
+                    <p
+                      className={cn(
+                        "text-white/40 text-[9px] md:text-xs font-bold uppercase tracking-wider",
+                        "overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-full"
+                      )}
+                    >
                       S{item.season} • E{item.episode}
                       {episodeDetails?.name && (
-                        <span className="text-white/20 ml-1">· {episodeDetails.name}</span>
+                        <span className="text-white/20"> · {episodeDetails.name}</span>
                       )}
                     </p>
                   )}
