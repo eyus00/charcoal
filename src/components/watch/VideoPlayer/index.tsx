@@ -304,11 +304,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Top Header */}
       {showControls && (
         <div className="absolute top-0 left-0 right-0 p-4 md:p-8 flex items-start justify-between z-40 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 md:gap-3 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md min-w-0 max-w-[70%] sm:max-w-none">
+          <div className="flex items-center gap-2 md:gap-3 p-1 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md min-w-0 max-w-[70%] sm:max-w-none">
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex items-center justify-center p-2 md:p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
+                className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
                 title="Back"
               >
                 <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" />

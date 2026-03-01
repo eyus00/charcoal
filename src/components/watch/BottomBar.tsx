@@ -64,10 +64,10 @@ const BottomBar: React.FC<BottomBarProps> = ({
       isLandscape && "border-b border-t-0"
     )}>
       {/* Back Button Container */}
-      <div className="flex items-center gap-3 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+      <div className="flex items-center gap-3 p-1 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
         <button
           onClick={onBack}
-          className="flex items-center justify-center p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
+          className="flex items-center justify-center w-11 h-11 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
           title="Back"
         >
           <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 group-hover:-translate-x-1 transition-transform" />

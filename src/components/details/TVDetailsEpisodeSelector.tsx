@@ -136,7 +136,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
                     isUpcoming && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <div className="w-full aspect-video bg-white/5 rounded-xl overflow-hidden relative flex-shrink-0 shadow-lg group-hover:scale-[1.02] transition-transform">
+                  <div className="w-full aspect-video bg-white/5 rounded-xl overflow-hidden relative flex-shrink-0 shadow-lg transition-transform">
                     {episode.still_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w500${episode.still_path}`}
@@ -179,8 +179,8 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
                       )}
                     </div>
 
-                    {isCurrentEpisode && (
-                      <div className="absolute top-2 left-2 px-2 py-1 bg-accent text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-lg animate-pulse">
+                    {isCurrentEpisode && historyItem && (
+                      <div className="absolute top-2 left-2 px-2 py-1 bg-accent text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-lg">
                         Watching
                       </div>
                     )}
