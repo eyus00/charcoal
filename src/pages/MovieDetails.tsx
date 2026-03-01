@@ -37,6 +37,8 @@ const MovieDetails = () => {
       posterPath: details.poster_path,
       addedAt: Date.now(),
       status,
+      releaseDate: details.release_date,
+      ratingScore: details.vote_average,
     });
   };
 

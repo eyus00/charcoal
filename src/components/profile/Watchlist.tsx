@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Film, Tv, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bookmark, Film, Tv, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WatchlistItem, WatchStatus, useStore } from '../../store/useStore';
 import { getImageUrl } from '../../api/config';
@@ -27,9 +27,9 @@ const FILTERS: Filter[] = [
 ];
 
 const STATUS_COLORS = {
-  watching: { bg: 'bg-blue-500/80', border: 'border-blue-500/40', text: 'text-blue-400', icon: 'bg-blue-500' },
-  planned: { bg: 'bg-purple-500/80', border: 'border-purple-500/40', text: 'text-purple-400', icon: 'bg-purple-500' },
-  completed: { bg: 'bg-green-500/80', border: 'border-green-500/40', text: 'text-green-400', icon: 'bg-green-500' },
+  watching: { bg: 'bg-red-500/80', border: 'border-red-500/40', text: 'text-red-400', icon: 'bg-red-500' },
+  planned: { bg: 'bg-orange-500/80', border: 'border-orange-500/40', text: 'text-orange-400', icon: 'bg-orange-500' },
+  completed: { bg: 'bg-red-600/80', border: 'border-red-600/40', text: 'text-red-500', icon: 'bg-red-600' },
 };
 
 const STATUS_LABELS = {
@@ -172,9 +172,9 @@ const Watchlist: React.FC<WatchlistProps> = ({
                 ) : (
                   <div className={cn(
                     "w-2 h-2 rounded-full",
-                    filter.value === 'watching' && "bg-blue-400",
-                    filter.value === 'planned' && "bg-purple-400",
-                    filter.value === 'completed' && "bg-green-400"
+                    filter.value === 'watching' && "bg-red-400",
+                    filter.value === 'planned' && "bg-orange-400",
+                    filter.value === 'completed' && "bg-red-500"
                   )} />
                 )}
                 {filter.label}
@@ -260,6 +260,15 @@ const Watchlist: React.FC<WatchlistProps> = ({
                           {/* Overlay */}
                           <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300" />
 
+                          {/* Year Badge - Top Left */}
+                          {item.releaseDate && (
+                            <div className="absolute top-2 left-2">
+                              <div className="px-2 py-1 bg-black/50 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider border border-white/10">
+                                {new Date(item.releaseDate).getFullYear()}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Status Badge - Bottom Left */}
                           <div className="absolute bottom-2 left-2">
                             <div className={cn(
@@ -270,6 +279,16 @@ const Watchlist: React.FC<WatchlistProps> = ({
                               {STATUS_LABELS[item.status]}
                             </div>
                           </div>
+
+                          {/* Rating Badge - Top Right */}
+                          {item.ratingScore && (
+                            <div className="absolute top-2 right-2">
+                              <div className="flex items-center gap-1 px-2 py-1 bg-black/50 backdrop-blur-md text-white rounded-lg border border-white/10">
+                                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                <span className="text-[10px] font-bold">{item.ratingScore.toFixed(1)}</span>
+                              </div>
+                            </div>
+                          )}
                         </Link>
 
                         {/* Info Area */}

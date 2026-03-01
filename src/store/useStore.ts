@@ -26,6 +26,8 @@ export interface WatchlistItem {
   posterPath: string;
   addedAt: number;
   status: WatchStatus;
+  releaseDate?: string;
+  ratingScore?: number;
 }
 
 interface SearchStore {

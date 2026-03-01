@@ -46,6 +46,8 @@ const TVDetails = () => {
       posterPath: details.poster_path,
       addedAt: Date.now(),
       status,
+      releaseDate: details.first_air_date,
+      ratingScore: details.vote_average,
     });
   };
 

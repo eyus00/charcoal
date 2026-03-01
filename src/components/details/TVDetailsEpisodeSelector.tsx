@@ -220,7 +220,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
         </div>
 
         <div className="p-4 md:p-6 border-t border-white/10 bg-white/5 flex items-center justify-end gap-3">
-          {resumeInfo && !resumeInfo.isCompleted && (
+          {resumeInfo && !resumeInfo.isCompleted ? (
             <button
               onClick={() => {
                 navigate(`/watch/tv/${tvId}?season=${resumeInfo.season}&episode=${resumeInfo.episode}`);
@@ -230,6 +230,17 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
             >
               <Play className="w-5 h-5 fill-current" />
               Resume S{resumeInfo.season} • E{resumeInfo.episode}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                navigate(`/watch/tv/${tvId}?season=1&episode=1`);
+                onClose();
+              }}
+              className="flex items-center justify-center gap-2 py-2.5 px-5 bg-accent hover:bg-accent/90 text-white rounded-xl shadow-lg shadow-accent/20 transition-all text-sm font-bold active:scale-95"
+            >
+              <Play className="w-5 h-5 fill-current" />
+              PLAY S1 • E1
             </button>
           )}
         </div>

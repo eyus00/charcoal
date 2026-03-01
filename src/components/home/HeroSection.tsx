@@ -76,6 +76,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
       posterPath: currentItem.poster_path,
       addedAt: Date.now(),
       status,
+      releaseDate,
+      ratingScore: currentItem.vote_average,
     });
     setIsWatchlistOpen(false);
   };
@@ -239,6 +241,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
               >
                 <Link
                   to={`/watch/${mediaType}/${currentItem.id}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="px-8 py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
                 >
                   <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
@@ -247,7 +250,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
 
                 <div className="relative">
                   <button
-                    onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsWatchlistOpen(!isWatchlistOpen);
+                    }}
                     className={cn(
                       "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border hover:scale-105",
                       watchlistItem

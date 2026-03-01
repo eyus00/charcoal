@@ -14,9 +14,9 @@ interface WatchlistMenuProps {
 }
 
 const STATUS_CONFIG = {
-  watching: { color: 'bg-blue-500', borderColor: 'border-blue-500/40', dotColor: 'bg-blue-400' },
-  planned: { color: 'bg-purple-500', borderColor: 'border-purple-500/40', dotColor: 'bg-purple-400' },
-  completed: { color: 'bg-green-500', borderColor: 'border-green-500/40', dotColor: 'bg-green-400' },
+  watching: { color: 'bg-red-500', borderColor: 'border-red-500/40', dotColor: 'bg-red-400' },
+  planned: { color: 'bg-orange-500', borderColor: 'border-orange-500/40', dotColor: 'bg-orange-400' },
+  completed: { color: 'bg-red-600', borderColor: 'border-red-600/40', dotColor: 'bg-red-500' },
 };
 
 const STATUS_LABELS = {
@@ -61,29 +61,38 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
             <button
               onClick={() => onAdd('watching')}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all font-bold uppercase tracking-wide",
+                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
-              <span>Watching</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG.watching.dotColor)} />
+                <span>Watching</span>
+              </div>
             </button>
             <button
               onClick={() => onAdd('planned')}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all font-bold uppercase tracking-wide",
+                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
-              <span>To Watch</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG.planned.dotColor)} />
+                <span>To Watch</span>
+              </div>
             </button>
             <button
               onClick={() => onAdd('completed')}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all font-bold uppercase tracking-wide",
+                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
-              <span>Watched</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG.completed.dotColor)} />
+                <span>Watched</span>
+              </div>
             </button>
           </div>
         ) : (
@@ -91,37 +100,46 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
             <button
               onClick={() => onAdd('watching')}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all font-bold uppercase tracking-wide",
+                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 currentStatus === 'watching'
                   ? "bg-accent text-white shadow-lg shadow-accent/20"
                   : "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
-              <span>Watching</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG.watching.dotColor)} />
+                <span>Watching</span>
+              </div>
               {currentStatus === 'watching' && <Check className="w-4 h-4 stroke-[3]" />}
             </button>
             <button
               onClick={() => onAdd('planned')}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all font-bold uppercase tracking-wide",
+                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 currentStatus === 'planned'
                   ? "bg-accent text-white shadow-lg shadow-accent/20"
                   : "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
-              <span>To Watch</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG.planned.dotColor)} />
+                <span>To Watch</span>
+              </div>
               {currentStatus === 'planned' && <Check className="w-4 h-4 stroke-[3]" />}
             </button>
             <button
               onClick={() => onAdd('completed')}
               className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all font-bold uppercase tracking-wide",
+                "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 currentStatus === 'completed'
                   ? "bg-accent text-white shadow-lg shadow-accent/20"
                   : "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
-              <span>Watched</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", STATUS_CONFIG.completed.dotColor)} />
+                <span>Watched</span>
+              </div>
               {currentStatus === 'completed' && <Check className="w-4 h-4 stroke-[3]" />}
             </button>
 
