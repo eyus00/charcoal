@@ -26,104 +26,95 @@ const TopBar = () => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg z-50 border-b border-white/5">
-      <div className="h-full flex items-center justify-center gap-6 px-6">
-
-        {/* Left: Search Bar - Hidden on Mobile */}
-        <form onSubmit={handleSearch} className="flex-shrink-0 w-56 hidden md:block">
-          <div className={cn(
-            "relative flex items-center gap-3 px-4 py-2.5 bg-white/5 rounded-2xl border transition-all duration-200 h-10",
-            isSearchFocused
-              ? "bg-white/10 border-white/20 shadow-lg shadow-white/10"
-              : "border-white/10 hover:bg-white/[0.07] hover:border-white/15"
-          )}>
-            <Search className="w-4 h-4 text-white/50 flex-shrink-0" />
+    <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-6 md:px-10 pointer-events-none">
+      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-10 pointer-events-auto">
+        {/* LEFT: Search */}
+        <form
+          onSubmit={handleSearch}
+          className="flex-shrink-0 w-72 md:w-80 hidden md:block"
+        >
+          <div
+            className={cn(
+              "relative flex items-center gap-3 px-5 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11",
+              isSearchFocused
+                ? "bg-white/12 border-white/25 shadow-xl shadow-black/20"
+                : "border-white/10 hover:bg-white/9 hover:border-white/20"
+            )}
+          >
+            <Search className="w-4.5 h-4.5 text-white/60 flex-shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              placeholder="Search movies..."
-              className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/40 font-medium"
+              placeholder="Search movies, shows..."
+              className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/45 font-medium"
             />
           </div>
         </form>
 
-        {/* Center: Navigation - Hidden on Mobile */}
-        <nav className="flex items-center gap-2 hidden md:flex">
+        {/* CENTER: Navigation */}
+        <nav className="hidden md:flex items-center gap-3 lg:gap-5">
           {navigationItems.map((item) => {
-            const isItemActive = isActive(item.path);
+            const active = isActive(item.path);
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200 rounded-lg group whitespace-nowrap h-10 flex items-center",
-                  isItemActive
-                    ? "text-accent"
-                    : "text-white/60 hover:text-white/80"
+                  "relative px-5 py-2.5 text-sm font-medium transition-all duration-300 rounded-full h-11 flex items-center",
+                  active
+                    ? "bg-white/12 backdrop-blur-xl border border-white/20 text-white shadow-lg shadow-black/15"
+                    : "text-white/65 hover:text-white hover:bg-white/8 border border-transparent"
                 )}
               >
-                {/* Background that flows seamlessly */}
-                <div
-                  className={cn(
-                    "absolute inset-0 rounded-lg transition-all duration-300 -z-10",
-                    isItemActive
-                      ? "bg-white/10 shadow-lg shadow-white/10"
-                      : "bg-transparent group-hover:bg-white/5"
-                  )}
-                />
-
-                {/* Content */}
-                <span className="relative">{item.label}</span>
-
-                {/* Active indicator line */}
-                {isItemActive && (
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 bg-accent rounded-full" />
-                )}
+                {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Right: Actions Enclosure */}
-        <div className="flex-shrink-0 flex items-center gap-0 px-1.5 py-1.5 rounded-xl md:rounded-xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/[0.08] hover:border-white/15 transition-all duration-200 h-10">
-
-          {/* Notification Bell - Hidden on Mobile */}
-          <button className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white relative group hidden md:flex items-center justify-center">
-            <Bell className="w-4 h-4" />
-            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
+        {/* RIGHT: Actions */}
+        <div
+          className={cn(
+            "flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 h-11",
+            "hover:bg-white/9 hover:border-white/20 transition-all duration-300"
+          )}
+        >
+          {/* Notification - hidden on mobile */}
+          <button
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white relative hidden md:block"
+          >
+            <Bell className="w-4.5 h-4.5" />
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-red-500/40" />
           </button>
 
-          {/* Divider */}
-          <div className="h-5 w-px bg-white/10 hidden md:block" />
+          {/* Divider - hidden on mobile */}
+          <div className="h-6 w-px bg-white/12 mx-1 hidden md:block" />
 
-          {/* Continue Watching */}
           <Link
             to="/profile#history"
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
             title="Continue Watching"
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-4.5 h-4.5" />
           </Link>
 
-          {/* Watchlist */}
           <Link
             to="/profile#watchlist"
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
             title="Watchlist"
           >
-            <Bookmark className="w-4 h-4" />
+            <Bookmark className="w-4.5 h-4.5" />
           </Link>
 
-          {/* Profile */}
           <Link
-            to="/profile#profile"
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            to="/profile"
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
             title="Profile"
           >
-            <User className="w-4 h-4" />
+            <User className="w-4.5 h-4.5" />
           </Link>
         </div>
       </div>
