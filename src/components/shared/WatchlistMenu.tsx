@@ -59,7 +59,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
         {!currentStatus ? (
           <div className="space-y-2">
             <button
-              onClick={() => onAdd('watching')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd('watching');
+              }}
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 "text-white/70 hover:bg-white/5 hover:text-white"
@@ -71,7 +74,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
               </div>
             </button>
             <button
-              onClick={() => onAdd('planned')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd('planned');
+              }}
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 "text-white/70 hover:bg-white/5 hover:text-white"
@@ -83,7 +89,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
               </div>
             </button>
             <button
-              onClick={() => onAdd('completed')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd('completed');
+              }}
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 "text-white/70 hover:bg-white/5 hover:text-white"
@@ -98,7 +107,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
         ) : (
           <div className="space-y-2">
             <button
-              onClick={() => onAdd('watching')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd('watching');
+              }}
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 currentStatus === 'watching'
@@ -113,7 +125,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
               {currentStatus === 'watching' && <Check className="w-4 h-4 stroke-[3]" />}
             </button>
             <button
-              onClick={() => onAdd('planned')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd('planned');
+              }}
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 currentStatus === 'planned'
@@ -128,7 +143,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
               {currentStatus === 'planned' && <Check className="w-4 h-4 stroke-[3]" />}
             </button>
             <button
-              onClick={() => onAdd('completed')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd('completed');
+              }}
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 justify-between transition-all font-bold uppercase tracking-wide",
                 currentStatus === 'completed'
@@ -146,7 +164,10 @@ const WatchlistMenu: React.FC<WatchlistMenuProps> = ({
             {/* Remove Option */}
             <div className="pt-2 border-t border-white/10">
               <button
-                onClick={onRemove}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
                 className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-bold text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-between uppercase tracking-wide"
               >
                 <span>Remove</span>

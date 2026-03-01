@@ -33,8 +33,6 @@ export interface WatchlistItem {
 interface SearchStore {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
   watchHistory: WatchHistoryItem[];
   addToWatchHistory: (item: WatchHistoryItem) => void;
   removeFromWatchHistory: (id: number, mediaType: 'movie' | 'tv') => void;
@@ -53,8 +51,6 @@ export const useStore = create<SearchStore>()(
     (set, get) => ({
       searchQuery: '',
       setSearchQuery: (query) => set({ searchQuery: query }),
-      sidebarOpen: true,
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
       watchHistory: [],
       addToWatchHistory: (item) =>
         set((state) => {
