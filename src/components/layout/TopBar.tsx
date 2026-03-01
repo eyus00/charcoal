@@ -20,19 +20,19 @@ const TopBar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navigationItems = [
-    { label: 'Explore', path: '/', icon: '✨' },
-    { label: 'Movies', path: '/movies', icon: '🎬' },
-    { label: 'TV Shows', path: '/tv', icon: '📺' },
+    { label: 'Explore', path: '/' },
+    { label: 'Movies', path: '/movies' },
+    { label: 'TV Shows', path: '/tv' },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg z-50 border-b border-white/5 px-3 md:px-6">
-      <div className="h-full flex items-center justify-between gap-3 md:gap-8">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg z-50 border-b border-white/5">
+      <div className="h-full flex items-center justify-center gap-6 px-6">
 
         {/* Left: Search Bar - Hidden on Mobile */}
-        <form onSubmit={handleSearch} className="flex-shrink-0 w-48 md:w-64 hidden md:block">
+        <form onSubmit={handleSearch} className="flex-shrink-0 w-56 hidden md:block">
           <div className={cn(
-            "relative flex items-center gap-3 px-4 py-2.5 bg-white/5 rounded-xl border transition-all duration-200",
+            "relative flex items-center gap-3 px-4 py-2.5 bg-white/5 rounded-2xl border transition-all duration-200 h-10",
             isSearchFocused
               ? "bg-white/10 border-white/20 shadow-lg shadow-white/10"
               : "border-white/10 hover:bg-white/[0.07] hover:border-white/15"
@@ -51,7 +51,7 @@ const TopBar = () => {
         </form>
 
         {/* Center: Navigation - Hidden on Mobile */}
-        <nav className="flex-1 flex items-center justify-center gap-1 hidden md:flex">
+        <nav className="flex items-center gap-2 hidden md:flex">
           {navigationItems.map((item) => {
             const isItemActive = isActive(item.path);
             return (
@@ -59,16 +59,16 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all duration-200 rounded-lg group whitespace-nowrap",
+                  "relative px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200 rounded-lg group whitespace-nowrap h-10 flex items-center",
                   isItemActive
-                    ? "text-white"
+                    ? "text-accent"
                     : "text-white/60 hover:text-white/80"
                 )}
               >
                 {/* Background that flows seamlessly */}
                 <div
                   className={cn(
-                    "absolute inset-0 rounded-lg transition-all duration-300",
+                    "absolute inset-0 rounded-lg transition-all duration-300 -z-10",
                     isItemActive
                       ? "bg-white/10 shadow-lg shadow-white/10"
                       : "bg-transparent group-hover:bg-white/5"
@@ -76,61 +76,55 @@ const TopBar = () => {
                 />
 
                 {/* Content */}
-                <span className="relative flex items-center gap-2">
-                  <span>{item.icon}</span>
-                  <span className="hidden lg:inline">{item.label}</span>
-                </span>
+                <span className="relative">{item.label}</span>
 
                 {/* Active indicator line */}
                 {isItemActive && (
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 bg-accent rounded-full" />
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 bg-accent rounded-full" />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Right: Actions */}
-        <div className="flex-shrink-0 flex items-center gap-2 md:gap-3">
+        {/* Right: Actions Enclosure */}
+        <div className="flex-shrink-0 flex items-center gap-0 px-1.5 py-1.5 rounded-xl md:rounded-xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/[0.08] hover:border-white/15 transition-all duration-200 h-10">
+
           {/* Notification Bell - Hidden on Mobile */}
-          <button className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/15 transition-all duration-200 relative group hidden md:flex">
-            <Bell className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
-            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          <button className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white relative group hidden md:flex items-center justify-center">
+            <Bell className="w-4 h-4" />
+            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
           </button>
 
-          {/* Glassy Actions Enclosure */}
-          <div className="flex items-center gap-1 md:gap-2 px-2.5 md:px-3 py-2 md:py-2.5 rounded-lg md:rounded-xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/[0.08] hover:border-white/15 transition-all duration-200 group">
+          {/* Divider */}
+          <div className="h-5 w-px bg-white/10 hidden md:block" />
 
-            {/* Continue Watching */}
-            <Link
-              to="/profile#history"
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
-              title="Continue Watching"
-            >
-              <Clock className="w-4 h-4" />
-            </Link>
+          {/* Continue Watching */}
+          <Link
+            to="/profile#history"
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            title="Continue Watching"
+          >
+            <Clock className="w-4 h-4" />
+          </Link>
 
-            {/* Watchlist */}
-            <Link
-              to="/profile#watchlist"
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
-              title="Watchlist"
-            >
-              <Bookmark className="w-4 h-4" />
-            </Link>
+          {/* Watchlist */}
+          <Link
+            to="/profile#watchlist"
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            title="Watchlist"
+          >
+            <Bookmark className="w-4 h-4" />
+          </Link>
 
-            {/* Divider - Hidden on Mobile */}
-            <div className="h-5 w-px bg-white/10 hidden md:block" />
-
-            {/* Profile */}
-            <Link
-              to="/profile"
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white"
-              title="Profile"
-            >
-              <User className="w-4 h-4" />
-            </Link>
-          </div>
+          {/* Profile */}
+          <Link
+            to="/profile#profile"
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white flex items-center justify-center"
+            title="Profile"
+          >
+            <User className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </header>
