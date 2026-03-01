@@ -40,20 +40,18 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
   useEffect(() => {
     const checkScroll = () => {
       if (!containerRef.current) return;
-     
+    
       setShowLeftArrow(containerRef.current.scrollLeft > 0);
       setShowRightArrow(
         containerRef.current.scrollLeft <
         containerRef.current.scrollWidth - containerRef.current.clientWidth - 10
       );
     };
-
     const container = containerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScroll, { passive: true });
       checkScroll();
     }
-
     return () => {
       if (container) {
         container.removeEventListener('scroll', checkScroll);
@@ -63,12 +61,12 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return;
-   
+  
     const scrollAmount = containerRef.current.clientWidth * 0.8;
     const newScrollLeft = direction === 'left'
       ? containerRef.current.scrollLeft - scrollAmount
       : containerRef.current.scrollLeft + scrollAmount;
-   
+  
     containerRef.current.scrollTo({
       left: newScrollLeft,
       behavior: 'smooth'
@@ -88,7 +86,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
   const onDrag = (e: React.MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
     e.preventDefault();
-   
+  
     const x = e.pageX - (containerRef.current.offsetLeft || 0);
     const walk = (x - startX) * 2;
     containerRef.current.scrollLeft = scrollLeft - walk;
@@ -138,7 +136,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
           </motion.button>
         )}
       </AnimatePresence>
-
       <AnimatePresence>
         {showRightArrow && (
           <motion.button
@@ -152,7 +149,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
           </motion.button>
         )}
       </AnimatePresence>
-     
+    
       {/* Scrollable Container */}
       <div
         ref={containerRef}
@@ -205,11 +202,10 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
-                  
+                 
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-
+                 
                   {/* Bottom Badges */}
                   <div className="absolute bottom-3 left-3 flex gap-2">
                     {durationMinutes > 0 && (
@@ -218,7 +214,6 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                       </div>
                     )}
                   </div>
-
                   <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
                     {item.isCompleted ? (
                       <div className="px-2.5 py-1 bg-green-500/80 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-wider border border-white/10 shadow-lg flex items-center gap-1">
@@ -231,14 +226,12 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                       </div>
                     )}
                   </div>
-
                   {/* Play Button Overlay */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
                     <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center shadow-2xl border-2 border-white/20">
                       <Play className="w-8 h-8 text-white fill-current ml-1" />
                     </div>
                   </div>
-
                   {/* Progress Bar */}
                   <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
                     <motion.div
@@ -269,11 +262,15 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                       )}
                     </div>
                   </div>
-                  {/* Season/Episode Info */}
+
+                  {/* Season/Episode Info - matched to BottomBar styling + single line */}
                   {item.mediaType === 'tv' && item.season && item.episode && (
-                    <div className="text-white/60 text-xs md:text-sm font-bold uppercase tracking-widest">
-                      S{item.season} . E{item.episode}{episodeDetails?.name ? ` . ${episodeDetails.name}` : ''}
-                    </div>
+                    <p className="text-white/40 text-[9px] md:text-xs font-bold uppercase tracking-wider truncate">
+                      S{item.season} • E{item.episode}
+                      {episodeDetails?.name && (
+                        <span className="text-white/20 ml-1">· {episodeDetails.name}</span>
+                      )}
+                    </p>
                   )}
                 </div>
               </motion.div>
