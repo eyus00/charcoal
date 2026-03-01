@@ -26,8 +26,8 @@ const TopBar = () => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-6 md:px-10 pointer-events-none">
-      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-6 pointer-events-auto">
+    <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-5 md:px-8 pointer-events-none">
+      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 pointer-events-auto">
         {/* LEFT: Search */}
         <form
           onSubmit={handleSearch}
@@ -35,7 +35,7 @@ const TopBar = () => {
         >
           <div
             className={cn(
-              "relative flex items-center gap-3 px-5 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11",
+              "relative flex items-center gap-3 px-4 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11",
               isSearchFocused
                 ? "bg-white/12 border-white/25 shadow-xl shadow-black/20"
                 : "border-white/10 hover:bg-white/9 hover:border-white/20"
@@ -55,7 +55,7 @@ const TopBar = () => {
         </form>
 
         {/* CENTER: Navigation */}
-        <nav className="hidden md:flex items-center gap-2 lg:gap-4">
+        <nav className="hidden md:flex items-center gap-1.5 lg:gap-3">
           {navigationItems.map((item) => {
             const active = isActive(item.path);
             return (
@@ -63,7 +63,7 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-5 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center",
+                  "relative px-4 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center justify-center min-w-[100px]",
                   active
                     ? "bg-white/12 backdrop-blur-xl border border-white/20 text-white shadow-lg shadow-black/15"
                     : "text-white/75 hover:text-white hover:bg-white/8 border border-transparent"
@@ -78,11 +78,11 @@ const TopBar = () => {
         {/* RIGHT: Actions */}
         <div
           className={cn(
-            "flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 h-11",
+            "flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 h-11",
             "hover:bg-white/9 hover:border-white/20 transition-all duration-300"
           )}
         >
-          {/* Notification - hidden on mobile */}
+          {/* Notification */}
           <button
             className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white relative hidden md:block"
           >
@@ -90,7 +90,7 @@ const TopBar = () => {
             <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-red-500/40" />
           </button>
 
-          {/* Divider - hidden on mobile */}
+          {/* Divider */}
           <div className="h-6 w-px bg-white/15 mx-1.5 hidden md:block" />
 
           <Link
