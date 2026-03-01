@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VideoPlayer as CustomVideoPlayer } from './VideoPlayer';
+import { VideoPlayer as CustomVideoPlayer } from './VideoPlayer/index';
 import { BackendApiResponse } from '../../api/player-types';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
