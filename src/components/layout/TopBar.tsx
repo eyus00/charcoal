@@ -27,7 +27,7 @@ const TopBar = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-6 md:px-10 pointer-events-none">
-      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-10 pointer-events-auto">
+      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-6 lg:gap-8 pointer-events-auto">
         {/* LEFT: Search */}
         <form
           onSubmit={handleSearch}
@@ -63,7 +63,7 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-5 py-2.5 text-sm font-medium transition-all duration-300 rounded-full h-11 flex items-center",
+                  "relative px-5 py-2.5 text-sm font-medium uppercase tracking-wider transition-all duration-300 rounded-full h-11 flex items-center",
                   active
                     ? "bg-white/12 backdrop-blur-xl border border-white/20 text-white shadow-lg shadow-black/15"
                     : "text-white/65 hover:text-white hover:bg-white/8 border border-transparent"
@@ -90,7 +90,7 @@ const TopBar = () => {
             <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-red-500/40" />
           </button>
 
-          {/* Divider - hidden on mobile */}
+          {/* Divider - brought back, hidden on mobile */}
           <div className="h-6 w-px bg-white/12 mx-1 hidden md:block" />
 
           <Link
