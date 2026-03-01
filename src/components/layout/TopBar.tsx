@@ -27,11 +27,11 @@ const TopBar = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-5 md:px-8 pointer-events-none">
-      <div className="mx-auto flex items-center justify-center gap-5 md:gap-6 lg:gap-8 pointer-events-auto">
+      <div className="mx-auto flex items-center justify-center gap-8 md:gap-10 lg:gap-12 pointer-events-auto">
         {/* LEFT: Search */}
         <form
           onSubmit={handleSearch}
-          className="flex-shrink-0 w-64 md:w-72 hidden md:block"
+          className="flex-shrink-0 w-64 md:w-72 lg:w-80 hidden md:block"
         >
           <div
             className={cn(
@@ -54,8 +54,8 @@ const TopBar = () => {
           </div>
         </form>
 
-        {/* CENTER: Navigation */}
-        <nav className="hidden md:flex items-center gap-2 lg:gap-3">
+        {/* CENTER: Navigation – this block is now the visual center */}
+        <nav className="hidden md:flex items-center gap-3 lg:gap-5">
           {navigationItems.map((item) => {
             const active = isActive(item.path);
             return (
@@ -63,7 +63,7 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-5 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center justify-center",
+                  "relative px-5 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center justify-center min-w-[110px]",
                   active
                     ? "bg-white/12 backdrop-blur-xl border border-white/20 text-white shadow-lg shadow-black/15"
                     : "text-white/75 hover:text-white hover:bg-white/8 border border-transparent"
