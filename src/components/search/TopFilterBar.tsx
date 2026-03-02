@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Filter, Star, Clock, Calendar, Check, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Filter, Star, History, CalendarRange, Check, ChevronRight, ChevronLeft, Sparkles, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
@@ -28,8 +28,8 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
-
-  const activeFilterCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange[0] !== 1900 || yearRange[1] !== currentYear ? 1 : 0);
+  
+  const activeFilterCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange[0] !== 1900 || yearRange[1] !== currentYear + 2 ? 1 : 0);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -41,88 +41,104 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
   };
 
   return (
-    <div className="relative mb-8 z-10">
-      <div className="flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-xl">
+    <div className="relative mb-10 z-10 group/topbar">
+      <div className="flex items-center gap-4 bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-4 shadow-2xl transition-all hover:bg-zinc-900/80 hover:border-white/10">
         {/* Main Filter Toggle */}
         <button
           onClick={onOpenFilters}
           className={cn(
-            "relative flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all duration-300",
+            "relative flex items-center gap-3 px-6 py-3.5 rounded-2xl font-black transition-all duration-500 transform active:scale-95 group/filter",
             activeFilterCount > 0
-              ? "bg-accent text-white shadow-lg shadow-accent/20"
-              : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+              ? "bg-accent text-white shadow-[0_0_25px_rgba(var(--accent-rgb),0.3)]"
+              : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white border border-white/5"
           )}
         >
-          <Filter className="w-5 h-5" />
-          <span className="text-sm">Filters</span>
+          <Filter className={cn("w-5 h-5 transition-transform duration-500 group-hover/filter:rotate-180", activeFilterCount > 0 ? "fill-current" : "")} />
+          <span className="text-[10px] font-black uppercase tracking-widest">Advanced</span>
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-white text-accent rounded-full flex items-center justify-center text-xs font-black shadow-lg">
+            <span className="absolute -top-2 -right-2 w-7 h-7 bg-white text-accent rounded-xl flex items-center justify-center text-[10px] font-black shadow-2xl animate-in bounce-in">
               {activeFilterCount}
             </span>
           )}
         </button>
 
-        <div className="h-10 w-px bg-white/10 hidden md:block" />
+        <div className="h-10 w-px bg-white/5 hidden md:block" />
 
-        {/* Scrollable Quick Genres */}
-        <div className="relative flex-1 group/scroll min-w-0">
+        {/* Scrollable Quick Filters */}
+        <div className="relative flex-1 group/scroll min-w-0 overflow-hidden">
           <div
             ref={scrollRef}
             className="flex items-center gap-2 overflow-x-auto scrollbar-none scroll-smooth px-2"
           >
-            {/* Quick Ratings */}
-            <button
-              onClick={() => onRatingChange(minRating === 7 ? 0 : 7)}
-              className={cn(
-                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
-                minRating === 7
-                  ? "bg-accent/20 border-accent/40 text-accent"
-                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
-              )}
-            >
-              <Star className={cn("w-3 h-3", minRating === 7 ? "fill-current" : "")} />
-              7+ Rating
-            </button>
-            <button
-              onClick={() => onRatingChange(minRating === 8 ? 0 : 8)}
-              className={cn(
-                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
-                minRating === 8
-                  ? "bg-accent/20 border-accent/40 text-accent"
-                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
-              )}
-            >
-              <Star className={cn("w-3 h-3", minRating === 8 ? "fill-current" : "")} />
-              8+ Rating
-            </button>
+            {/* High Rating Section */}
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] border border-white/5 rounded-2xl">
+              <button
+                onClick={() => onRatingChange(minRating === 7 ? 0 : 7)}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+                  minRating === 7
+                    ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-500"
+                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                )}
+              >
+                <Trophy className={cn("w-3 h-3", minRating === 7 ? "fill-current" : "")} />
+                7.0+
+              </button>
+              <button
+                onClick={() => onRatingChange(minRating === 8 ? 0 : 8)}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+                  minRating === 8
+                    ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-500"
+                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                )}
+              >
+                <Trophy className={cn("w-3 h-3", minRating === 8 ? "fill-current" : "")} />
+                8.0+
+              </button>
+            </div>
 
             <div className="h-6 w-px bg-white/5 mx-1 flex-shrink-0" />
 
-            {/* Quick Years */}
-            <button
-              onClick={() => onYearChange(yearRange[0] === currentYear ? [1900, currentYear] : [currentYear, currentYear])}
-              className={cn(
-                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
-                yearRange[0] === currentYear
-                  ? "bg-accent/20 border-accent/40 text-accent"
-                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
-              )}
-            >
-              <Calendar className="w-3 h-3" />
-              {currentYear}
-            </button>
-            <button
-              onClick={() => onYearChange(yearRange[0] === 2020 && yearRange[1] === 2029 ? [1900, currentYear] : [2020, 2029])}
-              className={cn(
-                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
-                yearRange[0] === 2020 && yearRange[1] === 2029
-                  ? "bg-accent/20 border-accent/40 text-accent"
-                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
-              )}
-            >
-              <Calendar className="w-3 h-3" />
-              2020s
-            </button>
+            {/* Years Section */}
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] border border-white/5 rounded-2xl">
+              <button
+                onClick={() => onYearChange(yearRange[0] === 2026 && yearRange[1] === 2026 ? [1900, currentYear + 2] : [2026, 2026])}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+                  yearRange[0] === 2026 && yearRange[1] === 2026
+                    ? "bg-accent/20 border-accent/40 text-accent"
+                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                )}
+              >
+                <Sparkles className="w-3 h-3" />
+                2026
+              </button>
+              <button
+                onClick={() => onYearChange(yearRange[0] === 2025 && yearRange[1] === 2025 ? [1900, currentYear + 2] : [2025, 2025])}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+                  yearRange[0] === 2025 && yearRange[1] === 2025
+                    ? "bg-accent/20 border-accent/40 text-accent"
+                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                )}
+              >
+                <Sparkles className="w-3 h-3" />
+                2025
+              </button>
+              <button
+                onClick={() => onYearChange(yearRange[0] === 2024 && yearRange[1] === 2024 ? [1900, currentYear + 2] : [2024, 2024])}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+                  yearRange[0] === 2024 && yearRange[1] === 2024
+                    ? "bg-accent/20 border-accent/40 text-accent"
+                    : "bg-transparent border-transparent text-white/30 hover:text-white/60"
+                )}
+              >
+                <CalendarRange className="w-3 h-3" />
+                2024
+              </button>
+            </div>
 
             <div className="h-6 w-px bg-white/5 mx-1 flex-shrink-0" />
 
@@ -134,10 +150,10 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
                   key={genre.id}
                   onClick={() => onGenreToggle(genre.id)}
                   className={cn(
-                    "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap",
+                    "flex-shrink-0 px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                     isSelected
-                      ? "bg-accent/20 border-accent/40 text-accent"
-                      : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
+                      ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                      : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -150,19 +166,19 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
           </div>
           
           {/* Scroll Fade */}
-          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-zinc-900/0 to-transparent pointer-events-none group-hover/scroll:from-zinc-900/40" />
+          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-zinc-900 to-transparent pointer-events-none group-hover/scroll:from-zinc-900/80 transition-all duration-500" />
         </div>
 
-        {/* Clear All */}
+        {/* Reset All */}
         {activeFilterCount > 0 && (
           <motion.button
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             onClick={onClearFilters}
-            className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 font-bold text-xs"
+            className="hidden lg:flex items-center gap-3 px-6 py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 font-black text-[10px] uppercase tracking-widest active:scale-95 group/reset"
           >
-            <Clock className="w-4 h-4" />
-            Clear
+            <History className="w-4 h-4 transition-transform group-hover/reset:-rotate-180 duration-500" />
+            Reset
           </motion.button>
         )}
       </div>

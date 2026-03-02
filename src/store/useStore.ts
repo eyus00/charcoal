@@ -30,9 +30,18 @@ export interface WatchlistItem {
   ratingScore?: number;
 }
 
+export interface SearchFilters {
+  selectedGenres: number[];
+  minRating: number;
+  yearRange: [number, number];
+}
+
 interface SearchStore {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  filters: SearchFilters;
+  setFilters: (filters: Partial<SearchFilters>) => void;
+  clearFilters: () => void;
   watchHistory: WatchHistoryItem[];
   addToWatchHistory: (item: WatchHistoryItem) => void;
   removeFromWatchHistory: (id: number, mediaType: 'movie' | 'tv') => void;
@@ -51,6 +60,23 @@ export const useStore = create<SearchStore>()(
     (set, get) => ({
       searchQuery: '',
       setSearchQuery: (query) => set({ searchQuery: query }),
+      filters: {
+        selectedGenres: [],
+        minRating: 0,
+        yearRange: [1900, new Date().getFullYear()],
+      },
+      setFilters: (newFilters) =>
+        set((state) => ({
+          filters: { ...state.filters, ...newFilters }
+        })),
+      clearFilters: () =>
+        set({
+          filters: {
+            selectedGenres: [],
+            minRating: 0,
+            yearRange: [1900, new Date().getFullYear()]
+          }
+        }),
       watchHistory: [],
       addToWatchHistory: (item) =>
         set((state) => {

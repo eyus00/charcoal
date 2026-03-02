@@ -1,14 +1,14 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Movie, TVShow } from '../api/types';
+import { useStore } from '../store/useStore';
 
 interface UseSearchFiltersProps {
   results: (Movie | TVShow)[];
 }
 
 export const useSearchFilters = ({ results }: UseSearchFiltersProps) => {
-  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
-  const [minRating, setMinRating] = useState(0);
-  const [yearRange, setYearRange] = useState<[number, number]>([1900, new Date().getFullYear()]);
+  const { filters, setFilters, clearFilters } = useStore();
+  const { selectedGenres, minRating, yearRange } = filters;
 
   const filteredResults = useMemo(() => {
     return results.filter((item) => {
@@ -38,18 +38,19 @@ export const useSearchFilters = ({ results }: UseSearchFiltersProps) => {
   }, [results, selectedGenres, minRating, yearRange]);
 
   const toggleGenre = useCallback((genreId: number) => {
-    setSelectedGenres((prev) =>
-      prev.includes(genreId)
-        ? prev.filter((id) => id !== genreId)
-        : [...prev, genreId]
-    );
-  }, []);
+    const newGenres = selectedGenres.includes(genreId)
+      ? selectedGenres.filter((id) => id !== genreId)
+      : [...selectedGenres, genreId];
+    setFilters({ selectedGenres: newGenres });
+  }, [selectedGenres, setFilters]);
 
-  const clearFilters = useCallback(() => {
-    setSelectedGenres([]);
-    setMinRating(0);
-    setYearRange([1900, new Date().getFullYear()]);
-  }, []);
+  const setMinRating = useCallback((rating: number) => {
+    setFilters({ minRating: rating });
+  }, [setFilters]);
+
+  const setYearRange = useCallback((range: [number, number]) => {
+    setFilters({ yearRange: range });
+  }, [setFilters]);
 
   return {
     selectedGenres,

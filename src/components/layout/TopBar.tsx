@@ -3,22 +3,21 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, Clock, Bookmark, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { cn } from '../../lib/utils';
+import SearchBarFilterMenu from '../search/SearchBarFilterMenu';
 
 const TopBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { searchQuery, setSearchQuery } = useStore();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsFilterMenuOpen(false);
     }
-  };
-
-  const openFilters = () => {
-    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}&filters=true`);
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -34,38 +33,48 @@ const TopBar = () => {
     <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-5 md:px-8 lg:px-12 pointer-events-none">
       <div className="mx-auto flex items-center justify-center gap-10 md:gap-12 lg:gap-16 pointer-events-auto">
         {/* LEFT: Search */}
-        <form
-          onSubmit={handleSearch}
-          className="flex-shrink-0 w-64 md:w-80 lg:w-96 hidden md:block"
-        >
-          <div
-            className={cn(
-              "relative flex items-center gap-3.5 px-5 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11",
-              isSearchFocused
-                ? "bg-white/12 border-white/25 shadow-xl shadow-black/20"
-                : "border-white/10 hover:bg-white/9 hover:border-white/20"
-            )}
+        <div className="flex-shrink-0 w-64 md:w-80 lg:w-96 hidden md:block relative">
+          <form
+            onSubmit={handleSearch}
           >
-            <Search className="w-4.5 h-4.5 text-white/60 flex-shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              placeholder="Search movies, shows..."
-              className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/45 font-medium"
-            />
-            <button
-              type="button"
-              onClick={openFilters}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-accent transition-colors flex-shrink-0"
-              title="Advanced Search Filters"
+            <div
+              className={cn(
+                "relative flex items-center gap-3.5 px-5 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11",
+                isSearchFocused || isFilterMenuOpen
+                  ? "bg-white/12 border-white/25 shadow-xl shadow-black/20"
+                  : "border-white/10 hover:bg-white/9 hover:border-white/20"
+              )}
             >
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
+              <Search className="w-4.5 h-4.5 text-white/60 flex-shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                placeholder="Search movies, shows..."
+                className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/45 font-medium"
+              />
+              <button
+                type="button"
+                onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors flex-shrink-0",
+                  isFilterMenuOpen ? "bg-accent text-white" : "text-white/40 hover:bg-white/10 hover:text-accent"
+                )}
+                title="Advanced Search Filters"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+
+          {/* Quick Filter Menu */}
+          <SearchBarFilterMenu 
+            isOpen={isFilterMenuOpen} 
+            onClose={() => setIsFilterMenuOpen(false)} 
+          />
+        </div>
 
         {/* CENTER: Navigation – remains the visual center */}
         <nav className="hidden md:flex items-center gap-4 lg:gap-6">
