@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Calendar, Film, SlidersHorizontal, Tv } from 'lucide-react';
+import { Star, Calendar, Film, SlidersHorizontal, Tv, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store/useStore';
 import { cn } from '../../lib/utils';
@@ -67,10 +67,10 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
               </div>
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-red-500 rounded-lg border border-white/5 hover:border-red-500/20 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                title="Reset filters"
+                className="p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
+                title="Clear All"
               >
-                Reset
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
 

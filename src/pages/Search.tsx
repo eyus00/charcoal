@@ -106,15 +106,13 @@ const Search = () => {
 
         {/* Quick Clear All if filters active */}
         {hasActiveFilters && (
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+          <button
             onClick={clearFilters}
             className="flex items-center gap-2 px-6 py-3.5 bg-accent hover:bg-accent/90 text-white rounded-xl shadow-lg shadow-accent/20 transition-all font-bold text-sm border border-white/10 active:scale-95"
           >
             <X className="w-4 h-4" />
             Clear All Filters
-          </motion.button>
+          </button>
         )}
       </div>
 
@@ -165,12 +163,6 @@ const Search = () => {
                   We couldn't find anything matching your search. Try adjusting your filters or search for something else.
                 </p>
               </div>
-              <button
-                onClick={clearFilters}
-                className="px-8 py-4 bg-accent hover:bg-accent/90 text-white font-bold rounded-2xl shadow-xl shadow-accent/20 transition-all active:scale-95"
-              >
-                Clear All Filters
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
