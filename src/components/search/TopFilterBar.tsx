@@ -30,7 +30,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
 
-  const activeFilterCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange[0] !== 1900 || yearRange[1] !== currentYear + 2 ? 1 : 0) + (mediaType !== 'all' ? 1 : 0);
+  const activeFilterCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange[0] !== 1900 || yearRange[1] !== currentYear + 2 ? 1 : 0) + (mediaType !== 'all' && mediaType !== undefined && mediaType !== '' ? 1 : 0);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -162,7 +162,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
         {activeFilterCount > 0 && (
           <button
             onClick={onClearFilters}
-            className="hidden lg:flex items-center px-6 py-3.5 bg-red-500/10 text-red-500 rounded-full transition-all border border-red-500/20 font-black text-[10px] uppercase tracking-widest active:scale-95"
+            className="hidden lg:flex items-center px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-lg shadow-red-500/20 font-bold text-[10px] uppercase tracking-widest active:scale-95 border border-white/10"
             title="Reset all filters"
           >
             Reset

@@ -91,31 +91,31 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-2xl max-h-full overflow-hidden bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-[3rem] shadow-2xl flex flex-col"
+              className="w-full max-w-2xl max-h-full overflow-hidden bg-[#121212]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between">
+              <div className="p-6 md:p-8 border-b border-white/10 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center border border-accent/20 text-accent">
+                  <div className="p-2.5 rounded-xl bg-accent/10 border border-accent/20 text-accent">
                     <SlidersHorizontal className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight">Advanced Filters</h2>
+                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Advanced Filters</h2>
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/30">{totalResults.toLocaleString()} results found</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={onClearFilters}
-                    className="p-3 bg-red-500/10 text-red-500 rounded-full transition-all active:scale-95 border border-red-500/20"
+                    className="p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-xl transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
                     title="Clear All"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
                   <button
                     onClick={onClose}
-                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full transition-all active:scale-95 border border-white/5 hover:border-white/10"
+                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all active:scale-95 border border-white/5 hover:border-white/10"
                     title="Close"
                   >
                     <X className="w-5 h-5 md:w-6 md:h-6" />
@@ -247,16 +247,16 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="p-6 md:p-8 bg-black/40 border-t border-white/5 flex items-center justify-end gap-4">
+              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 flex items-center justify-end gap-4">
                 <button
                   onClick={onClose}
-                  className="flex-1 md:flex-none px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-full transition-all active:scale-95 border border-white/5"
+                  className="px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all active:scale-95 border border-white/5"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onClose}
-                  className="flex-1 md:flex-none px-12 py-4 bg-accent hover:bg-accent/90 text-white font-black rounded-full transition-all shadow-xl shadow-accent/20 active:scale-95 border border-white/10"
+                  className="px-12 py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20 active:scale-95 border border-white/10"
                 >
                   Show Results
                 </button>

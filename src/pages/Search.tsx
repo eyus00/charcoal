@@ -77,32 +77,40 @@ const Search = () => {
     results: fuseResults,
   });
 
+  const hasActiveFilters =
+    selectedGenres.length > 0 ||
+    minRating > 0 ||
+    (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() + 2) ||
+    (mediaType !== 'all' && mediaType !== undefined && mediaType !== '');
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 pb-20">
       {/* Search Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 pt-8">
-        <div className="space-y-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pt-8">
+        <div className="space-y-4">
           <div className="flex items-center gap-3 text-accent font-bold uppercase tracking-widest text-xs">
             <SearchIcon className="w-4 h-4" />
             <span>Search Results</span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight flex items-center gap-4">
-            {query || "Explore"}
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
+              {query || "Explore"}
+            </h1>
             {query && (
-              <span className="text-2xl md:text-3xl text-white/20 font-medium">
+              <span className="text-2xl md:text-3xl text-white/20 font-medium translate-y-[2px]">
                 ({filteredResults.length})
               </span>
             )}
-          </h1>
+          </div>
         </div>
 
         {/* Quick Clear All if filters active */}
-        {(selectedGenres.length > 0 || minRating > 0 || (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() + 2) || mediaType !== 'all') && (
+        {hasActiveFilters && (
           <motion.button
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={clearFilters}
-            className="flex items-center gap-2 px-6 py-3 bg-red-500/10 text-red-500 rounded-full border border-red-500/20 transition-all font-bold text-sm"
+            className="flex items-center gap-2 px-6 py-3.5 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-500/20 transition-all font-bold text-sm border border-white/10 active:scale-95"
           >
             <X className="w-4 h-4" />
             Clear All Filters
