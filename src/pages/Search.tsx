@@ -127,6 +127,8 @@ const Search = () => {
         minRating={minRating}
         yearRange={yearRange}
         onClearFilters={clearFilters}
+        onRatingChange={setMinRating}
+        onYearChange={setYearRange}
       />
 
       {/* Results Content */}

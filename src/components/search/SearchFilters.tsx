@@ -88,14 +88,22 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             onClick={onClose}
           />
 
-          {/* Modal */}
+          {/* Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-[95%] max-w-2xl max-h-[85vh] overflow-hidden bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl flex flex-col"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[101] flex items-center justify-center p-4 md:p-8"
+            onClick={onClose}
           >
-            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-2xl max-h-full overflow-hidden bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
             <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center border border-accent/20 text-accent">
@@ -274,7 +282,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               </button>
             </div>
           </motion.div>
-        </>
+        </motion.div>
+      </>
       )}
     </AnimatePresence>
   );

@@ -24,7 +24,8 @@ const TopBar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navigationItems = [
-    { label: 'EXPLORE', path: '/' },
+    { label: 'HOME', path: '/' },
+    { label: 'EXPLORE', path: '/search' },
     { label: 'MOVIES', path: '/movies' },
     { label: 'TV SHOWS', path: '/tv' },
   ];

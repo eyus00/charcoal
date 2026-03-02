@@ -11,6 +11,8 @@ interface TopFilterBarProps {
   minRating: number;
   yearRange: [number, number];
   onClearFilters: () => void;
+  onRatingChange: (rating: number) => void;
+  onYearChange: (range: [number, number]) => void;
 }
 
 const TopFilterBar: React.FC<TopFilterBarProps> = ({
@@ -21,10 +23,13 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
   minRating,
   yearRange,
   onClearFilters,
+  onRatingChange,
+  onYearChange,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  
-  const activeFilterCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() ? 1 : 0);
+  const currentYear = new Date().getFullYear();
+
+  const activeFilterCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange[0] !== 1900 || yearRange[1] !== currentYear ? 1 : 0);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -65,6 +70,63 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
             ref={scrollRef}
             className="flex items-center gap-2 overflow-x-auto scrollbar-none scroll-smooth px-2"
           >
+            {/* Quick Ratings */}
+            <button
+              onClick={() => onRatingChange(minRating === 7 ? 0 : 7)}
+              className={cn(
+                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
+                minRating === 7
+                  ? "bg-accent/20 border-accent/40 text-accent"
+                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
+              )}
+            >
+              <Star className={cn("w-3 h-3", minRating === 7 ? "fill-current" : "")} />
+              7+ Rating
+            </button>
+            <button
+              onClick={() => onRatingChange(minRating === 8 ? 0 : 8)}
+              className={cn(
+                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
+                minRating === 8
+                  ? "bg-accent/20 border-accent/40 text-accent"
+                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
+              )}
+            >
+              <Star className={cn("w-3 h-3", minRating === 8 ? "fill-current" : "")} />
+              8+ Rating
+            </button>
+
+            <div className="h-6 w-px bg-white/5 mx-1 flex-shrink-0" />
+
+            {/* Quick Years */}
+            <button
+              onClick={() => onYearChange(yearRange[0] === currentYear ? [1900, currentYear] : [currentYear, currentYear])}
+              className={cn(
+                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
+                yearRange[0] === currentYear
+                  ? "bg-accent/20 border-accent/40 text-accent"
+                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
+              )}
+            >
+              <Calendar className="w-3 h-3" />
+              {currentYear}
+            </button>
+            <button
+              onClick={() => onYearChange(yearRange[0] === 2020 && yearRange[1] === 2029 ? [1900, currentYear] : [2020, 2029])}
+              className={cn(
+                "flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap flex items-center gap-2",
+                yearRange[0] === 2020 && yearRange[1] === 2029
+                  ? "bg-accent/20 border-accent/40 text-accent"
+                  : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10 hover:border-white/10"
+              )}
+            >
+              <Calendar className="w-3 h-3" />
+              2020s
+            </button>
+
+            <div className="h-6 w-px bg-white/5 mx-1 flex-shrink-0" />
+
+            {/* Genres */}
             {genres.slice(0, 15).map((genre) => {
               const isSelected = selectedGenres.includes(genre.id);
               return (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, Film, Tv } from 'lucide-react';
+import { Home, Search, Film, Tv } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const MobileNav = () => {
@@ -9,14 +9,15 @@ const MobileNav = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navigationItems = [
-    { label: 'Explore', path: '/', icon: Sparkles },
+    { label: 'Home', path: '/', icon: Home },
+    { label: 'Explore', path: '/search', icon: Search },
     { label: 'Movies', path: '/movies', icon: Film },
     { label: 'TV Shows', path: '/tv', icon: Tv },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 bg-black/90 backdrop-blur-lg border-t border-white/10">
-      <div className="grid grid-cols-3 h-16">
+      <div className={`grid h-16 grid-cols-4`}>
         {navigationItems.map((item) => {
           const Icon = item.icon;
           return (
