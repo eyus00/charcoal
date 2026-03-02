@@ -102,20 +102,19 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                   </div>
                   <div>
                     <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Advanced Filters</h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30">{totalResults.toLocaleString()} results found</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
                   <button
                     onClick={onClearFilters}
-                    className="p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-full transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
+                    className="p-3 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95"
                     title="Clear All"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
                   <button
                     onClick={onClose}
-                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full transition-all active:scale-95 border border-white/5 hover:border-white/10"
+                    className="p-3 hover:bg-white/10 text-white rounded-lg transition-all active:scale-95"
                     title="Close"
                   >
                     <X className="w-5 h-5 md:w-6 md:h-6" />

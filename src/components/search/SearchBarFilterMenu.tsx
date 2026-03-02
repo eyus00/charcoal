@@ -59,13 +59,15 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-accent" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent">
+                  <SlidersHorizontal className="w-4 h-4" />
+                </div>
                 <h3 className="text-sm font-bold text-white tracking-tight">Quick Filters</h3>
               </div>
               <button
                 onClick={clearFilters}
-                className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-red-500 transition-colors"
+                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-red-500 rounded-lg border border-white/5 hover:border-red-500/20 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
                 title="Reset filters"
               >
                 Reset
