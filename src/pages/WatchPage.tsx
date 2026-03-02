@@ -249,7 +249,7 @@ const WatchPage: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
-      {(!useCustomPlayer || !jellyData) && (
+      {(!useCustomPlayer || !jellyData) && !isJellyLoading && (
         <BottomBar
           onBack={() => navigate(backUrl)}
           backUrl={backUrl}

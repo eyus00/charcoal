@@ -113,7 +113,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   if (!videoUrl) return null;
 
   return (
-    <div className="absolute inset-0">
+    <div className="relative w-full h-full bg-black overflow-hidden">
       <iframe
         key={videoUrl}
         src={videoUrl}
@@ -121,6 +121,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         allowFullScreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       />
+      {onTogglePlayer && (
+        <div className="absolute top-0 left-0 right-0 p-4 md:p-8 z-40 pointer-events-auto">
+          <div className="flex items-center justify-between">
+            <div />
+            <div className="flex items-center gap-3 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+              <button
+                onClick={onTogglePlayer}
+                className="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 active:scale-95"
+                title="Switch to Jelly Player"
+              >
+                <div className="hidden sm:flex flex-col">
+                  <span className="text-[10px] md:text-xs font-medium text-white/50">SWITCH TO</span>
+                  <span className="font-bold text-sm leading-tight">Jelly Mode</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Code,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useStore } from '../../../store/useStore';
@@ -442,7 +441,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 className="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 active:scale-95"
                 title="Switch to Embed Player"
               >
-                <Code className="w-4 h-4 md:w-5 md:h-5" />
                 <div className="hidden sm:flex flex-col">
                   <span className="text-[10px] md:text-xs font-medium text-white/50">SWITCH TO</span>
                   <span className="font-bold text-sm leading-tight">Embed Mode</span>
