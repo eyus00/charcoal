@@ -257,7 +257,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                     className={cn(
                       "w-14 h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95 border hover:scale-105",
                       watchlistItem
-                        ? "bg-white/10 border-white/15 text-white"
+                        ? "bg-red-500/20 border-red-500/40 text-red-400"
                         : "bg-white/5 border-white/10 text-white hover:bg-white/10"
                     )}
                   >
