@@ -8,9 +8,15 @@ import SearchBarFilterMenu from '../search/SearchBarFilterMenu';
 const TopBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery } = useStore();
+  const { searchQuery, setSearchQuery, filters } = useStore();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+
+  const hasActiveFilters =
+    filters.selectedGenres.length > 0 ||
+    filters.minRating > 0 ||
+    (filters.yearRange[0] !== 1900 || filters.yearRange[1] !== new Date().getFullYear()) ||
+    filters.mediaType !== 'all';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +30,6 @@ const TopBar = () => {
 
   const navigationItems = [
     { label: 'HOME', path: '/' },
-    { label: 'EXPLORE', path: '/search' },
     { label: 'MOVIES', path: '/movies' },
     { label: 'TV SHOWS', path: '/tv' },
   ];
@@ -60,9 +65,13 @@ const TopBar = () => {
                 onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
                 className={cn(
                   "p-1.5 rounded-lg transition-colors flex-shrink-0",
-                  isFilterMenuOpen ? "bg-accent text-white" : "text-white/40 hover:bg-white/10 hover:text-accent"
+                  hasActiveFilters
+                    ? "bg-accent text-white"
+                    : isFilterMenuOpen
+                    ? "bg-accent text-white"
+                    : "text-white/40 hover:bg-white/10 hover:text-accent"
                 )}
-                title="Advanced Search Filters"
+                title="Filters"
               >
                 <SlidersHorizontal className="w-4 h-4" />
               </button>

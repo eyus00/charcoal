@@ -10,7 +10,6 @@ const MobileNav = () => {
 
   const navigationItems = [
     { label: 'Home', path: '/', icon: Home },
-    { label: 'Explore', path: '/search', icon: Search },
     { label: 'Movies', path: '/movies', icon: Film },
     { label: 'TV Shows', path: '/tv', icon: Tv },
   ];

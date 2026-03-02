@@ -34,6 +34,7 @@ export interface SearchFilters {
   selectedGenres: number[];
   minRating: number;
   yearRange: [number, number];
+  mediaType: 'all' | 'movie' | 'tv';
 }
 
 interface SearchStore {
@@ -64,6 +65,7 @@ export const useStore = create<SearchStore>()(
         selectedGenres: [],
         minRating: 0,
         yearRange: [1900, new Date().getFullYear()],
+        mediaType: 'all',
       },
       setFilters: (newFilters) =>
         set((state) => ({
@@ -74,7 +76,8 @@ export const useStore = create<SearchStore>()(
           filters: {
             selectedGenres: [],
             minRating: 0,
-            yearRange: [1900, new Date().getFullYear()]
+            yearRange: [1900, new Date().getFullYear()],
+            mediaType: 'all'
           }
         }),
       watchHistory: [],

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Calendar, Film, Check, X, SlidersHorizontal } from 'lucide-react';
+import { Star, Calendar, Film, SlidersHorizontal, Tv } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store/useStore';
 import { cn } from '../../lib/utils';
@@ -23,6 +23,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
   const { filters, setFilters, clearFilters } = useStore();
   const { selectedGenres, minRating, yearRange } = filters;
   const [isDragging, setIsDragging] = useState(false);
+  const ratingTrackRef = React.useRef<HTMLDivElement>(null);
 
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
@@ -40,9 +41,17 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
     setFilters({ selectedGenres: newGenres });
   };
 
-  const handleRatingSliderChange = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+  const handleRatingMouseDown = () => {
+    setIsDragging(true);
+  };
+
+  const handleRatingMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleRatingChange = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ratingTrackRef.current) return;
+    const rect = ratingTrackRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
     const percentage = Math.min(Math.max(x / width, 0), 1);
@@ -72,12 +81,56 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
               <button
                 onClick={clearFilters}
                 className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-red-500 transition-colors"
+                title="Reset filters"
               >
                 Reset
               </button>
             </div>
 
             <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {/* Media Type Section */}
+              <section>
+                <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase tracking-widest text-white/50">
+                  <Film className="w-3 h-3 text-accent" />
+                  Media Type
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setFilters({ mediaType: 'all' })}
+                    className={cn(
+                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                      filters.mediaType === 'all'
+                        ? "bg-accent border-accent text-white"
+                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
+                    )}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setFilters({ mediaType: 'movie' })}
+                    className={cn(
+                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                      filters.mediaType === 'movie'
+                        ? "bg-accent border-accent text-white"
+                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
+                    )}
+                  >
+                    Movies
+                  </button>
+                  <button
+                    onClick={() => setFilters({ mediaType: 'tv' })}
+                    className={cn(
+                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                      filters.mediaType === 'tv'
+                        ? "bg-accent border-accent text-white"
+                        : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
+                    )}
+                  >
+                    TV Shows
+                  </button>
+                </div>
+              </section>
+
               {/* Rating Section */}
               <section>
                 <div className="flex items-center justify-between mb-3">
@@ -87,19 +140,20 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                   </div>
                   <span className="text-[10px] font-black text-accent">{minRating > 0 ? minRating.toFixed(1) : 'Any'}</span>
                 </div>
-                <div 
-                  className="relative w-full h-1.5 bg-white/5 rounded-full overflow-visible cursor-pointer group"
-                  onMouseDown={() => setIsDragging(true)}
-                  onMouseUp={() => setIsDragging(false)}
-                  onMouseLeave={() => setIsDragging(false)}
-                  onMouseMove={handleRatingSliderChange}
+                <div
+                  ref={ratingTrackRef}
+                  className="relative w-full h-2 bg-white/5 rounded-full overflow-visible cursor-pointer"
+                  onMouseDown={handleRatingMouseDown}
+                  onMouseUp={handleRatingMouseUp}
+                  onMouseLeave={handleRatingMouseUp}
+                  onMouseMove={handleRatingChange}
                 >
                   <div
-                    className="absolute inset-y-0 left-0 bg-accent rounded-full transition-all duration-75"
+                    className="absolute inset-y-0 left-0 bg-accent rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.4)]"
                     style={{ width: `${(minRating / 9) * 100}%` }}
                   />
-                  <div 
-                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-accent rounded-full shadow-lg -translate-x-1/2 cursor-grab active:cursor-grabbing transition-all hover:scale-110 active:scale-95"
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-accent rounded-full shadow-lg -translate-x-1/2 cursor-grab active:cursor-grabbing hover:scale-125 active:scale-105 transition-all"
                     style={{ left: `${(minRating / 9) * 100}%` }}
                   />
                 </div>
@@ -143,13 +197,12 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                         key={genre.id}
                         onClick={() => handleGenreToggle(genre.id)}
                         className={cn(
-                          "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border flex items-center gap-1.5",
+                          "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
                           isSelected
                             ? "bg-accent border-accent text-white"
                             : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
                         )}
                       >
-                        {isSelected && <Check className="w-2.5 h-2.5" />}
                         {genre.name}
                       </button>
                     );

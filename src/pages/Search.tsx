@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Filter, Search as SearchIcon, X, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Fuse from 'fuse.js';
 import { useMedia } from '../api/hooks/useMedia';
@@ -15,7 +15,6 @@ import { cn } from '../lib/utils';
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [showFAB, setShowFAB] = useState(false);
   const query = searchParams.get('q') || '';
   const shouldOpenFilters = searchParams.get('filters') === 'true';
 
@@ -29,15 +28,6 @@ const Search = () => {
       setSearchParams(newParams, { replace: true });
     }
   }, [shouldOpenFilters, searchParams, setSearchParams]);
-
-  // Scroll logic for FAB
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowFAB(window.scrollY > 300);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Scroll to top when search results change
   useEffect(() => {
@@ -76,10 +66,12 @@ const Search = () => {
     selectedGenres,
     minRating,
     yearRange,
+    mediaType,
     filteredResults,
     toggleGenre,
     setMinRating,
     setYearRange,
+    setMediaType,
     clearFilters,
   } = useSearchFilters({
     results: fuseResults,
@@ -175,26 +167,6 @@ const Search = () => {
         </AnimatePresence>
       </div>
 
-      {/* Floating Action Button (FAB) */}
-      <AnimatePresence>
-        {showFAB && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0, y: 20 }}
-            onClick={() => setIsFiltersOpen(true)}
-            className="fixed bottom-24 right-6 md:bottom-12 md:right-12 z-[60] w-16 h-16 bg-accent hover:bg-accent/90 text-white rounded-[1.5rem] shadow-2xl flex items-center justify-center transition-all active:scale-90 group hover:shadow-accent/40 border border-white/20"
-          >
-            <div className="relative">
-              <SlidersHorizontal className="w-7 h-7 group-hover:rotate-12 transition-transform" />
-              {(selectedGenres.length > 0 || minRating > 0) && (
-                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full" />
-              )}
-            </div>
-            <div className="absolute inset-0 bg-accent rounded-[1.5rem] animate-ping opacity-20 -z-10 group-hover:opacity-40 transition-opacity" />
-          </motion.button>
-        )}
-      </AnimatePresence>
 
       {/* Advanced Filters Modal */}
       <SearchFilters
@@ -204,9 +176,11 @@ const Search = () => {
         selectedGenres={selectedGenres}
         minRating={minRating}
         yearRange={yearRange}
+        mediaType={mediaType}
         onGenreToggle={toggleGenre}
         onRatingChange={setMinRating}
         onYearChange={setYearRange}
+        onMediaTypeChange={setMediaType}
         onClearFilters={clearFilters}
         totalResults={filteredResults.length}
       />

@@ -8,12 +8,18 @@ interface UseSearchFiltersProps {
 
 export const useSearchFilters = ({ results }: UseSearchFiltersProps) => {
   const { filters, setFilters, clearFilters } = useStore();
-  const { selectedGenres, minRating, yearRange } = filters;
+  const { selectedGenres, minRating, yearRange, mediaType } = filters;
 
   const filteredResults = useMemo(() => {
     return results.filter((item) => {
       const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
       const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
+
+      // Media type filter
+      if (mediaType !== 'all') {
+        const itemType = 'release_date' in item ? 'movie' : 'tv';
+        if (itemType !== mediaType) return false;
+      }
 
       // Genre filter
       if (selectedGenres.length > 0) {
@@ -35,7 +41,7 @@ export const useSearchFilters = ({ results }: UseSearchFiltersProps) => {
 
       return true;
     });
-  }, [results, selectedGenres, minRating, yearRange]);
+  }, [results, mediaType, selectedGenres, minRating, yearRange]);
 
   const toggleGenre = useCallback((genreId: number) => {
     const newGenres = selectedGenres.includes(genreId)
@@ -52,14 +58,20 @@ export const useSearchFilters = ({ results }: UseSearchFiltersProps) => {
     setFilters({ yearRange: range });
   }, [setFilters]);
 
+  const setMediaType = useCallback((type: 'all' | 'movie' | 'tv') => {
+    setFilters({ mediaType: type });
+  }, [setFilters]);
+
   return {
     selectedGenres,
     minRating,
     yearRange,
+    mediaType,
     filteredResults,
     toggleGenre,
     setMinRating,
     setYearRange,
+    setMediaType,
     clearFilters,
   };
 };

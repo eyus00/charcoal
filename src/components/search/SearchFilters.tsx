@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Filter, Star, X, Plus, Calendar, Film, Check, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Star, X, Calendar, Film, SlidersHorizontal, Trash2, Tv } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
@@ -15,9 +15,11 @@ interface SearchFiltersProps {
   selectedGenres: number[];
   minRating: number;
   yearRange: [number, number];
+  mediaType: 'all' | 'movie' | 'tv';
   onGenreToggle: (genreId: number) => void;
   onRatingChange: (rating: number) => void;
   onYearChange: (range: [number, number]) => void;
+  onMediaTypeChange: (type: 'all' | 'movie' | 'tv') => void;
   onClearFilters: () => void;
   totalResults: number;
 }
@@ -33,8 +35,6 @@ const YEAR_OPTIONS = [
   { label: '1980s', range: [1980, 1989] },
 ];
 
-const QUICK_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
-
 const SearchFilters: React.FC<SearchFiltersProps> = ({
   isOpen,
   onClose,
@@ -42,35 +42,32 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   selectedGenres,
   minRating,
   yearRange,
+  mediaType,
   onGenreToggle,
   onRatingChange,
   onYearChange,
+  onMediaTypeChange,
   onClearFilters,
   totalResults,
 }) => {
-  const [customYear, setCustomYear] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-
-  const handleYearSelect = (year: number) => {
-    onYearChange([year, year]);
-  };
+  const ratingTrackRef = React.useRef<HTMLDivElement>(null);
 
   const handleRangeSelect = (range: [number, number]) => {
     onYearChange(range);
   };
 
-  const handleCustomYearSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const year = parseInt(customYear);
-    if (year >= 1900 && year <= new Date().getFullYear() + 2) {
-      onYearChange([year, year]);
-      setCustomYear('');
-    }
+  const handleRatingMouseDown = () => {
+    setIsDragging(true);
   };
 
-  const handleRatingSliderChange = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+  const handleRatingMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleRatingChange = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ratingTrackRef.current) return;
+    const rect = ratingTrackRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
     const percentage = Math.min(Math.max(x / width, 0), 1);
@@ -137,6 +134,51 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 custom-scrollbar">
+                  {/* Media Type Section */}
+                <section>
+                  <div className="flex items-center gap-2 mb-5">
+                    <Film className="w-5 h-5 text-accent" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Media Type</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    <button
+                      onClick={() => onMediaTypeChange('all')}
+                      className={cn(
+                        "px-4 py-2.5 rounded-xl text-xs font-black transition-all border",
+                        mediaType === 'all'
+                          ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                      )}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => onMediaTypeChange('movie')}
+                      className={cn(
+                        "px-4 py-2.5 rounded-xl text-xs font-black transition-all border flex items-center gap-2",
+                        mediaType === 'movie'
+                          ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                      )}
+                    >
+                      <Film className="w-3.5 h-3.5" />
+                      Movies
+                    </button>
+                    <button
+                      onClick={() => onMediaTypeChange('tv')}
+                      className={cn(
+                        "px-4 py-2.5 rounded-xl text-xs font-black transition-all border flex items-center gap-2",
+                        mediaType === 'tv'
+                          ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                      )}
+                    >
+                      <Tv className="w-3.5 h-3.5" />
+                      TV Shows
+                    </button>
+                  </div>
+                </section>
+
                 {/* Genres Section */}
                 <section>
                   <div className="flex items-center gap-2 mb-5">
@@ -151,13 +193,12 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                           key={genre.id}
                           onClick={() => onGenreToggle(genre.id)}
                           className={cn(
-                            "px-4 py-2.5 rounded-xl text-xs font-black transition-all border flex items-center gap-2",
+                            "px-4 py-2.5 rounded-xl text-xs font-black transition-all border",
                             isSelected
                               ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                               : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
                           )}
                         >
-                          {isSelected && <Check className="w-3.5 h-3.5" />}
                           {genre.name}
                         </button>
                       );
@@ -171,58 +212,21 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                     <Calendar className="w-5 h-5 text-accent" />
                     <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Release Year</h3>
                   </div>
-                  <div className="space-y-6">
-                    <div className="flex flex-wrap gap-2.5">
-                      {YEAR_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.label}
-                          onClick={() => handleRangeSelect(opt.range as [number, number])}
-                          className={cn(
-                            "px-4 py-2.5 rounded-xl text-xs font-black transition-all border",
-                            yearRange[0] === opt.range[0] && yearRange[1] === opt.range[1]
-                              ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
-                              : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-wrap gap-2 flex-1">
-                        {QUICK_YEARS.slice(0, 5).map((year) => (
-                          <button
-                            key={year}
-                            onClick={() => handleYearSelect(year)}
-                            className={cn(
-                              "px-3 py-2 rounded-xl text-[10px] font-black transition-all border",
-                              yearRange[0] === year && yearRange[1] === year
-                                ? "bg-accent/20 border-accent/40 text-accent"
-                                : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10"
-                            )}
-                          >
-                            {year}
-                          </button>
-                        ))}
-                      </div>
-                      <form onSubmit={handleCustomYearSubmit} className="relative w-36">
-                        <input
-                          type="number"
-                          min="1900"
-                          max={new Date().getFullYear() + 2}
-                          value={customYear}
-                          onChange={(e) => setCustomYear(e.target.value)}
-                          placeholder="Custom Year..."
-                          className="w-full h-11 px-4 pr-10 bg-white/5 border border-white/5 rounded-xl text-xs font-black placeholder-white/20 focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all"
-                        />
-                        <button
-                          type="submit"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-accent transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </form>
-                    </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {YEAR_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={() => handleRangeSelect(opt.range as [number, number])}
+                        className={cn(
+                          "px-4 py-2.5 rounded-xl text-xs font-black transition-all border",
+                          yearRange[0] === opt.range[0] && yearRange[1] === opt.range[1]
+                            ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                            : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                 </section>
 
@@ -240,42 +244,35 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                       </span>
                     </div>
                   </div>
-                  <div className="px-3 py-8 bg-white/[0.02] border border-white/5 rounded-3xl relative">
-                    <div 
-                      className="relative w-full h-2 bg-white/5 rounded-full overflow-visible cursor-pointer"
-                      onMouseDown={() => setIsDragging(true)}
-                      onMouseUp={() => setIsDragging(false)}
-                      onMouseLeave={() => setIsDragging(false)}
-                      onMouseMove={handleRatingSliderChange}
+                  <div
+                    ref={ratingTrackRef}
+                    className="relative w-full h-3 bg-white/5 rounded-full overflow-visible cursor-pointer"
+                    onMouseDown={handleRatingMouseDown}
+                    onMouseUp={handleRatingMouseUp}
+                    onMouseLeave={handleRatingMouseUp}
+                    onMouseMove={handleRatingChange}
+                  >
+                    {/* Active track */}
+                    <div
+                      className="absolute inset-y-0 left-0 bg-accent rounded-full shadow-[0_0_20px_rgba(var(--accent-rgb),0.5)]"
+                      style={{ width: `${(minRating / 9) * 100}%` }}
+                    />
+
+                    {/* Dial / Handle */}
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-3 border-accent rounded-full shadow-2xl -translate-x-1/2 cursor-grab active:cursor-grabbing hover:scale-125 active:scale-105 transition-all flex items-center justify-center"
+                      style={{ left: `${(minRating / 9) * 100}%` }}
                     >
-                      {/* Active track */}
-                      <motion.div
-                        className="absolute inset-y-0 left-0 bg-accent rounded-full shadow-[0_0_20px_rgba(var(--accent-rgb),0.5)] transition-all duration-75"
-                        style={{ width: `${(minRating / 9) * 100}%` }}
-                      />
-                      
-                      {/* Dial / Handle */}
-                      <div 
-                        className="absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-white border-4 border-accent rounded-full shadow-2xl -translate-x-1/2 cursor-grab active:cursor-grabbing hover:scale-110 active:scale-95 transition-all flex items-center justify-center group"
-                        style={{ left: `${(minRating / 9) * 100}%` }}
-                      >
-                        <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-                        {/* Tooltip on hover/drag */}
-                        {(isDragging) && (
-                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-accent text-white px-3 py-1.5 rounded-xl text-[10px] font-black shadow-2xl animate-in zoom-in-50 slide-in-from-bottom-2">
-                            {minRating.toFixed(1)}
-                          </div>
-                        )}
-                      </div>
+                      <div className="w-1 h-1 bg-accent rounded-full" />
                     </div>
-                    <div className="flex justify-between mt-8 text-[9px] font-black text-white/20 uppercase tracking-widest">
-                      <span>Any</span>
-                      <span>2.0</span>
-                      <span>4.0</span>
-                      <span>6.0</span>
-                      <span>8.0</span>
-                      <span>9.0</span>
-                    </div>
+                  </div>
+                  <div className="flex justify-between mt-6 text-[9px] font-black text-white/20 uppercase tracking-widest">
+                    <span>Any</span>
+                    <span>2.0</span>
+                    <span>4.0</span>
+                    <span>6.0</span>
+                    <span>8.0</span>
+                    <span>9.0</span>
                   </div>
                 </section>
               </div>
