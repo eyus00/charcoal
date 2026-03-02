@@ -97,13 +97,22 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-4 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 h-11 flex items-center justify-center min-w-[110px] border-b-2",
+                  "relative px-4 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 h-11 flex items-center justify-center min-w-[110px]",
                   active
-                    ? "text-white border-b-accent"
-                    : "text-white/60 hover:text-white border-b-transparent hover:border-b-white/30"
+                    ? "text-white"
+                    : "text-white/60 hover:text-white"
                 )}
               >
                 {item.label}
+                {/* Minimal bottom indicator */}
+                <span
+                  className={cn(
+                    "absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 transition-all duration-300",
+                    active
+                      ? "w-8 bg-accent"
+                      : "w-0 bg-white/30"
+                  )}
+                />
               </Link>
             );
           })}

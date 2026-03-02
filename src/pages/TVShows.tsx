@@ -12,7 +12,7 @@ import { cn } from '../lib/utils';
 
 const TVShows = () => {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [nextPage, setNextPage] = useState(4);
   const [allShows, setAllShows] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -23,32 +23,42 @@ const TVShows = () => {
 
   // Fetch trending and popular TV shows
   const { data: trendingData } = useMedia.useTrending('tv', 'week');
-  const { data: popularData } = useMedia.usePopular('tv', page);
+  const { data: popularData1 } = useMedia.usePopular('tv', 1);
+  const { data: popularData2 } = useMedia.usePopular('tv', 2);
+  const { data: popularData3 } = useMedia.usePopular('tv', 3);
+  const { data: popularDataNext } = useMedia.usePopular('tv', nextPage);
 
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
 
-  // Combine trending (at the top) with popular shows
+  // Combine trending (at the top) with popular shows (3 pages initially for ~50+ items)
   useEffect(() => {
-    if (page === 1) {
-      // First page: combine trending + popular
-      if (trendingData && trendingData.length > 0) {
-        const trendingIds = new Set(trendingData.map(s => s.id));
-        const popularWithoutTrending = (popularData?.results || []).filter(s => !trendingIds.has(s.id));
-        setAllShows([...trendingData, ...popularWithoutTrending]);
-      } else if (popularData?.results) {
-        setAllShows(popularData.results);
+    if (nextPage === 4) {
+      // Initial load: combine trending + 3 pages of popular
+      const trendingIds = new Set(trendingData?.map(s => s.id) || []);
+
+      const page1 = (popularData1?.results || []).filter(s => !trendingIds.has(s.id));
+      const page1Ids = new Set(page1.map(s => s.id));
+
+      const page2 = (popularData2?.results || []).filter(s => !trendingIds.has(s.id) && !page1Ids.has(s.id));
+      const page2Ids = new Set(page2.map(s => s.id));
+
+      const page3 = (popularData3?.results || []).filter(s => !trendingIds.has(s.id) && !page1Ids.has(s.id) && !page2Ids.has(s.id));
+
+      const combined = [...(trendingData || []), ...page1, ...page2, ...page3];
+      if (combined.length > 0) {
+        setAllShows(combined);
       }
-    } else if (popularData?.results) {
-      // Subsequent pages: append without duplicates
+    } else if (popularDataNext?.results) {
+      // Load more: append new page
       const existingIds = new Set(allShows.map(s => s.id));
-      const newShows = popularData.results.filter(s => !existingIds.has(s.id));
+      const newShows = popularDataNext.results.filter(s => !existingIds.has(s.id));
       setAllShows(prev => [...prev, ...newShows]);
     }
     setIsLoadingMore(false);
-  }, [page, popularData, trendingData]);
+  }, [nextPage, popularData1, popularData2, popularData3, popularDataNext, trendingData]);
 
   const {
     selectedGenres,
@@ -71,9 +81,9 @@ const TVShows = () => {
     (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() + 2);
 
   const loadMore = () => {
-    if (page < 10) {
+    if (nextPage < 10) {
       setIsLoadingMore(true);
-      setPage(page + 1);
+      setNextPage(nextPage + 1);
     }
   };
 
@@ -138,19 +148,19 @@ const TVShows = () => {
               />
 
               {/* Load More Button */}
-              {page < 10 && (
+              {nextPage < 10 && (
                 <div className="mt-12 flex justify-center">
                   <button
                     onClick={loadMore}
                     disabled={isLoadingMore}
                     className={cn(
-                      "px-12 py-4 rounded-xl font-bold text-lg transition-all active:scale-95",
+                      "px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition-all active:scale-95",
                       isLoadingMore
                         ? "bg-white/5 text-white/40 cursor-not-allowed"
                         : "bg-accent text-white shadow-lg shadow-accent/20 hover:bg-accent/90"
                     )}
                   >
-                    {isLoadingMore ? 'Loading...' : 'Load More'}
+                    {isLoadingMore ? 'LOADING...' : 'LOAD MORE'}
                   </button>
                 </div>
               )}

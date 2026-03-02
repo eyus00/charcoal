@@ -12,7 +12,7 @@ import { cn } from '../lib/utils';
 
 const Movies = () => {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [nextPage, setNextPage] = useState(4);
   const [allMovies, setAllMovies] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -23,32 +23,42 @@ const Movies = () => {
 
   // Fetch trending and popular movies
   const { data: trendingData } = useMedia.useTrending('movie', 'week');
-  const { data: popularData } = useMedia.usePopular('movie', page);
+  const { data: popularData1 } = useMedia.usePopular('movie', 1);
+  const { data: popularData2 } = useMedia.usePopular('movie', 2);
+  const { data: popularData3 } = useMedia.usePopular('movie', 3);
+  const { data: popularDataNext } = useMedia.usePopular('movie', nextPage);
 
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
 
-  // Combine trending (at the top) with popular movies
+  // Combine trending (at the top) with popular movies (3 pages initially for ~50+ items)
   useEffect(() => {
-    if (page === 1) {
-      // First page: combine trending + popular
-      if (trendingData && trendingData.length > 0) {
-        const trendingIds = new Set(trendingData.map(m => m.id));
-        const popularWithoutTrending = (popularData?.results || []).filter(m => !trendingIds.has(m.id));
-        setAllMovies([...trendingData, ...popularWithoutTrending]);
-      } else if (popularData?.results) {
-        setAllMovies(popularData.results);
+    if (nextPage === 4) {
+      // Initial load: combine trending + 3 pages of popular
+      const trendingIds = new Set(trendingData?.map(m => m.id) || []);
+
+      const page1 = (popularData1?.results || []).filter(m => !trendingIds.has(m.id));
+      const page1Ids = new Set(page1.map(m => m.id));
+
+      const page2 = (popularData2?.results || []).filter(m => !trendingIds.has(m.id) && !page1Ids.has(m.id));
+      const page2Ids = new Set(page2.map(m => m.id));
+
+      const page3 = (popularData3?.results || []).filter(m => !trendingIds.has(m.id) && !page1Ids.has(m.id) && !page2Ids.has(m.id));
+
+      const combined = [...(trendingData || []), ...page1, ...page2, ...page3];
+      if (combined.length > 0) {
+        setAllMovies(combined);
       }
-    } else if (popularData?.results) {
-      // Subsequent pages: append without duplicates
+    } else if (popularDataNext?.results) {
+      // Load more: append new page
       const existingIds = new Set(allMovies.map(m => m.id));
-      const newMovies = popularData.results.filter(m => !existingIds.has(m.id));
+      const newMovies = popularDataNext.results.filter(m => !existingIds.has(m.id));
       setAllMovies(prev => [...prev, ...newMovies]);
     }
     setIsLoadingMore(false);
-  }, [page, popularData, trendingData]);
+  }, [nextPage, popularData1, popularData2, popularData3, popularDataNext, trendingData]);
 
   const {
     selectedGenres,
@@ -71,9 +81,9 @@ const Movies = () => {
     (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() + 2);
 
   const loadMore = () => {
-    if (page < 10) {
+    if (nextPage < 10) {
       setIsLoadingMore(true);
-      setPage(page + 1);
+      setNextPage(nextPage + 1);
     }
   };
 
@@ -138,19 +148,19 @@ const Movies = () => {
               />
 
               {/* Load More Button */}
-              {page < 10 && (
+              {nextPage < 10 && (
                 <div className="mt-12 flex justify-center">
                   <button
                     onClick={loadMore}
                     disabled={isLoadingMore}
                     className={cn(
-                      "px-12 py-4 rounded-xl font-bold text-lg transition-all active:scale-95",
+                      "px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition-all active:scale-95",
                       isLoadingMore
                         ? "bg-white/5 text-white/40 cursor-not-allowed"
                         : "bg-accent text-white shadow-lg shadow-accent/20 hover:bg-accent/90"
                     )}
                   >
-                    {isLoadingMore ? 'Loading...' : 'Load More'}
+                    {isLoadingMore ? 'LOADING...' : 'LOAD MORE'}
                   </button>
                 </div>
               )}
