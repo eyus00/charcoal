@@ -67,15 +67,12 @@ const WatchPage: React.FC = () => {
 
         if (data) {
           setJellyData(data);
-          setUseCustomPlayer(true);
         } else {
-          setJellyError('Could not load Jelly server. Try embed player instead.');
-          setUseCustomPlayer(false);
+          setJellyError('Could not load Jelly server. Try the embed player using the button in the top right.');
         }
       } catch (error) {
         console.error('Jelly server error:', error);
-        setJellyError('Jelly server unavailable. Using embed player.');
-        setUseCustomPlayer(false);
+        setJellyError('Jelly server unavailable. Try the embed player using the button in the top right.');
       } finally {
         setIsJellyLoading(false);
       }
