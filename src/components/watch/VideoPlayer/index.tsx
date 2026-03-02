@@ -44,6 +44,7 @@ interface VideoPlayerProps {
   onBack?: () => void;
   onTogglePlayer?: () => void;
   onProgress?: (currentTime: number, duration: number) => void;
+  resumeTime?: number;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -62,7 +63,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onTogglePlayer,
   onEpisodeNext,
   onEpisodePrevious,
-  onProgress
+  onProgress,
+  resumeTime
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -94,6 +96,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     setSelectedSeason(seasonNumber || 1);
   }, [seasonNumber]);
+
+  // Seek to resume time when video is ready
+  useEffect(() => {
+    if (!videoRef.current || !resumeTime || resumeTime <= 0) return;
+
+    const handleCanPlay = () => {
+      if (videoRef.current && videoRef.current.duration && resumeTime < videoRef.current.duration) {
+        videoRef.current.currentTime = resumeTime;
+      }
+    };
+
+    const video = videoRef.current;
+    if (video.readyState >= 2) {
+      // Video metadata is already loaded
+      if (video.duration && resumeTime < video.duration) {
+        video.currentTime = resumeTime;
+      }
+    } else {
+      // Wait for metadata to load
+      video.addEventListener('canplay', handleCanPlay);
+      return () => {
+        video.removeEventListener('canplay', handleCanPlay);
+      };
+    }
+  }, [resumeTime]);
 
   useEffect(() => {
     if (!videoRef.current || !currentSource) return;

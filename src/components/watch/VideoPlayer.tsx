@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VideoPlayer as CustomVideoPlayer } from './VideoPlayer/index';
 import { BackendApiResponse } from '../../api/player-types';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 
 interface VideoPlayerProps {
   id?: number;
@@ -22,6 +22,8 @@ interface VideoPlayerProps {
   onBack?: () => void;
   onTogglePlayer?: () => void;
   onProgress?: (currentTime: number, duration: number) => void;
+  resumeTime?: number;
+  jellyError?: string | null;
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -43,6 +45,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onBack,
   onTogglePlayer,
   onProgress,
+  resumeTime,
+  jellyError,
 }) => {
   const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(seasonNumber || 1);
@@ -55,16 +59,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (!jellyData) {
       return (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
-          <div className="flex flex-col items-center gap-6">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
-              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-accent/40 rounded-full animate-spin-slow"></div>
+          {jellyError ? (
+            <div className="flex flex-col items-center gap-6">
+              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/40">
+                <AlertCircle className="w-10 h-10 text-red-400" />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <h3 className="text-white font-bold text-xl tracking-tight">Server Unavailable</h3>
+                <p className="text-white/40 text-sm font-medium">{jellyError}</p>
+              </div>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <h3 className="text-white font-bold text-xl tracking-tight">Trying Jelly Server</h3>
-              <p className="text-white/40 text-sm font-medium animate-pulse">Establishing secure connection...</p>
+          ) : (
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
+                <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-accent/40 rounded-full animate-spin-slow"></div>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <h3 className="text-white font-bold text-xl tracking-tight">Trying Jelly Server</h3>
+                <p className="text-white/40 text-sm font-medium animate-pulse">Establishing secure connection...</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       );
     }
@@ -88,6 +104,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onBack={onBack}
           onTogglePlayer={onTogglePlayer}
           onProgress={onProgress}
+          resumeTime={resumeTime}
         />
       </div>
     );
