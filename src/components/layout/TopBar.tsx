@@ -97,10 +97,10 @@ const TopBar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "relative px-6 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 rounded-full h-11 flex items-center justify-center min-w-[120px]",
+                  "relative px-4 py-2.5 text-sm font-semibold tracking-wider transition-all duration-300 h-11 flex items-center justify-center min-w-[110px] border-b-2",
                   active
-                    ? "bg-white/12 backdrop-blur-xl border border-white/20 text-white shadow-lg shadow-black/15"
-                    : "text-white/75 hover:text-white hover:bg-white/8 border border-transparent"
+                    ? "text-white border-b-accent"
+                    : "text-white/60 hover:text-white border-b-transparent hover:border-b-white/30"
                 )}
               >
                 {item.label}

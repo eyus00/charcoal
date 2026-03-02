@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Trash2, RotateCcw, Timer, Star } from 'lucide-react';
+import { Clock, Trash2, Timer, Star } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import { WatchHistoryItem } from '../../store/useStore';
 import { getImageUrl } from '../../api/config';
@@ -188,7 +188,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                     }`}
                     className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 mt-3"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <Clock className="w-4 h-4" />
                     Resume
                   </Link>
                 </div>

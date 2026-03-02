@@ -22,6 +22,7 @@ interface SearchFiltersProps {
   onMediaTypeChange: (type: 'all' | 'movie' | 'tv') => void;
   onClearFilters: () => void;
   totalResults: number;
+  hideMediaType?: boolean;
 }
 
 const YEAR_OPTIONS = [
@@ -51,6 +52,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   onMediaTypeChange,
   onClearFilters,
   totalResults,
+  hideMediaType = false,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -124,50 +126,54 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 custom-scrollbar">
-                  {/* Media Type Section */}
-                <section>
-                  <div className="flex items-center gap-2 mb-5">
-                    <Film className="w-5 h-5 text-accent" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Media Type</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2.5">
-                    <button
-                      onClick={() => onMediaTypeChange('all')}
-                      className={cn(
-                        "px-6 py-2.5 rounded-full text-xs font-black transition-all border",
-                        mediaType === 'all'
-                          ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
-                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
-                      )}
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={() => onMediaTypeChange('movie')}
-                      className={cn(
-                        "px-6 py-2.5 rounded-full text-xs font-black transition-all border flex items-center gap-2",
-                        mediaType === 'movie'
-                          ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
-                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
-                      )}
-                    >
-                      <Film className="w-3.5 h-3.5" />
-                      Movies
-                    </button>
-                    <button
-                      onClick={() => onMediaTypeChange('tv')}
-                      className={cn(
-                        "px-6 py-2.5 rounded-full text-xs font-black transition-all border flex items-center gap-2",
-                        mediaType === 'tv'
-                          ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
-                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
-                      )}
-                    >
-                      <Tv className="w-3.5 h-3.5" />
-                      TV Shows
-                    </button>
-                  </div>
-                </section>
+                {!hideMediaType && (
+                  <>
+                    {/* Media Type Section */}
+                    <section>
+                      <div className="flex items-center gap-2 mb-5">
+                        <Film className="w-5 h-5 text-accent" />
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Media Type</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2.5">
+                        <button
+                          onClick={() => onMediaTypeChange('all')}
+                          className={cn(
+                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border",
+                            mediaType === 'all'
+                              ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                              : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                          )}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => onMediaTypeChange('movie')}
+                          className={cn(
+                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border flex items-center gap-2",
+                            mediaType === 'movie'
+                              ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                              : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                          )}
+                        >
+                          <Film className="w-3.5 h-3.5" />
+                          Movies
+                        </button>
+                        <button
+                          onClick={() => onMediaTypeChange('tv')}
+                          className={cn(
+                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border flex items-center gap-2",
+                            mediaType === 'tv'
+                              ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                              : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                          )}
+                        >
+                          <Tv className="w-3.5 h-3.5" />
+                          TV Shows
+                        </button>
+                      </div>
+                    </section>
+                  </>
+                )}
 
                 {/* Genres Section */}
                 <section>
