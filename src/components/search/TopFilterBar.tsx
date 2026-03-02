@@ -162,7 +162,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
         {activeFilterCount > 0 && (
           <button
             onClick={onClearFilters}
-            className="hidden lg:flex items-center px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-lg shadow-red-500/20 font-bold text-[10px] uppercase tracking-widest active:scale-95 border border-white/10"
+            className="hidden lg:flex items-center px-6 py-3 bg-accent hover:bg-accent/90 text-white rounded-xl transition-all shadow-lg shadow-accent/20 font-bold text-[10px] uppercase tracking-widest active:scale-95 border border-white/10"
             title="Reset all filters"
           >
             Reset

@@ -64,7 +64,7 @@ export const useStore = create<SearchStore>()(
       filters: {
         selectedGenres: [],
         minRating: 0,
-        yearRange: [1900, new Date().getFullYear()],
+        yearRange: [1900, new Date().getFullYear() + 2],
         mediaType: 'all',
       },
       setFilters: (newFilters) =>
@@ -76,7 +76,7 @@ export const useStore = create<SearchStore>()(
           filters: {
             selectedGenres: [],
             minRating: 0,
-            yearRange: [1900, new Date().getFullYear()],
+            yearRange: [1900, new Date().getFullYear() + 2],
             mediaType: 'all'
           }
         }),
