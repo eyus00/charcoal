@@ -1,6 +1,7 @@
 import React from 'react';
 import { Movie, TVShow } from '../../api/types';
 import MediaCard from '../shared/MediaCard';
+import { motion } from 'framer-motion';
 
 interface SearchResultsProps {
   results: (Movie | TVShow)[];
@@ -10,37 +11,35 @@ interface SearchResultsProps {
 const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading }) => {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {[...Array(10)].map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div className="aspect-[2/3] bg-gray-200 rounded mb-2" />
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-1" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 md:gap-8">
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className="animate-pulse space-y-4">
+            <div className="aspect-[2/3] bg-white/5 rounded-[2rem] border border-white/5" />
+            <div className="space-y-2 px-2">
+              <div className="h-4 bg-white/5 rounded-full w-3/4" />
+              <div className="h-3 bg-white/5 rounded-full w-1/2" />
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
-  if (results.length === 0) {
-    return (
-      <div className="text-center py-12 bg-dark-surface rounded-lg">
-        <p className="text-dark-text-primary">No results found</p>
-        <p className="text-sm text-dark-text-secondary mt-1">
-          Try adjusting your search or filters
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-      {results.map((item) => (
-        <MediaCard
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-y-10 gap-x-6 md:gap-x-8">
+      {results.map((item, index) => (
+        <motion.div
           key={item.id}
-          media={item}
-          type={'title' in item ? 'movie' : 'tv'}
-        />
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.03 }}
+        >
+          <MediaCard
+            media={item}
+            type={'title' in item ? 'movie' : 'tv'}
+            className="w-full"
+          />
+        </motion.div>
       ))}
     </div>
   );

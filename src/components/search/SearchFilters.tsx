@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Filter, Star, X, Plus } from 'lucide-react';
+import { Filter, Star, X, Plus, Calendar, Film, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 interface Genre {
@@ -23,21 +24,13 @@ interface SearchFiltersProps {
 
 const YEAR_OPTIONS = [
   { label: '2020s', range: [2020, 2029] },
-  { label: '2024', range: [2024, 2024] },
-  { label: '2023', range: [2023, 2023] },
-  { label: '2022', range: [2022, 2022] },
-  { label: '2021', range: [2021, 2021] },
-  { label: '2020', range: [2020, 2020] },
-  { label: '2019', range: [2019, 2019] },
-  { label: '2018', range: [2018, 2018] },
-  { label: '2017', range: [2017, 2017] },
-  { label: '2016', range: [2016, 2016] },
-  { label: '2015', range: [2015, 2015] },
   { label: '2010s', range: [2010, 2019] },
   { label: '2000s', range: [2000, 2009] },
   { label: '1990s', range: [1990, 1999] },
   { label: '1980s', range: [1980, 1989] },
 ];
+
+const QUICK_YEARS = [2024, 2023, 2022, 2021, 2020];
 
 const SearchFilters: React.FC<SearchFiltersProps> = ({
   isOpen,
@@ -53,42 +46,20 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   totalResults,
 }) => {
   const [customYear, setCustomYear] = useState('');
-  const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleYearSelect = (yearOption: { label: string; range: [number, number] }) => {
-    const newSelectedYears = new Set(selectedYears);
-    
-    if (newSelectedYears.has(yearOption.label)) {
-      newSelectedYears.delete(yearOption.label);
-    } else {
-      newSelectedYears.add(yearOption.label);
-    }
-    
-    setSelectedYears(newSelectedYears);
+  const handleYearSelect = (year: number) => {
+    onYearChange([year, year]);
+  };
 
-    // Calculate combined year range from all selected years
-    if (newSelectedYears.size === 0) {
-      onYearChange([1900, new Date().getFullYear()]);
-    } else {
-      const selectedRanges = Array.from(newSelectedYears)
-        .map(label => YEAR_OPTIONS.find(opt => opt.label === label)?.range)
-        .filter((range): range is [number, number] => !!range);
-
-      const minYear = Math.min(...selectedRanges.map(range => range[0]));
-      const maxYear = Math.max(...selectedRanges.map(range => range[1]));
-      onYearChange([minYear, maxYear]);
-    }
+  const handleRangeSelect = (range: [number, number]) => {
+    onYearChange(range);
   };
 
   const handleCustomYearSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const year = parseInt(customYear);
     if (year >= 1900 && year <= new Date().getFullYear()) {
-      const yearLabel = `${year}`;
-      const newSelectedYears = new Set(selectedYears);
-      newSelectedYears.add(yearLabel);
-      setSelectedYears(newSelectedYears);
       onYearChange([year, year]);
       setCustomYear('');
     }
@@ -100,240 +71,213 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
     const x = e.clientX - rect.left;
     const width = rect.width;
     const percentage = Math.min(Math.max(x / width, 0), 1);
-    const rating = Math.round(percentage * 9);
+    const rating = Math.round(percentage * 90) / 10; // 0.0 to 9.0
     onRatingChange(rating);
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={cn(
-          "fixed inset-0 bg-black/50 z-40 transition-opacity duration-200",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            onClick={onClose}
+          />
 
-      {/* Mobile bottom sheet */}
-      <div
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-50 bg-dark-bg rounded-t-2xl transition-transform duration-300 h-[85vh] md:hidden",
-          isOpen ? "translate-y-0" : "translate-y-full"
-        )}
-      >
-        <FilterContent
-          onClose={onClose}
-          onClearFilters={onClearFilters}
-          totalResults={totalResults}
-          genres={genres}
-          selectedGenres={selectedGenres}
-          onGenreToggle={onGenreToggle}
-          minRating={minRating}
-          onRatingChange={onRatingChange}
-          selectedYears={selectedYears}
-          handleYearSelect={handleYearSelect}
-          customYear={customYear}
-          setCustomYear={setCustomYear}
-          handleCustomYearSubmit={handleCustomYearSubmit}
-          handleRatingSliderChange={handleRatingSliderChange}
-          isDragging={isDragging}
-          setIsDragging={setIsDragging}
-        />
-      </div>
-
-      {/* Desktop side panel */}
-      <div
-        className={cn(
-          "fixed top-0 right-0 bottom-0 z-50 w-[400px] bg-dark-bg shadow-lg transition-transform duration-300 hidden md:block",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        <FilterContent
-          onClose={onClose}
-          onClearFilters={onClearFilters}
-          totalResults={totalResults}
-          genres={genres}
-          selectedGenres={selectedGenres}
-          onGenreToggle={onGenreToggle}
-          minRating={minRating}
-          onRatingChange={onRatingChange}
-          selectedYears={selectedYears}
-          handleYearSelect={handleYearSelect}
-          customYear={customYear}
-          setCustomYear={setCustomYear}
-          handleCustomYearSubmit={handleCustomYearSubmit}
-          handleRatingSliderChange={handleRatingSliderChange}
-          isDragging={isDragging}
-          setIsDragging={setIsDragging}
-        />
-      </div>
-    </>
-  );
-};
-
-// Extracted common content into a separate component
-const FilterContent: React.FC<{
-  onClose: () => void;
-  onClearFilters: () => void;
-  totalResults: number;
-  genres: Genre[];
-  selectedGenres: number[];
-  onGenreToggle: (id: number) => void;
-  minRating: number;
-  onRatingChange: (rating: number) => void;
-  selectedYears: Set<string>;
-  handleYearSelect: (yearOption: { label: string; range: [number, number] }) => void;
-  customYear: string;
-  setCustomYear: (year: string) => void;
-  handleCustomYearSubmit: (e: React.FormEvent) => void;
-  handleRatingSliderChange: (e: React.MouseEvent<HTMLDivElement>) => void;
-  isDragging: boolean;
-  setIsDragging: (dragging: boolean) => void;
-}> = ({
-  onClose,
-  onClearFilters,
-  totalResults,
-  genres,
-  selectedGenres,
-  onGenreToggle,
-  minRating,
-  onRatingChange,
-  selectedYears,
-  handleYearSelect,
-  customYear,
-  setCustomYear,
-  handleCustomYearSubmit,
-  handleRatingSliderChange,
-  isDragging,
-  setIsDragging,
-}) => (
-  <div className="h-full flex flex-col">
-    {/* Header */}
-    <div className="p-4 border-b border-border-dark flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Filter className="w-5 h-5" />
-        <h2 className="text-lg font-semibold">Filters</h2>
-      </div>
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onClearFilters}
-          className="text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400"
-        >
-          Clear All
-        </button>
-        <button
-          onClick={onClose}
-          className="p-1.5 hover:bg-dark-surface rounded-full"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-
-    {/* Results Count */}
-    <div className="px-4 py-3 border-b border-border-dark bg-dark-surface">
-      <div className="text-sm text-dark-text-secondary">
-        {totalResults.toLocaleString()} results found
-      </div>
-    </div>
-
-    {/* Filter Sections */}
-    <div className="flex-1 overflow-y-auto scrollbar-thin">
-      <div className="p-4 space-y-6">
-        {/* Years Section */}
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Release Year</h3>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {YEAR_OPTIONS.map((yearOption) => (
-              <button
-                key={yearOption.label}
-                onClick={() => handleYearSelect(yearOption)}
-                className={cn(
-                  "px-3 py-1.5 text-sm rounded-full transition-colors",
-                  selectedYears.has(yearOption.label)
-                    ? "bg-red-600 text-white"
-                    : "bg-dark-surface text-dark-text-primary hover:bg-dark-text-secondary/10"
-                )}
-              >
-                {yearOption.label}
-              </button>
-            ))}
-          </div>
-          <form onSubmit={handleCustomYearSubmit} className="relative">
-            <input
-              type="number"
-              min="1900"
-              max={new Date().getFullYear()}
-              value={customYear}
-              onChange={(e) => setCustomYear(e.target.value)}
-              placeholder="Enter year..."
-              className="w-full px-3 py-1.5 pr-9 text-sm bg-dark-surface text-dark-text-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-dark-text-secondary hover:text-red-600 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </form>
-        </section>
-
-        {/* Genres Section */}
-        <section>
-          <h3 className="text-sm font-semibold mb-3">Genres</h3>
-          <div className="flex flex-wrap gap-2">
-            {genres.map((genre) => (
-              <button
-                key={genre.id}
-                onClick={() => onGenreToggle(genre.id)}
-                className={cn(
-                  "px-3 py-1.5 text-sm rounded-full transition-colors",
-                  selectedGenres.includes(genre.id)
-                    ? "bg-red-600 text-white"
-                    : "bg-dark-surface text-dark-text-primary hover:bg-dark-text-secondary/10"
-                )}
-              >
-                {genre.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Rating Section */}
-        <section className="pb-4">
-          <h3 className="text-sm font-semibold mb-3">Minimum Rating</h3>
-          <div className="space-y-4">
-            <div 
-              className="relative w-full h-2 bg-dark-surface rounded-full overflow-hidden cursor-pointer"
-              onMouseDown={() => setIsDragging(true)}
-              onMouseUp={() => setIsDragging(false)}
-              onMouseLeave={() => setIsDragging(false)}
-              onMouseMove={handleRatingSliderChange}
-            >
-              <div
-                className="absolute inset-y-0 left-0 bg-red-500 transition-all"
-                style={{ width: `${(minRating / 9) * 100}%` }}
-              />
-              <div 
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full shadow-lg transform -translate-x-1/2 cursor-grab"
-                style={{ left: `${(minRating / 9) * 100}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-dark-text-secondary">Any Rating</span>
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                <span className="font-medium">
-                  {minRating === 0 ? 'Any' : `${minRating}+`}
-                </span>
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-[95%] max-w-2xl max-h-[85vh] overflow-hidden bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl flex flex-col"
+          >
+            {/* Header */}
+            <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center border border-accent/20 text-accent">
+                  <Filter className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Advanced Filters</h2>
+                  <p className="text-sm text-white/50">{totalResults.toLocaleString()} results found</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onClearFilters}
+                  className="px-4 py-2 text-sm font-semibold text-white/60 hover:text-white transition-colors"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors border border-white/5"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
-          </div>
-        </section>
-      </div>
-    </div>
-  </div>
-);
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 scrollbar-thin">
+              {/* Genres Section */}
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Film className="w-5 h-5 text-accent" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-white/70">Genres</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {genres.map((genre) => {
+                    const isSelected = selectedGenres.includes(genre.id);
+                    return (
+                      <button
+                        key={genre.id}
+                        onClick={() => onGenreToggle(genre.id)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-medium transition-all border",
+                          isSelected
+                            ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                            : "bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:border-white/10"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                          {genre.name}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Release Year Section */}
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar className="w-5 h-5 text-accent" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-white/70">Release Year</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {YEAR_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={() => handleRangeSelect(opt.range)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-medium transition-all border",
+                          yearRange[0] === opt.range[0] && yearRange[1] === opt.range[1]
+                            ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
+                            : "bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:border-white/10"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap gap-2 flex-1">
+                      {QUICK_YEARS.map((year) => (
+                        <button
+                          key={year}
+                          onClick={() => handleYearSelect(year)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                            yearRange[0] === year && yearRange[1] === year
+                              ? "bg-accent/20 border-accent/40 text-accent"
+                              : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
+                          )}
+                        >
+                          {year}
+                        </button>
+                      ))}
+                    </div>
+                    <form onSubmit={handleCustomYearSubmit} className="relative w-32">
+                      <input
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear()}
+                        value={customYear}
+                        onChange={(e) => setCustomYear(e.target.value)}
+                        placeholder="Year..."
+                        className="w-full h-10 px-4 pr-10 bg-white/5 border border-white/5 rounded-xl text-sm focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all"
+                      />
+                      <button
+                        type="submit"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-accent transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </section>
+
+              {/* Rating Section */}
+              <section className="pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-accent" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-white/70">Minimum Rating</h3>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-yellow-400/10 rounded-lg border border-yellow-400/20">
+                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    <span className="text-sm font-bold text-yellow-400">
+                      {minRating === 0 ? 'Any' : minRating.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-2">
+                  <div 
+                    className="relative w-full h-3 bg-white/5 rounded-full overflow-hidden cursor-pointer"
+                    onMouseDown={() => setIsDragging(true)}
+                    onMouseUp={() => setIsDragging(false)}
+                    onMouseLeave={() => setIsDragging(false)}
+                    onMouseMove={handleRatingSliderChange}
+                  >
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.5)]"
+                      style={{ width: `${(minRating / 9) * 100}%` }}
+                    />
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-accent rounded-full shadow-xl -translate-x-1/2 pointer-events-none"
+                      style={{ left: `${(minRating / 9) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-3 text-[10px] font-bold text-white/30 uppercase tracking-tighter">
+                    <span>Any</span>
+                    <span>2.0</span>
+                    <span>4.0</span>
+                    <span>6.0</span>
+                    <span>8.0</span>
+                    <span>Max</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 md:p-8 bg-black/40 border-t border-white/5 flex items-center justify-end gap-4">
+              <button
+                onClick={onClose}
+                className="flex-1 md:flex-none px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl transition-all active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 md:flex-none px-8 py-4 bg-accent hover:bg-accent/90 text-white font-bold rounded-2xl transition-all shadow-xl shadow-accent/20 active:scale-95"
+              >
+                Show Results
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
 
 export default SearchFilters;

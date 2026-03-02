@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Clock, Bookmark } from 'lucide-react';
+import { Search, Bell, User, Clock, Bookmark, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { cn } from '../../lib/utils';
 
@@ -15,6 +15,10 @@ const TopBar = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  const openFilters = () => {
+    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}&filters=true`);
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -51,6 +55,14 @@ const TopBar = () => {
               placeholder="Search movies, shows..."
               className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/45 font-medium"
             />
+            <button
+              type="button"
+              onClick={openFilters}
+              className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-accent transition-colors flex-shrink-0"
+              title="Advanced Search Filters"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
           </div>
         </form>
 
