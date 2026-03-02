@@ -157,10 +157,10 @@ const TVShows = () => {
                     onClick={loadMore}
                     disabled={isLoadingMore}
                     className={cn(
-                      "font-bold text-sm uppercase tracking-widest transition-all active:scale-95",
+                      "font-bold text-xs uppercase tracking-widest transition-all active:scale-95",
                       isLoadingMore
                         ? "text-white/40 cursor-not-allowed"
-                        : "text-white hover:text-red-400"
+                        : "text-white/60 hover:text-red-600"
                     )}
                   >
                     {isLoadingMore ? 'LOADING...' : 'LOAD MORE...'}

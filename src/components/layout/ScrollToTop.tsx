@@ -54,7 +54,7 @@ const ScrollToTop = () => {
   return (
     <button
       className={cn(
-        "fixed right-4 bottom-24 md:bottom-8 z-30 bg-accent hover:bg-accent/90 backdrop-blur-md text-white px-6 py-3.5 rounded-full shadow-lg shadow-accent/20 transition-all duration-300 transform border border-white/10 font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 active:scale-95",
+        "fixed right-4 bottom-24 md:bottom-8 z-30 bg-accent hover:bg-accent/90 backdrop-blur-md text-white p-3 rounded-full shadow-lg shadow-accent/20 transition-all duration-300 transform border border-white/10 flex items-center justify-center active:scale-95",
         isVisible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0 pointer-events-none",
         isDragging && "scale-110"
       )}
@@ -64,8 +64,7 @@ const ScrollToTop = () => {
       onTouchEnd={handleTouchEnd}
       aria-label="Scroll to top"
     >
-      <ChevronUp className="w-5 h-5" />
-      <span className="hidden sm:inline">TOP</span>
+      <ChevronUp className="w-6 h-6" />
     </button>
   );
 };

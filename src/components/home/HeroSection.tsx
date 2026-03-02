@@ -255,9 +255,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                       setIsWatchlistOpen(!isWatchlistOpen);
                     }}
                     className={cn(
-                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border hover:scale-105",
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95 border hover:scale-105",
                       watchlistItem
-                        ? "bg-white/10 border-accent/50 text-accent"
+                        ? "bg-white/10 border-white/15 text-white"
                         : "bg-white/5 border-white/10 text-white hover:bg-white/10"
                     )}
                   >
