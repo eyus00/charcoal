@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMedia } from '../api/hooks/useMedia';
 import { genreService } from '../api/services/genres';
 import { useSearchFilters } from '../hooks/useSearchFilters';
+import { useStore } from '../store/useStore';
 import SearchFilters from '../components/search/SearchFilters';
 import SearchResults from '../components/search/SearchResults';
 import TopFilterBar from '../components/search/TopFilterBar';
@@ -15,11 +16,13 @@ const TVShows = () => {
   const [nextPage, setNextPage] = useState(4);
   const [allShows, setAllShows] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const { setFilters } = useStore();
 
-  // Scroll to top when component mounts
+  // Scroll to top when component mounts and reset mediaType filter
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    setFilters({ mediaType: 'all' });
+  }, [setFilters]);
 
   // Fetch trending and popular TV shows
   const { data: trendingData } = useMedia.useTrending('tv', 'week');
