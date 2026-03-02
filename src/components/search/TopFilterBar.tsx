@@ -153,16 +153,13 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
               );
             })}
           </div>
-          
-          {/* Scroll Fade */}
-          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-zinc-900 to-transparent pointer-events-none group-hover/scroll:from-zinc-900/80 transition-all duration-500" />
         </div>
 
         {/* Reset All */}
         {activeFilterCount > 0 && (
           <button
             onClick={onClearFilters}
-            className="hidden lg:flex items-center px-6 py-3 bg-accent hover:bg-accent/90 text-white rounded-xl transition-all shadow-lg shadow-accent/20 font-bold text-[10px] uppercase tracking-widest active:scale-95 border border-white/10"
+            className="hidden lg:flex items-center px-6 py-3 bg-accent hover:bg-accent/90 text-white rounded-full transition-all shadow-lg shadow-accent/20 font-bold text-[10px] uppercase tracking-widest active:scale-95 border border-white/10"
             title="Reset all filters"
           >
             Reset

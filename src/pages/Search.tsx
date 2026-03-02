@@ -110,7 +110,7 @@ const Search = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={clearFilters}
-            className="flex items-center gap-2 px-6 py-3.5 bg-accent hover:bg-accent/90 text-white rounded-xl shadow-lg shadow-accent/20 transition-all font-bold text-sm border border-white/10 active:scale-95"
+            className="flex items-center gap-2 px-6 py-3.5 bg-accent hover:bg-accent/90 text-white rounded-full shadow-lg shadow-accent/20 transition-all font-bold text-sm border border-white/10 active:scale-95"
           >
             <X className="w-4 h-4" />
             Clear All Filters

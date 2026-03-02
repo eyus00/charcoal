@@ -108,14 +108,14 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={onClearFilters}
-                    className="p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-xl transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
+                    className="p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-full transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
                     title="Clear All"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
                   <button
                     onClick={onClose}
-                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all active:scale-95 border border-white/5 hover:border-white/10"
+                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full transition-all active:scale-95 border border-white/5 hover:border-white/10"
                     title="Close"
                   >
                     <X className="w-5 h-5 md:w-6 md:h-6" />
