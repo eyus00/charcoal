@@ -92,6 +92,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showSubtitles, setShowSubtitles] = useState(false);
   const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(seasonNumber || 1);
+  const resumeAppliedRef = useRef(false);
+  const isSeekingRef = useRef(false);
 
   useEffect(() => {
     setSelectedSeason(seasonNumber || 1);
@@ -99,25 +101,36 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Seek to resume time when video is ready
   useEffect(() => {
-    if (!videoRef.current || !resumeTime || resumeTime <= 0) return;
+    if (!videoRef.current || !resumeTime || resumeTime <= 0 || resumeAppliedRef.current) return;
 
-    const handleCanPlay = () => {
-      if (videoRef.current && videoRef.current.duration && resumeTime < videoRef.current.duration) {
+    const seekToResume = () => {
+      if (videoRef.current && videoRef.current.duration && resumeTime < videoRef.current.duration && !resumeAppliedRef.current) {
+        resumeAppliedRef.current = true;
+        isSeekingRef.current = true;
         videoRef.current.currentTime = resumeTime;
+
+        // Stop seeking flag after a brief delay
+        setTimeout(() => {
+          isSeekingRef.current = false;
+        }, 500);
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      if (videoRef.current?.duration && resumeTime < videoRef.current.duration && !resumeAppliedRef.current) {
+        seekToResume();
       }
     };
 
     const video = videoRef.current;
-    if (video.readyState >= 2) {
+    if (video.readyState >= 2 && video.duration) {
       // Video metadata is already loaded
-      if (video.duration && resumeTime < video.duration) {
-        video.currentTime = resumeTime;
-      }
+      seekToResume();
     } else {
       // Wait for metadata to load
-      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
       return () => {
-        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       };
     }
   }, [resumeTime]);
@@ -128,6 +141,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const video = videoRef.current;
     setIsLoading(true);
     setProgress(0);
+    // Reset resume tracking when source changes
+    resumeAppliedRef.current = false;
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -176,9 +191,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
-    const handleWaiting = () => setIsLoading(true);
-    const handlePlaying = () => setIsLoading(false);
-    const handleCanPlay = () => setIsLoading(false);
+    const handleWaiting = () => {
+      // Don't show loading if we're currently seeking to resume position
+      if (!isSeekingRef.current) {
+        setIsLoading(true);
+      }
+    };
+    const handlePlaying = () => {
+      setIsLoading(false);
+    };
+    const handleCanPlay = () => {
+      setIsLoading(false);
+      isSeekingRef.current = false;
+    };
     const handleError = () => {
       console.error('Video Player Error');
       if (currentSource) {
