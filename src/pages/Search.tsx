@@ -97,14 +97,14 @@ const Search = () => {
         </div>
 
         {/* Quick Clear All if filters active */}
-        {(selectedGenres.length > 0 || minRating > 0) && (
+        {(selectedGenres.length > 0 || minRating > 0 || (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() + 2) || mediaType !== 'all') && (
           <motion.button
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={clearFilters}
-            className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 transition-all font-bold text-sm group"
+            className="flex items-center gap-2 px-6 py-3 bg-red-500/10 text-red-500 rounded-full border border-red-500/20 transition-all font-bold text-sm"
           >
-            <X className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+            <X className="w-4 h-4" />
             Clear All Filters
           </motion.button>
         )}
@@ -118,6 +118,7 @@ const Search = () => {
         genres={genres}
         minRating={minRating}
         yearRange={yearRange}
+        mediaType={mediaType}
         onClearFilters={clearFilters}
         onRatingChange={setMinRating}
         onYearChange={setYearRange}

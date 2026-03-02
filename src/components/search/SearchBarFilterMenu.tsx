@@ -14,16 +14,18 @@ interface SearchBarFilterMenuProps {
 const YEAR_OPTIONS = [
   { label: '2026', range: [2026, 2026] },
   { label: '2025', range: [2025, 2025] },
+  { label: '2024', range: [2024, 2024] },
   { label: '2020s', range: [2020, 2029] },
   { label: '2010s', range: [2010, 2019] },
   { label: '2000s', range: [2000, 2009] },
 ];
 
+const RATING_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9];
+
 const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClose }) => {
   const { filters, setFilters, clearFilters } = useStore();
   const { selectedGenres, minRating, yearRange } = filters;
-  const [isDragging, setIsDragging] = useState(false);
-  const ratingTrackRef = React.useRef<HTMLDivElement>(null);
+  const currentYear = new Date().getFullYear();
 
   const { data: genres = [] } = useQuery({
     queryKey: ['genres'],
@@ -31,32 +33,15 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
   });
 
   const handleYearSelect = (range: [number, number]) => {
-    setFilters({ yearRange: range });
+    if (yearRange[0] === range[0] && yearRange[1] === range[1]) {
+      setFilters({ yearRange: [1900, currentYear + 2] });
+    } else {
+      setFilters({ yearRange: range });
+    }
   };
 
-  const handleGenreToggle = (genreId: number) => {
-    const newGenres = selectedGenres.includes(genreId)
-      ? selectedGenres.filter((id) => id !== genreId)
-      : [...selectedGenres, genreId];
-    setFilters({ selectedGenres: newGenres });
-  };
-
-  const handleRatingMouseDown = () => {
-    setIsDragging(true);
-  };
-
-  const handleRatingMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleRatingChange = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ratingTrackRef.current) return;
-    const rect = ratingTrackRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = rect.width;
-    const percentage = Math.min(Math.max(x / width, 0), 1);
-    const rating = Math.round(percentage * 90) / 10;
-    setFilters({ minRating: rating });
+  const handleRatingSelect = (rating: number) => {
+    setFilters({ minRating: minRating === rating ? 0 : rating });
   };
 
   return (
@@ -70,7 +55,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 mt-3 w-80 bg-zinc-900/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-[70] p-5 overflow-hidden"
+            className="absolute top-full left-0 mt-3 w-80 bg-zinc-900/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl z-[70] p-5 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
@@ -98,7 +83,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                   <button
                     onClick={() => setFilters({ mediaType: 'all' })}
                     className={cn(
-                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                      "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                       filters.mediaType === 'all'
                         ? "bg-accent border-accent text-white"
                         : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
@@ -109,7 +94,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                   <button
                     onClick={() => setFilters({ mediaType: 'movie' })}
                     className={cn(
-                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                      "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                       filters.mediaType === 'movie'
                         ? "bg-accent border-accent text-white"
                         : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
@@ -120,7 +105,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                   <button
                     onClick={() => setFilters({ mediaType: 'tv' })}
                     className={cn(
-                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                      "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                       filters.mediaType === 'tv'
                         ? "bg-accent border-accent text-white"
                         : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
@@ -133,29 +118,25 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
 
               {/* Rating Section */}
               <section>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/50">
-                    <Star className="w-3 h-3 text-accent" />
-                    Rating
-                  </div>
-                  <span className="text-[10px] font-black text-accent">{minRating > 0 ? minRating.toFixed(1) : 'Any'}</span>
+                <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase tracking-widest text-white/50">
+                  <Star className="w-3 h-3 text-accent" />
+                  Rating
                 </div>
-                <div
-                  ref={ratingTrackRef}
-                  className="relative w-full h-2 bg-white/5 rounded-full overflow-visible cursor-pointer"
-                  onMouseDown={handleRatingMouseDown}
-                  onMouseUp={handleRatingMouseUp}
-                  onMouseLeave={handleRatingMouseUp}
-                  onMouseMove={handleRatingChange}
-                >
-                  <div
-                    className="absolute inset-y-0 left-0 bg-accent rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.4)]"
-                    style={{ width: `${(minRating / 9) * 100}%` }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-accent rounded-full shadow-lg -translate-x-1/2 cursor-grab active:cursor-grabbing hover:scale-125 active:scale-105 transition-all"
-                    style={{ left: `${(minRating / 9) * 100}%` }}
-                  />
+                <div className="flex flex-wrap gap-1.5">
+                  {RATING_OPTIONS.map((rating) => (
+                    <button
+                      key={rating}
+                      onClick={() => handleRatingSelect(rating)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
+                        minRating === rating
+                          ? "bg-yellow-500 border-yellow-500 text-white"
+                          : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
+                      )}
+                    >
+                      {rating}+
+                    </button>
+                  ))}
                 </div>
               </section>
 
@@ -171,7 +152,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                       key={opt.label}
                       onClick={() => handleYearSelect(opt.range as [number, number])}
                       className={cn(
-                        "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                        "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                         yearRange[0] === opt.range[0] && yearRange[1] === opt.range[1]
                           ? "bg-accent border-accent text-white"
                           : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
@@ -197,7 +178,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                         key={genre.id}
                         onClick={() => handleGenreToggle(genre.id)}
                         className={cn(
-                          "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all border",
+                          "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                           isSelected
                             ? "bg-accent border-accent text-white"
                             : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
