@@ -231,9 +231,9 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                       setActiveMenu(activeMenu === Number(id) ? null : Number(id));
                     }}
                     className={cn(
-                      "w-full sm:w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95 border hover:scale-105",
+                      "w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 border hover:scale-105 font-bold text-lg uppercase tracking-wide",
                       watchlistItem
-                        ? "bg-white/10 border-accent/50 text-accent"
+                        ? "bg-red-500/20 border-red-500/40 text-red-400 shadow-red-500/20"
                         : "bg-white/5 border-white/10 text-white hover:bg-white/10"
                     )}
                   >
@@ -243,6 +243,7 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                         watchlistItem ? "fill-current" : ""
                       )}
                     />
+                    <span>{watchlistItem ? 'Saved' : 'Save'}</span>
                   </button>
 
                   <WatchlistMenu

@@ -160,18 +160,18 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                 className="group flex-shrink-0 w-[200px] md:w-[240px] flex flex-col gap-3"
               >
                 <div className={cn(
-                  "group flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
+                  "group flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden p-2",
                   "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
                 )}>
                   {/* Poster Card */}
                   <Link
                     to={getMediaUrl(item)}
-                    className="relative w-full aspect-[2/3] rounded-xl overflow-hidden flex-shrink-0 shadow-lg cursor-pointer m-3 mt-3"
+                    className="relative w-full aspect-[2/3] rounded-xl overflow-hidden flex-shrink-0 shadow-lg cursor-pointer"
                   >
                     <img
                       src={getImageUrl(item.poster_path, 'w500')}
                       alt={itemTitle}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300" />
@@ -195,7 +195,7 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                   </Link>
 
                   {/* Info Area - single line title with badge */}
-                  <div className="px-2 pb-2 flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center justify-between gap-2 min-w-0 px-1">
                     <Link
                       to={getMediaUrl(item)}
                       className="font-bold text-sm leading-tight text-white line-clamp-1"

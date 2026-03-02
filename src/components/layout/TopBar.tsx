@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Clock, Bookmark, SlidersHorizontal } from 'lucide-react';
+import { Search, Bell, User, History, Bookmark, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { cn } from '../../lib/utils';
 import SearchBarFilterMenu from '../search/SearchBarFilterMenu';
@@ -140,7 +140,7 @@ const TopBar = () => {
               className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
               title="Continue Watching"
             >
-              <Clock className="w-4.5 h-4.5" />
+              <History className="w-4.5 h-4.5" />
             </Link>
 
             <Link

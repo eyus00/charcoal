@@ -157,13 +157,13 @@ const Movies = () => {
                     onClick={loadMore}
                     disabled={isLoadingMore}
                     className={cn(
-                      "px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition-all active:scale-95",
+                      "font-bold text-sm uppercase tracking-widest transition-all active:scale-95",
                       isLoadingMore
-                        ? "bg-white/5 text-white/40 cursor-not-allowed"
-                        : "bg-accent text-white shadow-lg shadow-accent/20 hover:bg-accent/90"
+                        ? "text-white/40 cursor-not-allowed"
+                        : "text-white hover:text-red-400"
                     )}
                   >
-                    {isLoadingMore ? 'LOADING...' : 'LOAD MORE'}
+                    {isLoadingMore ? 'LOADING...' : 'LOAD MORE...'}
                   </button>
                 </div>
               )}
