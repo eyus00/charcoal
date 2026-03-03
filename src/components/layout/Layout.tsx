@@ -6,11 +6,11 @@ import MobileNav from './MobileNav';
 const Layout = () => {
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Top Navigation Bar - Desktop */}
+      {/* Top Navigation Bar */}
       <TopBar />
 
       {/* Main Content */}
-      <main className="min-h-screen pt-24 pb-20 md:pb-8">
+      <main className="min-h-screen pt-20 md:pt-24 pb-32 md:pb-8">
         <div className="px-6 md:px-10">
           <Outlet />
         </div>

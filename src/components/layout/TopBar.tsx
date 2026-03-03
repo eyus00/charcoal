@@ -36,6 +36,54 @@ const TopBar = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-5 pb-4 px-5 md:px-8 lg:px-12 pointer-events-none">
+      {/* MOBILE TOP BAR */}
+      <div className="md:hidden flex items-center justify-between gap-4 pointer-events-auto mb-4">
+        {/* Left: App Name */}
+        <div className="text-xl font-bold text-white tracking-wider">Charcoal</div>
+
+        {/* Right: Profile Actions */}
+        <div
+          className={cn(
+            "flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 h-11",
+            "hover:bg-white/9 hover:border-white/20 transition-all duration-300"
+          )}
+        >
+          <button
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white relative"
+          >
+            <Bell className="w-4.5 h-4.5" />
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-red-500/40" />
+          </button>
+
+          <div className="h-6 w-px bg-white/15 mx-2" />
+
+          <Link
+            to="/profile#history"
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
+            title="Continue Watching"
+          >
+            <History className="w-4.5 h-4.5" />
+          </Link>
+
+          <Link
+            to="/profile#watchlist"
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
+            title="Watchlist"
+          >
+            <Bookmark className="w-4.5 h-4.5" />
+          </Link>
+
+          <Link
+            to="/profile#profile"
+            className="p-2 rounded-full hover:bg-white/12 transition-colors text-white/70 hover:text-white"
+            title="Profile"
+          >
+            <User className="w-4.5 h-4.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* DESKTOP TOP BAR */}
       <div className="w-full flex items-center justify-between gap-4 pointer-events-auto">
         {/* LEFT: Search */}
         <div className="flex-1 flex justify-start">
