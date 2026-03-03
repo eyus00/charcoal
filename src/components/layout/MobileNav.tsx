@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, Film, Tv, SlidersHorizontal } from 'lucide-react';
+import { Home, Search, Film, Tv, SlidersHorizontal, User } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { cn } from '../../lib/utils';
 import SearchBarFilterMenu from '../search/SearchBarFilterMenu';
@@ -23,6 +23,13 @@ const MobileNav = () => {
     (filters.mediaType !== 'all' && filters.mediaType !== undefined && filters.mediaType !== '');
 
   const handleSearchOpen = () => {
+    // If search panel is open and there's text, perform the search
+    if (isSearchPanelOpen && searchQuery.trim()) {
+      handleSearch(new Event('submit') as any);
+      return;
+    }
+
+    // Otherwise, open the search panel
     setIsSearchPanelOpen(true);
     setTimeout(() => {
       searchInputRef.current?.focus();
@@ -64,14 +71,17 @@ const MobileNav = () => {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-      {/* SEARCH PANEL - Appears above the nav bar */}
+      {/* SEARCH PANEL - Floating above nav bar with rounded corners */}
       {isSearchPanelOpen && (
         <div
           ref={searchPanelRef}
-          className="px-5 py-4 bg-white/6 backdrop-blur-xl border-t border-white/10 animate-in slide-in-from-bottom-2"
+          className="fixed left-0 right-0 bottom-24 mx-5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 animate-in slide-in-from-bottom-2"
         >
           <form onSubmit={handleSearch} className="relative">
-            <div className="flex items-center gap-2.5 px-4 py-3 bg-white/6 backdrop-blur-xl rounded-lg border border-white/25 bg-white/12">
+            <div className={cn(
+              "relative flex items-center gap-2.5 px-4 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11 pr-2",
+              "bg-white/12 border-white/25 shadow-xl shadow-black/20"
+            )}>
               <Search className="w-4 h-4 text-white/60 flex-shrink-0" />
               <input
                 ref={searchInputRef}
@@ -112,54 +122,72 @@ const MobileNav = () => {
         </div>
       )}
 
-      {/* NAVIGATION BAR - Floating bottom bar */}
+      {/* NAVIGATION BAR - Floating bottom bar with NEW ORDER */}
       <div className="mx-5 mb-5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 px-2 py-2">
         <div className="flex items-center justify-around gap-1">
           {/* HOME */}
           <Link
             to="/"
             className={cn(
-              'flex flex-col items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
               isActive('/')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
             )}
+            title="Home"
           >
-            <Home className="w-6 h-6" />
+            <Home className="w-5 h-5" />
           </Link>
-
-          {/* SEARCH - Large circular button */}
-          <button
-            onClick={handleSearchOpen}
-            className="flex flex-col items-center justify-center p-3 rounded-full bg-accent text-white hover:bg-accent/90 transition-all shadow-lg shadow-accent/30 active:scale-95 mx-2"
-          >
-            <Search className="w-6 h-6" />
-          </button>
 
           {/* MOVIES */}
           <Link
             to="/movies"
             className={cn(
-              'flex flex-col items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
               isActive('/movies')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
             )}
+            title="Movies"
           >
-            <Film className="w-6 h-6" />
+            <Film className="w-5 h-5" />
           </Link>
+
+          {/* SEARCH - Large circular button */}
+          <button
+            onClick={handleSearchOpen}
+            className="flex items-center justify-center p-3 rounded-full bg-accent text-white hover:bg-accent/90 transition-all shadow-lg shadow-accent/30 active:scale-95 mx-2"
+            title="Search"
+          >
+            <Search className="w-5 h-5" />
+          </button>
 
           {/* TV SHOWS */}
           <Link
             to="/tv"
             className={cn(
-              'flex flex-col items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
               isActive('/tv')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
             )}
+            title="TV Shows"
           >
-            <Tv className="w-6 h-6" />
+            <Tv className="w-5 h-5" />
+          </Link>
+
+          {/* PROFILE */}
+          <Link
+            to="/profile#profile"
+            className={cn(
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              isActive('/profile')
+                ? 'text-accent'
+                : 'text-white/50 hover:text-white/70'
+            )}
+            title="Profile"
+          >
+            <User className="w-5 h-5" />
           </Link>
         </div>
       </div>
