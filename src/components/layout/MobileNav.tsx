@@ -54,17 +54,23 @@ const MobileNav = () => {
     setIsFilterMenuOpen(false);
   };
 
+  const handleNavClick = () => {
+    // Close search panel when navigating
+    handleClosePanel();
+  };
+
   // Close panel when clicking outside
   useEffect(() => {
+    if (!isSearchPanelOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      // Don't close if clicking the search panel or any button within the nav
+      // If clicking outside the search panel and outside the entire mobile nav, close it
       if (
         searchPanelRef.current &&
         !searchPanelRef.current.contains(target)
       ) {
-        // Check if the click is outside the entire mobile nav container
         const navContainer = document.querySelector('[data-mobile-nav]');
         if (navContainer && !navContainer.contains(target)) {
           handleClosePanel();
@@ -72,12 +78,15 @@ const MobileNav = () => {
       }
     };
 
-    if (isSearchPanelOpen) {
+    // Use a small delay to avoid interference with immediate click handlers
+    const timerId = setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
-      return () => {
-        document.removeEventListener('click', handleClickOutside);
-      };
-    }
+    }, 0);
+
+    return () => {
+      clearTimeout(timerId);
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [isSearchPanelOpen]);
 
   return (
@@ -139,8 +148,9 @@ const MobileNav = () => {
           {/* HOME */}
           <Link
             to="/"
+            onClick={handleNavClick}
             className={cn(
-              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200 active:scale-95',
               isActive('/')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
@@ -153,8 +163,9 @@ const MobileNav = () => {
           {/* MOVIES */}
           <Link
             to="/movies"
+            onClick={handleNavClick}
             className={cn(
-              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200 active:scale-95',
               isActive('/movies')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
@@ -176,8 +187,9 @@ const MobileNav = () => {
           {/* TV SHOWS */}
           <Link
             to="/tv"
+            onClick={handleNavClick}
             className={cn(
-              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200 active:scale-95',
               isActive('/tv')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
@@ -190,8 +202,9 @@ const MobileNav = () => {
           {/* PROFILE */}
           <Link
             to="/profile#profile"
+            onClick={handleNavClick}
             className={cn(
-              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200',
+              'flex items-center justify-center py-2 px-4 rounded-full transition-colors duration-200 active:scale-95',
               isActive('/profile')
                 ? 'text-accent'
                 : 'text-white/50 hover:text-white/70'
