@@ -57,24 +57,31 @@ const MobileNav = () => {
   // Close panel when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      // Don't close if clicking the search panel or any button within the nav
       if (
         searchPanelRef.current &&
-        !searchPanelRef.current.contains(event.target as Node)
+        !searchPanelRef.current.contains(target)
       ) {
-        handleClosePanel();
+        // Check if the click is outside the entire mobile nav container
+        const navContainer = document.querySelector('[data-mobile-nav]');
+        if (navContainer && !navContainer.contains(target)) {
+          handleClosePanel();
+        }
       }
     };
 
     if (isSearchPanelOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('click', handleClickOutside);
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('click', handleClickOutside);
       };
     }
   }, [isSearchPanelOpen]);
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50" data-mobile-nav>
       {/* SEARCH PANEL - Floating above nav bar with rounded corners */}
       {isSearchPanelOpen && (
         <div
