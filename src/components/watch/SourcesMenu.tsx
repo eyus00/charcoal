@@ -32,7 +32,7 @@ const SourcesMenu: React.FC<SourcesMenuProps> = ({
 
       <div
         className={cn(
-          "absolute z-50 w-72 bg-black/90 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md",
+          "absolute z-50 w-full max-w-[calc(100vw-2rem)] sm:w-72 bg-black/90 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md",
           isLandscape ? "top-full right-0 mt-2" : "bottom-full right-0 mb-2"
         )}
       >

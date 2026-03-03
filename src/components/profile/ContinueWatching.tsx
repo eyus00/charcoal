@@ -95,7 +95,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[calc(3*144px+2*1rem)] overflow-y-auto scrollbar-thin pr-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto scrollbar-thin pr-2">
           {watchHistory.map((item, index) => {
             const details = detailQueries[index]?.data;
             const progress = getWatchProgress(item, details);

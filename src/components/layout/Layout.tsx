@@ -10,8 +10,8 @@ const Layout = () => {
       <TopBar />
 
       {/* Main Content */}
-      <main className="min-h-screen pt-24 pb-20 md:pb-8">
-        <div className="px-6 md:px-10">
+      <main className="min-h-screen pt-24 pb-32 md:pb-8">
+        <div className="px-4 md:px-10">
           <Outlet />
         </div>
       </main>
