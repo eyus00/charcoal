@@ -34,7 +34,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
-    const scrollAmount = scrollRef.current ? Math.round(scrollRef.current.clientWidth * 0.8) : 300;
+    const scrollAmount = 300;
     scrollRef.current.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth'
@@ -75,7 +75,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
             <button
               onClick={() => onRatingChange(minRating === 7 ? 0 : 7)}
               className={cn(
-                "flex-shrink-0 px-3 md:px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                 minRating === 7
                   ? "bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/20"
                   : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"
@@ -86,7 +86,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
             <button
               onClick={() => onRatingChange(minRating === 8 ? 0 : 8)}
               className={cn(
-                "flex-shrink-0 px-3 md:px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                 minRating === 8
                   ? "bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/20"
                   : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"
@@ -101,7 +101,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
             <button
               onClick={() => onYearChange(yearRange[0] === 2026 && yearRange[1] === 2026 ? [1900, currentYear + 2] : [2026, 2026])}
               className={cn(
-                "flex-shrink-0 px-3 md:px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                 yearRange[0] === 2026 && yearRange[1] === 2026
                   ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                   : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"
@@ -112,7 +112,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
             <button
               onClick={() => onYearChange(yearRange[0] === 2025 && yearRange[1] === 2025 ? [1900, currentYear + 2] : [2025, 2025])}
               className={cn(
-                "flex-shrink-0 px-3 md:px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                 yearRange[0] === 2025 && yearRange[1] === 2025
                   ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                   : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"
@@ -123,7 +123,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
             <button
               onClick={() => onYearChange(yearRange[0] === 2024 && yearRange[1] === 2024 ? [1900, currentYear + 2] : [2024, 2024])}
               className={cn(
-                "flex-shrink-0 px-3 md:px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                 yearRange[0] === 2024 && yearRange[1] === 2024
                   ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                   : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"
@@ -142,7 +142,7 @@ const TopFilterBar: React.FC<TopFilterBarProps> = ({
                   key={genre.id}
                   onClick={() => onGenreToggle(genre.id)}
                   className={cn(
-                    "flex-shrink-0 px-3 md:px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                    "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                     isSelected
                       ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                       : "bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white/60"

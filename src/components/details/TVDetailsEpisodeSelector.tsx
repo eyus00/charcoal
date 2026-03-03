@@ -89,7 +89,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {currentSeasonData?.episodes.map((episode: Episode) => {
               const airDate = episode.air_date ? new Date(episode.air_date) : null;
               const isUpcoming = airDate ? airDate > new Date() : false;

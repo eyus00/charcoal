@@ -130,9 +130,9 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('left')}
-            className="absolute left-2 md:left-4 top-[60%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute left-4 top-[60%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronLeft className="w-5 h-5 md:w-7 md:h-7" />
+            <ChevronLeft className="w-7 h-7" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -143,9 +143,9 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('right')}
-            className="absolute right-2 md:right-4 top-[60%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute right-4 top-[60%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronRight className="w-5 h-5 md:w-7 md:h-7" />
+            <ChevronRight className="w-7 h-7" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -181,7 +181,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "group flex-shrink-0 w-[280px] md:w-[340px] flex flex-col gap-4 rounded-3xl transition-all text-left border relative overflow-hidden p-3",
+                  "group flex-shrink-0 w-[300px] md:w-[340px] flex flex-col gap-4 rounded-3xl transition-all text-left border relative overflow-hidden p-3",
                   "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
                 )}
               >

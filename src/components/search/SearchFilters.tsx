@@ -252,16 +252,16 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-end gap-4">
+              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 flex items-center justify-end gap-4">
                 <button
                   onClick={onClose}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all active:scale-95 border border-white/5"
+                  className="px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all active:scale-95 border border-white/5"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onClose}
-                  className="w-full sm:w-auto px-8 sm:px-12 py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20 active:scale-95 border border-white/10"
+                  className="px-12 py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20 active:scale-95 border border-white/10"
                 >
                   Show Results
                 </button>
