@@ -22,26 +22,30 @@ const MobileNav = () => {
     (filters.yearRange[0] !== 1900 || filters.yearRange[1] !== new Date().getFullYear() + 2) ||
     (filters.mediaType !== 'all' && filters.mediaType !== undefined && filters.mediaType !== '');
 
-  const handleSearchOpen = () => {
-    // If search panel is open and there's text, perform the search
-    if (isSearchPanelOpen && searchQuery.trim()) {
-      handleSearch(new Event('submit') as any);
-      return;
-    }
-
-    // Otherwise, open the search panel
-    setIsSearchPanelOpen(true);
-    setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 50);
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsSearchPanelOpen(false);
       setIsFilterMenuOpen(false);
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSearchClick = () => {
+    // If panel is closed, open it
+    if (!isSearchPanelOpen) {
+      setIsSearchPanelOpen(true);
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+    // If panel is open and there's text, trigger search
+    else if (searchQuery.trim()) {
+      handleSearch();
+    }
+    // If panel is open and empty, close it
+    else {
+      setIsSearchPanelOpen(false);
     }
   };
 
@@ -77,7 +81,7 @@ const MobileNav = () => {
           ref={searchPanelRef}
           className="fixed left-0 right-0 bottom-24 mx-5 bg-white/6 backdrop-blur-xl rounded-full border border-white/10 animate-in slide-in-from-bottom-2"
         >
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={(e) => handleSearch(e)} className="relative">
             <div className={cn(
               "relative flex items-center gap-2.5 px-4 py-3 bg-white/6 backdrop-blur-xl rounded-full border transition-all duration-300 h-11 pr-2",
               "bg-white/12 border-white/25 shadow-xl shadow-black/20"
@@ -155,7 +159,7 @@ const MobileNav = () => {
 
           {/* SEARCH - Large circular button */}
           <button
-            onClick={handleSearchOpen}
+            onClick={handleSearchClick}
             className="flex items-center justify-center p-3 rounded-full bg-accent text-white hover:bg-accent/90 transition-all shadow-lg shadow-accent/30 active:scale-95 mx-2"
             title="Search"
           >
