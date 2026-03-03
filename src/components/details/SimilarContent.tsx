@@ -120,9 +120,9 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('left')}
-            className="absolute left-4 top-1/2 z-20 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute left-2 md:left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -134,9 +134,9 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('right')}
-            className="absolute right-4 top-1/2 z-20 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute right-2 md:right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -165,7 +165,7 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "group flex-shrink-0 w-[180px] flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
+                  "group flex-shrink-0 w-[140px] md:w-[180px] flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
                   "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
                 )}
               >
