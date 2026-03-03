@@ -112,13 +112,13 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
             >
               {/* Type tag redesigned */}
               <div className="flex justify-center lg:justify-start items-center gap-3 mb-5">
-                <div className="relative inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-accent/90 to-accent/70 backdrop-blur-lg text-white rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/30 border border-accent/40">
+                <div className="relative inline-flex items-center gap-2 px-2.5 md:px-4 py-1.5 bg-gradient-to-r from-accent/90 to-accent/70 backdrop-blur-lg text-white rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/30 border border-accent/40">
                   {type === 'movie' ? (
-                    <Film className="w-3.5 h-3.5" />
+                    <Film className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   ) : (
-                    <Tv className="w-3.5 h-3.5" />
+                    <Tv className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   )}
-                  {type === 'movie' ? 'Movie' : 'TV Series'}
+                  <span className="hidden md:inline">{type === 'movie' ? 'Movie' : 'TV Series'}</span>
                   <div className="absolute -inset-1 bg-accent/20 rounded-full blur-md -z-10" />
                 </div>
                 {contentRating && (
