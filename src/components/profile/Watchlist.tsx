@@ -70,7 +70,7 @@ const Watchlist: React.FC<WatchlistProps> = ({
     return matchesStatus && matchesMedia;
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const checkScroll = () => {
       if (!containerRef.current) return;
 
@@ -128,40 +128,49 @@ const Watchlist: React.FC<WatchlistProps> = ({
   };
 
   return (
-    <div className="relative group/container py-4">
+    <div className="relative group/container py-2 md:py-4">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-8 px-2">
+      <div className="flex items-center justify-between mb-4 md:mb-8 px-2">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-accent/10 rounded-xl border border-accent/20">
-            <Bookmark className="w-6 h-6 text-accent" />
+          <div className="p-2 md:p-2.5 bg-accent/10 rounded-lg md:rounded-xl border border-accent/20">
+            <Bookmark className="w-5 h-5 md:w-6 md:h-6 text-accent" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">Watchlist</h2>
-            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-0.5">
-              {watchlist.length} item{watchlist.length !== 1 ? 's' : ''}
+            <h2 className="text-xl md:text-3xl font-black text-white tracking-tight">Watchlist</h2>
+            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-widest mt-0.5">
+              {watchlist.length} item{watchlist.length !== 1 ? 's' : ''} saved
             </p>
           </div>
         </div>
       </div>
 
       {watchlist.length === 0 ? (
-        <div className="text-center py-16 px-4 rounded-3xl border border-white/5 bg-white/[0.03]">
-          <Bookmark className="w-16 h-16 text-white/20 mx-auto mb-4" />
-          <p className="text-white/60 text-lg font-semibold">Your watchlist is empty</p>
-          <p className="text-white/40 text-sm mt-2">
-            Add movies and TV shows to keep track of what you want to watch
+        <div className="text-center py-12 md:py-20 px-6 md:px-10 rounded-[2rem] border border-white/5 bg-white/[0.02] backdrop-blur-md relative overflow-hidden">
+          <div className="absolute inset-0 bg-accent/5 blur-[100px] -z-10" />
+          <div className="relative inline-flex items-center justify-center p-6 md:p-8 bg-white/5 rounded-3xl border border-white/10 mb-6 group-hover:scale-110 transition-transform">
+            <Bookmark className="w-10 h-10 md:w-14 md:h-14 text-white/20" />
+          </div>
+          <p className="text-xl md:text-2xl font-black text-white mb-3 tracking-tight">Your watchlist is empty</p>
+          <p className="text-white/40 text-sm md:text-base font-medium max-w-md mx-auto leading-relaxed">
+            Start saving movies and TV shows to keep track of what you want to watch next.
           </p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 mt-8 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all active:scale-95 text-sm font-bold uppercase tracking-wider"
+          >
+            Explore Content
+          </Link>
         </div>
       ) : (
         <>
           {/* Filters */}
-          <div className="mb-8 px-2 flex flex-wrap gap-3">
+          <div className="mb-4 md:mb-8 px-2 flex flex-wrap gap-2 md:gap-3">
             {FILTERS.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => toggleFilter(filter.id)}
                 className={cn(
-                  "px-4 py-2.5 text-sm font-bold rounded-full transition-all border flex items-center gap-2 uppercase tracking-wider",
+                  "px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-sm font-bold rounded-full transition-all border flex items-center gap-2 uppercase tracking-wider",
                   activeFilters.has(filter.id)
                     ? "bg-accent text-white border-accent/60 shadow-lg shadow-accent/20"
                     : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
@@ -183,8 +192,15 @@ const Watchlist: React.FC<WatchlistProps> = ({
           </div>
 
           {filteredWatchlist.length === 0 ? (
-            <div className="text-center py-12 px-4 rounded-3xl border border-white/5 bg-white/[0.03]">
-              <p className="text-white/60">No items match your filters</p>
+            <div className="text-center py-12 md:py-16 px-6 rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-sm">
+              <p className="text-white/60 font-bold text-lg">No matches found</p>
+              <p className="text-white/30 text-sm mt-1">Try adjusting your filters to see more results</p>
+              <button
+                onClick={() => setActiveFilters(new Set())}
+                className="mt-6 text-accent hover:text-accent-hover font-bold text-sm uppercase tracking-widest transition-colors"
+              >
+                Clear All Filters
+              </button>
             </div>
           ) : (
             <>
@@ -196,9 +212,9 @@ const Watchlist: React.FC<WatchlistProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     onClick={() => scroll('left')}
-                    className="absolute left-4 top-[45%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+                    className="absolute left-4 top-[60%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
                   >
-                    <ChevronLeft className="w-7 h-7" />
+                    <ChevronLeft className="w-5 h-5 md:w-7 md:h-7" />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -210,9 +226,9 @@ const Watchlist: React.FC<WatchlistProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     onClick={() => scroll('right')}
-                    className="absolute right-4 top-[45%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+                    className="absolute right-4 top-[60%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
                   >
-                    <ChevronRight className="w-7 h-7" />
+                    <ChevronRight className="w-5 h-5 md:w-7 md:h-7" />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -220,17 +236,14 @@ const Watchlist: React.FC<WatchlistProps> = ({
               {/* Scrollable Container */}
               <div
                 ref={containerRef}
-                className="overflow-x-auto scrollbar-none px-2 py-4"
+                className="overflow-x-auto scrollbar-none px-2 py-2 md:py-4"
                 onMouseDown={startDrag}
                 onMouseUp={stopDrag}
                 onMouseLeave={stopDrag}
                 onMouseMove={onDrag}
-                onTouchStart={(e) => startDrag(e as unknown as React.MouseEvent)}
-                onTouchEnd={stopDrag}
-                onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
-                style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+                style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
               >
-                <div className="flex gap-6">
+                <div className="flex gap-4 md:gap-6">
                   {filteredWatchlist.map((item, index) => {
                     const itemKey = `${item.mediaType}-${item.id}`;
                     const statusConfig = STATUS_COLORS[item.status];
@@ -238,12 +251,12 @@ const Watchlist: React.FC<WatchlistProps> = ({
                     return (
                       <motion.div
                         key={itemKey}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className={cn(
-                          "group flex-shrink-0 w-[180px] flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
-                          "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
+                          "group flex-shrink-0 w-[160px] md:w-[220px] flex flex-col gap-3 md:gap-4 rounded-2xl md:rounded-3xl transition-all text-left border relative overflow-hidden p-2 md:p-3",
+                          "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] duration-300"
                         )}
                       >
                         {/* Poster Card */}
