@@ -147,7 +147,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
           </div>
 
           {/* Content Area */}
-          <div className="relative z-10 h-full flex flex-col justify-end p-5 md:p-10 lg:p-14">
+          <div className="relative z-10 h-full flex flex-col justify-end pb-20 pt-5 px-5 md:p-10 lg:p-14">
             <div className="max-w-3xl">
               {/* Type tag redesigned */}
               <motion.div
@@ -179,10 +179,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                   <img
                     src={getImageUrl(logo.file_path, 'w500')}
                     alt={title}
-                    className="h-12 md:h-24 lg:h-32 object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                    className="h-16 md:h-24 lg:h-32 object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                   />
                 ) : (
-                  <h1 className="text-3xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-none drop-shadow-2xl">
+                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-none drop-shadow-2xl">
                     {title}
                   </h1>
                 )}

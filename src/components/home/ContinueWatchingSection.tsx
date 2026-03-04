@@ -130,9 +130,9 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('left')}
-            className="absolute left-4 top-[60%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute left-4 top-[60%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronLeft className="w-7 h-7" />
+            <ChevronLeft className="w-5 h-5 md:w-7 md:h-7" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -143,9 +143,9 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('right')}
-            className="absolute right-4 top-[60%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute right-4 top-[60%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronRight className="w-7 h-7" />
+            <ChevronRight className="w-5 h-5 md:w-7 md:h-7" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -158,7 +158,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
       >
         <div className="flex gap-4 md:gap-6">
           {items.map((item, index) => {
