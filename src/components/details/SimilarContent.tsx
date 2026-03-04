@@ -144,15 +144,12 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
       {/* Scrollable Container - responsive sizing and touch-friendly */}
       <div
         ref={containerRef}
-        className="overflow-x-auto scrollbar-none px-2 md:px-4 py-2 md:py-4"
+        className="overflow-x-auto scrollbar-none px-2 md:px-0 py-2 md:py-4 scroll-smooth"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
-        onTouchStart={(e) => startDrag(e as unknown as React.MouseEvent)}
-        onTouchEnd={stopDrag}
-        onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
       >
         <div className="flex gap-4 md:gap-6">
           {items.map((item, index) => {
@@ -165,8 +162,8 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "group flex-shrink-0 w-[140px] md:w-[180px] flex flex-col gap-2 md:gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
-                  "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
+                  "group flex-shrink-0 w-[140px] md:w-[180px] flex flex-col gap-2 md:gap-3 transition-all text-left relative overflow-hidden",
+                  "hover:scale-[1.02] duration-300"
                 )}
               >
                 {/* Poster Card */}

@@ -128,15 +128,12 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
       {/* Scrollable Container - responsive sizing and touch-friendly */}
       <div
         ref={containerRef}
-        className="overflow-x-auto scrollbar-none px-2 md:px-4 py-2 md:py-4"
+        className="overflow-x-auto scrollbar-none px-2 md:px-0 py-2 md:py-4 scroll-smooth"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
-        onTouchStart={(e) => startDrag(e as unknown as React.MouseEvent)}
-        onTouchEnd={stopDrag}
-        onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
       >
         <div className="flex gap-4 md:gap-6">
           {sortedVideos.map((video, index) => (
@@ -149,8 +146,8 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "group flex-shrink-0 w-[220px] md:w-[300px] flex flex-col gap-2 md:gap-3 p-2 md:p-3 rounded-2xl md:rounded-2xl transition-all text-left border relative overflow-hidden",
-                "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
+                "group flex-shrink-0 w-[220px] md:w-[300px] flex flex-col gap-2 md:gap-3 p-0 transition-all text-left relative overflow-hidden",
+                "hover:scale-[1.02] duration-300"
               )}
               onClick={(e) => {
                 if (isDragging) {

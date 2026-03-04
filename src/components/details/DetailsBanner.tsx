@@ -187,7 +187,7 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
               </div>
 
               {/* Genres - single row, no wrapping */}
-              <div className="flex justify-center lg:justify-start gap-2 mb-6 overflow-x-auto md:overflow-visible scrollbar-none">
+              <div className="flex justify-center lg:justify-start gap-2 mb-6 overflow-hidden max-h-[34px] md:max-h-[40px]">
                 {genres?.map((genre) => (
                   <span
                     key={genre.id}

@@ -44,6 +44,17 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -64,7 +75,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-xl z-50 flex items-end md:items-center justify-center"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] flex items-end md:items-center justify-center"
         onClick={() => onClose()}
       >
         <motion.div
@@ -81,19 +92,19 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-8 border-b border-white/10 bg-white/5 gap-4 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <List className="w-5 h-5 md:w-6 md:h-6 text-accent" />
-              <h2 className="text-white font-bold text-lg md:text-2xl tracking-tight">Episodes</h2>
+          <div className="flex items-center justify-between p-4 md:p-8 border-b border-white/10 bg-white/5 gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+              <List className="hidden xs:block w-5 h-5 md:w-6 md:h-6 text-accent flex-shrink-0" />
+              <h2 className="text-white font-bold text-base md:text-2xl tracking-tight truncate">Episodes</h2>
             </div>
-            <div className="flex items-center gap-3 md:gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+            <div className="flex items-center gap-2 md:gap-4 overflow-x-auto scrollbar-none">
               <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 flex-shrink-0">
                 {seasons.map((season) => (
                   <button
                     key={season.season_number}
                     onClick={() => setSelectedSeason(season.season_number)}
                     className={cn(
-                      "px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-sm transition-all whitespace-nowrap",
+                      "px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-[10px] md:text-sm transition-all whitespace-nowrap",
                       selectedSeason === season.season_number
                         ? "bg-accent text-white shadow-lg shadow-accent/20"
                         : "text-white/40 hover:text-white/80"
@@ -114,7 +125,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
 
           {/* Episodes Grid */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
               {currentSeasonData?.episodes.map((episode: Episode) => {
                 const airDate = episode.air_date ? new Date(episode.air_date) : null;
                 const isUpcoming = airDate ? airDate > new Date() : false;
