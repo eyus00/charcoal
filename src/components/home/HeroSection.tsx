@@ -227,7 +227,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="hidden md:block text-white/60 text-sm md:text-base leading-relaxed mb-8 max-w-2xl line-clamp-3"
+                className="hidden md:line-clamp-3 text-white/60 text-sm md:text-base leading-relaxed mb-8 max-w-2xl"
               >
                 {currentItem.overview}
               </motion.p>
