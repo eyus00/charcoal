@@ -39,7 +39,7 @@ const Home = () => {
   }
 
   return (
-    <div className="space-y-12 lg:space-y-16">
+    <div className="space-y-6 md:space-y-12 lg:space-y-16">
       {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

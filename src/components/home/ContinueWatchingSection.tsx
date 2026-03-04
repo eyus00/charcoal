@@ -108,16 +108,16 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
   if (items.length === 0) return null;
 
   return (
-    <div className="relative group/container py-4">
+    <div className="relative group/container py-2 md:py-4">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-8 px-2">
+      <div className="flex items-center justify-between mb-4 md:mb-8 px-2">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-accent/10 rounded-xl border border-accent/20">
-            <History className="w-6 h-6 text-accent" />
+          <div className="p-2 md:p-2.5 bg-accent/10 rounded-lg md:rounded-xl border border-accent/20">
+            <History className="w-5 h-5 md:w-6 md:h-6 text-accent" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">Continue Watching</h2>
-            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-0.5">Pick up where you left off</p>
+            <h2 className="text-xl md:text-3xl font-black text-white tracking-tight">Continue Watching</h2>
+            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-widest mt-0.5">Pick up where you left off</p>
           </div>
         </div>
       </div>
@@ -153,17 +153,14 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
       {/* Scrollable Container */}
       <div
         ref={containerRef}
-        className="overflow-x-auto scrollbar-none px-2 py-4"
+        className="overflow-x-auto scrollbar-none px-2 py-2 md:py-4"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
-        onTouchStart={(e) => startDrag(e as unknown as React.MouseEvent)}
-        onTouchEnd={stopDrag}
-        onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
         style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
       >
-        <div className="flex gap-6">
+        <div className="flex gap-4 md:gap-6">
           {items.map((item, index) => {
             const episodeDetails = item.mediaType === 'tv' ? episodeQueries.data?.[index] : null;
             const progress = item.progress
@@ -181,7 +178,7 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "group flex-shrink-0 w-[300px] md:w-[340px] flex flex-col gap-4 rounded-3xl transition-all text-left border relative overflow-hidden p-3",
+                  "group flex-shrink-0 w-[240px] md:w-[340px] flex flex-col gap-3 md:gap-4 rounded-2xl md:rounded-3xl transition-all text-left border relative overflow-hidden p-2 md:p-3",
                   "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
                 )}
               >
