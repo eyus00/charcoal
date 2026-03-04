@@ -152,7 +152,7 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
         onTouchStart={(e) => startDrag(e as unknown as React.MouseEvent)}
         onTouchEnd={stopDrag}
         onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
       >
         <div className="flex gap-4 md:gap-6">
           {items.map((item, index) => {

@@ -90,11 +90,11 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
 
       <div className="relative z-10 p-6 md:p-10 lg:p-14">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center lg:items-end">
-          {/* Poster */}
+          {/* Poster - Desktop only, positioned on left */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-48 md:w-64 lg:w-72 flex-shrink-0 relative"
+            className="hidden lg:flex w-72 flex-shrink-0 relative"
           >
             <div className="absolute -inset-1 bg-gradient-to-b from-accent/50 to-accent/30 rounded-2xl blur opacity-20" />
             <img
@@ -105,7 +105,7 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
           </motion.div>
 
           {/* Content */}
-          <div className="flex-1 text-center lg:text-left">
+          <div className="flex-1 text-center lg:text-left w-full">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -198,8 +198,24 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                 ))}
               </div>
 
+              {/* Poster - Mobile only, positioned between genres and description */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="lg:hidden flex justify-center mb-6"
+              >
+                <div className="relative w-40 md:w-48">
+                  <div className="absolute -inset-1 bg-gradient-to-b from-accent/50 to-accent/30 rounded-2xl blur opacity-20" />
+                  <img
+                    src={getImageUrl(posterPath, 'w500')}
+                    alt={title}
+                    className="relative w-full rounded-2xl border border-white/10 shadow-2xl"
+                  />
+                </div>
+              </motion.div>
+
               {/* Overview – limited to 3 lines, clickable to expand */}
-              <div className="mb-8 max-w-2xl mx-auto lg:mx-0">
+              <div className="mb-4 md:mb-8 max-w-2xl mx-auto lg:mx-0">
                 <button
                   onClick={() => setShowDescriptionModal(true)}
                   className="w-full text-left hover:opacity-80 transition-opacity cursor-pointer"
