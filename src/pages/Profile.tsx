@@ -32,21 +32,18 @@ const Profile = () => {
   }, [location.hash]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6">
+    <div className="max-w-6xl mx-auto p-3 sm:p-4 md:p-6">
       {/* Profile Header */}
-      <div id="profile" className="flex items-center justify-between mb-8 rounded-lg border border-transparent">
-        <div className="flex items-center gap-6">
-          <div className="w-24 h-24 bg-light-surface dark:bg-dark-surface flex items-center justify-center rounded-lg">
-            <UserCircle className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Your Profile</h1>
-            <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              Track your watching history and manage your preferences
-            </p>
-          </div>
+      <div id="profile" className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 sm:mb-12 rounded-lg border border-transparent">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-dark-surface flex items-center justify-center rounded-lg">
+          <UserCircle className="w-12 h-12 sm:w-16 sm:h-16 text-dark-text-secondary" />
         </div>
-
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2">Your Profile</h1>
+          <p className="text-sm sm:text-base text-dark-text-secondary">
+            Track your watching history and manage your preferences
+          </p>
+        </div>
       </div>
 
       {/* History Section */}
