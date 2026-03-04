@@ -20,8 +20,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ media, type, className }) => {
 
   return (
     <div className={cn(
-      "group flex flex-col gap-3 transition-all text-left relative overflow-hidden",
-      "hover:scale-[1.02] duration-300",
+      "group flex flex-col gap-3 rounded-2xl transition-all text-left border relative overflow-hidden",
+      "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] duration-300",
       className
     )}>
       {/* Poster Card */}

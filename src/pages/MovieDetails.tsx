@@ -78,18 +78,7 @@ const MovieDetails = () => {
           viewport={{ once: true }}
           className="relative px-4 md:px-0"
         >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div className="px-4 md:px-8 py-6 border-b border-white/10 flex items-center gap-3">
-              <div className="p-2 bg-accent/20 rounded-xl border border-accent/30">
-                <VideoIcon className="w-5 h-5 text-accent" />
-              </div>
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Related Videos</h2>
-              <span className="text-white/40 ml-auto font-mono text-sm">{youtubeVideos.length} Items</span>
-            </div>
-            <div className="p-4 md:p-8">
-              <RelatedVideos videos={youtubeVideos} />
-            </div>
-          </div>
+          <RelatedVideos videos={youtubeVideos} />
         </motion.div>
       )}
 
@@ -100,18 +89,7 @@ const MovieDetails = () => {
           viewport={{ once: true }}
           className="relative px-4 md:px-0"
         >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div className="px-4 md:px-8 py-6 border-b border-white/10 flex items-center gap-3">
-              <div className="p-2 bg-accent/20 rounded-xl border border-accent/30">
-                <Flame className="w-5 h-5 text-accent" />
-              </div>
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Similar Titles</h2>
-              <span className="text-white/40 ml-auto font-mono text-sm">{details.similar.results.length} Items</span>
-            </div>
-            <div className="p-4 md:p-8">
-              <SimilarContent items={details.similar.results} mediaType="movie" />
-            </div>
-          </div>
+          <SimilarContent items={details.similar.results} mediaType="movie" />
         </motion.div>
       )}
     </motion.div>

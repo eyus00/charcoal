@@ -111,7 +111,20 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
   };
 
   return (
-    <div className="relative group/container">
+    <div className="relative group/container py-2 md:py-4">
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-4 md:mb-8 px-2">
+        <div className="flex items-center gap-3">
+          <div className="p-2 md:p-2.5 bg-accent/10 rounded-lg md:rounded-xl border border-accent/20">
+            <Flame className="w-5 h-5 md:w-6 md:h-6 text-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl md:text-3xl font-black text-white tracking-tight">{title}</h2>
+            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-widest mt-0.5">{items.length} Similar Items</p>
+          </div>
+        </div>
+      </div>
+
       {/* Navigation Arrows - hidden on mobile, shown on desktop */}
       <AnimatePresence>
         {showLeftArrow && (
@@ -144,12 +157,12 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
       {/* Scrollable Container - responsive sizing and touch-friendly */}
       <div
         ref={containerRef}
-        className="overflow-x-auto scrollbar-none px-2 md:px-0 py-2 md:py-4 scroll-smooth"
+        className="overflow-x-auto scrollbar-none px-2 py-2 md:py-4"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
       >
         <div className="flex gap-4 md:gap-6">
           {items.map((item, index) => {
@@ -162,8 +175,8 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "group flex-shrink-0 w-[140px] md:w-[180px] flex flex-col gap-2 md:gap-3 transition-all text-left relative overflow-hidden",
-                  "hover:scale-[1.02] duration-300"
+                  "group flex-shrink-0 w-[140px] md:w-[180px] flex flex-col gap-2 md:gap-3 rounded-2xl transition-all text-left border relative overflow-hidden p-1.5 md:p-2",
+                  "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] duration-300"
                 )}
               >
                 {/* Poster Card */}

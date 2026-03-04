@@ -154,11 +154,11 @@ const YouMightLike: React.FC<YouMightLikeProps> = ({ items }) => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="group flex-shrink-0 w-[150px] md:w-[240px] flex flex-col gap-3 hover:scale-[1.02] duration-300"
+                className="group flex-shrink-0 w-[150px] md:w-[240px] flex flex-col gap-3"
               >
                 <div className={cn(
-                  "group flex flex-col gap-2 md:gap-3 transition-all text-left relative overflow-hidden p-0",
-                  ""
+                  "group flex flex-col gap-2 md:gap-3 rounded-xl md:rounded-2xl transition-all text-left border relative overflow-hidden p-1.5 md:p-2",
+                  "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] duration-300"
                 )}>
                   {/* Poster Card */}
                   <Link

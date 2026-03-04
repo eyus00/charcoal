@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Play, ChevronLeft, ChevronRight, ExternalLink, Video as VideoIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
@@ -95,7 +95,20 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
     .slice(0, 7);
 
   return (
-    <div className="relative group/container">
+    <div className="relative group/container py-2 md:py-4">
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-4 md:mb-8 px-2">
+        <div className="flex items-center gap-3">
+          <div className="p-2 md:p-2.5 bg-accent/10 rounded-lg md:rounded-xl border border-accent/20">
+            <VideoIcon className="w-5 h-5 md:w-6 md:h-6 text-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl md:text-3xl font-black text-white tracking-tight">Related Videos</h2>
+            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-widest mt-0.5">{videos.length} Videos Available</p>
+          </div>
+        </div>
+      </div>
+
       {/* Navigation Arrows - hidden on mobile, shown on desktop */}
       <AnimatePresence>
         {showLeftArrow && (
@@ -128,12 +141,12 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
       {/* Scrollable Container - responsive sizing and touch-friendly */}
       <div
         ref={containerRef}
-        className="overflow-x-auto scrollbar-none px-2 md:px-0 py-2 md:py-4 scroll-smooth"
+        className="overflow-x-auto scrollbar-none px-2 py-2 md:py-4"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onMouseMove={onDrag}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'auto' }}
       >
         <div className="flex gap-4 md:gap-6">
           {sortedVideos.map((video, index) => (
@@ -146,8 +159,8 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "group flex-shrink-0 w-[220px] md:w-[300px] flex flex-col gap-2 md:gap-3 p-0 transition-all text-left relative overflow-hidden",
-                "hover:scale-[1.02] duration-300"
+                "group flex-shrink-0 w-[220px] md:w-[300px] flex flex-col gap-2 md:gap-3 p-2 md:p-3 rounded-2xl md:rounded-2xl transition-all text-left border relative overflow-hidden",
+                "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] duration-300"
               )}
               onClick={(e) => {
                 if (isDragging) {

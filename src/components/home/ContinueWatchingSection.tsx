@@ -178,8 +178,8 @@ const ContinueWatchingSection: React.FC<ContinueWatchingSectionProps> = ({ items
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "group flex-shrink-0 w-[240px] md:w-[340px] flex flex-col gap-3 md:gap-4 transition-all text-left relative overflow-hidden p-0",
-                  "hover:scale-[1.02] duration-300"
+                  "group flex-shrink-0 w-[240px] md:w-[340px] flex flex-col gap-3 md:gap-4 rounded-2xl md:rounded-3xl transition-all text-left border relative overflow-hidden p-2 md:p-3",
+                  "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10 hover:scale-[1.02] duration-300"
                 )}
               >
                 {/* Poster Card */}

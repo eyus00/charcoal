@@ -94,7 +94,7 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-4 md:p-8 border-b border-white/10 bg-white/5 gap-4 flex-shrink-0">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <List className="hidden xs:block w-5 h-5 md:w-6 md:h-6 text-accent flex-shrink-0" />
+              <List className="w-5 h-5 md:w-6 md:h-6 text-accent flex-shrink-0" />
               <h2 className="text-white font-bold text-base md:text-2xl tracking-tight truncate">Episodes</h2>
             </div>
             <div className="flex items-center gap-2 md:gap-4 overflow-x-auto scrollbar-none">
