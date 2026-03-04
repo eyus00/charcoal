@@ -116,7 +116,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
   };
 
   return (
-    <div className="relative w-full h-[350px] md:h-[500px] lg:h-[600px] rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group/hero shadow-2xl bg-black">
+    <div className="relative w-full h-[380px] md:h-[500px] lg:h-[600px] rounded-[1.5rem] md:rounded-[2rem] overflow-hidden group/hero shadow-2xl bg-black">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={currentIndex}
@@ -147,7 +147,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
           </div>
 
           {/* Content Area */}
-          <div className="relative z-10 h-full flex flex-col justify-end pb-20 pt-5 px-5 md:p-10 lg:p-14">
+          <div className="relative z-10 h-full flex flex-col justify-end pb-16 pt-10 px-5 md:p-10 lg:p-14">
             <div className="max-w-3xl">
               {/* Type tag redesigned */}
               <motion.div
