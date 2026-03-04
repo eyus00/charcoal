@@ -213,9 +213,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
 
                 <div className="h-4 w-[1px] bg-white/20 hidden md:block" />
 
-                <div className="hidden md:flex flex-wrap gap-2">
-                  {getGenreNames(currentItem.genre_ids).slice(0, 3).map((genreName) => (
-                    <span key={genreName} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium rounded-full border border-white/10 transition-colors cursor-default backdrop-blur-md">
+                <div className="flex flex-wrap gap-2 max-h-[26px] md:max-h-none overflow-hidden">
+                  {getGenreNames(currentItem.genre_ids).map((genreName) => (
+                    <span key={genreName} className="px-2.5 md:px-3 py-1 bg-white/5 hover:bg-white/10 text-white/70 text-[10px] md:text-xs font-medium rounded-full border border-white/10 transition-colors cursor-default backdrop-blur-md whitespace-nowrap">
                       {genreName}
                     </span>
                   ))}
