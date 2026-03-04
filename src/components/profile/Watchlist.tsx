@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Film, Tv, ChevronLeft, ChevronRight, Star } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { WatchlistItem, WatchStatus, useStore } from '../../store/useStore';
+import { Bookmark, Film, Tv, Trash2, Star } from 'lucide-react';
+import { WatchlistItem, WatchStatus } from '../../store/useStore';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
 
@@ -27,9 +26,9 @@ const FILTERS: Filter[] = [
 ];
 
 const STATUS_COLORS = {
-  watching: { bg: 'bg-red-500/80', border: 'border-red-500/40', text: 'text-red-400', icon: 'bg-red-500' },
-  planned: { bg: 'bg-orange-500/80', border: 'border-orange-500/40', text: 'text-orange-400', icon: 'bg-orange-500' },
-  completed: { bg: 'bg-red-600/80', border: 'border-red-600/40', text: 'text-red-500', icon: 'bg-red-600' },
+  watching: { icon: 'bg-red-500' },
+  planned: { icon: 'bg-orange-500' },
+  completed: { icon: 'bg-red-600' },
 };
 
 const STATUS_LABELS = {
@@ -43,12 +42,6 @@ const Watchlist: React.FC<WatchlistProps> = ({
   onRemoveFromWatchlist,
 }) => {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
 
   const toggleFilter = (filterId: string) => {
     const newFilters = new Set(activeFilters);
@@ -70,105 +63,41 @@ const Watchlist: React.FC<WatchlistProps> = ({
     return matchesStatus && matchesMedia;
   });
 
-  React.useEffect(() => {
-    const checkScroll = () => {
-      if (!containerRef.current) return;
-
-      setShowLeftArrow(containerRef.current.scrollLeft > 0);
-      setShowRightArrow(
-        containerRef.current.scrollLeft <
-          containerRef.current.scrollWidth - containerRef.current.clientWidth - 10
-      );
-    };
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScroll, { passive: true });
-      checkScroll();
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener('scroll', checkScroll);
-      }
-    };
-  }, [filteredWatchlist]);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (!containerRef.current) return;
-
-    const scrollAmount = containerRef.current.clientWidth * 0.8;
-    const newScrollLeft = direction === 'left'
-      ? containerRef.current.scrollLeft - scrollAmount
-      : containerRef.current.scrollLeft + scrollAmount;
-
-    containerRef.current.scrollTo({
-      left: newScrollLeft,
-      behavior: 'smooth'
-    });
-  };
-
-  const startDrag = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.pageX - (containerRef.current?.offsetLeft || 0));
-    setScrollLeft(containerRef.current?.scrollLeft || 0);
-  };
-
-  const stopDrag = () => {
-    setIsDragging(false);
-  };
-
-  const onDrag = (e: React.MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
-    e.preventDefault();
-
-    const x = e.pageX - (containerRef.current.offsetLeft || 0);
-    const walk = (x - startX) * 2;
-    containerRef.current.scrollLeft = scrollLeft - walk;
-  };
 
   return (
-    <div className="relative group/container py-2 md:py-4">
+    <div className="mb-12">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 px-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2 sm:p-2.5 bg-accent/10 rounded-lg sm:rounded-xl border border-accent/20">
-            <Bookmark className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">Watchlist</h2>
-            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-0.5">
-              {watchlist.length} item{watchlist.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between mb-4 md:mb-8">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Bookmark className="w-5 h-5" />
+          Watchlist
+        </h2>
       </div>
 
       {watchlist.length === 0 ? (
-        <div className="text-center py-12 sm:py-16 px-4 rounded-2xl sm:rounded-3xl border border-white/5 bg-white/[0.03]">
-          <Bookmark className="w-12 h-12 sm:w-16 sm:h-16 text-white/20 mx-auto mb-4" />
-          <p className="text-white/60 text-base sm:text-lg font-semibold">Your watchlist is empty</p>
-          <p className="text-white/40 text-xs sm:text-sm mt-2">
-            Add movies and TV shows to keep track of what you want to watch
+        <div className="text-center py-12 bg-dark-surface rounded-lg">
+          <Bookmark className="w-12 h-12 text-dark-text-secondary mx-auto mb-3" />
+          <p className="text-dark-text-secondary">
+            Your watchlist is empty
           </p>
         </div>
       ) : (
         <>
           {/* Filters */}
-          <div className="mb-6 sm:mb-8 px-2 flex flex-wrap gap-2 sm:gap-3">
+          <div className="mb-6 flex flex-wrap gap-2">
             {FILTERS.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => toggleFilter(filter.id)}
                 className={cn(
-                  "px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-full transition-all border flex items-center gap-2 uppercase tracking-wider whitespace-nowrap",
+                  "px-3 py-2 text-xs font-semibold rounded-full transition-all border flex items-center gap-2 uppercase tracking-wider",
                   activeFilters.has(filter.id)
-                    ? "bg-accent text-white border-accent/60 shadow-lg shadow-accent/20"
-                    : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
+                    ? "bg-accent text-white border-accent shadow-lg shadow-accent/20"
+                    : "bg-dark-surface border-border-dark text-dark-text-secondary hover:border-accent"
                 )}
               >
                 {filter.type === 'mediaType' ? (
-                  filter.value === 'movie' ? <Film className="w-3 h-3 sm:w-4 sm:h-4" /> : <Tv className="w-3 h-3 sm:w-4 sm:h-4" />
+                  filter.value === 'movie' ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />
                 ) : (
                   <div className={cn(
                     "w-2 h-2 rounded-full",
@@ -183,148 +112,72 @@ const Watchlist: React.FC<WatchlistProps> = ({
           </div>
 
           {filteredWatchlist.length === 0 ? (
-            <div className="text-center py-12 px-4 rounded-2xl border border-white/5 bg-white/[0.03]">
-              <p className="text-white/60 text-sm sm:text-base">No items match your filters</p>
+            <div className="text-center py-12 bg-dark-surface rounded-lg">
+              <p className="text-dark-text-secondary">No items match your filters</p>
             </div>
           ) : (
-            <>
-              {/* Navigation Arrows with glassy style */}
-              <AnimatePresence>
-                {showLeftArrow && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={() => scroll('left')}
-                    className="absolute left-2 sm:left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[calc(3*144px+2*1rem)] overflow-y-auto scrollbar-thin pr-2">
+              {filteredWatchlist.map((item) => {
+                const itemKey = `${item.mediaType}-${item.id}`;
+                const statusConfig = STATUS_COLORS[item.status];
+
+                return (
+                  <div
+                    key={itemKey}
+                    className="group flex gap-4 bg-dark-bg border-border-dark hover:border-accent transition-colors relative"
                   >
-                    <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
+                    {/* Remove button - Absolute positioned */}
+                    <button
+                      onClick={() => onRemoveFromWatchlist(item.id, item.mediaType)}
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 z-10"
+                    >
+                      <Trash2 className="w-4 h-4 text-white" />
+                    </button>
 
-              <AnimatePresence>
-                {showRightArrow && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={() => scroll('right')}
-                    className="absolute right-2 sm:right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
-                  >
-                    <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              {/* Scrollable Container */}
-              <div
-                ref={containerRef}
-                className="overflow-x-auto scrollbar-none px-2 py-2 sm:py-4"
-                onMouseDown={startDrag}
-                onMouseUp={stopDrag}
-                onMouseLeave={stopDrag}
-                onMouseMove={onDrag}
-                onTouchStart={(e) => startDrag(e as unknown as React.MouseEvent)}
-                onTouchEnd={stopDrag}
-                onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
-                style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
-              >
-                <div className="flex gap-4 sm:gap-6">
-                  {filteredWatchlist.map((item, index) => {
-                    const itemKey = `${item.mediaType}-${item.id}`;
-                    const statusConfig = STATUS_COLORS[item.status];
-
-                    return (
-                      <motion.div
-                        key={itemKey}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={cn(
-                          "group flex-shrink-0 w-[150px] sm:w-[240px] flex flex-col gap-2 sm:gap-3 rounded-lg sm:rounded-2xl transition-all text-left border relative overflow-hidden",
-                          "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
-                        )}
-                      >
-                        {/* Poster Card */}
-                        <Link
-                          to={`/${item.mediaType}/${item.id}`}
-                          className="relative w-full aspect-[2/3] rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0 shadow-lg cursor-pointer"
-                        >
-                          <img
-                            src={getImageUrl(item.posterPath, 'w342')}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-
-                          {/* Overlay */}
-                          <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300" />
-
-                          {/* Year Badge - Top Left */}
-                          {item.releaseDate && (
-                            <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
-                              <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-black/50 backdrop-blur-md text-white rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-wider border border-white/10">
-                                {new Date(item.releaseDate).getFullYear()}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Status Badge - Bottom Left */}
-                          <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2">
-                            <div className={cn(
-                              "px-1.5 sm:px-2.5 py-1 sm:py-1.5 bg-black/70 backdrop-blur-md text-white rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-wider border shadow-lg flex items-center gap-1",
-                              statusConfig.border
-                            )}>
-                              <div className={cn("w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full", statusConfig.icon)} />
-                              <span className="hidden sm:inline">{STATUS_LABELS[item.status]}</span>
-                            </div>
-                          </div>
-
-                          {/* Rating Badge - Top Right */}
+                    <div className="w-24 flex-shrink-0 relative">
+                      <img
+                        src={getImageUrl(item.posterPath, 'w185')}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                        <div className="flex items-center gap-2 text-xs">
                           {item.ratingScore && (
-                            <div className="absolute top-1 sm:top-2 right-1 sm:right-2">
-                              <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-black/50 backdrop-blur-md text-white rounded text-[8px] sm:text-[10px] border border-white/10">
-                                <Star className="w-2 h-2 sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />
-                                <span className="font-bold">{item.ratingScore.toFixed(1)}</span>
-                              </div>
+                            <div className="flex items-center gap-0.5">
+                              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                              <span className="text-white">{item.ratingScore.toFixed(1)}</span>
                             </div>
                           )}
-                        </Link>
-
-                        {/* Info Area */}
-                        <div className="px-1.5 sm:px-2 pb-1.5 sm:pb-2 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0">
-                          <Link
-                            to={`/${item.mediaType}/${item.id}`}
-                            className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2 sm:line-clamp-1"
-                          >
-                            {item.title}
-                          </Link>
-                          <div className="flex-shrink-0 p-0.5 sm:p-1 bg-white/5 rounded border border-white/10">
-                            {item.mediaType === 'tv' ? (
-                              <Tv className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/60" />
-                            ) : (
-                              <Film className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/60" />
-                            )}
-                          </div>
+                          {item.releaseDate && (
+                            <span className="text-white">{new Date(item.releaseDate).getFullYear()}</span>
+                          )}
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0 py-3 pr-4">
+                      <div className="min-w-0">
+                        <h3 className="font-medium truncate">{item.title}</h3>
+                        <div className="flex items-center gap-2 text-sm text-dark-text-secondary mt-1">
+                          <span className="capitalize">{item.mediaType}</span>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className={cn("w-2 h-2 rounded-full", statusConfig.icon)} />
+                        <span className="text-xs text-dark-text-secondary font-medium">
+                          {STATUS_LABELS[item.status]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </>
       )}
-
-      <style>{`
-        .scrollbar-none {
-          scrollbar-width: none;
-        }
-        .scrollbar-none::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 };
