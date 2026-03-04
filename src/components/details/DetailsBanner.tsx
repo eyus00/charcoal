@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Film, Tv, Star, Clock, Play, Bookmark, Calendar, Layers } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Film, Tv, Star, Clock, Play, Bookmark, Calendar, Layers, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getImageUrl } from '../../api/config';
 import { cn } from '../../lib/utils';
 import { WatchStatus, WatchHistoryItem } from '../../store/useStore';
@@ -52,6 +52,7 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
   numberOfSeasons,
 }) => {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const resumeInfo = getResumeInfo(type, Number(id), watchHistory);
 
   const formatDuration = (minutes?: number) => {
@@ -110,19 +111,21 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
             >
-              {/* Type tag redesigned */}
-              <div className="flex justify-center lg:justify-start items-center gap-3 mb-5">
-                <div className="relative inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-accent/90 to-accent/70 backdrop-blur-lg text-white rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/30 border border-accent/40">
+              {/* Type tag redesigned - mobile shows icon only, desktop shows full text */}
+              <div className="flex justify-center lg:justify-start items-center gap-2 md:gap-3 mb-5">
+                <div className="relative inline-flex items-center gap-2 px-2.5 md:px-4 py-1.5 bg-gradient-to-r from-accent/90 to-accent/70 backdrop-blur-lg text-white rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-accent/30 border border-accent/40">
                   {type === 'movie' ? (
                     <Film className="w-3.5 h-3.5" />
                   ) : (
                     <Tv className="w-3.5 h-3.5" />
                   )}
-                  {type === 'movie' ? 'Movie' : 'TV Series'}
+                  <span className="hidden md:inline">
+                    {type === 'movie' ? 'Movie' : 'TV Series'}
+                  </span>
                   <div className="absolute -inset-1 bg-accent/20 rounded-full blur-md -z-10" />
                 </div>
                 {contentRating && (
-                  <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md text-white/80 text-[10px] md:text-xs font-bold rounded-full border border-white/10 uppercase">
+                  <span className="px-2.5 md:px-3 py-1.5 bg-white/10 backdrop-blur-md text-white/80 text-[9px] md:text-xs font-bold rounded-full border border-white/10 uppercase whitespace-nowrap">
                     {contentRating}
                   </span>
                 )}
@@ -132,106 +135,111 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                 {title}
               </h1>
 
-              {/* Stats */}
-              <div className="flex flex-wrap justify-center lg:justify-start items-center gap-6 mb-6">
-                <div className="flex items-center gap-2 group/stat">
-                  <div className="p-2 bg-yellow-400/10 rounded-lg border border-yellow-400/20 group-hover/stat:bg-yellow-400/20 transition-colors">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              {/* Stats - single row, responsive sizing */}
+              <div className="flex justify-center lg:justify-start items-center gap-3 md:gap-6 mb-6 overflow-x-auto md:overflow-visible scrollbar-none">
+                <div className="flex items-center gap-1.5 md:gap-2 group/stat flex-shrink-0">
+                  <div className="p-1.5 md:p-2 bg-yellow-400/10 rounded-lg border border-yellow-400/20 group-hover/stat:bg-yellow-400/20 transition-colors">
+                    <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 fill-yellow-400" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{rating.toFixed(1)}</div>
-                    <div className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Rating</div>
+                  <div className="whitespace-nowrap">
+                    <div className="text-base md:text-lg font-bold text-white">{rating.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-[10px] text-white/40 uppercase font-bold tracking-tighter">Rating</div>
                   </div>
                 </div>
 
                 {type === 'movie' ? (
                   runtime > 0 && (
-                    <div className="flex items-center gap-2 group/stat">
-                      <div className="p-2 bg-blue-400/10 rounded-lg border border-blue-400/20 group-hover/stat:bg-blue-400/20 transition-colors">
-                        <Clock className="w-5 h-5 text-blue-400" />
+                    <div className="flex items-center gap-1.5 md:gap-2 group/stat flex-shrink-0">
+                      <div className="p-1.5 md:p-2 bg-blue-400/10 rounded-lg border border-blue-400/20 group-hover/stat:bg-blue-400/20 transition-colors">
+                        <Clock className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
                       </div>
-                      <div>
-                        <div className="text-lg font-bold text-white">{formatDuration(runtime)}</div>
-                        <div className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Duration</div>
+                      <div className="whitespace-nowrap">
+                        <div className="text-base md:text-lg font-bold text-white">{formatDuration(runtime)}</div>
+                        <div className="text-[8px] md:text-[10px] text-white/40 uppercase font-bold tracking-tighter">Duration</div>
                       </div>
                     </div>
                   )
                 ) : (
                   numberOfSeasons && (
-                    <div className="flex items-center gap-2 group/stat">
-                      <div className="p-2 bg-accent/10 rounded-lg border border-accent/20 group-hover/stat:bg-accent/20 transition-colors">
-                        <Layers className="w-5 h-5 text-accent" />
+                    <div className="flex items-center gap-1.5 md:gap-2 group/stat flex-shrink-0">
+                      <div className="p-1.5 md:p-2 bg-accent/10 rounded-lg border border-accent/20 group-hover/stat:bg-accent/20 transition-colors">
+                        <Layers className="w-4 h-4 md:w-5 md:h-5 text-accent" />
                       </div>
-                      <div>
-                        <div className="text-lg font-bold text-white">
+                      <div className="whitespace-nowrap">
+                        <div className="text-base md:text-lg font-bold text-white">
                           {numberOfSeasons} {numberOfSeasons === 1 ? 'Season' : 'Seasons'}
                         </div>
-                        <div className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Content</div>
+                        <div className="text-[8px] md:text-[10px] text-white/40 uppercase font-bold tracking-tighter">Content</div>
                       </div>
                     </div>
                   )
                 )}
 
-                <div className="flex items-center gap-2 group/stat">
-                  <div className="p-2 bg-green-400/10 rounded-lg border border-green-400/20 group-hover/stat:bg-green-400/20 transition-colors">
-                    <Calendar className="w-5 h-5 text-green-400" />
+                <div className="flex items-center gap-1.5 md:gap-2 group/stat flex-shrink-0">
+                  <div className="p-1.5 md:p-2 bg-green-400/10 rounded-lg border border-green-400/20 group-hover/stat:bg-green-400/20 transition-colors">
+                    <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{year}</div>
-                    <div className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Release</div>
+                  <div className="whitespace-nowrap">
+                    <div className="text-base md:text-lg font-bold text-white">{year}</div>
+                    <div className="text-[8px] md:text-[10px] text-white/40 uppercase font-bold tracking-tighter">Release</div>
                   </div>
                 </div>
               </div>
 
-              {/* Genres */}
-              <div className="flex flex-wrap justify-center lg:justify-start gap-2 mb-6">
+              {/* Genres - single row, no wrapping */}
+              <div className="flex justify-center lg:justify-start gap-2 mb-6 overflow-x-auto md:overflow-visible scrollbar-none">
                 {genres?.map((genre) => (
                   <span
                     key={genre.id}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-full border border-white/20 transition-colors cursor-default backdrop-blur-md"
+                    className="px-2.5 md:px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs md:text-sm font-medium rounded-full border border-white/20 transition-colors cursor-default backdrop-blur-md flex-shrink-0 whitespace-nowrap"
                   >
                     {genre.name}
                   </span>
                 ))}
               </div>
 
-              {/* Overview – fixed height + ellipsis, 4 lines */}
+              {/* Overview – limited to 3 lines, clickable to expand */}
               <div className="mb-8 max-w-2xl mx-auto lg:mx-0">
-                <p
-                  className="text-sm md:text-base text-white/70 leading-relaxed text-left line-clamp-4"
+                <button
+                  onClick={() => setShowDescriptionModal(true)}
+                  className="w-full text-left hover:opacity-80 transition-opacity cursor-pointer"
                 >
-                  {overview}
-                </p>
+                  <p
+                    className="text-sm md:text-base text-white/70 leading-relaxed text-left line-clamp-3"
+                  >
+                    {overview}
+                  </p>
+                </button>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center gap-4 flex-wrap">
+              {/* Action Buttons - single row, play button larger on left, bookmark smaller on right */}
+              <div className="flex justify-center lg:justify-start items-center gap-3 w-full md:w-auto">
                 {type === 'movie' ? (
                   <Link
                     to={getWatchUrl()}
-                    className="w-full sm:w-auto px-8 py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
+                    className="flex-1 md:flex-none px-6 md:px-8 py-3.5 md:py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center justify-center gap-2 md:gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
                   >
-                    <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-lg uppercase tracking-wide">Play</span>
+                    <Play className="w-5 md:w-6 h-5 md:h-6 fill-current group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-base md:text-lg uppercase tracking-wide">Play</span>
                   </Link>
                 ) : (
                   <button
                     onClick={onPlayClick}
-                    className="w-full sm:w-auto px-8 py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
+                    className="flex-1 md:flex-none px-6 md:px-8 py-3.5 md:py-4 bg-accent hover:bg-accent/90 text-white rounded-2xl flex items-center justify-center gap-2 md:gap-3 transition-all shadow-xl shadow-accent/20 active:scale-95 group/play border border-white/20"
                   >
-                    <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-lg uppercase tracking-wide">Play</span>
+                    <Play className="w-5 md:w-6 h-5 md:h-6 fill-current group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-base md:text-lg uppercase tracking-wide">Play</span>
                   </button>
                 )}
 
-                <div className="relative w-full sm:w-auto">
+                <div className="relative flex-shrink-0">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveMenu(activeMenu === Number(id) ? null : Number(id));
                     }}
                     className={cn(
-                      "w-full sm:w-14 h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95 border hover:scale-105",
+                      "w-12 md:w-14 h-12 md:h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95 border hover:scale-105",
                       watchlistItem
                         ? "bg-red-500/20 border-red-500/40 text-red-400"
                         : "bg-white/5 border-white/10 text-white hover:bg-white/10"
@@ -239,7 +247,7 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
                   >
                     <Bookmark
                       className={cn(
-                        "w-6 h-6 transition-transform",
+                        "w-5 md:w-6 h-5 md:h-6 transition-transform",
                         watchlistItem ? "fill-current" : ""
                       )}
                     />
@@ -259,6 +267,49 @@ const DetailsBanner: React.FC<DetailsBannerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Description Modal - works on both mobile and desktop */}
+      <AnimatePresence>
+        {showDescriptionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowDescriptionModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-2xl bg-white/[0.08] backdrop-blur-xl border border-white/20 rounded-3xl p-6 md:p-8 shadow-2xl max-h-[80vh] overflow-y-auto scrollbar-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">Description</h2>
+                <button
+                  onClick={() => setShowDescriptionModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+              <p className="text-base md:text-lg text-white/80 leading-relaxed whitespace-pre-wrap">
+                {overview}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style>{`
+        .scrollbar-none {
+          scrollbar-width: none;
+        }
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 };

@@ -96,7 +96,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
 
   return (
     <div className="relative group/container">
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows - hidden on mobile, shown on desktop */}
       <AnimatePresence>
         {showLeftArrow && (
           <motion.button
@@ -104,9 +104,9 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('left')}
-            className="absolute left-4 top-1/2 z-20 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="hidden md:flex absolute left-2 md:left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -118,17 +118,17 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('right')}
-            className="absolute right-4 top-1/2 z-20 -translate-y-1/2 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="hidden md:flex absolute right-2 md:right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Scrollable Container */}
+      {/* Scrollable Container - responsive sizing and touch-friendly */}
       <div
         ref={containerRef}
-        className="overflow-x-auto scrollbar-none px-2 py-4"
+        className="overflow-x-auto scrollbar-none px-2 md:px-4 py-2 md:py-4"
         onMouseDown={startDrag}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
@@ -138,7 +138,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
         onTouchMove={(e) => onDrag(e as unknown as React.MouseEvent)}
         style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-y' }}
       >
-        <div className="flex gap-6">
+        <div className="flex gap-4 md:gap-6">
           {sortedVideos.map((video, index) => (
             <motion.a
               key={video.id}
@@ -149,7 +149,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "group flex-shrink-0 w-[300px] flex flex-col gap-3 p-3 rounded-2xl transition-all text-left border relative overflow-hidden",
+                "group flex-shrink-0 w-[220px] md:w-[300px] flex flex-col gap-2 md:gap-3 p-2 md:p-3 rounded-2xl md:rounded-2xl transition-all text-left border relative overflow-hidden",
                 "bg-white/[0.03] border-white/5 hover:bg-white/[0.08] hover:border-white/10"
               )}
               onClick={(e) => {
@@ -171,10 +171,10 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300" />
 
-                {/* Play Icon */}
+                {/* Play Icon - responsive sizing */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center shadow-2xl border-2 border-white/20">
-                    <Play className="w-10 h-10 text-white fill-current ml-1" />
+                  <div className="w-12 md:w-16 h-12 md:h-16 bg-accent rounded-full flex items-center justify-center shadow-2xl border-2 border-white/20">
+                    <Play className="w-7 md:w-10 h-7 md:h-10 text-white fill-current ml-1" />
                   </div>
                 </div>
 
@@ -182,7 +182,7 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
                 <div className="absolute bottom-2 left-2">
                   <div
                     className={cn(
-                      "px-2 py-1 bg-black/60 backdrop-blur-md text-white rounded-lg text-[10px] font-bold uppercase tracking-wider border border-white/10 shadow-sm",
+                      "px-2 py-1 bg-black/60 backdrop-blur-md text-white rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider border border-white/10 shadow-sm",
                       video.type === 'Trailer' && "bg-accent/80 border-accent/40 text-white"
                     )}
                   >
@@ -193,16 +193,16 @@ const RelatedVideos: React.FC<RelatedVideosProps> = ({ videos }) => {
 
               {/* Info Area */}
               <div className="px-1 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-sm leading-tight text-white line-clamp-1 flex-1 pr-2">
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <h4 className="font-bold text-xs md:text-sm leading-tight text-white line-clamp-1 flex-1">
                     {video.name}
                   </h4>
-                  <ExternalLink className="w-4 h-4 text-white/60 flex-shrink-0" />
+                  <ExternalLink className="w-3.5 md:w-4 h-3.5 md:h-4 text-white/60 flex-shrink-0" />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">
-                  <span>{video.site}</span>
+                <div className="flex items-center justify-between text-[8px] md:text-[10px] text-white/40 font-bold uppercase tracking-widest mt-0.5">
+                  <span className="line-clamp-1">{video.site}</span>
                   {video.official && (
-                    <span className="text-green-400">Official</span>
+                    <span className="text-green-400 flex-shrink-0">Official</span>
                   )}
                 </div>
               </div>
