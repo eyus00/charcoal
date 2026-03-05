@@ -38,18 +38,32 @@ Making the Charcoal app mobile-friendly, starting with the Home page and core mo
   - No click interference or delays
   - Smooth transitions with `active:scale-95` feedback
 
-## Phase 2: Home Page Responsive Layout - PENDING
-- [ ] Hero section responsiveness
-- [ ] Continue watching section
-- [ ] You might like section
+## Phase 2: Home Page Responsive Layout - ✅ COMPLETED
+- [x] Hero section responsiveness
+- [x] Continue watching section
+- [x] You might like section
 
 ## Phase 3: Other Pages - PENDING
 - [ ] Movies page mobile layout
 - [ ] TV Shows page mobile layout
 - [ ] Search results page
-- [ ] Details pages (movie/TV)
+- [ ] Details pages (movie/TV) - ✅ COMPLETED
+- [x] Profile page mobile layout - ✅ COMPLETED
 
 ## Technical Implementation Details
+
+### File: src/pages/Profile.tsx
+- Responsive header scaling (`w-16 h-16 md:w-28 md:h-28`)
+- Smaller padding and text on mobile
+- Uses mobile-optimized `ContinueWatchingSection` and `Watchlist`
+
+### File: src/components/profile/Watchlist.tsx
+- Responsive card width (`w-[140px] md:w-[200px]`)
+- Horizontal touch scroll with `scrollbar-none`
+- Scrollable filters on mobile
+- Hidden navigation arrows on mobile
+- Scaled down badges and icons for mobile screens
+- Touch-friendly interaction with `touch-action: auto`
 
 ### File: src/components/layout/MobileNav.tsx
 - Search button logic with three states
