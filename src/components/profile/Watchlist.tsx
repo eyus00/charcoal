@@ -154,14 +154,14 @@ const Watchlist: React.FC<WatchlistProps> = ({
         </div>
       ) : (
         <>
-          {/* Filters - Scrollable on mobile */}
-          <div className="mb-6 md:mb-8 px-2 flex md:flex-wrap items-center gap-2 md:gap-3 overflow-x-auto scrollbar-none pb-2 -mx-2 pl-4">
+          {/* Filters - 3 columns on mobile (2 rows), flex-wrap on desktop */}
+          <div className="mb-6 md:mb-8 px-2 grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 md:gap-3">
             {FILTERS.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => toggleFilter(filter.id)}
                 className={cn(
-                  "px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-sm font-bold rounded-full transition-all border flex items-center gap-2 uppercase tracking-wider whitespace-nowrap",
+                  "px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-sm font-bold rounded-full transition-all border flex items-center justify-center gap-2 uppercase tracking-wider",
                   activeFilters.has(filter.id)
                     ? "bg-accent text-white border-accent/60 shadow-lg shadow-accent/20"
                     : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
@@ -196,9 +196,9 @@ const Watchlist: React.FC<WatchlistProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     onClick={() => scroll('left')}
-                    className="hidden md:flex absolute left-4 top-[45%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+                    className="absolute left-4 top-[45%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
                   >
-                    <ChevronLeft className="w-7 h-7" />
+                    <ChevronLeft className="w-5 h-5 md:w-7 md:h-7" />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -210,9 +210,9 @@ const Watchlist: React.FC<WatchlistProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     onClick={() => scroll('right')}
-                    className="hidden md:flex absolute right-4 top-[45%] z-20 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+                    className="absolute right-4 top-[45%] z-20 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
                   >
-                    <ChevronRight className="w-7 h-7" />
+                    <ChevronRight className="w-5 h-5 md:w-7 md:h-7" />
                   </motion.button>
                 )}
               </AnimatePresence>

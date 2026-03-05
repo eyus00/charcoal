@@ -56,9 +56,6 @@ const Home = () => {
 
       {/* You Might Like Section */}
       <YouMightLike items={trendingMonth} />
-
-      {/* Decorative gradient footer */}
-      <div className="h-20 md:h-32 bg-gradient-to-t from-dark-bg to-transparent pointer-events-none" />
     </div>
   );
 }

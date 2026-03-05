@@ -125,7 +125,7 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
         </div>
       </div>
 
-      {/* Navigation Arrows - hidden on mobile, shown on desktop */}
+      {/* Navigation Arrows - visible on mobile and desktop */}
       <AnimatePresence>
         {showLeftArrow && (
           <motion.button
@@ -133,7 +133,7 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('left')}
-            className="hidden md:flex absolute left-2 md:left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute left-2 md:left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </motion.button>
@@ -147,7 +147,7 @@ const SimilarContent: React.FC<SimilarContentProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => scroll('right')}
-            className="hidden md:flex absolute right-2 md:right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
+            className="absolute right-2 md:right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center transition-all hover:bg-accent/40 hover:border-accent/60 hover:scale-110 shadow-2xl"
           >
             <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </motion.button>

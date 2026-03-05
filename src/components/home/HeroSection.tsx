@@ -193,23 +193,25 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="flex flex-wrap items-center gap-4 md:gap-6 mb-6 md:mb-8"
+                className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 mb-6 md:mb-8"
               >
-                <div className="flex items-center gap-2 group/stat">
-                  <div className="p-1.5 bg-yellow-400/10 rounded-lg border border-yellow-400/20 group-hover/stat:bg-yellow-400/20 transition-colors">
-                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  </div>
-                  <span className="text-white font-bold">{currentItem.vote_average.toFixed(1)}</span>
-                </div>
-
-                {year && (
+                <div className="flex items-center gap-4 md:gap-6">
                   <div className="flex items-center gap-2 group/stat">
-                    <div className="p-1.5 bg-green-400/10 rounded-lg border border-green-400/20 group-hover/stat:bg-green-400/20 transition-colors">
-                      <Calendar className="w-4 h-4 text-green-400" />
+                    <div className="p-1.5 bg-yellow-400/10 rounded-lg border border-yellow-400/20 group-hover/stat:bg-yellow-400/20 transition-colors">
+                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                     </div>
-                    <span className="text-white font-bold">{year}</span>
+                    <span className="text-white font-bold">{currentItem.vote_average.toFixed(1)}</span>
                   </div>
-                )}
+
+                  {year && (
+                    <div className="flex items-center gap-2 group/stat">
+                      <div className="p-1.5 bg-green-400/10 rounded-lg border border-green-400/20 group-hover/stat:bg-green-400/20 transition-colors">
+                        <Calendar className="w-4 h-4 text-green-400" />
+                      </div>
+                      <span className="text-white font-bold">{year}</span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="h-4 w-[1px] bg-white/20 hidden md:block" />
 
