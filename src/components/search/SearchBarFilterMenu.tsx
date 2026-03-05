@@ -88,7 +88,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                 <h3 className="text-xs md:text-sm font-bold text-white tracking-tight">Quick Filters</h3>
               </div>
               <button
-                onClick={clearFilters}
+                onClick={(e) => { e.stopPropagation(); clearFilters(); }}
                 className="p-2 md:p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
                 title="Clear All"
               >
@@ -108,7 +108,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <button
-                    onClick={() => setFilters({ mediaType: 'all' })}
+                    onClick={(e) => { e.stopPropagation(); setFilters({ mediaType: 'all' }); }}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                       filters.mediaType === 'all'
@@ -119,7 +119,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                     All
                   </button>
                   <button
-                    onClick={() => setFilters({ mediaType: 'movie' })}
+                    onClick={(e) => { e.stopPropagation(); setFilters({ mediaType: 'movie' }); }}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                       filters.mediaType === 'movie'
@@ -130,7 +130,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                     Movies
                   </button>
                   <button
-                    onClick={() => setFilters({ mediaType: 'tv' })}
+                    onClick={(e) => { e.stopPropagation(); setFilters({ mediaType: 'tv' }); }}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                       filters.mediaType === 'tv'
@@ -153,7 +153,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                   {RATING_OPTIONS.map((rating) => (
                     <button
                       key={rating}
-                      onClick={() => handleRatingSelect(rating)}
+                      onClick={(e) => { e.stopPropagation(); handleRatingSelect(rating); }}
                       className={cn(
                         "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                         minRating === rating
@@ -177,7 +177,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                   {YEAR_OPTIONS.map((opt) => (
                     <button
                       key={opt.label}
-                      onClick={() => handleYearSelect(opt.range as [number, number])}
+                      onClick={(e) => { e.stopPropagation(); handleYearSelect(opt.range as [number, number]); }}
                       className={cn(
                         "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                         yearRange[0] === opt.range[0] && yearRange[1] === opt.range[1]
@@ -203,7 +203,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                     return (
                       <button
                         key={genre.id}
-                        onClick={() => handleGenreToggle(genre.id)}
+                        onClick={(e) => { e.stopPropagation(); handleGenreToggle(genre.id); }}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border",
                           isSelected
@@ -222,7 +222,7 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
             {/* Apply Button for Mobile Nav */}
             {isMobileNav && (
               <button
-                onClick={handleApplyFilters}
+                onClick={(e) => { e.stopPropagation(); handleApplyFilters(); }}
                 className="w-full mt-4 py-2.5 px-4 bg-accent hover:bg-accent/90 text-white rounded-xl font-bold text-xs md:text-sm transition-all active:scale-95 shadow-lg shadow-accent/20"
               >
                 Apply Filters
