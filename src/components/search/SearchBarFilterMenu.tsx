@@ -9,6 +9,7 @@ import { genreService } from '../../api/services/genres';
 interface SearchBarFilterMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  isMobileNav?: boolean;
 }
 
 const YEAR_OPTIONS = [
@@ -22,7 +23,7 @@ const YEAR_OPTIONS = [
 
 const RATING_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9];
 
-const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClose }) => {
+const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClose, isMobileNav = false }) => {
   const { filters, setFilters, clearFilters } = useStore();
   const { selectedGenres, minRating, yearRange } = filters;
   const currentYear = new Date().getFullYear();
@@ -31,6 +32,13 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
+
+  const handleGenreToggle = (genreId: number) => {
+    const newGenres = selectedGenres.includes(genreId)
+      ? selectedGenres.filter(id => id !== genreId)
+      : [...selectedGenres, genreId];
+    setFilters({ selectedGenres: newGenres });
+  };
 
   const handleYearSelect = (range: [number, number]) => {
     if (yearRange[0] === range[0] && yearRange[1] === range[1]) {
@@ -50,31 +58,42 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
         <>
           {/* Backdrop for click away */}
           <div className="fixed inset-0 z-[60]" onClick={onClose} />
-          
+
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={isMobileNav ? { opacity: 0, y: -10, scale: 0.95 } : { opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 mt-3 w-80 bg-zinc-900/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl z-[70] p-5 overflow-hidden"
+            exit={isMobileNav ? { opacity: 0, y: -10, scale: 0.95 } : { opacity: 0, y: 10, scale: 0.95 }}
+            className={cn(
+              "absolute left-0 w-80 bg-zinc-900/95 backdrop-blur-2xl border border-white/10 shadow-2xl z-[70] overflow-hidden",
+              isMobileNav
+                ? "bottom-full mb-3 origin-bottom rounded-[1.5rem] p-4 w-[280px]"
+                : "top-full mt-3 origin-top rounded-[2rem] p-5"
+            )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent">
-                  <SlidersHorizontal className="w-4 h-4" />
+            <div className={cn(
+              "flex items-center justify-between",
+              isMobileNav ? "mb-4" : "mb-6"
+            )}>
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 text-accent">
+                  <SlidersHorizontal className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </div>
-                <h3 className="text-sm font-bold text-white tracking-tight">Quick Filters</h3>
+                <h3 className="text-xs md:text-sm font-bold text-white tracking-tight">Quick Filters</h3>
               </div>
               <button
                 onClick={clearFilters}
-                className="p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
+                className="p-2 md:p-3 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95 border border-white/5 hover:border-red-500/20"
                 title="Clear All"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </button>
             </div>
 
-            <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className={cn(
+              "space-y-5 md:space-y-6 overflow-y-auto pr-2 custom-scrollbar",
+              isMobileNav ? "max-h-[300px]" : "max-h-[400px]"
+            )}>
               {/* Media Type Section */}
               <section>
                 <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase tracking-widest text-white/50">

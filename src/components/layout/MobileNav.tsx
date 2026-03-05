@@ -137,6 +137,7 @@ const MobileNav = () => {
             <SearchBarFilterMenu
               isOpen={isFilterMenuOpen}
               onClose={() => setIsFilterMenuOpen(false)}
+              isMobileNav={true}
             />
           </form>
         </div>

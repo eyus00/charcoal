@@ -128,18 +128,16 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             >
               {/* Header */}
               <div className={cn(
-                "border-b border-white/10 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4",
-                isMobile ? "p-5" : "p-6 md:p-8"
+                "border-b border-white/10 bg-white/5 flex items-center justify-between gap-3 md:gap-4",
+                isMobile ? "p-4" : "p-6 md:p-8"
               )}>
-                <div className="flex items-center gap-4">
-                  <div className="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 text-accent">
+                <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 text-accent flex-shrink-0">
                     <SlidersHorizontal className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
-                  <div>
-                    <h2 className="text-lg md:text-2xl font-bold text-white tracking-tight">Advanced Filters</h2>
-                  </div>
+                  <h2 className="text-base md:text-2xl font-bold text-white tracking-tight truncate">Advanced Filters</h2>
                 </div>
-                <div className="flex bg-white/5 p-1 rounded-lg md:rounded-xl border border-white/5 self-end md:self-auto">
+                <div className="flex items-center bg-white/5 p-1 rounded-lg md:rounded-xl border border-white/5 flex-shrink-0">
                   <button
                     onClick={onClearFilters}
                     className="p-2 md:p-3 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95"
