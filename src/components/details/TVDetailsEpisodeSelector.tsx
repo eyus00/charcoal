@@ -65,6 +65,22 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
 
   const currentSeasonData = seasons?.find(s => s.season_number === selectedSeason);
 
+  // Find the most recent watched episode for this TV show that is not completed
+  // This ensures we get the actual last watched episode regardless of season
+  const mostRecentUncompletedEpisode = watchHistory.find(
+    h =>
+      h.id === Number(tvId) &&
+      h.mediaType === 'tv' &&
+      h.season !== undefined &&
+      h.episode !== undefined &&
+      !h.isCompleted
+  );
+
+  // Use resumeInfo if provided and valid, otherwise use the most recent unwatched episode
+  const effectiveResumeInfo = resumeInfo?.season !== undefined && resumeInfo?.episode !== undefined
+    ? resumeInfo
+    : mostRecentUncompletedEpisode;
+
   if (!isOpen || !tvId || !seasons) {
     return null;
   }
@@ -267,16 +283,16 @@ const TVDetailsEpisodeSelector: React.FC<TVDetailsEpisodeSelectorProps> = ({
             "border-t border-white/10 bg-white/5 flex items-center justify-end gap-3 flex-shrink-0",
             isMobile ? "p-3 md:p-6" : "p-4 md:p-6"
           )}>
-            {resumeInfo && !resumeInfo.isCompleted ? (
+            {effectiveResumeInfo && effectiveResumeInfo.season !== undefined && effectiveResumeInfo.episode !== undefined ? (
               <button
                 onClick={() => {
-                  navigate(`/watch/tv/${tvId}?season=${resumeInfo.season}&episode=${resumeInfo.episode}`);
+                  navigate(`/watch/tv/${tvId}?season=${effectiveResumeInfo.season}&episode=${effectiveResumeInfo.episode}`);
                   onClose();
                 }}
                 className="flex items-center justify-center gap-2 py-2.5 px-4 md:px-5 bg-accent hover:bg-accent/90 text-white rounded-xl shadow-lg shadow-accent/20 transition-all text-xs md:text-sm font-bold active:scale-95"
               >
                 <Play className="w-4 md:w-5 h-4 md:h-5 fill-current" />
-                Resume S{resumeInfo.season} • E{resumeInfo.episode}
+                Resume S{effectiveResumeInfo.season} • E{effectiveResumeInfo.episode}
               </button>
             ) : (
               <button

@@ -22,7 +22,18 @@ const TVDetails = () => {
   const episode = searchParams.get('episode') || '1';
 
   const watchlistItem = getWatchlistItem(Number(id), 'tv');
-  const resumeInfo = watchHistory.find(h => h.id === Number(id) && h.mediaType === 'tv');
+
+  // Find the most recently watched episode for this TV show
+  // (it's the first one in the array since items are added to the front)
+  // Only consider episodes that haven't been completed and have valid season/episode info
+  const resumeInfo = watchHistory.find(
+    h =>
+      h.id === Number(id) &&
+      h.mediaType === 'tv' &&
+      h.season !== undefined &&
+      h.episode !== undefined &&
+      !h.isCompleted
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);

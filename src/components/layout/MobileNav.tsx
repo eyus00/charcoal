@@ -138,6 +138,17 @@ const MobileNav = () => {
               isOpen={isFilterMenuOpen}
               onClose={() => setIsFilterMenuOpen(false)}
               isMobileNav={true}
+              onApplyFilters={() => {
+                // Only search if there's a query or filters applied
+                const hasFilters = filters.selectedGenres.length > 0 ||
+                  filters.minRating > 0 ||
+                  (filters.yearRange[0] !== 1900 || filters.yearRange[1] !== new Date().getFullYear() + 2) ||
+                  (filters.mediaType !== 'all' && filters.mediaType !== undefined && filters.mediaType !== '');
+
+                if (searchQuery.trim() || hasFilters) {
+                  navigate(`/search?q=${encodeURIComponent(searchQuery.trim() || '')}`);
+                }
+              }}
             />
           </form>
         </div>

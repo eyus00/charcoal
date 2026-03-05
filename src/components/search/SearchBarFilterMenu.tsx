@@ -10,6 +10,7 @@ interface SearchBarFilterMenuProps {
   isOpen: boolean;
   onClose: () => void;
   isMobileNav?: boolean;
+  onApplyFilters?: () => void;
 }
 
 const YEAR_OPTIONS = [
@@ -23,7 +24,7 @@ const YEAR_OPTIONS = [
 
 const RATING_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9];
 
-const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClose, isMobileNav = false }) => {
+const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClose, isMobileNav = false, onApplyFilters }) => {
   const { filters, setFilters, clearFilters } = useStore();
   const { selectedGenres, minRating, yearRange } = filters;
   const currentYear = new Date().getFullYear();
@@ -32,6 +33,11 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
     queryKey: ['genres'],
     queryFn: genreService.getAllGenres,
   });
+
+  const handleApplyFilters = () => {
+    onApplyFilters?.();
+    onClose();
+  };
 
   const handleGenreToggle = (genreId: number) => {
     const newGenres = selectedGenres.includes(genreId)
@@ -212,6 +218,16 @@ const SearchBarFilterMenu: React.FC<SearchBarFilterMenuProps> = ({ isOpen, onClo
                 </div>
               </section>
             </div>
+
+            {/* Apply Button for Mobile Nav */}
+            {isMobileNav && (
+              <button
+                onClick={handleApplyFilters}
+                className="w-full mt-4 py-2.5 px-4 bg-accent hover:bg-accent/90 text-white rounded-xl font-bold text-xs md:text-sm transition-all active:scale-95 shadow-lg shadow-accent/20"
+              >
+                Apply Filters
+              </button>
+            )}
           </motion.div>
         </>
       )}
