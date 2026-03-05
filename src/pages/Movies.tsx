@@ -93,17 +93,17 @@ const Movies = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 pb-20">
       {/* Movies Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pt-8">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 text-accent font-bold uppercase tracking-widest text-xs">
-            <Film className="w-4 h-4" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8 md:mb-12 pt-6 md:pt-8">
+        <div className="space-y-3 md:space-y-4">
+          <div className="flex items-center gap-2 md:gap-3 text-accent font-bold uppercase tracking-widest text-[10px] md:text-xs">
+            <Film className="w-3.5 h-3.5 md:w-4 md:h-4" />
             <span>Movies Catalog</span>
           </div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
+          <div className="flex items-center gap-3 md:gap-4">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
               Movies
             </h1>
-            <span className="text-2xl md:text-3xl text-white/20 font-medium translate-y-[8px]">
+            <span className="text-xl md:text-3xl text-white/20 font-medium translate-y-[6px] md:translate-y-[8px]">
               ({filteredResults.length})
             </span>
           </div>
@@ -113,7 +113,7 @@ const Movies = () => {
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-2 px-6 py-3.5 bg-accent hover:bg-accent/90 text-white rounded-xl shadow-lg shadow-accent/20 transition-all font-bold text-sm border border-white/10 active:scale-95"
+            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-accent hover:bg-accent/90 text-white rounded-lg md:rounded-xl shadow-lg shadow-accent/20 transition-all font-bold text-xs md:text-sm border border-white/10 active:scale-95 w-full md:w-auto"
           >
             <X className="w-4 h-4" />
             Clear All Filters

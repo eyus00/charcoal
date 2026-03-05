@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, X, Calendar, Film, SlidersHorizontal, Trash2, Tv } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -54,7 +54,28 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   totalResults,
   hideMediaType = false,
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleRangeSelect = (range: [number, number]) => {
     if (yearRange[0] === range[0] && yearRange[1] === range[1]) {
@@ -86,59 +107,74 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[101] flex items-center justify-center p-4 md:p-8"
+            className={cn(
+              "fixed inset-0 z-[101] flex justify-center",
+              isMobile ? "items-end" : "items-center p-4 md:p-8"
+            )}
             onClick={onClose}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-2xl max-h-full overflow-hidden bg-[#121212]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col"
+              initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+              animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+              exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+              transition={isMobile ? { type: 'spring', damping: 25, stiffness: 300 } : {}}
+              className={cn(
+                "w-full overflow-hidden bg-[#121212]/95 backdrop-blur-2xl border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col",
+                isMobile
+                  ? "max-w-none h-[90vh] rounded-t-[2rem] border-t"
+                  : "max-w-2xl max-h-full rounded-[2.5rem] border"
+              )}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-6 md:p-8 border-b border-white/10 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className={cn(
+                "border-b border-white/10 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4",
+                isMobile ? "p-5" : "p-6 md:p-8"
+              )}>
                 <div className="flex items-center gap-4">
-                  <div className="p-2.5 rounded-xl bg-accent/10 border border-accent/20 text-accent">
-                    <SlidersHorizontal className="w-6 h-6" />
+                  <div className="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-accent/10 border border-accent/20 text-accent">
+                    <SlidersHorizontal className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Advanced Filters</h2>
+                    <h2 className="text-lg md:text-2xl font-bold text-white tracking-tight">Advanced Filters</h2>
                   </div>
                 </div>
-                <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                <div className="flex bg-white/5 p-1 rounded-lg md:rounded-xl border border-white/5 self-end md:self-auto">
                   <button
                     onClick={onClearFilters}
-                    className="p-3 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95"
+                    className="p-2 md:p-3 hover:bg-red-500/10 text-white/40 hover:text-red-500 rounded-lg transition-all active:scale-95"
                     title="Clear All"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                   <button
                     onClick={onClose}
-                    className="p-3 hover:bg-white/10 text-white rounded-lg transition-all active:scale-95"
+                    className="p-2 md:p-3 hover:bg-white/10 text-white rounded-lg transition-all active:scale-95"
                     title="Close"
                   >
-                    <X className="w-5 h-5 md:w-6 md:h-6" />
+                    <X className="w-4 h-4 md:w-6 md:h-6" />
                   </button>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 custom-scrollbar">
+              <div className={cn(
+                "flex-1 overflow-y-auto space-y-8 md:space-y-10 custom-scrollbar",
+                isMobile ? "p-5" : "p-6 md:p-8"
+              )}>
                 {!hideMediaType && (
                   <>
                     {/* Media Type Section */}
                     <section>
-                      <div className="flex items-center gap-2 mb-5">
-                        <Film className="w-5 h-5 text-accent" />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Media Type</h3>
+                      <div className="flex items-center gap-2 mb-4 md:mb-5">
+                        <Film className="w-4 h-4 md:w-5 md:h-5 text-accent" />
+                        <h3 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white/50">Media Type</h3>
                       </div>
-                      <div className="flex flex-wrap gap-2.5">
+                      <div className="flex flex-wrap gap-2 md:gap-2.5">
                         <button
                           onClick={() => onMediaTypeChange('all')}
                           className={cn(
-                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border",
+                            "px-5 md:px-6 py-2 md:py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all border",
                             mediaType === 'all'
                               ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                               : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
@@ -149,25 +185,25 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                         <button
                           onClick={() => onMediaTypeChange('movie')}
                           className={cn(
-                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border flex items-center gap-2",
+                            "px-5 md:px-6 py-2 md:py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all border flex items-center gap-2",
                             mediaType === 'movie'
                               ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                               : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
                           )}
                         >
-                          <Film className="w-3.5 h-3.5" />
+                          <Film className="w-3 md:w-3.5 h-3 md:h-3.5" />
                           Movies
                         </button>
                         <button
                           onClick={() => onMediaTypeChange('tv')}
                           className={cn(
-                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border flex items-center gap-2",
+                            "px-5 md:px-6 py-2 md:py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all border flex items-center gap-2",
                             mediaType === 'tv'
                               ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                               : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
                           )}
                         >
-                          <Tv className="w-3.5 h-3.5" />
+                          <Tv className="w-3 md:w-3.5 h-3 md:h-3.5" />
                           TV Shows
                         </button>
                       </div>
@@ -177,11 +213,11 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 
                 {/* Genres Section */}
                 <section>
-                  <div className="flex items-center gap-2 mb-5">
-                    <Film className="w-5 h-5 text-accent" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Genres</h3>
+                  <div className="flex items-center gap-2 mb-4 md:mb-5">
+                    <Film className="w-4 h-4 md:w-5 md:h-5 text-accent" />
+                    <h3 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white/50">Genres</h3>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-2 md:gap-2.5">
                     {genres.map((genre) => {
                       const isSelected = selectedGenres.includes(genre.id);
                       return (
@@ -189,7 +225,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                           key={genre.id}
                           onClick={() => onGenreToggle(genre.id)}
                           className={cn(
-                            "px-6 py-2.5 rounded-full text-xs font-black transition-all border",
+                            "px-5 md:px-6 py-2 md:py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all border",
                             isSelected
                               ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                               : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
@@ -204,17 +240,17 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 
                 {/* Release Year Section */}
                 <section>
-                  <div className="flex items-center gap-2 mb-5">
-                    <Calendar className="w-5 h-5 text-accent" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Release Year</h3>
+                  <div className="flex items-center gap-2 mb-4 md:mb-5">
+                    <Calendar className="w-4 h-4 md:w-5 md:h-5 text-accent" />
+                    <h3 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white/50">Release Year</h3>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-2 md:gap-2.5">
                     {YEAR_OPTIONS.map((opt) => (
                       <button
                         key={opt.label}
                         onClick={() => handleRangeSelect(opt.range as [number, number])}
                         className={cn(
-                          "px-6 py-2.5 rounded-full text-xs font-black transition-all border",
+                          "px-5 md:px-6 py-2 md:py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all border",
                           yearRange[0] === opt.range[0] && yearRange[1] === opt.range[1]
                             ? "bg-accent border-accent text-white shadow-lg shadow-accent/20"
                             : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
@@ -228,17 +264,17 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 
                 {/* Rating Section */}
                 <section className="pb-4">
-                  <div className="flex items-center gap-2 mb-5">
-                    <Star className="w-5 h-5 text-accent" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-white/50">Minimum Rating</h3>
+                  <div className="flex items-center gap-2 mb-4 md:mb-5">
+                    <Star className="w-4 h-4 md:w-5 md:h-5 text-accent" />
+                    <h3 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white/50">Minimum Rating</h3>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-2 md:gap-2.5">
                     {RATING_OPTIONS.map((rating) => (
                       <button
                         key={rating}
                         onClick={() => handleRatingSelect(rating)}
                         className={cn(
-                          "px-6 py-2.5 rounded-full text-xs font-black transition-all border",
+                          "px-5 md:px-6 py-2 md:py-2.5 rounded-full text-[10px] md:text-xs font-black transition-all border",
                           minRating === rating
                             ? "bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/20"
                             : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
@@ -252,16 +288,19 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 flex items-center justify-end gap-4">
+              <div className={cn(
+                "bg-white/5 border-t border-white/10 flex items-center justify-end gap-3 md:gap-4",
+                isMobile ? "p-5" : "p-6 md:p-8"
+              )}>
                 <button
                   onClick={onClose}
-                  className="px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all active:scale-95 border border-white/5"
+                  className="flex-1 md:flex-none px-6 md:px-8 py-3 md:py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-lg md:rounded-xl transition-all active:scale-95 border border-white/5 text-xs md:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-12 py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20 active:scale-95 border border-white/10"
+                  className="flex-[2] md:flex-none px-8 md:px-12 py-3 md:py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-lg md:rounded-xl transition-all shadow-lg shadow-accent/20 active:scale-95 border border-white/10 text-xs md:text-base"
                 >
                   Show Results
                 </button>
