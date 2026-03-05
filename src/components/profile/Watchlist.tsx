@@ -154,30 +154,30 @@ const Watchlist: React.FC<WatchlistProps> = ({
         </div>
       ) : (
         <>
-          {/* Filters - 3 columns on mobile (2 rows), flex-wrap on desktop */}
-          <div className="mb-6 md:mb-8 px-2 grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 md:gap-3">
+          {/* Filters - Responsive layout for mobile (2 rows) and desktop */}
+          <div className="mb-6 md:mb-8 px-2 flex flex-wrap items-center justify-center gap-2 md:gap-3">
             {FILTERS.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => toggleFilter(filter.id)}
                 className={cn(
-                  "px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-sm font-bold rounded-full transition-all border flex items-center justify-center gap-2 uppercase tracking-wider",
+                  "px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-sm font-bold rounded-full transition-all border flex items-center justify-center gap-2 uppercase tracking-wider whitespace-nowrap min-w-0",
                   activeFilters.has(filter.id)
                     ? "bg-accent text-white border-accent/60 shadow-lg shadow-accent/20"
                     : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20"
                 )}
               >
                 {filter.type === 'mediaType' ? (
-                  filter.value === 'movie' ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />
+                  filter.value === 'movie' ? <Film className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" /> : <Tv className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
                 ) : (
                   <div className={cn(
-                    "w-2 h-2 rounded-full",
-                    filter.value === 'watching' && "bg-red-400",
-                    filter.value === 'planned' && "bg-orange-400",
-                    filter.value === 'completed' && "bg-red-500"
+                    "w-2 h-2 rounded-full flex-shrink-0",
+                    filter.value === 'watching' && "bg-red-500",
+                    filter.value === 'planned' && "bg-orange-500",
+                    filter.value === 'completed' && "bg-red-600"
                   )} />
                 )}
-                {filter.label}
+                <span>{filter.label}</span>
               </button>
             ))}
           </div>
