@@ -1,4 +1,4 @@
-import { BaseProvider, type Subtitle, type SourceType } from '@omss/framework';
+import { createDecipheriv, createHash } from 'crypto';
 import type {
     Diagnostic,
     ProviderCapabilities,
@@ -7,25 +7,31 @@ import type {
     Source,
     SubtitleFormat
 } from '@omss/framework';
-import axios from 'axios';
+import { BaseProvider, type SourceType, type Subtitle } from '@omss/framework';
 import {
-    MovieDownloaderDecryptResponse,
-    MovieDownloaderResponse
+    EncryptedResponse,
+    MovieDownloaderResponse,
+    Token
 } from './02moviedownloader.types.js';
-import { decryptData } from './decrypt.js';
+import { generateRandomUserAgent } from '../../utils/ua.js';
 
 export class MovieDownloader extends BaseProvider {
     readonly id = '02moviedownloader';
     readonly name = '02MovieDownloader';
-    readonly enabled = true;
+    readonly enabled = false; // uses cloudflare turnstile😔
     readonly BASE_URL = 'https://02moviedownloader.site';
     readonly HEADERS = {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150 Safari/537.36',
-        Accept: 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        Referer: this.BASE_URL,
-        Origin: this.BASE_URL
+        'User-Agent': '',
+        accept: '*/*',
+        'accept-language': 'en-US,en;q=0.1',
+        'cache-control': 'no-cache',
+        pragma: 'no-cache',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'sec-gpc': '1'
     };
 
     readonly capabilities: ProviderCapabilities = {
@@ -46,36 +52,95 @@ export class MovieDownloader extends BaseProvider {
         return this.getSources(media);
     }
 
+    async getToken(media: ProviderMediaObject): Promise<string> {
+        const headers = {
+            'User-Agent': this.HEADERS['User-Agent'],
+            accept: '*/*',
+            'accept-language': 'en-US,en;q=0.7',
+            'cache-control': 'no-cache',
+            pragma: 'no-cache',
+            dnt: '1',
+            origin: this.BASE_URL,
+            referer:
+                this.BASE_URL +
+                '/api/download' +
+                (media.type === 'movie'
+                    ? '/movie/' + media.tmdbId
+                    : '/tv/' + media.tmdbId + media.s + media.e),
+            priority: 'u=1, i',
+            'sec-ch-ua':
+                '"(Not(A:Brand";v="99", "Google Chrome";v="134", "Chromium";v="134"',
+            'sec-ch-ua-full-version-list':
+                '"(Not(A:Brand";v="99.0.0.0", "Google Chrome";v="134", "Chromium";v="134"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'sec-gpc': '1'
+        };
+
+        const req = await fetch(this.BASE_URL + '/api/verify-robot', {
+            method: 'POST',
+            headers
+        });
+        const resp = (await req.json()) as Token;
+        if (resp.token) {
+            return resp.token;
+        } else {
+            throw 'no token found...';
+        }
+    }
+
     /**
-     * Main scraping logic - Parallel servers + decryption
+     * Health check
      */
-    // Complete the getSources method and add decryptData
+    async healthCheck(): Promise<boolean> {
+        try {
+            const response = await fetch(this.BASE_URL, {
+                method: 'HEAD',
+                headers: this.HEADERS
+            });
+            return response.status === 200;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Main scraping logic
+     */
     private async getSources(
         media: ProviderMediaObject
     ): Promise<ProviderResult> {
         try {
+            this.HEADERS['User-Agent'] = generateRandomUserAgent();
             const pageUrl = this.buildPageUrl(media);
 
-            const encryptedResponse: MovieDownloaderResponse =
-                await this.fetchPage(pageUrl, media);
-            if (!encryptedResponse || !encryptedResponse.data) {
-                return this.emptyResult('Failed to fetch page', media);
+            const token = await this.getToken(media);
+            if (!token) {
+                return this.emptyResult('Failed to fetch token', media);
             }
 
-            // Decrypt data
-            const decryptedData = await decryptData(encryptedResponse.data);
+            const response: MovieDownloaderResponse = await this.fetchPage(
+                pageUrl,
+                token,
+                media
+            );
 
             // Map to ProviderResult
-            return this.mapToProviderResult(decryptedData, media);
+            return this.mapToProviderResult(response);
         } catch (error) {
-            return this.emptyResult('Failed to process sources', media);
+            return this.emptyResult(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to process sources',
+                media
+            );
         }
     }
 
-    private mapToProviderResult(
-        data: MovieDownloaderDecryptResponse,
-        media: ProviderMediaObject
-    ): ProviderResult {
+    private mapToProviderResult(data: MovieDownloaderResponse): ProviderResult {
         const sources: Source[] = [];
 
         // Map download sources
@@ -93,7 +158,7 @@ export class MovieDownloader extends BaseProvider {
                             : this.HEADERS
                     ),
                     type: 'mp4',
-                    quality: download.resolution.toString() + 'p',
+                    quality: download.resolution.toString(),
                     audioTracks: [
                         {
                             language: 'eng',
@@ -125,7 +190,10 @@ export class MovieDownloader extends BaseProvider {
                 }
 
                 sources.push({
-                    url: this.createProxyUrl(stream.url, this.HEADERS),
+                    url: this.createProxyUrl(
+                        stream.url,
+                        stream.url.includes('pixeldra') ? {} : this.HEADERS
+                    ),
                     type: inferredType as SourceType,
                     quality: height ? height.toString() : stream.quality,
                     audioTracks: [
@@ -187,6 +255,26 @@ export class MovieDownloader extends BaseProvider {
         };
     }
 
+    private decryptPayload(
+        cipherBundle: string,
+        token: string
+    ): MovieDownloaderResponse {
+        const parts = cipherBundle.split(':');
+        if (parts.length !== 2)
+            throw new Error('Invalid encrypted payload format');
+        const iv = Buffer.from(parts[0], 'base64');
+        const cipherBytes = Buffer.from(parts[1], 'base64');
+        const key = createHash('sha256').update(token).digest();
+        const decipher = createDecipheriv('aes-256-cbc', key, iv);
+        const decrypted = Buffer.concat([
+            decipher.update(cipherBytes),
+            decipher.final()
+        ]);
+        return JSON.parse(
+            decrypted.toString('utf8')
+        ) as MovieDownloaderResponse;
+    }
+
     private buildPageUrl(media: ProviderMediaObject): string {
         const tmdbId = media.tmdbId;
         if (media.type === 'movie') {
@@ -197,19 +285,36 @@ export class MovieDownloader extends BaseProvider {
 
     private async fetchPage(
         url: string,
+        token: string,
         media: ProviderMediaObject
     ): Promise<any> {
         try {
+            const refererUrl =
+                this.BASE_URL +
+                '/api/download' +
+                (media.type === 'movie'
+                    ? '/movie/' + media.tmdbId
+                    : '/tv/' + media.tmdbId + media.s + media.e);
+
             const response = await fetch(url, {
-                headers: { accept: 'application/json' }
+                headers: {
+                    ...this.HEADERS,
+                    accept: 'application/json',
+                    'x-session-token': token,
+                    referer: refererUrl
+                }
             });
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            this.console.log(
-                `Fetched data for ${media.title} from ${url}. returned ${response.status}`
-            );
-            return await response.json();
+            const raw = (await response.json()) as
+                | MovieDownloaderResponse
+                | EncryptedResponse;
+            if ('encrypted' in raw && raw.encrypted === true) {
+                return this.decryptPayload(raw.data, token);
+            }
+            return raw as MovieDownloaderResponse;
         } catch (error) {
             throw new Error(
                 `Failed to fetch page for ${media.title}: ${error}`
@@ -236,20 +341,5 @@ export class MovieDownloader extends BaseProvider {
                 }
             ]
         };
-    }
-
-    /**
-     * Health check
-     */
-    async healthCheck(): Promise<boolean> {
-        try {
-            const response = await axios.head(this.BASE_URL, {
-                timeout: 5000,
-                headers: this.HEADERS
-            });
-            return response.status === 200;
-        } catch {
-            return false;
-        }
     }
 }

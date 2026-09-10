@@ -6,7 +6,6 @@ import type {
     Source,
     Subtitle
 } from '@omss/framework';
-import axios from 'axios';
 import { encryptItemId } from './encrypt.js';
 import { VidrockStreams, VidrockCDN } from './vidrock.types.js';
 
@@ -50,8 +49,7 @@ export class VidRockProvider extends BaseProvider {
                 return this.emptyResult('Failed to fetch page');
             }
 
-            const resp = data as unknown as VidrockStreams;
-
+            const resp = data as VidrockStreams;
             const sources: Source[] = [];
 
             for (const [_, stream] of Object.entries(resp)) {
@@ -59,10 +57,10 @@ export class VidRockProvider extends BaseProvider {
 
                 let finalUrl: string;
 
-                if (stream.url.startsWith('https://cdn.vidrock.store/')) {
-                    const secondData = (await this.fetchPage(
-                        stream.url
-                    )) as unknown as VidrockCDN[];
+                if (stream.url.includes('hls2.vdrk.site')) {
+                    const secondData = (await this.fetchPage(stream.url)) as
+                        | VidrockCDN[]
+                        | null;
                     if (!secondData) continue;
 
                     secondData.forEach((obj) => {
@@ -74,7 +72,6 @@ export class VidRockProvider extends BaseProvider {
                                 encodedPath.replace(/^\//, '')
                             );
                         } else {
-                            // Fallback: if format changes, still return proxied URL
                             finalUrl = obj.url;
                         }
 
@@ -108,13 +105,13 @@ export class VidRockProvider extends BaseProvider {
                                   referrer: this.BASE_URL,
                                   origin: this.BASE_URL.replace('net/', 'net')
                               }
-                            : { ...this.HEADERS, Referer: pageUrl }
+                            : { ...this.HEADERS, Referer: this.BASE_URL }
                     );
                 }
 
                 sources.push({
                     url: finalUrl,
-                    quality: '1080p',
+                    quality: '1080',
                     type: 'hls',
                     audioTracks: [
                         {
@@ -131,13 +128,11 @@ export class VidRockProvider extends BaseProvider {
 
             const subtitles = await this.fetchSubtitles(media);
 
-            const result: ProviderResult = {
+            return {
                 sources,
                 subtitles,
                 diagnostics: []
             };
-
-            return result;
         } catch (error) {
             return this.emptyResult(
                 error instanceof Error
@@ -158,24 +153,23 @@ export class VidRockProvider extends BaseProvider {
                 subUrl = `${this.SUB_BASE_URL}/v2/movie/${media.tmdbId}`;
             }
 
-            const response = await axios.get(subUrl, {
+            const response = await fetch(subUrl, {
                 headers: {
                     ...this.HEADERS,
                     Referer: this.BASE_URL
-                },
-                timeout: 10000
+                }
             });
 
             if (response.status !== 200) {
                 return [];
             }
 
-            const subsData = response.data as Array<{
+            const subsData = (await response.json()) as Array<{
                 label: string;
                 file: string;
             }>;
 
-            const subtitles: Subtitle[] = subsData.map((sub) => ({
+            return subsData.map((sub) => ({
                 url: this.createProxyUrl(sub.file, {
                     ...this.HEADERS,
                     Referer: subUrl
@@ -183,9 +177,7 @@ export class VidRockProvider extends BaseProvider {
                 format: 'vtt',
                 label: sub.label
             }));
-
-            return subtitles;
-        } catch (error) {
+        } catch {
             return [];
         }
     }
@@ -202,15 +194,22 @@ export class VidRockProvider extends BaseProvider {
         return `${this.BASE_URL}api/${media.type}/${encrypted}`;
     }
 
-    private async fetchPage(url: string): Promise<string | null> {
+    private async fetchPage(url: string): Promise<any | null> {
         try {
-            const response = await axios.get(url, {
-                headers: this.HEADERS,
-                timeout: 10000
+            const response = await fetch(url, {
+                headers: { ...this.HEADERS, Referer: this.BASE_URL },
+                referrer: this.BASE_URL
             });
 
             if (response.status !== 200) return null;
-            return response.data;
+
+            const contentType = response.headers.get('content-type') ?? '';
+
+            if (contentType.includes('application/json')) {
+                return await response.json();
+            }
+
+            return await response.text();
         } catch {
             return null;
         }
@@ -233,8 +232,8 @@ export class VidRockProvider extends BaseProvider {
 
     async healthCheck(): Promise<boolean> {
         try {
-            const response = await axios.head(this.BASE_URL, {
-                timeout: 5000,
+            const response = await fetch(this.BASE_URL, {
+                method: 'HEAD',
                 headers: this.HEADERS
             });
             return response.status === 200;

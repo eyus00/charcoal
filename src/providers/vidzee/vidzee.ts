@@ -6,21 +6,21 @@ import type {
     Source
 } from '@omss/framework';
 import type { StreamResponse } from './vidzee.types.js';
-import axios from 'axios';
-import decrypt from './decrypt.js';
+import { decrypt, deriveKey } from './decrypt.js';
 
 export class VidZeeProvider extends BaseProvider {
     readonly id = 'vidzee';
     readonly name = 'VidZee';
     readonly enabled = true;
-    readonly BASE_URL = 'https://player.vidzee.wtf';
+    readonly BASE_URL = 'https://core.vidzee.wtf';
+    readonly PLAYER_URL = 'https://player.vidzee.wtf';
     readonly HEADERS = {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150 Safari/537.36',
+            'Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.7051.98 Safari/537.36',
         Accept: 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'en-US,en;q=0.9',
-        Referer: this.BASE_URL,
-        Origin: this.BASE_URL
+        Referer: this.PLAYER_URL,
+        Origin: this.PLAYER_URL
     };
 
     readonly capabilities: ProviderCapabilities = {
@@ -46,7 +46,7 @@ export class VidZeeProvider extends BaseProvider {
     }
 
     /**
-     * Main scraping logic - Parallel servers + decryption
+     * Main scraping logic - Parallel servers + FULL parallel decryption
      */
     private async getSources(
         media: ProviderMediaObject,
@@ -55,15 +55,22 @@ export class VidZeeProvider extends BaseProvider {
         try {
             const tmdbId = media.tmdbId;
 
-            // 1. Parallel server requests
+            const decKey = await this.fetchDecryptionKey();
+            if (!decKey) {
+                return this.emptyResult(
+                    'Failed to fetch decryption key',
+                    media
+                );
+            }
+
             const serverPromises = Array.from({ length: 14 }, (_, serverId) =>
                 this.fetchServer(tmdbId, serverId, params)
             );
+
             const results = await Promise.allSettled(serverPromises);
             const successfulResponses: StreamResponse[] = [];
 
-            for (let i = 0; i < results.length; i++) {
-                const result = results[i];
+            for (const result of results) {
                 if (result.status === 'fulfilled' && result.value) {
                     successfulResponses.push(result.value);
                 }
@@ -73,24 +80,22 @@ export class VidZeeProvider extends BaseProvider {
                 return this.emptyResult('No working servers', media);
             }
 
-            // 2. Parallel decryption of ALL urls from ALL successful servers
             const decryptPromises = successfulResponses.map((response) =>
-                decrypt(response.url).then((decryptedLinks) => ({
+                Promise.all(
+                    response.url.map((u) => decrypt(u.link, decKey))
+                ).then((decryptedLinks) => ({
                     response,
                     decryptedLinks
                 }))
             );
-
             const decryptionResults = await Promise.all(decryptPromises);
 
-            // Flatten and deduplicate decrypted links
             const allDecryptedLinks: string[] = [];
             const allSubtitles = new Map<string, Subtitle>();
 
             for (const { response, decryptedLinks } of decryptionResults) {
                 allDecryptedLinks.push(...decryptedLinks);
 
-                // Process subtitles
                 for (const track of response.tracks) {
                     if (track.url && track.lang) {
                         const proxySubUrl = this.createProxyUrl(
@@ -110,7 +115,6 @@ export class VidZeeProvider extends BaseProvider {
                 }
             }
 
-            // Deduplicate links
             const uniqueLinks = [...new Set(allDecryptedLinks)].filter(
                 (link) => link && link.startsWith('http')
             );
@@ -171,18 +175,41 @@ export class VidZeeProvider extends BaseProvider {
         params: { type: 'movie' | 'tv'; season?: string; episode?: string }
     ): Promise<StreamResponse | null> {
         try {
-            let url = `https://player.vidzee.wtf/api/server?id=${tmdbId}&sr=${serverId}`;
+            let url =
+                this.PLAYER_URL + `/api/server?id=${tmdbId}&sr=${serverId}`;
 
             if (params.type === 'tv' && params.season && params.episode) {
                 url += `&ss=${params.season}&ep=${params.episode}`;
             }
 
-            const response = await axios.get(url, {
-                headers: this.HEADERS,
-                timeout: 8000
+            const response = await fetch(url, {
+                headers: this.HEADERS
             });
 
-            return response.data as StreamResponse;
+            if (!response.ok) {
+                return null;
+            }
+
+            return (await response.json()) as StreamResponse;
+        } catch {
+            return null;
+        }
+    }
+
+    private async fetchDecryptionKey(): Promise<string | null> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/api-key`, {
+                headers: this.HEADERS
+            });
+
+            if (response.status === 200) {
+                const data = await response.text();
+                if (data) {
+                    return await deriveKey(data);
+                }
+            }
+
+            return null;
         } catch {
             return null;
         }
@@ -195,7 +222,6 @@ export class VidZeeProvider extends BaseProvider {
         message: string,
         media: ProviderMediaObject
     ): ProviderResult {
-        // @ts-ignore
         return {
             sources: [],
             subtitles: [],
@@ -215,8 +241,8 @@ export class VidZeeProvider extends BaseProvider {
      */
     async healthCheck(): Promise<boolean> {
         try {
-            const response = await axios.head(this.BASE_URL, {
-                timeout: 5000,
+            const response = await fetch(this.BASE_URL, {
+                method: 'HEAD',
                 headers: this.HEADERS
             });
             return response.status === 200;
