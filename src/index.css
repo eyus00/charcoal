@@ -1,64 +1,69 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0b0b0c;
+  --color-surface: #151517;
+  --color-raised: #1e1e21;
+  --color-line: #2a2a2e;
+  --color-muted: #9a9aa3;
+  --color-faint: #66666e;
+  --color-accent: #ff6b35;
+  --color-accent-hover: #ff8257;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
 @layer base {
   html {
-    @apply antialiased;
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
   }
-
   body {
-    @apply bg-dark-bg text-dark-text-primary transition-colors duration-200;
+    @apply bg-bg text-white antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: default;
   }
 }
 
-@layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: theme('colors.border.dark') transparent;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-border-dark rounded;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-dark-text-secondary;
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-@keyframes highlight {
-  0% {
-    border-color: rgba(220, 38, 38, 0);
-    background-color: transparent;
-  }
+@utility skeleton {
+  background: var(--color-surface);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
   50% {
-    border-color: rgba(220, 38, 38, 0.5);
-    background-color: rgba(220, 38, 38, 0.1);
-  }
-  100% {
-    border-color: rgba(220, 38, 38, 0);
-    background-color: transparent;
+    opacity: 0.55;
   }
 }
 
-@keyframes gradient {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 
-.highlight-animation {
-  animation: highlight 1s ease-in-out;
+/* Subtitles */
+video::cue {
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: clamp(16px, 2.6vw, 32px);
+  line-height: 1.3;
 }

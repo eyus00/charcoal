@@ -1,192 +1,89 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Search as SearchIcon, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Fuse from 'fuse.js';
-import { useMedia } from '../api/hooks/useMedia';
-import { genreService } from '../api/services/genres';
-import { useSearchFilters } from '../hooks/useSearchFilters';
-import SearchFilters from '../components/search/SearchFilters';
-import SearchResults from '../components/search/SearchResults';
-import TopFilterBar from '../components/search/TopFilterBar';
-import { cn } from '../lib/utils';
+import { useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import FilterBar from '../components/FilterBar';
+import Grid from '../components/Grid';
+import { SearchBox } from '../components/Layout';
+import { hasActiveFilters, matchesFilters, parseFilters, type Filters } from '../lib/filters';
+import { cleanList, tmdb, type MediaItem, type Page } from '../lib/tmdb';
+import { useTitle } from '../lib/util';
+import { useDiscover } from './Catalog';
 
-const Search = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const query = searchParams.get('q') || '';
-  const shouldOpenFilters = searchParams.get('filters') === 'true';
-
-  // Handle opening filters from URL params
-  useEffect(() => {
-    if (shouldOpenFilters) {
-      setIsFiltersOpen(true);
-      // Remove the filters param from URL after opening
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('filters');
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [shouldOpenFilters, searchParams, setSearchParams]);
-
-  // Scroll to top when search results change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [query]);
-
-  const { data: searchResults, isLoading } = useMedia.useSearch(query);
-  const { data: popularMedia } = useMedia.usePopular('movie');
-  const { data: genres = [] } = useQuery({
-    queryKey: ['genres'],
-    queryFn: genreService.getAllGenres,
+/** Text search. TMDB search can only filter by year server-side; the rest is applied to the results. */
+function useTextSearch(query: string, f: Filters) {
+  return useInfiniteQuery({
+    queryKey: ['search', query, f.type, f.from === f.to ? f.from : undefined],
+    enabled: !!query,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam, signal }) => {
+      const singleYear = f.from && f.from === f.to ? f.from : undefined;
+      if (f.type === 'all') {
+        const res = await tmdb<Page<MediaItem>>('/search/multi', { query, page: pageParam, include_adult: 'false' }, signal);
+        return res;
+      }
+      const yearKey = f.type === 'movie' ? 'primary_release_year' : 'first_air_date_year';
+      const res = await tmdb<Page<MediaItem>>(
+        `/search/${f.type}`,
+        { query, page: pageParam, include_adult: 'false', [yearKey]: singleYear },
+        signal,
+      );
+      return { ...res, results: res.results.map((m) => ({ ...m, media_type: f.type as 'movie' | 'tv' })) };
+    },
+    getNextPageParam: (last) => (last.page < Math.min(last.total_pages, 50) ? last.page + 1 : undefined),
   });
+}
 
-  const rawResults = useMemo(() => {
-    if (!query) return popularMedia?.results || [];
-    return searchResults?.results.filter((item) => item.media_type !== 'person') || [];
-  }, [searchResults, popularMedia, query]);
+export default function Search() {
+  const [params] = useSearchParams();
+  const query = (params.get('q') ?? '').trim();
+  const filters = useMemo(() => parseFilters(params), [params]);
+  const text = useTextSearch(query, filters);
+  const browse = useDiscover(filters, !query);
+  const active = query ? text : browse;
+  useTitle(query ? `“${query}”` : 'Search');
 
-  // Improved search functionality with Fuse.js for fuzzy matching
-  const fuseResults = useMemo(() => {
-    if (!query || rawResults.length === 0) return rawResults;
+  const items = useMemo(() => {
+    const all = cleanList(active.data?.pages.flatMap((p) => p.results) ?? []);
+    return query ? all.filter((m) => matchesFilters(m, filters)) : all;
+  }, [active.data, query, filters]);
 
-    const fuse = new Fuse(rawResults, {
-      keys: ['title', 'name', 'original_title', 'original_name'],
-      threshold: 0.4, // Adjust for more/less sensitivity
-      includeScore: true,
-      shouldSort: true,
-    });
-
-    const result = fuse.search(query);
-    // If we have fuzzy matches, return them; otherwise, return raw results
-    return result.length > 0 ? result.map(r => r.item) : rawResults;
-  }, [rawResults, query]);
-
-  const {
-    selectedGenres,
-    minRating,
-    yearRange,
-    mediaType,
-    filteredResults,
-    toggleGenre,
-    setMinRating,
-    setYearRange,
-    setMediaType,
-    clearFilters,
-  } = useSearchFilters({
-    results: fuseResults,
-  });
-
-  const hasActiveFilters =
-    selectedGenres.length > 0 ||
-    minRating > 0 ||
-    (yearRange[0] !== 1900 || yearRange[1] !== new Date().getFullYear() + 2) ||
-    (mediaType !== 'all' && mediaType !== undefined && mediaType !== '');
+  // Filters can hide a whole page of text results; keep loading until something shows.
+  const loadedPages = active.data?.pages.length ?? 0;
+  const filteredEmpty = !!query && hasActiveFilters(filters) && items.length === 0 && active.hasNextPage && loadedPages < 5;
+  const { isFetchingNextPage, fetchNextPage } = active;
+  useEffect(() => {
+    if (filteredEmpty && !isFetchingNextPage) fetchNextPage();
+  }, [filteredEmpty, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 pb-20">
-      {/* Search Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8 md:mb-12 pt-6 md:pt-8">
-        <div className="space-y-3 md:space-y-4">
-          <div className="flex items-center gap-2 md:gap-3 text-accent font-bold uppercase tracking-widest text-[10px] md:text-xs">
-            <SearchIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span>Search Results</span>
-          </div>
-          <div className="flex items-center gap-3 md:gap-4">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tight truncate">
-              {query || "Explore"}
-            </h1>
-            {query && (
-              <span className="text-xl md:text-3xl text-white/20 font-medium translate-y-[6px] md:translate-y-[8px]">
-                ({filteredResults.length})
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Clear All if filters active */}
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-accent hover:bg-accent/90 text-white rounded-lg md:rounded-xl shadow-lg shadow-accent/20 transition-all font-bold text-xs md:text-sm border border-white/10 active:scale-95 w-full md:w-auto"
-          >
-            <X className="w-4 h-4" />
-            Clear All Filters
-          </button>
+    <div className="mx-auto max-w-[1600px] px-4 pt-4 md:px-8 md:pt-8">
+      <SearchBox className="mb-4 flex md:hidden" autoFocus={!query} />
+      <h1 className="mb-5 truncate text-2xl font-semibold tracking-tight md:text-3xl">
+        {query ? (
+          <>
+            Results for <span className="text-muted">“{query}”</span>
+          </>
+        ) : (
+          'Browse'
         )}
+      </h1>
+      <FilterBar filters={filters} showType showSort={!query} />
+      <div className="mt-6">
+        <Grid
+          items={items}
+          loading={active.isPending || filteredEmpty}
+          error={active.error}
+          onRetry={() => active.refetch()}
+          hasMore={active.hasNextPage}
+          loadingMore={active.isFetchingNextPage}
+          onLoadMore={() => !active.isFetchingNextPage && active.fetchNextPage()}
+          empty={
+            <p className="py-20 text-center text-muted">
+              {query ? `No results for “${query}”${hasActiveFilters(filters) ? ' with these filters' : ''}.` : 'No titles match these filters.'}
+            </p>
+          }
+        />
       </div>
-
-      {/* Top Filters Bar */}
-      <TopFilterBar
-        onOpenFilters={() => setIsFiltersOpen(true)}
-        selectedGenres={selectedGenres}
-        onGenreToggle={toggleGenre}
-        genres={genres}
-        minRating={minRating}
-        yearRange={yearRange}
-        mediaType={mediaType}
-        onClearFilters={clearFilters}
-        onRatingChange={setMinRating}
-        onYearChange={setYearRange}
-      />
-
-      {/* Results Content */}
-      <div className="relative">
-        <AnimatePresence mode="wait">
-          {filteredResults.length > 0 ? (
-            <motion.div
-              key="results"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <SearchResults
-                results={filteredResults}
-                isLoading={isLoading}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="py-32 flex flex-col items-center justify-center text-center space-y-6 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-md"
-            >
-              <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/5 relative">
-                <SearchIcon className="w-10 h-10 text-white/20" />
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-accent rounded-full animate-pulse" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-white">No results found</h3>
-                <p className="text-white/40 max-w-md px-6">
-                  We couldn't find anything matching your search. Try adjusting your filters or search for something else.
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-
-      {/* Advanced Filters Modal */}
-      <SearchFilters
-        isOpen={isFiltersOpen}
-        onClose={() => setIsFiltersOpen(false)}
-        genres={genres}
-        selectedGenres={selectedGenres}
-        minRating={minRating}
-        yearRange={yearRange}
-        mediaType={mediaType}
-        onGenreToggle={toggleGenre}
-        onRatingChange={setMinRating}
-        onYearChange={setYearRange}
-        onMediaTypeChange={setMediaType}
-        onClearFilters={clearFilters}
-        totalResults={filteredResults.length}
-      />
     </div>
   );
-};
-
-export default Search;
+}
