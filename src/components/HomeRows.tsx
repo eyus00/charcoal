@@ -49,18 +49,20 @@ function LazyRow({
 /** Title, overview, then "year · ★ rating" with the type icon bottom-right (same row as grid cards). */
 function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col py-0.5">
-      <div className="line-clamp-1 text-[15px] font-medium">{titleOf(item)}</div>
-      <p className="mt-1 line-clamp-3 text-[13px] leading-snug text-muted">{item.overview}</p>
-      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
+    <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3 py-2.5')}>
+      <div className="line-clamp-1 text-[15px] leading-5 font-medium">{titleOf(item)}</div>
+      <p className="mt-1 line-clamp-4 text-[13px] leading-[17px] text-muted">{item.overview}</p>
+      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto" extra={<TypeIcon type={type} />} />
     </div>
   );
 }
 
-const LIST_CARD = 'group flex w-[260px] shrink-0 snap-start gap-3 rounded-[20px] bg-surface/60 p-2 ring-1 ring-white/[0.06] transition hover:bg-surface hover:ring-white/15 sm:w-[290px]';
-const LIST_POSTER = 'aspect-[2/3] w-20 shrink-0 rounded-[14px] sm:w-[88px]';
+// Poster on the left, bordered info area on the right (the poster itself has no border).
+const LIST_CARD = 'group flex w-[248px] shrink-0 snap-start sm:w-[264px]';
+const LIST_POSTER = 'aspect-[2/3] w-24 shrink-0 rounded-l-2xl';
+const LIST_INFO = 'rounded-r-2xl border border-l-0 border-white/[0.08] transition group-hover:border-white/20';
 const listSkeleton = (n: number, extra = '') =>
-  Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[136px] w-[260px] shrink-0 rounded-[20px] sm:h-[148px] sm:w-[290px] ' + extra} />);
+  Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-36 w-[248px] shrink-0 rounded-2xl sm:w-[264px] ' + extra} />);
 
 // ---------- Top 10: big outlined rank number + list card ----------
 
@@ -75,7 +77,7 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
       >
         {rank}
       </span>
-      <div className={cx(LIST_CARD, 'relative')}>
+      <div className={LIST_CARD}>
         <Img path={item.poster_path} kind="poster" sizes="96px" alt="" className={LIST_POSTER} />
         <CardText item={item} type={t} />
       </div>

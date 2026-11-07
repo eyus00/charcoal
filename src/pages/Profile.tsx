@@ -11,6 +11,9 @@ import { checkProxy, normalizeProxy } from '../lib/proxy';
 import { actions, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { cx, useTitle } from '../lib/util';
 
+/** Fixed container card for each profile section (matches the settings cards). */
+const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
+
 export default function Profile() {
   useTitle('Profile');
   const { hash } = useLocation();
@@ -83,7 +86,7 @@ export default function Profile() {
 
       {tab === 'library' ? (
         <>
-          <div id="history" className="scroll-mt-10">
+          <div id="history" className={cx(PANEL, 'scroll-mt-10')}>
             {titles.length ? (
               <ContinueWatching items={titles} title="Watch history" />
             ) : (
@@ -93,7 +96,7 @@ export default function Profile() {
               </>
             )}
           </div>
-          <div id="watchlist" className="scroll-mt-10">
+          <div id="watchlist" className={cx(PANEL, 'scroll-mt-10')}>
             <Watchlist />
           </div>
         </>
@@ -347,7 +350,7 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; o
 
 function EmptyCard({ icon: Icon, title, body }: { icon?: typeof Film; title: string; body?: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-3xl bg-surface px-6 py-12 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-2xl bg-raised/50 px-6 py-12 text-center">
       {Icon && <Icon className="mb-1 size-7 text-faint" />}
       <p className="font-medium">{title}</p>
       {body && <p className="max-w-sm text-sm text-muted">{body}</p>}
