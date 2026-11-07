@@ -24,7 +24,19 @@ function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+// Railway injects RAILWAY_PUBLIC_DOMAIN; without a public URL every proxied
+// stream link would point at http://localhost and fail in the browser.
+const PUBLIC_URL =
+    process.env.PUBLIC_URL ??
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined);
+
+// Same public key the Charcoal frontend ships with; override with TMDB_API_KEY.
+const TMDB_API_KEY = process.env.TMDB_API_KEY || '50404130561567acf3e0725aeb09ec5d';
+
 async function main() {
+    if (!process.env.TMDB_API_KEY) console.warn('[Jelly] TMDB_API_KEY not set, using the default public key');
+    if (!PUBLIC_URL) console.warn('[Jelly] PUBLIC_URL not set; stream URLs will point at localhost');
+
     const server = new OMSSServer({
         name: 'Jelly',
         version: '1.1.0',
@@ -32,7 +44,7 @@ async function main() {
         // Network
         host: process.env.HOST ?? '0.0.0.0',
         port: Number(process.env.PORT ?? 8080),
-        publicUrl: process.env.PUBLIC_URL,
+        publicUrl: PUBLIC_URL,
 
         // Cache (memory by default, Redis if CACHE_TYPE=redis)
         cache: {
@@ -50,7 +62,7 @@ async function main() {
 
         // TMDB
         tmdb: {
-            apiKey: process.env.TMDB_API_KEY!,
+            apiKey: TMDB_API_KEY,
             cacheTTL: 24 * 60 * 60
         },
 
