@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Keyboard, X } from 'lucide-react';
+import { actions, getState } from '../lib/store';
 import { isTypingTarget, keyState } from '../lib/util';
 
 export const GO: Record<string, { to: string; label: string }> = {
@@ -21,7 +22,7 @@ export const MOD = isMac ? '⌘' : 'Ctrl';
 export const hotkeysCtl = { help: () => {} };
 
 const SECTIONS: { title: string; keys: [string[], string][] }[] = [
-  { title: 'Everywhere', keys: [[[MOD, 'K'], 'Search'], [['/'], 'Search'], [['?'], 'Show shortcuts'], [['Esc'], 'Close search / dialogs']] },
+  { title: 'Everywhere', keys: [[[MOD, 'K'], 'Search'], [['/'], 'Search'], [['?'], 'Show shortcuts'], [['['], 'Expand / collapse sidebar'], [['Esc'], 'Close search / dialogs']] },
   { title: 'Go to', keys: Object.entries(GO).map(([k, v]) => [['g', k], v.label]) },
   { title: 'Home', keys: [[['←', '→'], 'Previous / next featured title']] },
   { title: 'Title page', keys: [[['p'], 'Play / resume (episodes for TV)'], [['b'], 'Add to / remove from watchlist'], [['t'], 'Play trailer']] },
@@ -51,6 +52,8 @@ export default function Hotkeys({ openSearch }: { openSearch: () => void }) {
       } else if (e.key === '?') {
         e.preventDefault();
         setHelp((h) => !h);
+      } else if (e.key === '[') {
+        actions.updateSettings({ sidebarOpen: !getState().settings.sidebarOpen });
       } else if (e.key === 'Escape') {
         setHelp(false);
       } else if (e.key === 'g') {

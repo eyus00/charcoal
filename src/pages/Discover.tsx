@@ -60,7 +60,7 @@ export default function Discover() {
         </div>
       )}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-<div className="inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
+        <div className="inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
         {TYPES.map((t) => (
           <button
             key={t.key}
@@ -74,9 +74,12 @@ export default function Discover() {
         ))}
       </div>
         {hasActiveFilters(filters) && (
-          <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-muted transition hover:bg-surface hover:text-white">
-            <X className="size-4" /> Clear filters
-          </button>
+          <div className="flex items-center gap-1">
+            {total !== undefined && <span className="px-2 text-sm text-faint tabular-nums">{total.toLocaleString()} titles</span>}
+            <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-muted transition hover:bg-surface hover:text-white">
+              <X className="size-4" /> Clear filters
+            </button>
+          </div>
         )}
       </div>
 

@@ -216,7 +216,7 @@ function Header({
 }) {
   return (
     <div className="flex items-center gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:px-4">
-      <Link to={detailsUrl} aria-label="Back to details" className="grid size-10 shrink-0 place-items-center rounded-lg hover:bg-white/15">
+      <Link to={detailsUrl} aria-label="Back to details" className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-white/15">
         <ArrowLeft className="size-5" />
       </Link>
       <Link to={detailsUrl} className="min-w-0 flex-1 leading-tight">
@@ -249,7 +249,7 @@ function HeaderButton({ label, onClick, disabled, children }: { label: string; o
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="grid size-10 shrink-0 place-items-center rounded-lg hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent"
+      className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent"
     >
       {children}
     </button>
@@ -274,13 +274,13 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-10 items-center gap-2 rounded-lg px-2.5 text-sm hover:bg-white/15"
+        className="flex h-10 items-center gap-2 rounded-full px-3 text-sm hover:bg-white/15"
       >
         <Server className="size-4" />
         <span className="hidden sm:inline">{name}</span>
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 z-40 mt-1 max-h-[75vh] w-72 overflow-y-auto rounded-xl border border-line bg-raised p-1 shadow-2xl">
+        <div role="menu" className="absolute right-0 z-40 mt-1 max-h-[75vh] w-72 overflow-y-auto rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 ring-white/5">
           <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">Direct</div>
           <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" note={jellyState === 'failed' ? 'No sources for this title' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
           <div className="px-3 pt-3 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">Embedded players</div>
@@ -292,7 +292,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
             role="menuitemcheckbox"
             aria-checked={blockPopups}
             onClick={() => actions.updateSettings({ blockPopups: !blockPopups })}
-            className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10"
+            className="flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10"
           >
             <ShieldCheck className={cx('mt-0.5 size-4 shrink-0', blockPopups ? 'text-emerald-400' : 'text-faint')} />
             <span>
@@ -308,7 +308,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
 
 function ServerItem({ selected, onClick, name, note, warn }: { selected: boolean; onClick: () => void; name: string; note: string; warn?: boolean }) {
   return (
-    <button role="menuitemradio" aria-checked={selected} onClick={onClick} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-white/10">
+    <button role="menuitemradio" aria-checked={selected} onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-white/10">
       <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
       <span className="min-w-0">
         <span className="block text-sm">{name}</span>
@@ -338,7 +338,7 @@ function JellyLoading({ backdrop, onSkip }: { backdrop?: string | null; onSkip: 
           </p>
         </div>
         {secs >= 8 && (
-          <button onClick={onSkip} className="h-10 rounded-lg bg-white/10 px-4 text-sm hover:bg-white/20">
+          <button onClick={onSkip} className="h-10 rounded-full bg-white/10 px-5 text-sm hover:bg-white/20">
             Use an embedded player instead
           </button>
         )}
@@ -368,11 +368,11 @@ function Message({ title, body, back, retry }: { title: string; body: string; ba
         <p className="text-muted">{body}</p>
         <div className="flex justify-center gap-2 pt-2">
           {retry && (
-            <button onClick={retry} className="h-10 rounded-lg bg-white/10 px-4 text-sm hover:bg-white/15">
+            <button onClick={retry} className="h-11 rounded-full px-5 text-sm ring-1 ring-white/20 hover:bg-white/10">
               Try again
             </button>
           )}
-          <Link to={back} className="h-10 rounded-lg bg-white px-4 text-sm leading-10 font-semibold text-black">
+          <Link to={back} className="h-11 rounded-full bg-white px-5 text-sm leading-[2.75rem] font-medium text-black hover:bg-white/90">
             Go back
           </Link>
         </div>

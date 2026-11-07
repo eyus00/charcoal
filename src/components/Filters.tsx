@@ -29,7 +29,7 @@ export function FilterBar({ filters: f, set, onOpen, withType }: { filters: Filt
       <button
         onClick={onOpen}
         aria-label="All filters"
-        className={cx('flex h-11 shrink-0 items-center gap-2 rounded-2xl px-4 text-[15px] transition', count ? 'bg-accent font-medium text-black' : 'bg-surface text-white/85 hover:bg-raised')}
+        className={cx('flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm transition', count ? 'bg-accent font-medium text-black' : 'bg-surface text-white/85 hover:bg-raised')}
       >
         <SlidersHorizontal className="size-4" />
         <span className="hidden sm:inline">Filters</span>

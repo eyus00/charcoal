@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Film, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
-import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
+import { AiringThisWeek, ComingSoon, InTheaters, Top10, Top10Chart, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
 import Kbd from '../components/Kbd';
 import MediaCard from '../components/MediaCard';
@@ -24,12 +24,25 @@ export default function Home() {
   return (
     <div className="space-y-10 md:space-y-12">
       <Hero />
-      {resume.length > 0 && <ContinueWatching items={resume} />}
-      <Top10 />
-      <Browse />
-      <AiringThisWeek />
-      <InTheaters />
-      <TopRated />
+      {/* Main feed + (on wide screens) a side column with the Top 10 chart and release calendar. */}
+      <div className="grid gap-10 md:gap-12 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-10 md:space-y-12">
+          {resume.length > 0 && <ContinueWatching items={resume} />}
+          <div className="xl:hidden">
+            <Top10 />
+          </div>
+          <Browse />
+          <AiringThisWeek />
+          <InTheaters />
+          <TopRated />
+        </div>
+        <aside className="min-w-0 space-y-10 xl:border-l xl:border-white/5 xl:pl-8">
+          <div className="hidden xl:block">
+            <Top10Chart />
+          </div>
+          <ComingSoon />
+        </aside>
+      </div>
     </div>
   );
 }
@@ -39,6 +52,7 @@ export default function Home() {
 /** Pull full-bleed sections under the top bar (76px on phones, 92px from md). */
 export const BLEED = '-mx-4 -mt-[76px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
 const HERO_SIZES = '100vw';
+const REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function Hero() {
   const navigate = useNavigate();
@@ -54,7 +68,7 @@ function Hero() {
   useKeys({ ArrowLeft: () => go(-1), ArrowRight: () => go(1) }, items.length > 1);
 
   useEffect(() => {
-    if (items.length < 2 || paused || dragging) return;
+    if (items.length < 2 || paused || dragging || REDUCED_MOTION) return;
     const t = setTimeout(() => !document.hidden && setIndex((i) => (i + 1) % items.length), 9000);
     return () => clearTimeout(t);
   }, [items.length, paused, dragging, index]);
@@ -222,8 +236,8 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
             {item.vote_average > 0 && (
               <>
                 <span className="text-white/40">·</span>
-                <span className="flex items-center gap-1 font-medium text-star">
-                  <Star className="size-3.5 fill-current" strokeWidth={0} />
+                <span className="flex items-center gap-1 font-medium text-white/90">
+                  <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
                   {item.vote_average.toFixed(1)}
                 </span>
               </>
@@ -250,7 +264,7 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
 
 // ---------- genre pills + poster row ----------
 
-const CATEGORIES = ['trending', 'action', 'adventure', 'comedy', 'crime', 'drama', 'fantasy', 'horror', 'scifi', 'animation', 'mystery', 'romance', 'thriller', 'documentary', 'family'];
+const CATEGORIES = ['trending', 'action', 'comedy', 'drama', 'scifi', 'horror', 'animation'];
 
 function Browse() {
   const [params, setParams] = useSearchParams();
