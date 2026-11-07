@@ -6,7 +6,7 @@ import { cx } from '../lib/util';
 /** Horizontal scroller with native scrolling + snap. Arrows live in the header (see RowArrows). */
 export function Scroller({ children, label, scrollRef }: { children: ReactNode; label: string; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div ref={scrollRef} role="list" aria-label={label} className="no-scrollbar -mx-1 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1 pb-1">
+    <div ref={scrollRef} role="list" aria-label={label} className="no-scrollbar scroll-row -mx-1 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1">
       {children}
     </div>
   );

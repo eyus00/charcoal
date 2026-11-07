@@ -35,7 +35,7 @@ export function FilterBar({ filters: f, set, onOpen, withType }: { filters: Filt
         <span className="hidden sm:inline">Filters</span>
         {count > 0 && <span className="grid size-5 place-items-center rounded-full bg-black/15 text-xs">{count}</span>}
       </button>
-      <div className="no-scrollbar -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0">
+      <div className="no-scrollbar scroll-row -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0">
         {[7, 8].map((r) => (
           <Pill key={r} on={f.rating === r} onClick={() => set({ rating: f.rating === r ? 0 : r })} className="flex items-center gap-1.5">
             <Star className={cx('size-3.5 fill-current', f.rating === r ? 'text-black' : 'text-star')} strokeWidth={0} />
