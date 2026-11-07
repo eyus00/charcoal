@@ -12,6 +12,8 @@ export function useUrlFilters(): (patch: Partial<Filters>) => void {
 }
 
 const THIS_YEAR = new Date().getFullYear();
+/** The handful of genres offered as quick pills (everything else lives in All filters). */
+const QUICK_GENRES = ['action', 'comedy', 'drama', 'scifi', 'horror', 'animation', 'crime'];
 type Set = (p: Partial<Filters>) => void;
 
 const toggleYear = (f: Filters, from: number, to: number): Partial<Filters> =>
@@ -22,10 +24,10 @@ const toggleGenre = (f: Filters, slug: string): Partial<Filters> => ({
 
 // ---------- page filter bar: Filters button + quick pills ----------
 
-export function FilterBar({ filters: f, set, onOpen, withType }: { filters: Filters; set: Set; onOpen: () => void; withType?: boolean }) {
+export function FilterBar({ filters: f, set, onOpen, withType, className }: { filters: Filters; set: Set; onOpen: () => void; withType?: boolean; className?: string }) {
   const count = activeFilterCount(f, withType);
   return (
-    <div className="mb-7 flex items-center gap-2.5">
+    <div className={cx('flex min-w-0 items-center gap-2.5', className)}>
       <button
         onClick={onOpen}
         aria-label="All filters"
@@ -47,7 +49,7 @@ export function FilterBar({ filters: f, set, onOpen, withType }: { filters: Filt
             {y}
           </Pill>
         ))}
-        {genresFor(f.type).slice(0, 14).map((g) => (
+        {genresFor(f.type).filter((g) => QUICK_GENRES.includes(g.slug)).map((g) => (
           <Pill key={g.slug} on={f.genres.includes(g.slug)} onClick={() => set(toggleGenre(f, g.slug))}>
             {g.name}
           </Pill>

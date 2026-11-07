@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Film, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
-import { AiringThisWeek, ComingSoon, InTheaters, Top10, Top10Chart, TopRated } from '../components/HomeRows';
+import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
 import Kbd from '../components/Kbd';
 import MediaCard from '../components/MediaCard';
@@ -24,25 +24,12 @@ export default function Home() {
   return (
     <div className="space-y-10 md:space-y-12">
       <Hero />
-      {/* Main feed + (on wide screens) a side column with the Top 10 chart and release calendar. */}
-      <div className="grid gap-10 md:gap-12 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-10 md:space-y-12">
-          {resume.length > 0 && <ContinueWatching items={resume} />}
-          <div className="xl:hidden">
-            <Top10 />
-          </div>
-          <Browse />
-          <AiringThisWeek />
-          <InTheaters />
-          <TopRated />
-        </div>
-        <aside className="min-w-0 space-y-10 xl:border-l xl:border-white/5 xl:pl-8">
-          <div className="hidden xl:block">
-            <Top10Chart />
-          </div>
-          <ComingSoon />
-        </aside>
-      </div>
+      {resume.length > 0 && <ContinueWatching items={resume} />}
+      <Top10 />
+      <Browse />
+      <AiringThisWeek />
+      <InTheaters />
+      <TopRated />
     </div>
   );
 }

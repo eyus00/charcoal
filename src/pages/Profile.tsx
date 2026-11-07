@@ -4,8 +4,7 @@ import { Bookmark, Download, Film, Trash2, Upload, UserCircle, X } from 'lucide-
 import { STATUS_ICON, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
-import { Pill, SectionHeader } from '../components/Row';
-import { GRID, GRID_SIZES } from '../components/Skeletons';
+import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
 import { EMBEDS } from '../lib/servers';
 import { checkProxy, normalizeProxy } from '../lib/proxy';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
@@ -13,6 +12,9 @@ import { toast } from '../components/Toast';
 import { cx, useTitle } from '../lib/util';
 
 /** Fixed container card for each profile section (matches the settings cards). */
+/** Fixed-width columns: cards stay the same size as everywhere else instead of stretching. */
+const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,170px)] sm:gap-4 lg:grid-cols-[repeat(auto-fill,190px)]';
+
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 
 export default function Profile() {
@@ -154,11 +156,11 @@ function Watchlist() {
           {!items.length ? (
             <EmptyCard title="No items match these filters" />
           ) : (
-            <div className={GRID}>
+            <div className={CARD_GRID}>
               {items.map((w) => (
                 <MediaCard
                   key={w.mediaType + w.id}
-                  sizes={GRID_SIZES}
+                  sizes={ROW_SIZES}
                   type={w.mediaType}
                   item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
                   badge={<StatusTag status={w.status} />}

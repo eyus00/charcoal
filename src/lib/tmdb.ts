@@ -123,21 +123,6 @@ export const q = {
       tmdb<Page<MediaItem>>(`/${type}/${list}`, {}, signal),
   }),
 
-  /** Popular movies releasing in the next ~2 months (TMDB's /upcoming list mixes in past dates). */
-  upcoming: () => {
-    const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
-    return {
-      queryKey: ['upcoming', day(1)],
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        tmdb<Page<MediaItem>>(
-          '/discover/movie',
-          { 'primary_release_date.gte': day(1), 'primary_release_date.lte': day(60), sort_by: 'popularity.desc', with_release_type: '2|3', 'vote_count.gte': 0 },
-          signal,
-        ),
-      staleTime: 1000 * 60 * 60,
-    };
-  },
-
   // One request per title: everything the details page AND player need.
   details: (type: MediaType, id: number) => ({
     queryKey: ['details', type, id],

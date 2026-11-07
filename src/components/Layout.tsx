@@ -193,6 +193,18 @@ function Rail() {
   );
 }
 
+/** True once the page is scrolled past the very top (drives the sticky bar's backdrop). */
+function useScrolled(threshold = 8) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > threshold);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, [threshold]);
+  return scrolled;
+}
+
 // ---------- top bar: wordmark + universal search ----------
 
 const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV shows', movie: 'Search movies', tv: 'Search TV shows' };
@@ -216,6 +228,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const [open, setOpen] = useState(onDiscover);
   const [menu, setMenu] = useState(false);
   const [focused, setFocused] = useState(false);
+  const scrolled = useScrolled();
   const [recent, setRecent] = useState<string[]>([]);
   const typing = useRef(false);
   const form = useRef<HTMLFormElement>(null);
@@ -296,7 +309,15 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const count = activeFilterCount(draft);
 
   return (
-    <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4">
+    <header
+      className={cx(
+        // Sticks from md up (phones have the bottom bar for search). Once scrolled, a blurred
+        // backdrop bleeds out to the page edges behind it.
+        'relative z-30 flex h-[76px] items-center gap-3 md:sticky md:top-0 md:h-[92px] md:gap-4',
+        "before:pointer-events-none before:absolute before:inset-y-0 before:-inset-x-4 before:-z-10 before:border-b before:border-white/5 before:bg-bg/80 before:opacity-0 before:backdrop-blur-xl before:transition-opacity before:content-[''] md:before:-inset-x-8 lg:before:-inset-x-10",
+        scrolled && 'md:before:opacity-100',
+      )}
+    >
       <Link to="/" className={cx('flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight', hideLogo && 'lg:hidden')} aria-label="Charcoal home">
         <LogoMark className="size-8" />
         Charcoal
