@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play, RotateCcw, Star, X, Youtube } from 'lucide-react';
+import { Clapperboard, Flame, ListVideo, Play, RotateCcw, Star, Users, X, Youtube } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeList, { SeasonPicker } from '../components/EpisodeList';
 import { ErrorBox } from '../components/Grid';
 import Img from '../components/Img';
 import MediaCard from '../components/MediaCard';
-import { ROW_ITEM, RowHeader, Scroller } from '../components/Row';
-import { Bone, POSTER_SIZES } from '../components/Skeletons';
+import { ROW_ITEM, ROW_SIZES, Scroller, SectionHeader } from '../components/Row';
+import { Bone } from '../components/Skeletons';
 import { allSeasons, epLabel, regularSeasons } from '../lib/episodes';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
 import { certificationOf, cleanList, HttpError, logoOf, q, titleOf, trailersOf, yearOf, type Details as D, type MediaType, type Video } from '../lib/tmdb';
@@ -41,13 +41,13 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
   return (
     <div className="pb-10">
       {/* Banner */}
-      <section className="relative">
-        <div className="absolute inset-x-0 top-0 -z-10 h-[70vh] max-h-[720px] overflow-hidden">
-          <Img path={d.backdrop_path} kind="backdrop" sizes="100vw" alt="" priority className="size-full" imgClassName="object-[center_20%]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-bg/20" />
-          <div className="absolute inset-0 bg-gradient-to-r from-bg/80 to-transparent" />
+      <section className="relative overflow-hidden rounded-[1.5rem] shadow-2xl md:rounded-[2rem]">
+        <div className="absolute inset-0">
+          <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 1280px) 1280px, 100vw" alt="" priority className="size-full" imgClassName="object-[center_20%]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-transparent" />
         </div>
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 pt-[28vh] md:flex-row md:items-end md:gap-10 md:px-8 md:pt-[24vh]">
+        <div className="relative flex flex-col gap-6 px-5 pt-[30vh] pb-6 md:flex-row md:items-end md:gap-10 md:p-10 md:pt-[22vh] lg:p-14 lg:pt-[24vh]">
           <Img
             path={d.poster_path}
             kind="poster"
@@ -91,7 +91,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
                 item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
               />
               {trailers[0] && (
-                <button onClick={() => setTrailer(trailers[0])} className="flex h-11 items-center gap-2 rounded-lg bg-white/10 px-4 text-sm font-medium hover:bg-white/15">
+                <button onClick={() => setTrailer(trailers[0])} className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-bold hover:bg-white/10">
                   <Youtube className="size-4" /> Trailer
                 </button>
               )}
@@ -106,12 +106,12 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
         </div>
       </section>
 
-      <div className="mt-12 space-y-12">
+      <div className="mt-10 space-y-10 md:mt-14 md:space-y-14">
         {type === 'tv' && <Episodes d={d} />}
 
         {trailers.length > 0 && (
           <section>
-            <RowHeader title="Trailers & videos" />
+            <SectionHeader icon={Clapperboard} title="Related Videos" subtitle="Trailers & teasers" />
             <Scroller label="Trailers and videos">
               {trailers.map((v) => (
                 <button key={v.key} onClick={() => setTrailer(v)} className="group w-64 shrink-0 snap-start text-left sm:w-72">
@@ -129,7 +129,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
 
         {cast.length > 0 && (
           <section>
-            <RowHeader title="Cast" />
+            <SectionHeader icon={Users} title="Cast" />
             <Scroller label="Cast">
               {cast.map((c) => (
                 <div key={c.id} className="w-24 shrink-0 snap-start sm:w-28" role="listitem">
@@ -144,10 +144,10 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
 
         {recs.length > 0 && (
           <section>
-            <RowHeader title="More like this" />
+            <SectionHeader icon={Flame} title="More Like This" subtitle="Similar titles" />
             <Scroller label="More like this">
               {recs.map((m) => (
-                <MediaCard key={m.id} item={m} type={type} sizes={POSTER_SIZES} className={ROW_ITEM} showType={false} />
+                <MediaCard key={m.id} item={m} type={type} sizes={ROW_SIZES} className={ROW_ITEM} />
               ))}
             </Scroller>
           </section>
@@ -185,19 +185,19 @@ function Overview({ text }: { text: string }) {
 function PlayActions({ d, type }: { d: D; type: MediaType }) {
   const history = useStore((s) => s.history);
   const r = resumeTarget(history, type, d.id);
-  const base = 'flex h-11 items-center gap-2 rounded-lg px-5 text-sm font-semibold';
+  const base = 'flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-wider transition active:scale-95';
 
   if (type === 'movie') {
     const p = findProgress(history, 'movie', d.id);
     const resumable = p && !p.isCompleted && percent(p) > 1;
     return (
       <>
-        <Link to={`/watch/movie/${d.id}`} className={`${base} bg-white text-black hover:bg-white/90`}>
+        <Link to={`/watch/movie/${d.id}`} className={`${base} border border-white/20 bg-accent shadow-xl shadow-accent/20 hover:bg-accent-hover`}>
           <Play className="size-4 fill-current" />
           {resumable ? `Resume ${formatClock(p.progress!.watched)}` : 'Play'}
         </Link>
         {resumable && (
-          <Link to={`/watch/movie/${d.id}?t=0`} className={`${base} bg-white/10 font-medium hover:bg-white/15`}>
+          <Link to={`/watch/movie/${d.id}?t=0`} className={`${base} border border-white/10 bg-white/5 hover:bg-white/10`}>
             <RotateCcw className="size-4" /> Start over
           </Link>
         )}
@@ -210,7 +210,7 @@ function PlayActions({ d, type }: { d: D; type: MediaType }) {
   const e = r?.episode ?? 1;
   const label = r ? `${r.isNext ? 'Play' : 'Resume'} ${epLabel(s, e)}` : `Play ${epLabel(s, e)}`;
   return (
-    <Link to={`/watch/tv/${d.id}?season=${s}&episode=${e}`} className={`${base} bg-white text-black hover:bg-white/90`}>
+    <Link to={`/watch/tv/${d.id}?season=${s}&episode=${e}`} className={`${base} border border-white/20 bg-accent shadow-xl shadow-accent/20 hover:bg-accent-hover`}>
       <Play className="size-4 fill-current" /> {label}
     </Link>
   );
@@ -227,9 +227,11 @@ function Episodes({ d }: { d: D }) {
 
   if (!seasons.length) return null;
   return (
-    <section className="mx-auto max-w-[1600px] px-4 md:px-8">
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold tracking-tight md:text-xl">Episodes</h2>
+    <section>
+      <SectionHeader
+        icon={ListVideo}
+        title="Episodes"
+        action={
         <SeasonPicker
           seasons={seasons}
           value={season}
@@ -239,7 +241,8 @@ function Episodes({ d }: { d: D }) {
             setParams(next, { replace: true, preventScrollReset: true });
           }}
         />
-      </div>
+        }
+      />
       <div className="max-w-4xl">
         <EpisodeList tvId={d.id} season={season} current={r?.season !== undefined ? { season: r.season, episode: r.episode! } : undefined} />
       </div>
@@ -279,7 +282,7 @@ function TrailerModal({ video, onClose }: { video: Video; onClose: () => void })
 function DetailsSkeleton() {
   const stable = useMemo(() => [0, 1, 2], []);
   return (
-    <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 pt-[28vh] md:flex-row md:items-end md:gap-10 md:px-8 md:pt-[24vh]">
+    <div className="flex flex-col gap-6 rounded-[1.5rem] bg-white/[0.03] px-5 pt-[30vh] pb-6 md:flex-row md:items-end md:gap-10 md:rounded-[2rem] md:p-10 md:pt-[22vh]">
       <Bone className="hidden aspect-[2/3] w-[260px] shrink-0 rounded-xl md:block" />
       <div className="w-full max-w-3xl space-y-4">
         <Bone className="h-12 w-2/3" />

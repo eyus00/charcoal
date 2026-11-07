@@ -34,7 +34,19 @@ interface Props {
   onExhausted: () => void;
 }
 
-const STARTUP_TIMEOUT_MS = 25_000;
+const STARTUP_TIMEOUT_MS = 15_000;
+
+/** Real upstream host of a (proxied) source URL, so one blocked host can rule out its siblings. */
+function upstreamHost(url: string): string {
+  try {
+    const u = new URL(url);
+    const data = u.searchParams.get('data');
+    if (data) return new URL(JSON.parse(data).url).hostname;
+    return u.hostname;
+  } catch {
+    return url;
+  }
+}
 const REPORT_EVERY_MS = 10_000;
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -113,8 +125,13 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
 
   // ---------- source loading & fallback ----------
   const fail = useCallback(
-    (why: string) => {
+    (why: string, blockedHost = false) => {
       failed.current.add(sourceIdx);
+      // A 4xx from the video host (e.g. Cloudflare blocking the proxy) will hit every source on that host.
+      if (blockedHost) {
+        const host = upstreamHost(data.sources[sourceIdx].url);
+        data.sources.forEach((s, i) => upstreamHost(s.url) === host && failed.current.add(i));
+      }
       const v = video.current;
       if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
       const nextIdx = data.sources.findIndex((_, i) => !failed.current.has(i));
@@ -168,6 +185,15 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
           play();
         });
         h.on(HlsCtor.Events.ERROR, (_e, d) => {
+          const status = (d.response as { code?: number } | undefined)?.code ?? 0;
+          // Don't sit through hls.js retries on a refusal: 401/403/404/410 won't fix themselves.
+          if ([401, 403, 404, 410].includes(status) && /LoadError$/.test(d.details)) {
+            if (!cancelled) {
+              cancelled = true;
+              fail(`${d.details} ${status}`, status === 401 || status === 403);
+            }
+            return;
+          }
           if (!d.fatal) return;
           if (d.type === HlsCtor.ErrorTypes.NETWORK_ERROR && !netRetry && d.details !== 'manifestLoadError') {
             netRetry = true;

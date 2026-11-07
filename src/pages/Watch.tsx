@@ -5,6 +5,7 @@ import { ArrowLeft, Check, ChevronLeft, ChevronRight, ListVideo, Server, ShieldC
 import EpisodeList, { SeasonPicker } from '../components/EpisodeList';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
+import { viaProxy } from '../lib/proxy';
 import { EMBEDS, embedById, fetchJelly, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
@@ -91,6 +92,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     gcTime: 1000 * 60 * 30,
   });
 
+  // Route Jelly's streams through the user's own proxy (Profile → Settings), if set.
+  const streams = useMemo(() => (jelly.data ? viaProxy(jelly.data, settings.proxyUrl) : undefined), [jelly.data, settings.proxyUrl]);
+
   // Jelly found nothing → fall back to the first embed (without changing the saved preference).
   useEffect(() => {
     if (server === 'jelly' && jelly.isError) {
@@ -155,9 +159,10 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
             />
           </div>
         </>
-      ) : jelly.data ? (
+      ) : streams ? (
         <Player
-          data={jelly.data}
+          key={settings.proxyUrl}
+          data={streams}
           title={title}
           subtitle={subtitle}
           poster={imageUrl(d?.poster_path, 'poster', 342)}

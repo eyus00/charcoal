@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { MediaItem, MediaType } from '../lib/tmdb';
 import MediaCard from './MediaCard';
-import { CardSkeleton, GRID_SIZES, GridSkeleton } from './Skeletons';
+import { CardSkeleton, GRID, GRID_SIZES, GridSkeleton } from './Skeletons';
 
 interface Props {
   items: MediaItem[];
@@ -21,9 +21,9 @@ export default function Grid({ items, type, loading, error, onRetry, hasMore, lo
   if (!items.length) return <>{empty ?? <p className="py-20 text-center text-muted">Nothing found.</p>}</>;
   return (
     <>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">
+      <div className={GRID}>
         {items.map((m) => (
-          <MediaCard key={(m.media_type ?? type) + String(m.id)} item={m} type={type} sizes={GRID_SIZES} showType={!type} />
+          <MediaCard key={(m.media_type ?? type) + String(m.id)} item={m} type={type} sizes={GRID_SIZES} />
         ))}
         {loadingMore && Array.from({ length: 6 }, (_, i) => <CardSkeleton key={`s${i}`} />)}
       </div>
@@ -45,14 +45,14 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
     return () => io.disconnect();
   }, [busy]);
   return (
-    <div className="mt-10 flex justify-center">
+    <div className="mt-12 flex justify-center">
       <button
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className="h-10 rounded-lg border border-line px-5 text-sm text-muted transition-colors hover:border-white/30 hover:text-white disabled:opacity-50"
+        className="text-xs font-bold tracking-widest text-white/60 uppercase transition hover:text-accent disabled:text-white/40"
       >
-        {busy ? 'Loading…' : 'Load more'}
+        {busy ? 'Loading…' : 'Load more…'}
       </button>
     </div>
   );

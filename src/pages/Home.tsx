@@ -1,285 +1,209 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Info, Play, Star, X } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Film, Play, Sparkles, Star, Tv } from 'lucide-react';
+import BookmarkMenu from '../components/BookmarkMenu';
+import ContinueWatching from '../components/ContinueWatching';
 import Img from '../components/Img';
 import MediaCard from '../components/MediaCard';
-import { ROW_ITEM, RowHeader, Scroller } from '../components/Row';
-import { Bone, POSTER_SIZES, RowSkeleton } from '../components/Skeletons';
+import { ROW_ITEM, ROW_SIZES, Scroller, SectionHeader } from '../components/Row';
+import { Bone, RowSkeleton } from '../components/Skeletons';
 import { genreName } from '../lib/filters';
-import { epLabel } from '../lib/episodes';
-import { actions, continueWatching, percent, useStore, watchUrl, type HistoryItem } from '../lib/store';
-import { certificationOf, cleanList, logoOf, q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
 import { imageSrcSet, imageUrl } from '../lib/images';
-import { cx, useInView, useTitle } from '../lib/util';
+import { continueWatching, useStore } from '../lib/store';
+import { certificationOf, cleanList, logoOf, q, titleOf, typeOf, yearOf, type MediaItem } from '../lib/tmdb';
+import { cx, useTitle } from '../lib/util';
 
 export default function Home() {
   useTitle();
   const history = useStore((s) => s.history);
-  const watchlist = useStore((s) => s.watchlist);
-  const resume = useMemo(() => continueWatching(history).slice(0, 20), [history]);
-  const lastWatched = history[0];
+  const resume = useMemo(() => continueWatching(history).slice(0, 15), [history]);
 
   return (
-    <div className="space-y-10 pb-6 md:space-y-12">
+    <div className="space-y-8 md:space-y-14">
       <Hero />
-      {resume.length > 0 && <ContinueRow items={resume} />}
-      {lastWatched && <BecauseRow item={lastWatched} />}
-      <LazyRow title="Trending this week" query={q.trending('all', 'week')} eager />
-      {watchlist.length > 0 && (
-        <section>
-          <RowHeader title="Your bookmarks" to="/library?tab=bookmarks" />
-          <Scroller label="Your bookmarks">
-            {watchlist.slice(0, 20).map((w) => (
-              <MediaCard
-                key={w.mediaType + w.id}
-                className={ROW_ITEM}
-                sizes={POSTER_SIZES}
-                type={w.mediaType}
-                item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
-              />
-            ))}
-          </Scroller>
-        </section>
-      )}
-      <LazyRow title="Popular movies" query={q.list('movie', 'popular')} type="movie" to="/movies" />
-      <LazyRow title="Popular TV shows" query={q.list('tv', 'popular')} type="tv" to="/tv" />
-      <LazyRow title="Top rated movies" query={q.list('movie', 'top_rated')} type="movie" to="/movies?sort=rating" />
-      <LazyRow title="Top rated TV shows" query={q.list('tv', 'top_rated')} type="tv" to="/tv?sort=rating" />
+      {resume.length > 0 && <ContinueWatching items={resume} />}
+      <YouMightLike />
     </div>
   );
 }
 
 // ---------- hero ----------
 
-const HERO_SIZES = '(min-width: 1600px) 1600px, 100vw';
+const HERO_SIZES = '(min-width: 1280px) 1280px, 100vw';
 
 function Hero() {
   const { data, isError } = useQuery(q.trending('all', 'day'));
-  const items = useMemo(() => cleanList(data?.results ?? []).filter((m) => m.backdrop_path).slice(0, 8), [data]);
+  // Same pick as before: today's trending movies + shows, best rated first.
+  const items = useMemo(
+    () =>
+      cleanList(data?.results ?? [])
+        .filter((m) => m.backdrop_path)
+        .sort((a, b) => b.vote_average - a.vote_average)
+        .slice(0, 10),
+    [data],
+  );
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const go = (d: number) => setIndex((i) => (i + d + items.length) % items.length);
 
   useEffect(() => {
     if (items.length < 2 || paused) return;
-    const t = setInterval(() => {
-      if (!document.hidden) setIndex((i) => (i + 1) % items.length);
-    }, 9000);
-    return () => clearInterval(t);
+    const t = setTimeout(() => !document.hidden && setIndex((i) => (i + 1) % items.length), 8000);
+    return () => clearTimeout(t);
   }, [items.length, paused, index]);
 
   if (isError) return null;
-  if (!items.length) {
-    return (
-      <div className="px-4 pt-4 md:px-8">
-        <Bone className="aspect-[4/5] w-full rounded-2xl sm:aspect-[16/9] lg:aspect-[21/8]" />
-      </div>
-    );
-  }
+  if (!items.length) return <Bone className="h-[380px] w-full rounded-[1.5rem] md:h-[500px] md:rounded-[2rem] lg:h-[600px]" />;
 
-  const item = items[index % items.length];
   const next = items[(index + 1) % items.length];
   return (
     <section
-      className="px-4 pt-4 md:px-8"
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
       aria-roledescription="carousel"
-      aria-label="Trending today"
+      aria-label="Featured"
+      className="group/hero relative h-[380px] w-full overflow-hidden rounded-[1.5rem] bg-black shadow-2xl md:h-[500px] md:rounded-[2rem] lg:h-[600px]"
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
     >
-      <div className="relative overflow-hidden rounded-2xl">
-        <HeroSlide key={typeOf(item) + item.id} item={item} />
-        {/* Warm the next slide's image so it doesn't pop in */}
-        <img
-          aria-hidden
-          alt=""
-          src={imageUrl(next.backdrop_path, 'backdrop', 780)}
-          srcSet={imageSrcSet(next.backdrop_path, 'backdrop')}
-          sizes={HERO_SIZES}
-          className="pointer-events-none absolute size-px opacity-0"
-        />
-        <div className="absolute top-4 right-4 z-10 flex gap-1.5 sm:top-auto sm:bottom-4 md:right-8 md:bottom-8">
-          {items.map((m, i) => (
-            <button
-              key={m.id}
-              onClick={() => setIndex(i)}
-              aria-label={`Show ${titleOf(m)}`}
-              aria-current={i === index}
-              className={cx('h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70')}
-            />
-          ))}
-        </div>
+      {items.map((m, i) => (
+        <HeroSlide key={typeOf(m) + m.id} item={m} active={i === index} />
+      ))}
+      {/* warm the next backdrop */}
+      <img aria-hidden alt="" src={imageUrl(next.backdrop_path, 'backdrop', 780)} srcSet={imageSrcSet(next.backdrop_path, 'backdrop')} sizes={HERO_SIZES} className="pointer-events-none absolute size-px opacity-0" />
+
+      <button onClick={() => go(-1)} aria-label="Previous" className="absolute top-1/2 left-6 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/20 opacity-0 shadow-2xl backdrop-blur-md transition group-hover/hero:opacity-100 hover:scale-110 hover:bg-accent/40 md:flex">
+        <ChevronLeft className="size-6" />
+      </button>
+      <button onClick={() => go(1)} aria-label="Next" className="absolute top-1/2 right-6 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/20 opacity-0 shadow-2xl backdrop-blur-md transition group-hover/hero:opacity-100 hover:scale-110 hover:bg-accent/40 md:flex">
+        <ChevronRight className="size-6" />
+      </button>
+      <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2.5 rounded-full border border-white/5 bg-black/20 px-4 py-2 backdrop-blur-md md:bottom-8">
+        {items.map((m, i) => (
+          <button
+            key={m.id}
+            onClick={() => setIndex(i)}
+            aria-label={`Show ${titleOf(m)}`}
+            aria-current={i === index}
+            className={cx('h-1 rounded-full transition-all duration-500 md:h-1.5', i === index ? 'w-6 bg-accent md:w-8' : 'w-1 bg-white/20 hover:bg-white/40 md:w-1.5')}
+          />
+        ))}
       </div>
     </section>
   );
 }
 
-function HeroSlide({ item }: { item: MediaItem }) {
+function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
+  const navigate = useNavigate();
   const type = typeOf(item);
-  const { data: extras } = useQuery(q.heroExtras(type, item.id));
+  // Logo + age rating for the visible slide only (one small request each, cached).
+  const { data: extras } = useQuery({ ...q.heroExtras(type, item.id), enabled: active });
   const logo = logoOf(extras);
   const cert = extras ? certificationOf(extras) : null;
   const title = titleOf(item);
-  const genres = (item.genre_ids ?? []).map((g) => genreName(type, g)).filter(Boolean).slice(0, 3);
+  const genres = (item.genre_ids ?? []).map((g) => genreName(type, g)).filter(Boolean) as string[];
+  const [seen, setSeen] = useState(active);
+  useEffect(() => {
+    if (active) setSeen(true);
+  }, [active]);
+  if (!seen) return null; // don't download slides nobody has reached yet
 
   return (
-    <div className="relative aspect-[4/5] w-full sm:aspect-[16/9] lg:aspect-[21/8]">
-      <div className="absolute inset-0">
-        <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority className="size-full" imgClassName="object-[center_20%]" />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent sm:bg-gradient-to-r sm:from-bg/95 sm:via-bg/50" />
-      <div className="absolute inset-x-0 bottom-0 flex max-w-2xl flex-col gap-3 p-5 sm:top-0 sm:justify-center md:p-10 lg:p-14">
-        {logo ? (
-          <img
-            src={`https://image.tmdb.org/t/p/w500${logo}`}
-            alt={title}
-            className="max-h-20 w-auto max-w-[70%] self-start object-contain object-left drop-shadow-lg md:max-h-28"
-          />
-        ) : (
-          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">{title}</h1>
-        )}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
-          <span>{type === 'movie' ? 'Movie' : 'TV Series'}</span>
-          {yearOf(item) && <span>· {yearOf(item)}</span>}
-          {item.vote_average > 0 && (
-            <span className="flex items-center gap-1">
-              · <Star className="size-3.5 fill-current text-amber-400" /> {item.vote_average.toFixed(1)}
+    <div
+      aria-hidden={!active}
+      className={cx('absolute inset-0 cursor-pointer transition-[opacity,transform] duration-700 ease-out', active ? 'z-10 scale-100 opacity-100' : 'pointer-events-none z-0 scale-105 opacity-0')}
+      onClick={() => navigate(`/${type}/${item.id}`)}
+    >
+      <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="absolute! inset-0 size-full" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+
+      <div className="relative z-10 flex h-full flex-col justify-end px-5 pt-10 pb-16 md:p-10 lg:p-14">
+        <div className="max-w-3xl">
+          <div className="mb-4 flex items-center gap-3 md:mb-5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-gradient-to-r from-accent/90 to-accent/70 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase shadow-lg shadow-accent/30 md:px-4 md:text-xs">
+              {type === 'movie' ? <Film className="size-3.5" /> : <Tv className="size-3.5" />}
+              <span className="hidden md:inline">{type === 'movie' ? 'Movie' : 'TV Series'}</span>
             </span>
-          )}
-          {cert && <span className="rounded border border-white/30 px-1.5 text-xs">{cert}</span>}
-          {genres.length > 0 && <span className="hidden sm:inline">· {genres.join(', ')}</span>}
-        </div>
-        <p className="line-clamp-2 max-w-xl text-sm text-white/75 md:line-clamp-3 md:text-base">{item.overview}</p>
-        <div className="mt-1 flex gap-2">
-          <Link
-            to={type === 'movie' ? `/watch/movie/${item.id}` : `/watch/tv/${item.id}`}
-            className="flex h-11 items-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-black hover:bg-white/90"
-          >
-            <Play className="size-4 fill-current" /> Play
-          </Link>
-          <Link
-            to={`/${type}/${item.id}`}
-            className="flex h-11 items-center gap-2 rounded-lg bg-white/15 px-5 text-sm font-medium backdrop-blur-sm hover:bg-white/25"
-          >
-            <Info className="size-4" /> Details
-          </Link>
+            {cert && <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[10px] font-bold text-white/80 uppercase md:text-xs">{cert}</span>}
+          </div>
+
+          <div className="mb-4 md:mb-6">
+            {logo ? (
+              <img src={`https://image.tmdb.org/t/p/w500${logo}`} alt={title} className="h-16 max-w-[80%] object-contain object-left drop-shadow-[0_0_30px_rgba(0,0,0,0.5)] md:h-24 lg:h-32" />
+            ) : (
+              <h2 className="text-4xl leading-none font-black tracking-tight drop-shadow-2xl md:text-6xl lg:text-7xl">{title}</h2>
+            )}
+          </div>
+
+          <div className="mb-6 flex flex-col gap-3 md:mb-8 md:flex-row md:items-center md:gap-6">
+            <div className="flex items-center gap-4 md:gap-6">
+              {item.vote_average > 0 && (
+                <span className="flex items-center gap-2 font-bold">
+                  <span className="rounded-lg border border-yellow-400/20 bg-yellow-400/10 p-1.5">
+                    <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                  </span>
+                  {item.vote_average.toFixed(1)}
+                </span>
+              )}
+              {yearOf(item) && (
+                <span className="flex items-center gap-2 font-bold">
+                  <span className="rounded-lg border border-green-400/20 bg-green-400/10 p-1.5">
+                    <Calendar className="size-4 text-green-400" />
+                  </span>
+                  {yearOf(item)}
+                </span>
+              )}
+            </div>
+            {genres.length > 0 && <div className="hidden h-4 w-px bg-white/20 md:block" />}
+            <div className="flex max-h-[26px] flex-wrap gap-2 overflow-hidden md:max-h-none">
+              {genres.map((g) => (
+                <span key={g} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-medium whitespace-nowrap text-white/70 md:px-3 md:text-xs">
+                  {g}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <p className="mb-8 hidden max-w-2xl text-sm leading-relaxed text-white/60 md:line-clamp-3 md:text-base">{item.overview}</p>
+
+          <div className="flex items-center gap-4">
+            <Link
+              to={`/watch/${type}/${item.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-3 rounded-xl border border-white/20 bg-accent px-6 py-3 shadow-xl shadow-accent/20 transition hover:bg-accent-hover active:scale-95 md:rounded-2xl md:px-8 md:py-4"
+            >
+              <Play className="size-5 fill-current md:size-6" />
+              <span className="text-sm font-bold tracking-wider uppercase md:text-base">Play</span>
+            </Link>
+            <BookmarkMenu
+              variant="icon"
+              item={{ id: item.id, mediaType: type, title, posterPath: item.poster_path, releaseDate: item.release_date || item.first_air_date, ratingScore: item.vote_average }}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ---------- rows ----------
+// ---------- you might like ----------
 
-function LazyRow({
-  title,
-  query,
-  type,
-  to,
-  eager,
-}: {
-  title: string;
-  query: ReturnType<typeof q.trending> | ReturnType<typeof q.list>;
-  type?: MediaType;
-  to?: string;
-  eager?: boolean;
-}) {
-  const [ref, inView] = useInView<HTMLElement>('400px');
-  const { data, isError } = useQuery({ ...query, enabled: eager || inView });
-  const items = useMemo(() => cleanList(data?.results ?? [], type), [data, type]);
+function YouMightLike() {
+  const { data, isError } = useQuery(q.trending('all', 'week'));
+  const items = useMemo(() => cleanList(data?.results ?? []).slice(0, 20), [data]);
   if (isError) return null;
   return (
-    <section ref={ref}>
-      <RowHeader title={title} to={to} />
-      {data ? (
-        <Scroller label={title}>
-          {items.map((m) => (
-            <MediaCard key={typeOf(m, type) + m.id} item={m} type={type} sizes={POSTER_SIZES} className={ROW_ITEM} showType={!type} />
-          ))}
-        </Scroller>
-      ) : (
-        <RowSkeleton />
-      )}
-    </section>
-  );
-}
-
-function BecauseRow({ item }: { item: HistoryItem }) {
-  const [ref, inView] = useInView<HTMLElement>('400px');
-  const { data } = useQuery({ ...q.details(item.mediaType, item.id), enabled: inView });
-  const items = useMemo(() => {
-    const recs = data?.recommendations?.results.length ? data.recommendations.results : (data?.similar?.results ?? []);
-    return cleanList(recs, item.mediaType).slice(0, 20);
-  }, [data, item.mediaType]);
-  if (data && !items.length) return null;
-  return (
-    <section ref={ref}>
-      <RowHeader title={`Because you watched ${item.title}`} />
-      {data ? (
-        <Scroller label={`Because you watched ${item.title}`}>
-          {items.map((m) => (
-            <MediaCard key={m.id} item={m} type={typeOf(m, item.mediaType)} sizes={POSTER_SIZES} className={ROW_ITEM} />
-          ))}
-        </Scroller>
-      ) : (
-        <RowSkeleton />
-      )}
-    </section>
-  );
-}
-
-function ContinueRow({ items }: { items: HistoryItem[] }) {
-  return (
     <section>
-      <RowHeader title="Continue watching" to="/library?tab=history" />
-      <Scroller label="Continue watching">
-        {items.map((h) => {
-          const isNext = h.isCompleted && h.nextEpisode;
-          const label =
-            h.mediaType === 'tv'
-              ? isNext
-                ? `Next · ${epLabel(h.nextEpisode!.season, h.nextEpisode!.episode)}`
-                : epLabel(h.season, h.episode)
-              : h.progress
-                ? `${Math.max(1, Math.round((h.progress.duration - h.progress.watched) / 60))}m left`
-                : 'Movie';
-          return (
-            <div key={h.mediaType + h.id} className="group relative w-64 shrink-0 snap-start sm:w-72" role="listitem">
-              <Link to={watchUrl(h)} className="block">
-                <div className="relative">
-                  <Img
-                    path={h.backdropPath ?? h.posterPath}
-                    kind={h.backdropPath ? 'backdrop' : 'poster'}
-                    sizes="288px"
-                    alt={h.title}
-                    className="aspect-video rounded-lg ring-1 ring-white/5 transition group-hover:ring-white/30"
-                  />
-                  <div className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover:bg-black/30">
-                    <Play className="size-10 fill-white text-white opacity-0 drop-shadow transition group-hover:opacity-100" />
-                  </div>
-                  {!isNext && percent(h) > 0 && (
-                    <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-white/25">
-                      <div className="h-full bg-accent" style={{ width: `${percent(h)}%` }} />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2 truncate text-sm font-medium">{h.title}</div>
-                <div className="truncate text-xs text-muted">
-                  {label}
-                  {h.episodeTitle && !isNext ? ` · ${h.episodeTitle}` : ''}
-                </div>
-              </Link>
-              <button
-                onClick={() => actions.removeHistory(h.mediaType, h.id)}
-                aria-label={`Remove ${h.title} from continue watching`}
-                className="absolute top-2 right-2 grid size-7 place-items-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-          );
-        })}
-      </Scroller>
+      <SectionHeader icon={Sparkles} title="You Might Like" subtitle="Top picks for you today" />
+      {data ? (
+        <Scroller label="You might like">
+          {items.map((m) => (
+            <MediaCard key={typeOf(m) + m.id} item={m} sizes={ROW_SIZES} className={ROW_ITEM} />
+          ))}
+        </Scroller>
+      ) : (
+        <RowSkeleton />
+      )}
     </section>
   );
 }

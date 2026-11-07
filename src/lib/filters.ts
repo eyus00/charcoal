@@ -66,14 +66,14 @@ const THIS_YEAR = new Date().getFullYear();
 export const YEAR_PRESETS: { label: string; from: number; to: number }[] = [
   { label: String(THIS_YEAR), from: THIS_YEAR, to: THIS_YEAR },
   { label: String(THIS_YEAR - 1), from: THIS_YEAR - 1, to: THIS_YEAR - 1 },
+  { label: String(THIS_YEAR - 2), from: THIS_YEAR - 2, to: THIS_YEAR - 2 },
   { label: '2020s', from: 2020, to: 2029 },
   { label: '2010s', from: 2010, to: 2019 },
   { label: '2000s', from: 2000, to: 2009 },
   { label: '1990s', from: 1990, to: 1999 },
   { label: '1980s', from: 1980, to: 1989 },
-  { label: 'Older', from: 1900, to: 1979 },
 ];
-export const RATINGS = [6, 7, 8, 9];
+export const RATINGS = [5, 6, 7, 8, 9];
 
 const num = (v: string | null) => {
   const n = v ? parseInt(v, 10) : NaN;
@@ -108,6 +108,9 @@ export function writeFilters(sp: URLSearchParams, f: Partial<Filters>): URLSearc
 }
 
 export const hasActiveFilters = (f: Filters) => f.genres.length > 0 || !!f.from || !!f.to || f.rating > 0;
+export const activeFilterCount = (f: Filters, withType = false) =>
+  f.genres.length + (f.from || f.to ? 1 : 0) + (f.rating ? 1 : 0) + (withType && f.type !== 'all' ? 1 : 0);
+export const EMPTY_FILTERS: Filters = { type: 'all', genres: [], rating: 0, sort: 'popular' };
 
 function genreIds(type: MediaType, slugs: string[]): number[] {
   return [...new Set(GENRES.filter((g) => slugs.includes(g.slug)).flatMap((g) => g[type]))];

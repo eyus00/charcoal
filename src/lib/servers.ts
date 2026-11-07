@@ -84,7 +84,7 @@ export interface EmbedServer {
   url: (t: Target, resumeAt?: number) => string;
 }
 
-const ACCENT = 'ff6b35';
+const ACCENT = 'dc2626';
 const sec = (n?: number) => (n && n > 5 ? Math.floor(n) : 0);
 
 export const EMBEDS: EmbedServer[] = [

@@ -1,18 +1,17 @@
 import { useRef, type ReactNode } from 'react';
-import { Link } from 'react-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
 
-/** Horizontal scroller: native scrolling + snap; arrows only on pointer devices. No scroll listeners. */
+/** Horizontal scroller: native scrolling + snap, glassy arrows on hover. No scroll listeners. */
 export function Scroller({ children, label }: { children: ReactNode; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.85, behavior: 'smooth' });
+  const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
   return (
     <div className="group/row relative">
       <div
         ref={ref}
         role="list"
         aria-label={label}
-        className="no-scrollbar flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 md:scroll-px-8 md:px-8"
+        className="no-scrollbar flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1 py-2 md:gap-6 md:py-3"
       >
         {children}
       </div>
@@ -29,24 +28,30 @@ function ArrowButton({ side, onClick }: { side: 'left' | 'right'; onClick: () =>
       type="button"
       onClick={onClick}
       aria-label={side === 'left' ? 'Scroll left' : 'Scroll right'}
-      className={`absolute top-0 bottom-10 z-10 hidden w-10 items-center justify-center bg-bg/70 text-white opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:flex ${side === 'left' ? 'left-0' : 'right-0'}`}
+      className={`absolute top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white opacity-0 shadow-2xl backdrop-blur-md transition group-hover/row:opacity-100 hover:scale-110 hover:border-accent/60 hover:bg-accent/40 focus-visible:opacity-100 md:size-14 [@media(hover:hover)]:flex ${side === 'left' ? 'left-3' : 'right-3'}`}
     >
-      <Icon className="size-6" />
+      <Icon className="size-6 md:size-7" />
     </button>
   );
 }
 
-export function RowHeader({ title, to, action }: { title: string; to?: string; action?: ReactNode }) {
+/** Original section header: icon tile, bold title, small caps subtitle. */
+export function SectionHeader({ icon: Icon, title, subtitle, action }: { icon: LucideIcon; title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-4 px-4 md:px-8">
-      <h2 className="text-lg font-semibold tracking-tight md:text-xl">{title}</h2>
-      {action ?? (to && (
-        <Link to={to} className="text-sm text-muted hover:text-white">
-          See all
-        </Link>
-      ))}
+    <div className="mb-4 flex items-center justify-between gap-4 px-1 md:mb-6">
+      <div className="flex items-center gap-3">
+        <div className="rounded-lg border border-accent/20 bg-accent/10 p-2 md:rounded-xl md:p-2.5">
+          <Icon className="size-5 text-accent md:size-6" />
+        </div>
+        <div>
+          <h2 className="text-xl font-black tracking-tight text-white md:text-3xl">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-[10px] font-bold tracking-widest text-white/40 uppercase md:text-xs">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
     </div>
   );
 }
 
-export const ROW_ITEM = 'w-[34vw] shrink-0 snap-start sm:w-40 lg:w-[180px] 2xl:w-[200px]';
+export const ROW_ITEM = 'w-[150px] shrink-0 snap-start md:w-[220px]';
+export const ROW_SIZES = '(min-width: 768px) 210px, 140px';

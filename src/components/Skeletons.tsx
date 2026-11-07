@@ -1,25 +1,25 @@
 import { cx } from '../lib/util';
 
-export const POSTER_SIZES = '(min-width: 1536px) 200px, (min-width: 1024px) 180px, (min-width: 640px) 160px, 34vw';
-export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1024px) 15vw, (min-width: 640px) 22vw, 45vw';
+export const POSTER_SIZES = '(min-width: 768px) 210px, 140px';
+export const GRID_SIZES = '(min-width: 1280px) 15vw, (min-width: 1024px) 18vw, (min-width: 768px) 23vw, (min-width: 640px) 31vw, 46vw';
+export const GRID = 'grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 md:gap-x-6 md:gap-y-8 lg:grid-cols-5 xl:grid-cols-6';
 
 export const Bone = ({ className }: { className?: string }) => <div className={cx('skeleton rounded-md', className)} />;
 
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={className}>
-      <Bone className="aspect-[2/3] w-full rounded-lg" />
-      <Bone className="mt-2 h-3.5 w-4/5" />
-      <Bone className="mt-1.5 h-3 w-2/5" />
+    <div className={cx('rounded-xl border border-white/5 bg-white/[0.03] p-1.5 md:rounded-2xl md:p-2', className)}>
+      <Bone className="aspect-[2/3] w-full rounded-lg md:rounded-xl" />
+      <Bone className="mx-1 mt-3 mb-1 h-3.5 w-3/4" />
     </div>
   );
 }
 
 export function RowSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="flex gap-3 overflow-hidden px-4 md:px-8">
+    <div className="flex gap-4 overflow-hidden px-1 py-2 md:gap-6 md:py-3">
       {Array.from({ length: count }, (_, i) => (
-        <CardSkeleton key={i} className="w-[34vw] shrink-0 sm:w-40 lg:w-[180px] 2xl:w-[200px]" />
+        <CardSkeleton key={i} className="w-[150px] shrink-0 md:w-[220px]" />
       ))}
     </div>
   );
@@ -27,7 +27,7 @@ export function RowSkeleton({ count = 8 }: { count?: number }) {
 
 export function GridSkeleton({ count = 18 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">
+    <div className={GRID}>
       {Array.from({ length: count }, (_, i) => (
         <CardSkeleton key={i} />
       ))}
@@ -37,8 +37,8 @@ export function GridSkeleton({ count = 18 }: { count?: number }) {
 
 export function PageSkeleton() {
   return (
-    <div className="mx-auto max-w-[1600px] px-4 pt-6 md:px-8">
-      <Bone className="mb-6 h-8 w-48" />
+    <div className="mx-auto max-w-7xl">
+      <Bone className="mb-8 h-10 w-56" />
       <GridSkeleton count={12} />
     </div>
   );
