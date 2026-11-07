@@ -53,6 +53,12 @@ export default function Discover() {
 
   return (
     <div className="pb-10">
+      {query && (
+        <div className="mb-5">
+          <p className="text-sm text-muted">Results for{filters.type !== 'all' ? ` in ${kind.label}` : ''}</p>
+          <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-3xl">“{query}”</h1>
+        </div>
+      )}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
 <div className="inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
         {TYPES.map((t) => (

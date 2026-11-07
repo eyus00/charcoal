@@ -110,7 +110,7 @@ export const q = {
       tmdb<Page<MediaItem>>(`/trending/${type}/${window}`, {}, signal),
   }),
 
-  list: (type: MediaType, list: 'popular' | 'top_rated') => ({
+  list: (type: MediaType, list: 'popular' | 'top_rated' | 'now_playing' | 'on_the_air') => ({
     queryKey: ['list', type, list],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       tmdb<Page<MediaItem>>(`/${type}/${list}`, {}, signal),

@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play } from 'lucide-react';
+import { Film, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
+import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_ITEM, ROW_SIZES, RowArrows, Scroller, useRowScroll } from '../components/Row';
 import { RowSkeleton } from '../components/Skeletons';
 import { EMPTY_FILTERS, GENRES, genreName } from '../lib/filters';
-import { imageSrcSet, imageUrl } from '../lib/images';
+import { imageUrl } from '../lib/images';
 import { continueWatching, useStore } from '../lib/store';
 import { cleanList, q, titleOf, typeOf, yearOf, type MediaItem } from '../lib/tmdb';
-import { cx, useTitle } from '../lib/util';
+import { cx, useKeys, useTitle } from '../lib/util';
 import { useDiscover } from '../lib/browse';
 
 export default function Home() {
@@ -23,7 +24,11 @@ export default function Home() {
     <div className="space-y-10 md:space-y-12">
       <Hero />
       {resume.length > 0 && <ContinueWatching items={resume} />}
+      <Top10 />
       <Browse />
+      <InTheaters />
+      <AiringThisWeek />
+      <TopRated />
     </div>
   );
 }
@@ -33,7 +38,6 @@ export default function Home() {
 /** Pull full-bleed sections under the top bar (76px on phones, 92px from md). */
 export const BLEED = '-mx-4 -mt-[76px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
 const HERO_SIZES = '100vw';
-const SWIPE_PX = 50;
 
 function Hero() {
   const navigate = useNavigate();
@@ -42,26 +46,34 @@ function Hero() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [dragX, setDragX] = useState(0);
-  const drag = useRef<{ x: number; y: number; id: number; axis?: 'x' | 'y' } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const frameRef = useRef<HTMLElement>(null);
+  const drag = useRef<{ x: number; y: number; id: number; axis?: 'x' | 'y'; lastX: number; lastT: number; v: number } | null>(null);
   const go = (d: number) => setIndex((i) => (i + d + items.length) % items.length);
+  useKeys({ ArrowLeft: () => go(-1), ArrowRight: () => go(1) }, items.length > 1);
 
   useEffect(() => {
-    if (items.length < 2 || paused) return;
+    if (items.length < 2 || paused || dragging) return;
     const t = setTimeout(() => !document.hidden && setIndex((i) => (i + 1) % items.length), 9000);
     return () => clearTimeout(t);
-  }, [items.length, paused, index]);
+  }, [items.length, paused, dragging, index]);
 
   if (isError) return null;
   const frame = cx(BLEED, 'relative h-[78svh] min-h-[520px] max-h-[820px] overflow-hidden');
   if (!items.length) return <div className={cx(frame, 'skeleton')} />;
 
+  const n = items.length;
   const item = items[index];
-  const next = items[(index + 1) % items.length];
+  const offsetOf = (i: number) => {
+    let o = (i - index + n) % n;
+    if (o > n / 2) o -= n;
+    return o;
+  };
 
-  // Swipe/drag: horizontal movement switches slides; a tap (no movement) opens details.
+  // Drag: the track follows the finger; release snaps to the neighbour (distance or flick) or back.
   const onDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('a,button')) return;
-    drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId, lastX: e.clientX, lastT: performance.now(), v: 0 };
   };
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -70,59 +82,74 @@ function Hero() {
     const dy = e.clientY - d.y;
     if (!d.axis && Math.abs(dx) + Math.abs(dy) > 8) {
       d.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
-      if (d.axis === 'x') (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      if (d.axis === 'x') {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        setDragging(true);
+      }
     }
-    if (d.axis === 'x') setDragX(dx);
+    if (d.axis !== 'x') return;
+    const now = performance.now();
+    d.v = (e.clientX - d.lastX) / Math.max(1, now - d.lastT);
+    d.lastX = e.clientX;
+    d.lastT = now;
+    setDragX(dx);
   };
   const onUp = (e: React.PointerEvent) => {
     const d = drag.current;
     drag.current = null;
-    setDragX(0);
     if (!d || d.id !== e.pointerId) return;
     const dx = e.clientX - d.x;
-    if (d.axis === 'x' && Math.abs(dx) > SWIPE_PX) go(dx < 0 ? 1 : -1);
-    else if (!d.axis) navigate(`/${typeOf(item)}/${item.id}`);
+    const width = frameRef.current?.offsetWidth ?? 400;
+    setDragging(false);
+    setDragX(0);
+    if (d.axis === 'x') {
+      if (Math.abs(dx) > width * 0.18 || Math.abs(d.v) > 0.45) go(dx < 0 ? 1 : -1);
+    } else if (!d.axis) navigate(`/${typeOf(item)}/${item.id}`);
   };
 
   return (
     <section
+      ref={frameRef}
       aria-roledescription="carousel"
       aria-label="Trending today"
-      tabIndex={0}
-      className={cx(frame, 'cursor-pointer touch-pan-y outline-none select-none')}
+      className={cx(frame, 'cursor-pointer touch-pan-y select-none')}
       onPointerEnter={(e) => e.pointerType === 'mouse' && setPaused(true)}
       onPointerLeave={() => setPaused(false)}
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}
-      onPointerCancel={() => ((drag.current = null), setDragX(0))}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowRight') go(1);
-        if (e.key === 'ArrowLeft') go(-1);
-        if (e.key === 'Enter' && e.target === e.currentTarget) navigate(`/${typeOf(item)}/${item.id}`);
-      }}
+      onPointerCancel={() => ((drag.current = null), setDragging(false), setDragX(0))}
     >
-      <div className="absolute inset-0" style={dragX ? { transform: `translateX(${dragX * 0.25}px)` } : undefined}>
-        {items.map((m, i) => (
-          <HeroSlide key={typeOf(m) + m.id} item={m} active={i === index} />
-        ))}
-      </div>
-      <img aria-hidden alt="" src={imageUrl(next.backdrop_path, 'backdrop', 780)} srcSet={imageSrcSet(next.backdrop_path, 'backdrop')} sizes={HERO_SIZES} className="pointer-events-none absolute size-px opacity-0" />
+      {items.map((m, i) => {
+        const o = offsetOf(i);
+        if (Math.abs(o) > 1) return null; // only the current slide and its neighbours exist
+        return (
+          <div
+            key={typeOf(m) + m.id}
+            aria-hidden={o !== 0}
+            className="absolute inset-0 will-change-transform"
+            style={{
+              transform: `translateX(calc(${o * 100}% + ${dragX}px))`,
+              transition: dragging ? 'none' : 'transform 650ms cubic-bezier(0.22, 0.8, 0.2, 1)',
+            }}
+          >
+            <HeroSlide item={m} active={o === 0} />
+          </div>
+        );
+      })}
+
       <div className="absolute inset-x-0 bottom-5 z-20 flex items-end justify-between gap-4 px-4 md:bottom-7 md:px-8 lg:px-10">
         <div className="flex gap-0.5 pb-1">
           {items.map((m, i) => (
             <button key={m.id} onClick={() => setIndex(i)} aria-label={`Show ${titleOf(m)}`} aria-current={i === index} className="grid h-6 place-items-center px-0.5">
-              <span className={cx('block h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
+              <span className={cx('block h-1.5 rounded-full transition-all duration-500', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
             </button>
           ))}
         </div>
-        {/* previous · current · next — a sliding track: every poster sits at its distance from the
-            current slide, so changes glide instead of jumping */}
+        {/* previous · current · next — a sliding track that glides on every change */}
         <div className="relative h-[92px] w-[176px] shrink-0 md:h-[104px] md:w-[206px]">
           {items.map((m, i) => {
-            const n = items.length;
-            let o = (i - index + n) % n;
-            if (o > n / 2) o -= n;
+            const o = offsetOf(i);
             const visible = Math.abs(o) <= 1;
             return (
               <button
@@ -132,7 +159,7 @@ function Hero() {
                 onClick={() => (o === 0 ? navigate(`/${typeOf(m)}/${m.id}`) : go(o))}
                 aria-label={o === 0 ? `Open ${titleOf(m)}` : `${o < 0 ? 'Previous' : 'Next'}: ${titleOf(m)}`}
                 className={cx(
-                  'absolute bottom-1 left-1/2 h-[84px] w-14 overflow-hidden rounded-xl bg-surface transition-[transform,opacity,box-shadow] duration-500 ease-out md:h-24 md:w-16',
+                  'absolute bottom-1 left-1/2 h-[84px] w-14 overflow-hidden rounded-xl bg-surface transition-[transform,opacity,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,0.8,0.2,1)] md:h-24 md:w-16',
                   o === 0 ? 'ring-2 ring-white' : 'ring-0',
                   !visible && 'pointer-events-none',
                 )}
@@ -159,38 +186,48 @@ const HIDDEN = 'translate-y-4 opacity-0 delay-0!';
 
 function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
   const type = typeOf(item);
-  const [seen, setSeen] = useState(active);
-  // `shown` flips a frame after `active`, so a slide mounted already-active still animates in.
+  // `shown` flips a frame after `active`, so text animates in even on first mount.
   const [shown, setShown] = useState(false);
   useEffect(() => {
-    if (active) setSeen(true);
     if (!active) return setShown(false);
     let r2 = 0;
     const r1 = requestAnimationFrame(() => (r2 = requestAnimationFrame(() => setShown(true))));
     return () => (cancelAnimationFrame(r1), cancelAnimationFrame(r2));
   }, [active]);
-  if (!seen) return null; // don't download slides nobody has reached yet
 
   const title = titleOf(item);
   const genres = (item.genre_ids ?? []).map((g) => genreName(type, g)).filter(Boolean).slice(0, 2) as string[];
+  const TypeIcon = type === 'movie' ? Film : Tv;
   return (
-    <div aria-hidden={!active} className={cx('absolute inset-0 transition-opacity duration-700 ease-out', active ? 'z-10' : 'pointer-events-none', shown ? 'opacity-100' : 'opacity-0')}>
-      {/* slow settle-in zoom on the incoming image */}
-      <div className={cx('absolute inset-0 transition-transform duration-[1600ms] ease-out', shown ? 'scale-100' : 'scale-[1.06]')}>
-        <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="size-full" imgClassName="object-[70%_20%] pointer-events-none" />
-      </div>
+    <div className="absolute inset-0">
+      <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="absolute! inset-0 size-full" imgClassName="object-[70%_20%] pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-bg/40" />
 
       <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
         <div className="max-w-2xl">
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-100 text-sm text-white/70')}>{[yearOf(item), genres.join(', '), type === 'movie' ? 'Movie' : 'Series'].filter(Boolean).join('  ·  ')}</p>
-          <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-200')}>
+          <span className={cx(RISE, shown ? SHOWN : HIDDEN, 'inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85 backdrop-blur-sm')}>
+            <TypeIcon className="size-3.5" />
+            {type === 'movie' ? 'Movie' : 'Series'}
+          </span>
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75 delay-75')}>
+            {[yearOf(item), genres.join(', ')].filter(Boolean).join('  ·  ')}
+            {item.vote_average > 0 && (
+              <>
+                <span className="text-white/40">·</span>
+                <span className="flex items-center gap-1 text-star">
+                  <Star className="size-3.5 fill-current" strokeWidth={0} />
+                  {item.vote_average.toFixed(1)}
+                </span>
+              </>
+            )}
+          </p>
+          <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-150')}>
             <span className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</span>
           </h2>
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-300 mt-4 line-clamp-2 max-w-lg text-[15px] text-white/70')}>{item.overview}</p>
-          <div className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-6 flex items-center gap-3 delay-[400ms]')}>
-            <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-4 line-clamp-2 max-w-lg text-[15px] text-white/70 delay-200')}>{item.overview}</p>
+          <div className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-6 flex items-center gap-3 delay-300')}>
+            <Link to={`/watch/${type}/${item.id}`} tabIndex={active ? 0 : -1} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
             </Link>
             <BookmarkMenu

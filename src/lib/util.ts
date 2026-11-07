@@ -92,3 +92,32 @@ export function useDismiss(open: boolean, onClose: () => void, ref: React.RefObj
     };
   }, [open, onClose, ref]);
 }
+
+/** True when a key event should be left alone (typing in a field, or a modifier combo we don't own). */
+export function isTypingTarget(e: KeyboardEvent) {
+  const el = e.target as HTMLElement | null;
+  return !!el && (/input|textarea|select/i.test(el.tagName) || el.isContentEditable);
+}
+
+/** Shared with the global hotkeys: when "g" was just pressed, the next key is a "go to" target. */
+export const keyState = { gAt: 0 };
+
+/** Page-level single-key shortcuts (desktop). Ignored while typing or with modifiers. */
+export function useKeys(map: Record<string, () => void>, enabled = true) {
+  const ref = useRef(map);
+  ref.current = map;
+  useEffect(() => {
+    if (!enabled) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e) || document.querySelector('[role=dialog]')) return;
+      if (Date.now() - keyState.gAt < 1200) return;
+      const fn = ref.current[e.key];
+      if (fn) {
+        e.preventDefault();
+        fn();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enabled]);
+}

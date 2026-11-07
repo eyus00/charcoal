@@ -1,30 +1,48 @@
 import { useCallback, useRef, useState } from 'react';
-import { Bookmark, Check, Trash2 } from 'lucide-react';
+import { Bookmark, BookmarkCheck, CircleCheck, Clock3, PlayCircle, Trash2, type LucideIcon } from 'lucide-react';
 import { actions, useStore, type WatchStatus } from '../lib/store';
 import type { MediaType } from '../lib/tmdb';
-import { cx, useDismiss } from '../lib/util';
+import { cx, useDismiss, useKeys } from '../lib/util';
 
 export const STATUS_LABEL: Record<WatchStatus, string> = {
   watching: 'Watching',
-  planned: 'To Watch',
+  planned: 'To watch',
   completed: 'Watched',
 };
-export const STATUS_DOT: Record<WatchStatus, string> = {
-  watching: 'bg-accent',
-  planned: 'bg-sky-400',
-  completed: 'bg-emerald-400',
+export const STATUS_ICON: Record<WatchStatus, LucideIcon> = {
+  watching: PlayCircle,
+  planned: Clock3,
+  completed: CircleCheck,
+};
+const STATUS_HINT: Record<WatchStatus, string> = {
+  watching: 'In progress',
+  planned: 'Saved for later',
+  completed: 'Finished',
 };
 const STATUSES = Object.keys(STATUS_LABEL) as WatchStatus[];
 
-interface Props {
-  item: { id: number; mediaType: MediaType; title: string; posterPath: string | null; releaseDate?: string; ratingScore?: number };
-  /** round: outlined circle (hero). full: labelled button (details). */
-  variant?: 'round' | 'full';
-  className?: string;
+/** Small status tag (icon + label) used on watchlist cards. */
+export function StatusTag({ status }: { status: WatchStatus }) {
+  const Icon = STATUS_ICON[status];
+  return (
+    <span className="flex items-center gap-1.5 rounded-full bg-black/60 py-1 pr-2.5 pl-2 text-xs backdrop-blur-sm">
+      <Icon className="size-3.5" />
+      {STATUS_LABEL[status]}
+    </span>
+  );
 }
 
-/** Bookmark button + status menu (Watching / To Watch / Watched / Remove), as in the original app. */
-export default function BookmarkMenu({ item, variant = 'full', className }: Props) {
+interface Props {
+  item: { id: number; mediaType: MediaType; title: string; posterPath: string | null; releaseDate?: string; ratingScore?: number };
+  /** round: outlined circle (hero, details). full: labelled button. */
+  variant?: 'round' | 'full';
+  className?: string;
+  /** Bind the "b" shortcut (one per page). */
+  hotkey?: boolean;
+}
+
+/** Bookmark button + status menu (Watching / To watch / Watched / Remove). */
+export default function BookmarkMenu({ item, variant = 'full', className, hotkey }: Props) {
   const watchlist = useStore((s) => s.watchlist);
   const current = watchlist.find((w) => w.id === item.id && w.mediaType === item.mediaType);
   const [open, setOpen] = useState(false);
@@ -36,7 +54,10 @@ export default function BookmarkMenu({ item, variant = 'full', className }: Prop
     actions.setBookmark({ ...item, status });
     setOpen(false);
   };
+  // "b": quick add as "To watch", or remove if already saved.
+  useKeys({ b: () => (current ? actions.removeBookmark(item.mediaType, item.id) : choose('planned')) }, !!hotkey);
 
+  const Icon = current ? BookmarkCheck : Bookmark;
   return (
     <div ref={ref} className={cx('relative', className)} onClick={(e) => e.stopPropagation()}>
       <button
@@ -44,53 +65,59 @@ export default function BookmarkMenu({ item, variant = 'full', className }: Prop
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={current ? `Bookmarked: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'}
+        aria-label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'}
+        title={current ? STATUS_LABEL[current.status] : 'Add to watchlist'}
         className={cx(
           'flex items-center justify-center gap-2 transition active:scale-95',
           variant === 'round'
-            ? cx('size-12 rounded-full border-2', current ? 'border-accent bg-accent text-black' : 'border-white/70 text-white hover:bg-white/15')
-            : cx('h-12 rounded-2xl px-5 text-[15px] font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
+            ? cx('size-12 rounded-full', current ? 'bg-white text-black' : 'text-white ring-2 ring-white/70 hover:bg-white/15')
+            : cx('h-12 rounded-full px-5 text-[15px] font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
         )}
       >
-        <Bookmark className={cx('size-5', current && 'fill-current')} />
+        <Icon className="size-5" />
         {variant === 'full' && (current ? STATUS_LABEL[current.status] : 'Watchlist')}
       </button>
       {open && (
         <div
           role="menu"
-          className={cx('absolute bottom-full z-50 mb-3 w-52 space-y-0.5 rounded-2xl bg-raised p-2 shadow-2xl shadow-black/50', variant === 'round' ? 'right-0' : 'left-0')}
+          aria-label="Watchlist"
+          className={cx('absolute bottom-full z-50 mb-3 w-64 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5', variant === 'round' ? 'right-0' : 'left-0')}
         >
-          {STATUSES.map((s) => (
-            <button
-              key={s}
-              role="menuitemradio"
-              aria-checked={current?.status === s}
-              onClick={() => choose(s)}
-              className={cx(
-                'flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition',
-                current?.status === s ? 'bg-white text-black' : 'text-white/80 hover:bg-white/10 hover:text-white',
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <span className={cx('size-2.5 rounded-full', STATUS_DOT[s])} />
-                {STATUS_LABEL[s]}
-              </span>
-              {current?.status === s && <Check className="size-4 " />}
-            </button>
-          ))}
+          <div className="px-3 pt-2 pb-1.5 text-xs text-muted">{current ? 'In your watchlist' : 'Add to watchlist'}</div>
+          {STATUSES.map((s) => {
+            const SIcon = STATUS_ICON[s];
+            const on = current?.status === s;
+            return (
+              <button
+                key={s}
+                role="menuitemradio"
+                aria-checked={on}
+                onClick={() => choose(s)}
+                className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition', on ? 'bg-white/10' : 'hover:bg-white/5')}
+              >
+                <SIcon className={cx('size-5 shrink-0', on ? 'text-white' : 'text-muted')} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm leading-tight">{STATUS_LABEL[s]}</span>
+                  <span className="block text-xs leading-tight text-faint">{STATUS_HINT[s]}</span>
+                </span>
+                {on && <span className="size-2 rounded-full bg-white" aria-hidden />}
+              </button>
+            );
+          })}
           {current && (
-            <div className="mt-1 border-t border-line pt-1">
+            <>
+              <div className="mx-3 my-1 h-px bg-line" />
               <button
                 role="menuitem"
                 onClick={() => {
                   actions.removeBookmark(item.mediaType, item.id);
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-red-300 transition hover:bg-red-500/15"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-300 transition hover:bg-red-500/10"
               >
-                Remove <Trash2 className="size-4" />
+                <Trash2 className="size-5 shrink-0" /> Remove from watchlist
               </button>
-            </div>
+            </>
           )}
         </div>
       )}

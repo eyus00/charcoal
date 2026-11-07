@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star } from 'lucide-react';
+import { Film, Star, Tv } from 'lucide-react';
 import Img from './Img';
 import { q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx } from '../lib/util';
@@ -60,7 +60,12 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
         </div>
         <div className="mt-2.5 truncate px-0.5 text-[15px] font-medium text-white/95">{title}</div>
-        <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5 px-0.5" />
+        <Meta
+          year={yearOf(item)}
+          rating={item.vote_average}
+          className="mt-0.5 px-0.5"
+          extra={t === 'tv' ? <Tv className="ml-auto size-3.5 text-faint" aria-label="TV show" /> : <Film className="ml-auto size-3.5 text-faint" aria-label="Movie" />}
+        />
       </Link>
       {overlay}
     </div>
