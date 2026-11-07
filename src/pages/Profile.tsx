@@ -159,7 +159,7 @@ function Watchlist() {
                   item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
                   badge={<StatusTag status={w.status} />}
                   overlay={
-                    <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+                    <div className="absolute top-3.5 right-3.5 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
                       <button
                         onClick={() => actions.removeBookmark(w.mediaType, w.id)}
                         aria-label={`Remove ${w.title} from watchlist`}

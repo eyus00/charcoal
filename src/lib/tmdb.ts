@@ -38,7 +38,14 @@ export interface SeasonSummary {
   air_date: string | null;
   poster_path: string | null;
 }
-export interface EpisodeRef { season_number: number; episode_number: number; air_date?: string }
+export interface EpisodeRef {
+  season_number: number;
+  episode_number: number;
+  air_date?: string;
+  name?: string;
+  still_path?: string | null;
+  runtime?: number | null;
+}
 
 export interface Details extends MediaItem {
   genres: { id: number; name: string }[];
