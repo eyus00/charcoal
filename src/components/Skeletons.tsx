@@ -1,25 +1,25 @@
 import { cx } from '../lib/util';
 
-export const POSTER_SIZES = '(min-width: 768px) 210px, 140px';
-export const GRID_SIZES = '(min-width: 1280px) 15vw, (min-width: 1024px) 18vw, (min-width: 768px) 23vw, (min-width: 640px) 31vw, 46vw';
-export const GRID = 'grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 md:gap-x-6 md:gap-y-8 lg:grid-cols-5 xl:grid-cols-6';
+export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1280px) 14vw, (min-width: 1024px) 17vw, (min-width: 640px) 30vw, 46vw';
+export const GRID = 'grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
 
 export const Bone = ({ className }: { className?: string }) => <div className={cx('skeleton rounded-md', className)} />;
 
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cx('rounded-xl border border-white/5 bg-white/[0.03] p-1.5 md:rounded-2xl md:p-2', className)}>
-      <Bone className="aspect-[2/3] w-full rounded-lg md:rounded-xl" />
-      <Bone className="mx-1 mt-3 mb-1 h-3.5 w-3/4" />
+    <div className={className}>
+      <Bone className="aspect-[2/3] w-full rounded-2xl" />
+      <Bone className="mt-3 h-3.5 w-3/4" />
+      <Bone className="mt-2 h-3 w-1/3" />
     </div>
   );
 }
 
 export function RowSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="flex gap-4 overflow-hidden px-1 py-2 md:gap-6 md:py-3">
+    <div className="flex gap-4 overflow-hidden">
       {Array.from({ length: count }, (_, i) => (
-        <CardSkeleton key={i} className="w-[150px] shrink-0 md:w-[220px]" />
+        <CardSkeleton key={i} className="w-[140px] shrink-0 sm:w-[170px] lg:w-[190px]" />
       ))}
     </div>
   );
@@ -37,8 +37,8 @@ export function GridSkeleton({ count = 18 }: { count?: number }) {
 
 export function PageSkeleton() {
   return (
-    <div className="mx-auto max-w-7xl">
-      <Bone className="mb-8 h-10 w-56" />
+    <div>
+      <Bone className="mb-6 h-9 w-48" />
       <GridSkeleton count={12} />
     </div>
   );

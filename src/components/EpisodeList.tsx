@@ -29,7 +29,7 @@ export function SeasonPicker({
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-9 appearance-none rounded-lg border border-line bg-surface pr-9 pl-3 text-sm font-medium outline-none hover:border-white/30"
+        className="h-10 appearance-none rounded-xl bg-raised pr-9 pl-3.5 text-sm outline-none hover:bg-line"
       >
         {seasons.map((s) => (
           <option key={s.season_number} value={s.season_number}>
@@ -80,8 +80,8 @@ export default function EpisodeList({ tvId, season, current, compact, onSelect }
               onClick={onSelect}
               aria-current={isCurrent ? 'true' : undefined}
               className={cx(
-                'group flex gap-3 rounded-lg p-2 transition-colors sm:gap-4',
-                isCurrent ? 'bg-white/10' : 'hover:bg-white/5',
+                'group flex gap-3 rounded-2xl p-2 transition-colors sm:gap-4',
+                isCurrent ? 'bg-raised' : 'hover:bg-raised/60',
                 upcoming && 'opacity-60',
               )}
             >

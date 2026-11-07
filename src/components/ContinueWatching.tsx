@@ -1,107 +1,105 @@
 import { Link } from 'react-router';
 import { useQueries } from '@tanstack/react-query';
-import { Eye, Film, History, Play, Tv, X } from 'lucide-react';
+import { Check, Play, X } from 'lucide-react';
 import Img from './Img';
-import { Scroller, SectionHeader } from './Row';
+import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { actions, percent, watchUrl, type HistoryItem } from '../lib/store';
-import { q } from '../lib/tmdb';
+import { q, type Episode } from '../lib/tmdb';
+import { cx } from '../lib/util';
 
-const fmt = (min: number) => (min < 60 ? `${min}m` : `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}m` : ''}`);
+const fmt = (min: number) => (min < 60 ? `${min}min` : `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}min` : ''}`);
 
-/**
- * The original "Continue Watching" row: wide cards with the episode still,
- * runtime and time-left badges, progress bar, and S/E + episode name.
- */
-export default function ContinueWatching({ items, title = 'Continue Watching', subtitle = 'Pick up where you left off' }: { items: HistoryItem[]; title?: string; subtitle?: string }) {
-  // Episode stills/names come from the season lists (cached, and shared with the details page).
-  const seasonQueries = useQueries({
+/** Episode stills/names come from season lists (cached and shared with the details page). */
+function useEpisodes(items: HistoryItem[]) {
+  const res = useQueries({
     queries: items.map((h) => {
-      const target = h.isCompleted && h.nextEpisode ? h.nextEpisode : { season: h.season ?? 1, episode: h.episode ?? 1 };
-      return { ...q.season(h.id, target.season), enabled: h.mediaType === 'tv' && h.season !== undefined };
+      const t = h.isCompleted && h.nextEpisode ? h.nextEpisode : { season: h.season ?? 1, episode: h.episode ?? 1 };
+      return { ...q.season(h.id, t.season), enabled: h.mediaType === 'tv' && h.season !== undefined };
     }),
   });
+  return items.map((h, i): Episode | undefined => {
+    const t = h.isCompleted && h.nextEpisode ? h.nextEpisode : { episode: h.episode };
+    return res[i]?.data?.episodes.find((e) => e.episode_number === t.episode);
+  });
+}
 
+function ContinueCard({ h, ep, className, sizes }: { h: HistoryItem; ep?: Episode; className?: string; sizes: string }) {
+  const isNext = h.mediaType === 'tv' && h.isCompleted && !!h.nextEpisode;
+  const s = isNext ? h.nextEpisode!.season : h.season;
+  const e = isNext ? h.nextEpisode!.episode : h.episode;
+  const pct = isNext ? 0 : Math.round(percent(h));
+  const left = h.progress && !isNext ? Math.max(1, Math.floor((h.progress.duration - h.progress.watched) / 60)) : 0;
+  const label = h.mediaType === 'tv' && s !== undefined ? `${s === 0 ? 'SP' : `S${s}`}.E${e}` : left ? fmt(left) : null;
+  const still = ep?.still_path;
+
+  return (
+    <div className={cx('group relative', className)} role="listitem">
+      <Link to={watchUrl(h)} className="relative block overflow-hidden rounded-2xl" title={ep?.name ? `${h.title} · ${ep.name}` : h.title}>
+        <Img
+          path={still ?? h.backdropPath ?? h.posterPath}
+          kind={still ? 'still' : h.backdropPath ? 'backdrop' : 'poster'}
+          sizes={sizes}
+          alt=""
+          className="aspect-[16/8]"
+          imgClassName="transition-transform duration-300 group-hover:scale-[1.04]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/50" />
+        <div className="absolute top-3 right-10 left-3.5 truncate text-sm font-medium">{h.title}</div>
+        <span className="absolute bottom-3 left-3 grid size-8 place-items-center rounded-full bg-white/20 backdrop-blur-sm transition group-hover:bg-accent group-hover:text-black">
+          <Play className="ml-0.5 size-3.5 fill-current" strokeWidth={0} />
+        </span>
+        <span className="absolute right-3 bottom-3 flex overflow-hidden rounded-lg bg-black/45 text-xs backdrop-blur-sm">
+          {isNext ? (
+            <span className="px-2.5 py-1">Up next · {label}</span>
+          ) : (
+            <>
+              {label && <span className="border-r border-white/15 px-2.5 py-1">{label}</span>}
+              <span className="flex items-center px-2.5 py-1">{h.isCompleted ? <Check className="size-3.5" /> : `${pct}%`}</span>
+            </>
+          )}
+        </span>
+        {pct > 0 && !h.isCompleted && (
+          <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
+            <span className="block h-full bg-accent" style={{ width: `${pct}%` }} />
+          </span>
+        )}
+      </Link>
+      <button
+        onClick={() => actions.removeHistory(h.mediaType, h.id)}
+        aria-label={`Remove ${h.title} from continue watching`}
+        title="Remove"
+        className="absolute top-2 right-2 grid size-7 place-items-center rounded-full bg-black/50 opacity-0 transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+      >
+        <X className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/** Vertical list for the sidebar. */
+export function CompactContinueList({ items }: { items: HistoryItem[] }) {
+  const eps = useEpisodes(items);
+  return (
+    <div className="space-y-3" role="list" aria-label="Continue watching">
+      {items.map((h, i) => (
+        <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} sizes="220px" />
+      ))}
+    </div>
+  );
+}
+
+/** Horizontal row (home on small screens, profile page). */
+export default function ContinueWatching({ items, title = 'Continue Watching', className }: { items: HistoryItem[]; title?: string; className?: string }) {
+  const eps = useEpisodes(items);
+  const { ref, scroll } = useRowScroll();
   if (!items.length) return null;
   return (
-    <section>
-      <SectionHeader icon={History} title={title} subtitle={subtitle} />
-      <Scroller label={title}>
-        {items.map((h, i) => {
-          const isNext = h.mediaType === 'tv' && h.isCompleted && !!h.nextEpisode;
-          const s = isNext ? h.nextEpisode!.season : h.season;
-          const e = isNext ? h.nextEpisode!.episode : h.episode;
-          const ep = seasonQueries[i]?.data?.episodes.find((x) => x.episode_number === e);
-          const pct = isNext ? 0 : percent(h);
-          const total = h.progress ? Math.floor(h.progress.duration / 60) : (ep?.runtime ?? 0);
-          const left = h.progress && !isNext ? Math.max(1, Math.floor((h.progress.duration - h.progress.watched) / 60)) : 0;
-          const still = ep?.still_path;
-          return (
-            <div
-              key={h.mediaType + h.id}
-              role="listitem"
-              className="group relative flex w-[240px] shrink-0 snap-start flex-col gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-2 transition duration-300 hover:scale-[1.02] hover:border-white/10 hover:bg-white/[0.08] md:w-[340px] md:gap-4 md:rounded-3xl md:p-3"
-            >
-              <Link to={watchUrl(h)} className="relative block overflow-hidden rounded-2xl shadow-xl">
-                <Img
-                  path={still ?? h.backdropPath ?? h.posterPath}
-                  kind={still ? 'still' : h.backdropPath ? 'backdrop' : 'poster'}
-                  sizes="(min-width: 768px) 320px, 224px"
-                  alt={h.title}
-                  className="aspect-video"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-100" />
-                {total > 0 && (
-                  <span className="absolute bottom-3 left-3 rounded-lg border border-white/10 bg-black/80 px-2.5 py-1 text-xs font-bold tracking-wider uppercase shadow-lg">{fmt(total)}</span>
-                )}
-                <span className="absolute right-3 bottom-3">
-                  {isNext ? (
-                    <span className="rounded-lg border border-white/10 bg-accent/80 px-2.5 py-1 text-xs font-bold tracking-wider uppercase shadow-lg">Up next</span>
-                  ) : h.isCompleted ? (
-                    <span className="flex items-center gap-1 rounded-lg border border-white/10 bg-green-500/80 px-2.5 py-1 text-xs font-bold tracking-wider uppercase shadow-lg">
-                      <Eye className="size-3.5" /> Watched
-                    </span>
-                  ) : left > 0 ? (
-                    <span className="rounded-lg border border-white/10 bg-accent/80 px-2.5 py-1 text-xs font-bold tracking-wider uppercase shadow-lg">{fmt(left)} left</span>
-                  ) : null}
-                </span>
-                <span className="absolute inset-0 flex scale-90 items-center justify-center opacity-0 transition duration-300 group-hover:scale-100 group-hover:opacity-100">
-                  <span className="grid size-16 place-items-center rounded-full border-2 border-white/20 bg-accent shadow-2xl">
-                    <Play className="ml-1 size-9 fill-current" />
-                  </span>
-                </span>
-                {pct > 0 && (
-                  <span className="absolute inset-x-0 bottom-0 h-1.5 bg-white/20">
-                    <span className="block h-full bg-accent" style={{ width: `${pct}%` }} />
-                  </span>
-                )}
-              </Link>
-              <div className="flex flex-col gap-1.5 px-1 pb-1">
-                <div className="flex items-center justify-between gap-2">
-                  <Link to={`/${h.mediaType}/${h.id}`} className="truncate text-base leading-tight font-bold transition-colors hover:text-accent md:text-lg">
-                    {h.title}
-                  </Link>
-                  <span className="shrink-0 rounded-lg border border-white/10 bg-white/5 p-1.5">
-                    {h.mediaType === 'movie' ? <Film className="size-3.5 text-white/60" /> : <Tv className="size-3.5 text-white/60" />}
-                  </span>
-                </div>
-                {h.mediaType === 'tv' && s !== undefined && (
-                  <p className="truncate text-[10px] font-bold tracking-wider text-white/40 uppercase md:text-xs">
-                    {s === 0 ? 'Special' : `S${s}`} • E{e}
-                    {(ep?.name ?? (!isNext ? h.episodeTitle : undefined)) && <span className="text-white/25"> · {ep?.name ?? h.episodeTitle}</span>}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => actions.removeHistory(h.mediaType, h.id)}
-                aria-label={`Remove ${h.title} from continue watching`}
-                title="Remove"
-                className="absolute top-4 right-4 grid size-8 place-items-center rounded-full border border-white/10 bg-black/70 opacity-0 transition group-hover:opacity-100 hover:bg-accent focus-visible:opacity-100 md:top-5 md:right-5 [@media(hover:none)]:opacity-100"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-          );
-        })}
+    <section className={className}>
+      <SectionHeader title={title} action={<RowArrows onScroll={scroll} />} />
+      <Scroller label={title} scrollRef={ref}>
+        {items.map((h, i) => (
+          <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} sizes="300px" className="w-[260px] shrink-0 snap-start sm:w-[300px]" />
+        ))}
       </Scroller>
     </section>
   );

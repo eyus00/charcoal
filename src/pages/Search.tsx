@@ -63,8 +63,8 @@ export default function Search() {
   const clear = () => set({ type: 'all', genres: [], from: undefined, to: undefined, rating: 0 });
 
   return (
-    <div className="mx-auto max-w-7xl pb-10">
-      <PageHeader icon={SearchIcon} label={query ? 'Search Results' : 'Explore'} title={query || 'Explore'} count={total} onClear={filtering ? clear : undefined} />
+    <div className="pb-10">
+      <PageHeader label={query ? 'Results for' : undefined} title={query ? `“${query}”` : 'Explore'} count={total} onClear={filtering ? clear : undefined} />
       <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} withType />
       <Grid
         items={items}

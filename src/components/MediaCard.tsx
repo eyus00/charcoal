@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Film, Star, Tv } from 'lucide-react';
+import { Star } from 'lucide-react';
 import Img from './Img';
 import { q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx } from '../lib/util';
@@ -19,55 +19,49 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
+/** "2025 · ★ 7.2" */
+export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
+  return (
+    <div className={cx('flex items-center gap-1.5 text-[13px] text-muted', className)}>
+      {year && <span>{year}</span>}
+      {year && rating ? <span className="text-faint">·</span> : null}
+      {rating ? (
+        <span className="flex items-center gap-1 font-medium text-star">
+          <Star className="size-3.5 fill-current" strokeWidth={0} />
+          {rating.toFixed(1)}
+        </span>
+      ) : null}
+      {extra}
+    </div>
+  );
+}
+
 interface Props {
   item: MediaItem;
   type?: MediaType;
   sizes: string;
   className?: string;
-  /** Extra badge on the poster (e.g. bookmark status), bottom-left. */
+  /** Small label over the poster's top-left corner (e.g. bookmark status). */
   badge?: ReactNode;
   /** Extra controls over the card (e.g. remove button). */
   overlay?: ReactNode;
 }
 
-/** The original Charcoal card: glass frame, year + rating badges, title with type icon. */
+/** Poster card: rounded poster, title, year · rating. */
 export default function MediaCard({ item, type, sizes, className, badge, overlay }: Props) {
   const t = typeOf(item, type);
   const title = titleOf(item);
-  const year = yearOf(item);
   const href = `/${t}/${item.id}`;
-  const prefetch = usePrefetch(t, item.id);
   return (
-    <div
-      className={cx(
-        'group relative flex flex-col gap-2 rounded-xl border border-white/5 bg-white/[0.03] p-1.5 transition duration-300 hover:scale-[1.02] hover:border-white/10 hover:bg-white/[0.08] md:gap-3 md:rounded-2xl md:p-2',
-        className,
-      )}
-    >
-      <Link to={href} className="relative block overflow-hidden rounded-lg shadow-lg md:rounded-xl" {...prefetch}>
-        <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" />
-        <div className="absolute inset-0 bg-black/20 transition-colors duration-300 group-hover:bg-black/45" />
-        {year && (
-          <span className="absolute top-2 left-2 rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-[10px] font-bold tracking-wider text-white">
-            {year}
-          </span>
-        )}
-        {item.vote_average > 0 && (
-          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-[10px] font-bold text-white">
-            <Star className="size-3 fill-yellow-400 text-yellow-400" />
-            {item.vote_average.toFixed(1)}
-          </span>
-        )}
-        {badge && <div className="absolute bottom-2 left-2">{badge}</div>}
+    <div className={cx('group relative', className)}>
+      <Link to={href} className="block" {...usePrefetch(t, item.id)}>
+        <div className="relative overflow-hidden rounded-2xl">
+          <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" imgClassName="transition-transform duration-300 group-hover:scale-[1.03]" />
+          {badge && <div className="absolute top-2 left-2">{badge}</div>}
+        </div>
+        <div className="mt-2.5 truncate px-0.5 text-[15px] font-medium text-white/95">{title}</div>
+        <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5 px-0.5" />
       </Link>
-      <div className="flex min-w-0 items-center justify-between gap-2 px-1 pb-0.5">
-        <Link to={href} className="line-clamp-1 text-sm leading-tight font-bold text-white hover:text-accent">
-          {title}
-        </Link>
-        <span className="shrink-0 rounded-lg border border-white/10 bg-white/5 p-1">
-          {t === 'tv' ? <Tv className="size-3 text-white/60" /> : <Film className="size-3 text-white/60" />}
-        </span>
-      </div>
       {overlay}
     </div>
   );

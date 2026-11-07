@@ -32,26 +32,20 @@ export function useDiscover(f: Filters, enabled = true) {
   });
 }
 
-/** Header used by catalog + search pages (as in the original app). */
-export function PageHeader({ icon: Icon, label, title, count, onClear }: { icon: LucideIcon; label: string; title: ReactNode; count?: number; onClear?: () => void }) {
+/** Page title with result count, plus a clear-filters action. */
+export function PageHeader({ label, title, count, onClear }: { icon?: LucideIcon; label?: string; title: ReactNode; count?: number; onClear?: () => void }) {
   return (
-    <div className="mb-8 flex flex-col justify-between gap-4 pt-2 md:mb-12 md:flex-row md:items-center md:gap-6 md:pt-8">
-      <div className="min-w-0 space-y-3 md:space-y-4">
-        <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-accent uppercase md:gap-3 md:text-xs">
-          <Icon className="size-3.5 md:size-4" />
-          <span>{label}</span>
-        </div>
-        <div className="flex min-w-0 items-baseline gap-3 md:gap-4">
-          <h1 className="truncate text-3xl font-black tracking-tight md:text-5xl lg:text-6xl">{title}</h1>
-          {count !== undefined && <span className="shrink-0 text-xl font-medium text-white/20 md:text-3xl">({count.toLocaleString()})</span>}
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="min-w-0">
+        {label && <div className="mb-1 text-sm text-muted">{label}</div>}
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
+          {count !== undefined && <span className="shrink-0 text-sm text-muted">{count.toLocaleString()} titles</span>}
         </div>
       </div>
       {onClear && (
-        <button
-          onClick={onClear}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-accent px-4 py-2.5 text-xs font-bold shadow-lg shadow-accent/20 transition hover:bg-accent-hover active:scale-95 md:w-auto md:rounded-xl md:px-6 md:py-3.5 md:text-sm"
-        >
-          <X className="size-4" /> Clear All Filters
+        <button onClick={onClear} className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm text-muted transition hover:bg-surface hover:text-white">
+          <X className="size-4" /> Clear filters
         </button>
       )}
     </div>
@@ -71,8 +65,8 @@ export default function Catalog({ type }: { type: MediaType }) {
   useTitle(label);
 
   return (
-    <div className="mx-auto max-w-7xl pb-10">
-      <PageHeader icon={type === 'movie' ? Film : Tv} label={`${label} Catalog`} title={label} count={total} onClear={hasActiveFilters(filters) ? clear : undefined} />
+    <div className="pb-10">
+      <PageHeader title={label} count={total} onClear={hasActiveFilters(filters) ? clear : undefined} />
       <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} />
       <Grid
         items={items}
@@ -92,14 +86,10 @@ export default function Catalog({ type }: { type: MediaType }) {
 
 export function Empty({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }) {
   return (
-    <div className="flex flex-col items-center justify-center space-y-6 rounded-[2rem] border border-white/10 bg-white/5 py-24 text-center md:rounded-[3rem] md:py-32">
-      <div className="grid size-24 place-items-center rounded-full border border-white/5 bg-white/5">
-        <Icon className="size-10 text-white/20" />
-      </div>
-      <div className="space-y-2 px-6">
-        <h3 className="text-2xl font-bold">{title}</h3>
-        <p className="mx-auto max-w-md text-white/40">{body}</p>
-      </div>
+    <div className="flex flex-col items-center justify-center gap-3 rounded-3xl bg-surface px-6 py-20 text-center">
+      <Icon className="size-8 text-faint" />
+      <h3 className="text-lg font-medium">{title}</h3>
+      <p className="max-w-sm text-sm text-muted">{body}</p>
     </div>
   );
 }
