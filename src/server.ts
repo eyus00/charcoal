@@ -3,21 +3,38 @@ import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
+import { streamPatterns } from './streamPatterns.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// A single slow provider used to hold the whole response hostage (40s+).
+// Every provider call is now capped; a provider that misses the deadline is
+// reported in `diagnostics` like any other failure.
+const PROVIDER_TIMEOUT_MS = Number(process.env.PROVIDER_TIMEOUT_MS ?? 15000);
+
+function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+    let timer: NodeJS.Timeout;
+    const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+            () => reject(new Error(`${label} timed out after ${PROVIDER_TIMEOUT_MS}ms`)),
+            PROVIDER_TIMEOUT_MS
+        );
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 async function main() {
     const server = new OMSSServer({
         name: 'Jelly',
-        version: '1.0.0',
+        version: '1.1.0',
 
         // Network
-        host: '0.0.0.0',
+        host: process.env.HOST ?? '0.0.0.0',
         port: Number(process.env.PORT ?? 8080),
         publicUrl: process.env.PUBLIC_URL,
 
-        // Cache (memory for dev, Redis for prod)
+        // Cache (memory by default, Redis if CACHE_TYPE=redis)
         cache: {
             type: (process.env.CACHE_TYPE as 'memory' | 'redis') ?? 'memory',
             ttl: {
@@ -34,62 +51,39 @@ async function main() {
         // TMDB
         tmdb: {
             apiKey: process.env.TMDB_API_KEY!,
-            cacheTTL: 24 * 60 * 60 // 24h
+            cacheTTL: 24 * 60 * 60
         },
 
-        // Third Party Proxy removal
+        // Third-party proxy removal + which upstream URLs must be streamed
+        // (not buffered in memory). Without streamPatterns, video from hosts
+        // whose URLs have no file extension (pixeldrain, workers.dev, ...) was
+        // fully downloaded into memory and failed on the 30s timeout.
         proxyConfig: {
-            knownThirdPartyProxies: knownThirdPartyProxies
+            knownThirdPartyProxies,
+            streamPatterns
         },
 
         cors: {
             origin: process.env.CORS_ORIGIN ?? '*',
             methods: ['GET', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization'],
-            exposedHeaders: ['Content-Range', 'Accept-Ranges', 'ETag'],
+            allowedHeaders: ['Content-Type', 'Authorization', 'Range'],
+            exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length', 'ETag'],
             preflightContinue: false,
             optionsSuccessStatus: 204
-        },
-
+        }
     });
 
-    // Register providers
     const registry = server.getRegistry();
     await registry.discoverProviders(path.join(__dirname, './providers/'));
 
+    for (const provider of registry.getProviders()) {
+        const getMovie = provider.getMovieSources.bind(provider);
+        const getTV = provider.getTVSources.bind(provider);
+        provider.getMovieSources = (media) => withTimeout(getMovie(media), provider.name);
+        provider.getTVSources = (media) => withTimeout(getTV(media), provider.name);
+    }
+
     await server.start();
-
-    const publicUrl =
-        process.env.PUBLIC_URL ??
-        `http://${process.env.HOST ?? '0.0.0.0'}:${process.env.PORT ?? 8080}`;
-
-    const uiUrl = `https://ui.cinepro.cc/?omssurl=${encodeURIComponent(publicUrl)}`;
-
-    const title = '🚀 CinePro/ui is in public testing';
-    const contrib =
-        '🤝 We are looking for contributors to improve and develop!';
-    const repo = 'Contribute: https://github.com/cinepro-org/ui';
-    const tryIt = `🌐 Try it out: ${uiUrl} !`;
-    const note =
-        'You will need to give the website "access to local applications" that it works.';
-
-    const lines = [title, '', repo, '', contrib, '', tryIt, '', note];
-
-    // compute box width based on longest line
-    const width = Math.max(...lines.map((l) => l.length)) + 2;
-
-    const borderTop = '╭' + '─'.repeat(width) + '╮';
-    const borderBottom = '╰' + '─'.repeat(width) + '╯';
-
-    const pad = (line: string) => '│ ' + line.padEnd(width - 2, ' ') + ' │';
-
-    console.log(`
-================== CINEPRO BETA ANNOUNCEMENT ==================
-
-${borderTop}
-${lines.map(pad).join('\n')}
-${borderBottom}
-`);
 }
 
 main().catch((error) => {
