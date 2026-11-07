@@ -1,52 +1,76 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cx } from '../lib/util';
 
-/** Horizontal scroller: native scrolling + snap; arrows only on pointer devices. No scroll listeners. */
-export function Scroller({ children, label }: { children: ReactNode; label: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.85, behavior: 'smooth' });
+/** Horizontal scroller with native scrolling + snap. Arrows live in the header (see RowArrows). */
+export function Scroller({ children, label, scrollRef }: { children: ReactNode; label: string; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div className="group/row relative">
-      <div
-        ref={ref}
-        role="list"
-        aria-label={label}
-        className="no-scrollbar flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 md:scroll-px-8 md:px-8"
-      >
-        {children}
-      </div>
-      <ArrowButton side="left" onClick={() => scroll(-1)} />
-      <ArrowButton side="right" onClick={() => scroll(1)} />
+    <div ref={scrollRef} role="list" aria-label={label} className="no-scrollbar -mx-1 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1 pb-1">
+      {children}
     </div>
   );
 }
 
-function ArrowButton({ side, onClick }: { side: 'left' | 'right'; onClick: () => void }) {
-  const Icon = side === 'left' ? ChevronLeft : ChevronRight;
+export function useRowScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
+  return { ref, scroll };
+}
+
+export function RowArrows({ onScroll }: { onScroll: (dir: 1 | -1) => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={side === 'left' ? 'Scroll left' : 'Scroll right'}
-      className={`absolute top-0 bottom-10 z-10 hidden w-10 items-center justify-center bg-bg/70 text-white opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:flex ${side === 'left' ? 'left-0' : 'right-0'}`}
-    >
-      <Icon className="size-6" />
+    <div className="hidden shrink-0 gap-2 md:flex">
+      <SquareButton label="Scroll left" onClick={() => onScroll(-1)}>
+        <ChevronLeft className="size-5" />
+      </SquareButton>
+      <SquareButton label="Scroll right" onClick={() => onScroll(1)}>
+        <ChevronRight className="size-5" />
+      </SquareButton>
+    </div>
+  );
+}
+
+export function SquareButton({ label, onClick, children, className }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} title={label} className={cx('grid size-10 place-items-center rounded-full bg-surface text-white/80 transition hover:bg-raised hover:text-white', className)}>
+      {children}
     </button>
   );
 }
 
-export function RowHeader({ title, to, action }: { title: string; to?: string; action?: ReactNode }) {
+/** Plain section title with optional link/actions on the right. */
+export function SectionHeader({ title, to, action }: { title: string; to?: string; action?: ReactNode }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-4 px-4 md:px-8">
+    <div className="mb-4 flex items-center justify-between gap-4">
       <h2 className="text-lg font-semibold tracking-tight md:text-xl">{title}</h2>
-      {action ?? (to && (
-        <Link to={to} className="text-sm text-muted hover:text-white">
-          See all
-        </Link>
-      ))}
+      {action ??
+        (to && (
+          <Link to={to} className="text-sm text-muted hover:text-white">
+            See all
+          </Link>
+        ))}
     </div>
   );
 }
 
-export const ROW_ITEM = 'w-[34vw] shrink-0 snap-start sm:w-40 lg:w-[180px] 2xl:w-[200px]';
+/** Rounded pill: selected = white on dark text. */
+export function Pill({ on, onClick, children, className }: { on?: boolean; onClick?: () => void; children: ReactNode; className?: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={cx(
+        'h-10 shrink-0 rounded-full px-4 text-sm whitespace-nowrap transition',
+        on ? 'bg-white font-medium text-black' : 'bg-surface text-white/85 hover:bg-raised hover:text-white',
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export const ROW_ITEM = 'w-[140px] shrink-0 snap-start sm:w-[170px] lg:w-[190px]';
+export const ROW_SIZES = '(min-width: 1024px) 190px, (min-width: 640px) 170px, 140px';

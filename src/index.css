@@ -1,14 +1,15 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-bg: #0b0b0c;
-  --color-surface: #151517;
-  --color-raised: #1e1e21;
-  --color-line: #2a2a2e;
-  --color-muted: #9a9aa3;
-  --color-faint: #66666e;
-  --color-accent: #ff6b35;
-  --color-accent-hover: #ff8257;
+  --color-bg: #0d1016;
+  --color-surface: #161a22;
+  --color-raised: #1f242e;
+  --color-line: #2a303b;
+  --color-muted: #98a0ad;
+  --color-faint: #636b78;
+  --color-accent: #f4f5f7;
+  --color-accent-hover: #ffffff;
+  --color-star: #f5c518;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -42,6 +43,17 @@
 @utility skeleton {
   background: var(--color-surface);
   animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes highlight {
+  50% {
+    box-shadow: 0 0 0 2px rgb(255 255 255 / 0.35);
+    background-color: rgb(255 255 255 / 0.03);
+  }
+}
+.highlight {
+  animation: highlight 1s ease-in-out;
+  border-radius: 1.5rem;
 }
 
 @keyframes pulse {

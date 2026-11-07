@@ -11,7 +11,7 @@ import './index.css';
 const Catalog = lazy(() => import('./pages/Catalog'));
 const Search = lazy(() => import('./pages/Search'));
 const Details = lazy(() => import('./pages/Details'));
-const Library = lazy(() => import('./pages/Library'));
+const Profile = lazy(() => import('./pages/Profile'));
 const Watch = lazy(() => import('./pages/Watch'));
 
 const queryClient = new QueryClient({
@@ -25,11 +25,12 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Old /profile#history links → /library */
-function ProfileRedirect() {
-  const { hash } = useLocation();
-  const tab = hash === '#history' ? 'history' : 'bookmarks';
-  return <Navigate to={`/library?tab=${tab}`} replace />;
+/** /library links from the interim version → the profile sections. */
+function LibraryRedirect() {
+  const { search } = useLocation();
+  const tab = new URLSearchParams(search).get('tab');
+  const hash = tab === 'history' ? '#history' : tab === 'settings' ? '#settings' : '#watchlist';
+  return <Navigate to={`/profile${hash}`} replace />;
 }
 
 const router = createBrowserRouter([
@@ -42,8 +43,8 @@ const router = createBrowserRouter([
       { path: 'search', element: <Search /> },
       { path: 'movie/:id', element: <Details type="movie" /> },
       { path: 'tv/:id', element: <Details type="tv" /> },
-      { path: 'library', element: <Library /> },
-      { path: 'profile', element: <ProfileRedirect /> },
+      { path: 'profile', element: <Profile /> },
+      { path: 'library', element: <LibraryRedirect /> },
       { path: '*', element: <NotFound /> },
     ],
   },

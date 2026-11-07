@@ -138,21 +138,6 @@ export const q = {
     staleTime: 1000 * 60 * 30,
   }),
 
-  // Light request for the home hero (logo + certification only).
-  heroExtras: (type: MediaType, id: number) => ({
-    queryKey: ['hero-extras', type, id],
-    queryFn: ({ signal }: { signal: AbortSignal }) =>
-      tmdb<Details>(
-        `/${type}/${id}`,
-        {
-          append_to_response: ['images', type === 'movie' ? 'release_dates' : 'content_ratings'].join(','),
-          include_image_language: 'en,null',
-        },
-        signal,
-      ),
-    staleTime: 1000 * 60 * 60,
-  }),
-
   season: (id: number, season: number) => ({
     queryKey: ['season', id, season],
     queryFn: ({ signal }: { signal: AbortSignal }) => tmdb<Season>(`/tv/${id}/season/${season}`, {}, signal),

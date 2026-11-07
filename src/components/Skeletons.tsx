@@ -1,25 +1,25 @@
 import { cx } from '../lib/util';
 
-export const POSTER_SIZES = '(min-width: 1536px) 200px, (min-width: 1024px) 180px, (min-width: 640px) 160px, 34vw';
-export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1024px) 15vw, (min-width: 640px) 22vw, 45vw';
+export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1280px) 14vw, (min-width: 1024px) 17vw, (min-width: 640px) 30vw, 46vw';
+export const GRID = 'grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
 
 export const Bone = ({ className }: { className?: string }) => <div className={cx('skeleton rounded-md', className)} />;
 
 export function CardSkeleton({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <Bone className="aspect-[2/3] w-full rounded-lg" />
-      <Bone className="mt-2 h-3.5 w-4/5" />
-      <Bone className="mt-1.5 h-3 w-2/5" />
+      <Bone className="aspect-[2/3] w-full rounded-2xl" />
+      <Bone className="mt-3 h-3.5 w-3/4" />
+      <Bone className="mt-2 h-3 w-1/3" />
     </div>
   );
 }
 
 export function RowSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="flex gap-3 overflow-hidden px-4 md:px-8">
+    <div className="flex gap-4 overflow-hidden">
       {Array.from({ length: count }, (_, i) => (
-        <CardSkeleton key={i} className="w-[34vw] shrink-0 sm:w-40 lg:w-[180px] 2xl:w-[200px]" />
+        <CardSkeleton key={i} className="w-[140px] shrink-0 sm:w-[170px] lg:w-[190px]" />
       ))}
     </div>
   );
@@ -27,7 +27,7 @@ export function RowSkeleton({ count = 8 }: { count?: number }) {
 
 export function GridSkeleton({ count = 18 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">
+    <div className={GRID}>
       {Array.from({ length: count }, (_, i) => (
         <CardSkeleton key={i} />
       ))}
@@ -37,8 +37,8 @@ export function GridSkeleton({ count = 18 }: { count?: number }) {
 
 export function PageSkeleton() {
   return (
-    <div className="mx-auto max-w-[1600px] px-4 pt-6 md:px-8">
-      <Bone className="mb-6 h-8 w-48" />
+    <div>
+      <Bone className="mb-6 h-9 w-48" />
       <GridSkeleton count={12} />
     </div>
   );

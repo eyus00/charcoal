@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { MediaItem, MediaType } from '../lib/tmdb';
 import MediaCard from './MediaCard';
-import { CardSkeleton, GRID_SIZES, GridSkeleton } from './Skeletons';
+import { CardSkeleton, GRID, GRID_SIZES, GridSkeleton } from './Skeletons';
 
 interface Props {
   items: MediaItem[];
@@ -21,9 +21,9 @@ export default function Grid({ items, type, loading, error, onRetry, hasMore, lo
   if (!items.length) return <>{empty ?? <p className="py-20 text-center text-muted">Nothing found.</p>}</>;
   return (
     <>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">
+      <div className={GRID}>
         {items.map((m) => (
-          <MediaCard key={(m.media_type ?? type) + String(m.id)} item={m} type={type} sizes={GRID_SIZES} showType={!type} />
+          <MediaCard key={(m.media_type ?? type) + String(m.id)} item={m} type={type} sizes={GRID_SIZES} />
         ))}
         {loadingMore && Array.from({ length: 6 }, (_, i) => <CardSkeleton key={`s${i}`} />)}
       </div>
@@ -45,12 +45,12 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
     return () => io.disconnect();
   }, [busy]);
   return (
-    <div className="mt-10 flex justify-center">
+    <div className="mt-12 flex justify-center">
       <button
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className="h-10 rounded-lg border border-line px-5 text-sm text-muted transition-colors hover:border-white/30 hover:text-white disabled:opacity-50"
+        className="h-12 rounded-2xl bg-surface px-6 text-[15px] text-white/85 transition hover:bg-raised disabled:opacity-50"
       >
         {busy ? 'Loading…' : 'Load more'}
       </button>
@@ -63,7 +63,7 @@ export function ErrorBox({ onRetry, message = 'Something went wrong loading this
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-muted">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="h-9 rounded-lg bg-white/10 px-4 text-sm hover:bg-white/15">
+        <button onClick={onRetry} className="h-11 rounded-2xl bg-surface px-5 text-sm hover:bg-raised">
           Try again
         </button>
       )}

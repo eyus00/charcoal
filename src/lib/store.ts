@@ -44,6 +44,8 @@ export interface Settings {
   subtitleLabel: string | null;
   /** Sandbox embed iframes so they can't open pop-ups (some servers refuse to play). */
   blockPopups: boolean;
+  /** Optional stream proxy (e.g. a Cloudflare Worker) that replaces Jelly's /v1/proxy for playback. */
+  proxyUrl: string;
 }
 
 export interface State {
@@ -65,6 +67,7 @@ const defaultSettings: Settings = {
   playbackRate: 1,
   subtitleLabel: null,
   blockPopups: false,
+  proxyUrl: '',
 };
 
 // ---------- load / migrate ----------
@@ -170,6 +173,12 @@ export function resumeTarget(history: HistoryItem[], mediaType: MediaType, id: n
     return { item: last, season: last.nextEpisode.season, episode: last.nextEpisode.episode, isNext: true };
   }
   return { item: last, season: last.season, episode: last.episode, isNext: false };
+}
+
+/** One entry per title (latest episode for shows), newest first. */
+export function historyByTitle(history: HistoryItem[]): HistoryItem[] {
+  const seen = new Set<string>();
+  return history.filter((h) => !seen.has(h.mediaType + h.id) && !!seen.add(h.mediaType + h.id));
 }
 
 /** One entry per title, newest first, skipping finished movies and finished shows. */

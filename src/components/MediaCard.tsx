@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
@@ -19,38 +19,50 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
+/** "2025 · ★ 7.2" */
+export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
+  return (
+    <div className={cx('flex items-center gap-1.5 text-[13px] text-muted', className)}>
+      {year && <span>{year}</span>}
+      {year && rating ? <span className="text-faint">·</span> : null}
+      {rating ? (
+        <span className="flex items-center gap-1 font-medium text-star">
+          <Star className="size-3.5 fill-current" strokeWidth={0} />
+          {rating.toFixed(1)}
+        </span>
+      ) : null}
+      {extra}
+    </div>
+  );
+}
+
 interface Props {
   item: MediaItem;
   type?: MediaType;
   sizes: string;
   className?: string;
-  showType?: boolean;
+  /** Small label over the poster's top-left corner (e.g. bookmark status). */
+  badge?: ReactNode;
+  /** Extra controls over the card (e.g. remove button). */
+  overlay?: ReactNode;
 }
 
-export default function MediaCard({ item, type, sizes, className, showType = true }: Props) {
+/** Poster card: rounded poster, title, year · rating. */
+export default function MediaCard({ item, type, sizes, className, badge, overlay }: Props) {
   const t = typeOf(item, type);
   const title = titleOf(item);
-  const prefetch = usePrefetch(t, item.id);
+  const href = `/${t}/${item.id}`;
   return (
-    <Link to={`/${t}/${item.id}`} className={cx('group block', className)} {...prefetch}>
-      <Img
-        path={item.poster_path}
-        kind="poster"
-        sizes={sizes}
-        alt={title}
-        className="aspect-[2/3] rounded-lg ring-1 ring-white/5 transition group-hover:ring-white/30"
-      />
-      <div className="mt-2 truncate text-sm font-medium text-white/90 group-hover:text-white">{title}</div>
-      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
-        {yearOf(item) && <span>{yearOf(item)}</span>}
-        {showType && <span>· {t === 'movie' ? 'Movie' : 'TV'}</span>}
-        {item.vote_average > 0 && (
-          <span className="ml-auto flex items-center gap-0.5">
-            <Star className="size-3 fill-current text-amber-400" aria-hidden />
-            {item.vote_average.toFixed(1)}
-          </span>
-        )}
-      </div>
-    </Link>
+    <div className={cx('group relative', className)}>
+      <Link to={href} className="block" {...usePrefetch(t, item.id)}>
+        <div className="relative overflow-hidden rounded-2xl">
+          <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" imgClassName="transition-transform duration-300 group-hover:scale-[1.03]" />
+          {badge && <div className="absolute top-2 left-2">{badge}</div>}
+        </div>
+        <div className="mt-2.5 truncate px-0.5 text-[15px] font-medium text-white/95">{title}</div>
+        <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5 px-0.5" />
+      </Link>
+      {overlay}
+    </div>
   );
 }

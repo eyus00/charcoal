@@ -1,30 +1,26 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import FilterBar from '../components/FilterBar';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { Search as SearchIcon } from 'lucide-react';
+import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
-import { SearchBox } from '../components/Layout';
 import { hasActiveFilters, matchesFilters, parseFilters, type Filters } from '../lib/filters';
-import { cleanList, tmdb, type MediaItem, type Page } from '../lib/tmdb';
+import { cleanList, q, tmdb, type MediaItem, type Page } from '../lib/tmdb';
 import { useTitle } from '../lib/util';
-import { useDiscover } from './Catalog';
+import { Empty, PageHeader, useDiscover } from './Catalog';
 
-/** Text search. TMDB search can only filter by year server-side; the rest is applied to the results. */
+/** Text search. TMDB search only filters by year server-side; genre/rating/year ranges are applied to results. */
 function useTextSearch(query: string, f: Filters) {
   return useInfiniteQuery({
     queryKey: ['search', query, f.type, f.from === f.to ? f.from : undefined],
     enabled: !!query,
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
-      const singleYear = f.from && f.from === f.to ? f.from : undefined;
-      if (f.type === 'all') {
-        const res = await tmdb<Page<MediaItem>>('/search/multi', { query, page: pageParam, include_adult: 'false' }, signal);
-        return res;
-      }
+      if (f.type === 'all') return tmdb<Page<MediaItem>>('/search/multi', { query, page: pageParam, include_adult: 'false' }, signal);
       const yearKey = f.type === 'movie' ? 'primary_release_year' : 'first_air_date_year';
       const res = await tmdb<Page<MediaItem>>(
         `/search/${f.type}`,
-        { query, page: pageParam, include_adult: 'false', [yearKey]: singleYear },
+        { query, page: pageParam, include_adult: 'false', [yearKey]: f.from && f.from === f.to ? f.from : undefined },
         signal,
       );
       return { ...res, results: res.results.map((m) => ({ ...m, media_type: f.type as 'movie' | 'tv' })) };
@@ -37,53 +33,50 @@ export default function Search() {
   const [params] = useSearchParams();
   const query = (params.get('q') ?? '').trim();
   const filters = useMemo(() => parseFilters(params), [params]);
-  const text = useTextSearch(query, filters);
-  const browse = useDiscover(filters, !query);
-  const active = query ? text : browse;
-  useTitle(query ? `“${query}”` : 'Search');
+  const set = useUrlFilters();
+  const [open, setOpen] = useState(false);
+  const filtering = hasActiveFilters(filters) || filters.type !== 'all';
 
+  const text = useTextSearch(query, filters);
+  const browse = useDiscover(filters, !query && filtering);
+  // No query and no filters: show what's popular, like the old "Explore" page.
+  const popular = useQuery({ ...q.trending('all', 'week'), enabled: !query && !filtering });
+
+  const active = query ? text : browse;
   const items = useMemo(() => {
+    if (!query && !filtering) return cleanList(popular.data?.results ?? []);
     const all = cleanList(active.data?.pages.flatMap((p) => p.results) ?? []);
     return query ? all.filter((m) => matchesFilters(m, filters)) : all;
-  }, [active.data, query, filters]);
+  }, [active.data, popular.data, query, filtering, filters]);
+  useTitle(query ? `“${query}”` : 'Search');
 
   // Filters can hide a whole page of text results; keep loading until something shows.
-  const loadedPages = active.data?.pages.length ?? 0;
-  const filteredEmpty = !!query && hasActiveFilters(filters) && items.length === 0 && active.hasNextPage && loadedPages < 5;
+  const loaded = active.data?.pages.length ?? 0;
+  const filteredEmpty = !!query && filtering && items.length === 0 && !!active.hasNextPage && loaded < 5;
   const { isFetchingNextPage, fetchNextPage } = active;
   useEffect(() => {
     if (filteredEmpty && !isFetchingNextPage) fetchNextPage();
   }, [filteredEmpty, isFetchingNextPage, fetchNextPage]);
 
+  const usingPopular = !query && !filtering;
+  const total = query ? items.length : usingPopular ? undefined : browse.data?.pages[0]?.total;
+  const clear = () => set({ type: 'all', genres: [], from: undefined, to: undefined, rating: 0 });
+
   return (
-    <div className="mx-auto max-w-[1600px] px-4 pt-4 md:px-8 md:pt-8">
-      <SearchBox className="mb-4 flex md:hidden" autoFocus={!query} />
-      <h1 className="mb-5 truncate text-2xl font-semibold tracking-tight md:text-3xl">
-        {query ? (
-          <>
-            Results for <span className="text-muted">“{query}”</span>
-          </>
-        ) : (
-          'Browse'
-        )}
-      </h1>
-      <FilterBar filters={filters} showType showSort={!query} />
-      <div className="mt-6">
-        <Grid
-          items={items}
-          loading={active.isPending || filteredEmpty}
-          error={active.error}
-          onRetry={() => active.refetch()}
-          hasMore={active.hasNextPage}
-          loadingMore={active.isFetchingNextPage}
-          onLoadMore={() => !active.isFetchingNextPage && active.fetchNextPage()}
-          empty={
-            <p className="py-20 text-center text-muted">
-              {query ? `No results for “${query}”${hasActiveFilters(filters) ? ' with these filters' : ''}.` : 'No titles match these filters.'}
-            </p>
-          }
-        />
-      </div>
+    <div className="pb-10">
+      <PageHeader label={query ? 'Results for' : undefined} title={query ? `“${query}”` : 'Explore'} count={total} onClear={filtering ? clear : undefined} />
+      <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} withType />
+      <Grid
+        items={items}
+        loading={usingPopular ? popular.isPending : active.isPending || filteredEmpty}
+        error={usingPopular ? popular.error : active.error}
+        onRetry={() => (usingPopular ? popular.refetch() : active.refetch())}
+        hasMore={!usingPopular && active.hasNextPage}
+        loadingMore={active.isFetchingNextPage}
+        onLoadMore={() => !active.isFetchingNextPage && active.fetchNextPage()}
+        empty={<Empty icon={SearchIcon} title="No results found" body="We couldn't find anything matching your search. Try adjusting your filters or search for something else." />}
+      />
+      <AdvancedFilters open={open} onClose={() => setOpen(false)} filters={filters} set={set} withType total={total} />
     </div>
   );
 }
