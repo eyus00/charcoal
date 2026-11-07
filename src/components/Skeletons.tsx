@@ -1,16 +1,16 @@
 import { cx } from '../lib/util';
 
 export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1280px) 14vw, (min-width: 1024px) 17vw, (min-width: 640px) 30vw, 46vw';
-export const GRID = 'grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
+export const GRID = 'grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
 
 export const Bone = ({ className }: { className?: string }) => <div className={cx('skeleton rounded-md', className)} />;
 
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={className}>
-      <Bone className="aspect-[2/3] w-full rounded-2xl" />
-      <Bone className="mt-3 h-3.5 w-3/4" />
-      <Bone className="mt-2 h-3 w-1/3" />
+    <div className={cx('rounded-[20px] p-1.5 pb-2.5 ring-1 ring-white/[0.06]', className)}>
+      <Bone className="aspect-[2/3] w-full rounded-[14px]" />
+      <Bone className="mx-1.5 mt-3 h-3.5 w-3/4" />
+      <Bone className="mx-1.5 mt-2 h-3 w-1/3" />
     </div>
   );
 }

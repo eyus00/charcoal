@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Bookmark, BookmarkCheck, CircleCheck, Clock3, PlayCircle, Trash2, type LucideIcon } from 'lucide-react';
+import { Bookmark, Check, CircleCheck, Clock3, Eye, type LucideIcon } from 'lucide-react';
 import { actions, useStore, type WatchStatus } from '../lib/store';
 import type { MediaType } from '../lib/tmdb';
 import { cx, useDismiss, useKeys } from '../lib/util';
@@ -10,14 +10,9 @@ export const STATUS_LABEL: Record<WatchStatus, string> = {
   completed: 'Watched',
 };
 export const STATUS_ICON: Record<WatchStatus, LucideIcon> = {
-  watching: PlayCircle,
+  watching: Eye,
   planned: Clock3,
   completed: CircleCheck,
-};
-const STATUS_HINT: Record<WatchStatus, string> = {
-  watching: 'In progress',
-  planned: 'Saved for later',
-  completed: 'Finished',
 };
 const STATUSES = Object.keys(STATUS_LABEL) as WatchStatus[];
 
@@ -50,14 +45,15 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
   const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, ref);
 
+  // Picking the current status again removes the title from the watchlist.
   const choose = (status: WatchStatus) => {
-    actions.setBookmark({ ...item, status });
+    if (current?.status === status) actions.removeBookmark(item.mediaType, item.id);
+    else actions.setBookmark({ ...item, status });
     setOpen(false);
   };
   // "b": quick add as "To watch", or remove if already saved.
-  useKeys({ b: () => (current ? actions.removeBookmark(item.mediaType, item.id) : choose('planned')) }, !!hotkey);
+  useKeys({ b: () => (current ? actions.removeBookmark(item.mediaType, item.id) : actions.setBookmark({ ...item, status: 'planned' })) }, !!hotkey);
 
-  const Icon = current ? BookmarkCheck : Bookmark;
   return (
     <div ref={ref} className={cx('relative', className)} onClick={(e) => e.stopPropagation()}>
       <button
@@ -74,51 +70,33 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
             : cx('h-12 rounded-full px-5 text-[15px] font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
         )}
       >
-        <Icon className="size-5" />
+        <Bookmark className={cx('size-5', current && 'fill-current')} />
         {variant === 'full' && (current ? STATUS_LABEL[current.status] : 'Watchlist')}
       </button>
       {open && (
         <div
           role="menu"
-          aria-label="Watchlist"
-          className={cx('absolute bottom-full z-50 mb-3 w-64 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5', variant === 'round' ? 'right-0' : 'left-0')}
+          aria-label="Watchlist status"
+          className={cx('absolute bottom-full z-50 mb-3 w-48 space-y-0.5 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5', variant === 'round' ? 'right-0' : 'left-0')}
         >
-          <div className="px-3 pt-2 pb-1.5 text-xs text-muted">{current ? 'In your watchlist' : 'Add to watchlist'}</div>
           {STATUSES.map((s) => {
             const SIcon = STATUS_ICON[s];
             const on = current?.status === s;
             return (
               <button
                 key={s}
-                role="menuitemradio"
+                role="menuitemcheckbox"
                 aria-checked={on}
+                title={on ? 'Tap again to remove from watchlist' : undefined}
                 onClick={() => choose(s)}
-                className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition', on ? 'bg-white/10' : 'hover:bg-white/5')}
+                className={cx('flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition', on ? 'bg-white text-black' : 'text-white/85 hover:bg-white/10 hover:text-white')}
               >
-                <SIcon className={cx('size-5 shrink-0', on ? 'text-white' : 'text-muted')} />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm leading-tight">{STATUS_LABEL[s]}</span>
-                  <span className="block text-xs leading-tight text-faint">{STATUS_HINT[s]}</span>
-                </span>
-                {on && <span className="size-2 rounded-full bg-white" aria-hidden />}
+                <SIcon className="size-4 shrink-0" />
+                <span className="flex-1">{STATUS_LABEL[s]}</span>
+                {on && <Check className="size-4" />}
               </button>
             );
           })}
-          {current && (
-            <>
-              <div className="mx-3 my-1 h-px bg-line" />
-              <button
-                role="menuitem"
-                onClick={() => {
-                  actions.removeBookmark(item.mediaType, item.id);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-300 transition hover:bg-red-500/10"
-              >
-                <Trash2 className="size-5 shrink-0" /> Remove from watchlist
-              </button>
-            </>
-          )}
         </div>
       )}
     </div>

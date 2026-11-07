@@ -206,22 +206,23 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
 
       <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
         <div className="max-w-2xl">
-          <span className={cx(RISE, shown ? SHOWN : HIDDEN, 'inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85 backdrop-blur-sm')}>
-            <TypeIcon className="size-3.5" />
-            {type === 'movie' ? 'Movie' : 'Series'}
-          </span>
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75 delay-75')}>
-            {[yearOf(item), genres.join(', ')].filter(Boolean).join('  ·  ')}
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80')}>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85 backdrop-blur-sm">
+              <TypeIcon className="size-3.5" />
+              {type === 'movie' ? 'Movie' : 'Series'}
+            </span>
+            {yearOf(item) && <span>{yearOf(item)}</span>}
             {item.vote_average > 0 && (
               <>
                 <span className="text-white/40">·</span>
-                <span className="flex items-center gap-1 text-star">
+                <span className="flex items-center gap-1 font-medium text-star">
                   <Star className="size-3.5 fill-current" strokeWidth={0} />
                   {item.vote_average.toFixed(1)}
                 </span>
               </>
             )}
           </p>
+          {genres.length > 0 && <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-2 text-sm text-white/65 delay-75')}>{genres.join(', ')}</p>}
           <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-150')}>
             <span className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</span>
           </h2>

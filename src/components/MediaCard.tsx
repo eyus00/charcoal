@@ -54,16 +54,16 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
   const href = `/${t}/${item.id}`;
   return (
     <div className={cx('group relative', className)}>
-      <Link to={href} className="block" {...usePrefetch(t, item.id)}>
-        <div className="relative overflow-hidden rounded-2xl">
+      <Link to={href} className="block rounded-[20px] bg-surface/60 p-1.5 pb-2.5 ring-1 ring-white/[0.06] transition group-hover:bg-surface group-hover:ring-white/15" {...usePrefetch(t, item.id)}>
+        <div className="relative overflow-hidden rounded-[14px]">
           <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" imgClassName="transition-transform duration-300 group-hover:scale-[1.03]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
         </div>
-        <div className="mt-2.5 truncate px-0.5 text-[15px] font-medium text-white/95">{title}</div>
+        <div className="mt-2.5 truncate px-1.5 text-[15px] font-medium text-white/95">{title}</div>
         <Meta
           year={yearOf(item)}
           rating={item.vote_average}
-          className="mt-0.5 px-0.5"
+          className="mt-0.5 px-1.5"
           extra={t === 'tv' ? <Tv className="ml-auto size-3.5 text-faint" aria-label="TV show" /> : <Film className="ml-auto size-3.5 text-faint" aria-label="Movie" />}
         />
       </Link>
