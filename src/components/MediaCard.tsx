@@ -19,6 +19,12 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
+/** Small movie / TV icon, pushed to the right edge of a meta row. */
+export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
+  const Icon = type === 'tv' ? Tv : Film;
+  return <Icon className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
+}
+
 /** "2025 · ★ 7.2" */
 export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
   return (
@@ -64,7 +70,7 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
           year={yearOf(item)}
           rating={item.vote_average}
           className="mt-0.5 px-1.5"
-          extra={t === 'tv' ? <Tv className="ml-auto size-3.5 text-faint" aria-label="TV show" /> : <Film className="ml-auto size-3.5 text-faint" aria-label="Movie" />}
+          extra={<TypeIcon type={t} />}
         />
       </Link>
       {overlay}
