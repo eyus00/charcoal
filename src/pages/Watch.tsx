@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ListVideo, Server, ShieldCheck, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Keyboard, ListVideo, Server, ShieldCheck, X } from 'lucide-react';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -9,7 +9,8 @@ import { viaProxy } from '../lib/proxy';
 import { EMBEDS, embedById, fetchJelly, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
-import { cx, useDismiss, useTitle } from '../lib/util';
+import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
+import { hotkeysCtl } from '../components/Hotkeys';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player from '../player/Player';
 
@@ -129,6 +130,14 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   };
 
   const embed = server !== 'jelly' ? (embedById(server) ?? EMBEDS[0]) : null;
+
+  // Page shortcuts (the Jelly player adds its own: space, arrows, f, m, c, n, i).
+  useKeys({
+    ...(type === 'tv' ? { e: () => setDrawer(true) } : {}),
+    ...(prev ? { P: () => go(prev.season, prev.episode) } : {}),
+    // The Jelly player already handles "n"; embeds can't, so the page does.
+    ...(next && embed ? { n: () => go(next.season, next.episode), N: () => go(next.season, next.episode) } : {}),
+  });
   const subtitle = type === 'tv' ? `${epLabel(season, episode)}${ep?.name ? ` · ${ep.name}` : ''}` : undefined;
 
   const header = (
@@ -225,23 +234,26 @@ function Header({
       </Link>
       {onEpisodes && (
         <>
-          <HeaderButton label="Previous episode" onClick={prev} disabled={!prev}>
+          <HeaderButton label="Previous episode (Shift+P)" onClick={prev} disabled={!prev}>
             <ChevronLeft className="size-5" />
           </HeaderButton>
-          <HeaderButton label="Next episode" onClick={next} disabled={!next}>
+          <HeaderButton label="Next episode (N)" onClick={next} disabled={!next}>
             <ChevronRight className="size-5" />
           </HeaderButton>
-          <HeaderButton label="Episodes" onClick={onEpisodes}>
+          <HeaderButton label="Episodes (E)" onClick={onEpisodes}>
             <ListVideo className="size-5" />
           </HeaderButton>
         </>
       )}
       {serverMenu}
+      <HeaderButton label="Keyboard shortcuts (?)" onClick={() => hotkeysCtl.help()} className="hidden lg:grid">
+        <Keyboard className="size-[18px]" />
+      </HeaderButton>
     </div>
   );
 }
 
-function HeaderButton({ label, onClick, disabled, children }: { label: string; onClick?: () => void; disabled?: boolean; children: React.ReactNode }) {
+function HeaderButton({ label, onClick, disabled, children, className }: { label: string; onClick?: () => void; disabled?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <button
       type="button"
@@ -249,7 +261,7 @@ function HeaderButton({ label, onClick, disabled, children }: { label: string; o
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent"
+      className={cx('grid size-10 shrink-0 place-items-center rounded-full hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent', className)}
     >
       {children}
     </button>
@@ -263,6 +275,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
   useDismiss(open, close, ref);
   const blockPopups = useStore((s) => s.settings.blockPopups);
   const name = current === 'jelly' ? 'Jelly' : (embedById(current)?.name ?? 'Server');
+  useKeys({ s: () => setOpen((o) => !o) });
   const pick = (id: string) => {
     onPick(id);
     setOpen(false);
@@ -274,6 +287,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
+        title="Servers (S)"
         className="flex h-10 items-center gap-2 rounded-full px-3 text-sm hover:bg-white/15"
       >
         <Server className="size-4" />

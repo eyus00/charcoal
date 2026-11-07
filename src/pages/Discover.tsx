@@ -59,31 +59,37 @@ export default function Discover() {
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-3xl">“{query}”</h1>
         </div>
       )}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
-        {TYPES.map((t) => (
-          <button
-            key={t.key}
-            role="radio"
-            aria-checked={filters.type === t.key}
-            onClick={() => setType(t.key)}
-            className={cx('h-10 rounded-full px-5 text-sm transition', filters.type === t.key ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Type switch + filters: two rows on phones, one sticky row under the top bar on desktop. */}
+      <div
+        className={cx(
+          'relative z-20 mb-7 flex flex-wrap items-center gap-3 lg:sticky lg:top-[92px] lg:flex-nowrap lg:gap-4 lg:py-3',
+          "lg:before:pointer-events-none lg:before:absolute lg:before:inset-y-0 lg:before:-inset-x-10 lg:before:-z-10 lg:before:bg-bg/80 lg:before:backdrop-blur-xl lg:before:content-['']",
+        )}
+      >
+        <div className="inline-flex shrink-0 rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
+          {TYPES.map((t) => (
+            <button
+              key={t.key}
+              role="radio"
+              aria-checked={filters.type === t.key}
+              onClick={() => setType(t.key)}
+              className={cx('h-10 rounded-full px-5 text-sm transition', filters.type === t.key ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} className="order-last basis-full lg:order-none lg:basis-auto lg:flex-1" />
         {hasActiveFilters(filters) && (
-          <div className="flex items-center gap-1">
-            {total !== undefined && <span className="px-2 text-sm text-faint tabular-nums">{total.toLocaleString()} titles</span>}
-            <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-muted transition hover:bg-surface hover:text-white">
-              <X className="size-4" /> Clear filters
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            {total !== undefined && <span className="px-2 text-sm whitespace-nowrap text-faint tabular-nums">{total.toLocaleString()} titles</span>}
+            <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap text-muted transition hover:bg-surface hover:text-white">
+              <X className="size-4" /> Clear<span className="hidden xl:inline"> filters</span>
             </button>
           </div>
         )}
       </div>
 
-      <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} />
       <Grid
         items={items}
         type={filters.type === 'all' ? undefined : filters.type}
