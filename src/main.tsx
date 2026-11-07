@@ -8,7 +8,6 @@ import NotFound from './pages/NotFound';
 import './index.css';
 
 // Route-level code splitting: the player (and hls.js) never loads while browsing.
-const Catalog = lazy(() => import('./pages/Catalog'));
 const Discover = lazy(() => import('./pages/Discover'));
 const Details = lazy(() => import('./pages/Details'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -24,6 +23,14 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/** /movies and /tv are Discover with that type selected (other params kept). */
+function TypeRedirect({ type }: { type: 'movie' | 'tv' }) {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  params.set('type', type);
+  return <Navigate to={`/discover?${params}`} replace />;
+}
 
 /** Old /search links keep working (same query string). */
 function SearchRedirect() {
@@ -44,8 +51,8 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'movies', element: <Catalog type="movie" /> },
-      { path: 'tv', element: <Catalog type="tv" /> },
+      { path: 'movies', element: <TypeRedirect type="movie" /> },
+      { path: 'tv', element: <TypeRedirect type="tv" /> },
       { path: 'discover', element: <Discover /> },
       { path: 'search', element: <SearchRedirect /> },
       { path: 'movie/:id', element: <Details type="movie" /> },
