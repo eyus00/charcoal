@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Play, X } from 'lucide-react';
 import Img from './Img';
+import { Chip } from './EpisodeTile';
+import Kbd from './Kbd';
+import { CARD_INFO } from './MediaCard';
 import { ErrorBox } from './Grid';
 import { Bone } from './Skeletons';
 import { allSeasons, epLabel, regularSeasons } from '../lib/episodes';
 import { percent, resumeTarget, useStore, type HistoryItem } from '../lib/store';
 import { q, titleOf, type Details } from '../lib/tmdb';
-import { cx, formatDate, isFuture } from '../lib/util';
+import { cx, formatDate, formatRuntime, isFuture, isTypingTarget } from '../lib/util';
 
 interface Props {
   show: Details;
@@ -30,6 +33,7 @@ interface Props {
  */
 export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick }: Props) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const history = useStore((s) => s.history);
   const seasons = allSeasons(show);
   const resume = resumeTarget(history, 'tv', show.id);
@@ -46,17 +50,34 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     return map;
   }, [history, show.id, season]);
 
-  // lock page scroll, close on Escape
+  // Keys: Esc closes, ←/→ switch season, P plays the resume / first episode.
+  const keys = useRef<(e: KeyboardEvent) => void>(() => {});
+  keys.current = (e) => {
+    if (e.key === 'Escape') return onClose();
+    if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e)) return;
+    const at = seasons.findIndex((x) => x.season_number === season);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const nextSeason = seasons[at + (e.key === 'ArrowLeft' ? -1 : 1)];
+      if (!nextSeason) return;
+      e.preventDefault();
+      pick(nextSeason.season_number);
+    } else if ((e.key === 'p' || e.key === 'P') && !current) {
+      e.preventDefault();
+      onPick?.();
+      navigate(href(cta.s, cta.e), { replace });
+    }
+  };
+  // lock page scroll while open
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => keys.current(e);
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
     };
-  }, [onClose]);
+  }, []);
 
   // bring the relevant episode into view once the season has loaded
   const list = useRef<HTMLDivElement>(null);
@@ -121,9 +142,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }, (_, i) => (
                 <div key={i}>
-                  <Bone className="aspect-video rounded-2xl" />
-                  <Bone className="mt-3 h-4 w-3/4" />
-                  <Bone className="mt-2 h-3 w-1/3" />
+                  <Bone className="aspect-video rounded-b-none rounded-t-2xl" />
+                  <div className="h-[112px] rounded-b-2xl border border-t-0 border-white/[0.08] p-3.5">
+                    <Bone className="h-4 w-3/4" />
+                    <Bone className="mt-2 h-3 w-1/3" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -132,16 +155,16 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           ) : !data.episodes.length ? (
             <p className="py-16 text-center text-muted">No episodes listed yet.</p>
           ) : (
-            <div className="grid gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data.episodes.map((ep) => {
                 const h = progress.get(ep.episode_number);
                 const pct = percent(h);
                 const upcoming = isFuture(ep.air_date);
                 const isCurrent = current?.season === season && current.episode === ep.episode_number;
-                const left = h?.progress && !h.isCompleted ? Math.max(1, Math.round((h.progress.duration - h.progress.watched) / 60)) : 0;
+                const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
                 const body = (
                   <>
-                    <div className="relative overflow-hidden rounded-2xl">
+                    <div className="relative overflow-hidden rounded-t-2xl">
                       <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-40' : undefined} />
                       {!upcoming && (
                         <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
@@ -150,32 +173,41 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                           </span>
                         </span>
                       )}
-                      <span className="absolute top-2.5 left-2.5 flex gap-1.5 text-xs">
-                        {isCurrent && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-black">Now playing</span>}
-                        {upcoming && <span className="rounded-full bg-black/60 px-2.5 py-1">Airs {formatDate(ep.air_date)}</span>}
-                      </span>
-                      <span className="absolute right-2.5 bottom-2.5 flex gap-1.5 text-xs">
-                        {ep.runtime ? <span className="rounded-full bg-black/60 px-2.5 py-1">{ep.runtime}m</span> : null}
-                        {h?.isCompleted ? (
-                          <span className="flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1">
+                      {(isCurrent || upcoming) && (
+                        <span className="absolute top-2.5 left-2.5">
+                          {isCurrent ? <Chip light>Now playing</Chip> : <Chip>Airs {formatDate(ep.air_date)}</Chip>}
+                        </span>
+                      )}
+                      {h?.isCompleted ? (
+                        <span className="absolute bottom-2.5 left-2.5">
+                          <Chip>
                             <Check className="size-3.5" /> Watched
-                          </span>
-                        ) : left ? (
-                          <span className="rounded-full bg-black/60 px-2.5 py-1">{left}m left</span>
-                        ) : null}
-                      </span>
+                          </Chip>
+                        </span>
+                      ) : watched ? (
+                        <span className="absolute bottom-2.5 left-2.5">
+                          <Chip light>{formatRuntime(watched)}</Chip>
+                        </span>
+                      ) : null}
+                      {ep.runtime ? (
+                        <span className="absolute right-2.5 bottom-2.5">
+                          <Chip>{formatRuntime(ep.runtime)}</Chip>
+                        </span>
+                      ) : null}
                       {pct > 0 && !h?.isCompleted && (
                         <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
                           <span className="block h-full bg-white" style={{ width: `${pct}%` }} />
                         </span>
                       )}
                     </div>
-                    <div className="mt-2.5 flex items-baseline gap-2">
-                      <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                      <h3 className={cx('truncate text-[15px] font-medium', isCurrent && 'text-white')}>{ep.name}</h3>
+                    <div className={cx(CARD_INFO, 'h-[112px] px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
+                        <h3 className="truncate text-[15px] font-medium text-white/95">{ep.name}</h3>
+                      </div>
+                      {!upcoming && ep.air_date && <div className="text-[13px] text-faint">{formatDate(ep.air_date)}</div>}
+                      {ep.overview && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[18px] text-muted">{ep.overview}</p>}
                     </div>
-                    {!upcoming && ep.air_date && <div className="text-[13px] text-faint">{formatDate(ep.air_date)}</div>}
-                    {ep.overview && <p className="mt-1.5 line-clamp-2 text-sm text-muted">{ep.overview}</p>}
                   </>
                 );
                 return upcoming ? (
@@ -192,14 +224,26 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           )}
         </div>
 
-        {!current && (
-          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line px-5 py-4 md:px-7">
-            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
+        <div className={cx('flex shrink-0 items-center gap-3 border-t border-line px-5 py-4 md:px-7', current && 'hidden lg:flex')}>
+          <div className="hidden items-center gap-4 text-xs text-faint lg:flex">
+            {seasons.length > 1 && (
+              <span className="flex items-center gap-1.5">
+                <Kbd>←</Kbd>
+                <Kbd>→</Kbd> Season
+              </span>
+            )}
+            <span className="flex items-center gap-1.5">
+              <Kbd>Esc</Kbd> Close
+            </span>
+          </div>
+          {!current && (
+            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="ml-auto flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} />
               {cta.label} {epLabel(cta.s, cta.e)}
+              <Kbd light>P</Kbd>
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

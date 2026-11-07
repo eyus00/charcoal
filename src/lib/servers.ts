@@ -87,16 +87,8 @@ export interface EmbedServer {
 const ACCENT = 'ffffff';
 const sec = (n?: number) => (n && n > 5 ? Math.floor(n) : 0);
 
+// The first entry is the default embed (also the fallback when Jelly finds nothing).
 export const EMBEDS: EmbedServer[] = [
-  {
-    id: 'videasy.net',
-    name: 'Videasy',
-    tracksProgress: true,
-    url: (t, r) =>
-      t.type === 'movie'
-        ? `https://player.videasy.net/movie/${t.id}?color=${ACCENT}&autoplay=true${sec(r) ? `&progress=${sec(r)}` : ''}`
-        : `https://player.videasy.net/tv/${t.id}/${t.season}/${t.episode}?color=${ACCENT}&nextEpisode=true&episodeSelector=false&autoplayNextEpisode=false${sec(r) ? `&progress=${sec(r)}` : ''}`,
-  },
   {
     id: 'vidlink.pro',
     name: 'VidLink',
@@ -107,6 +99,15 @@ export const EMBEDS: EmbedServer[] = [
         ? `https://vidlink.pro/movie/${t.id}${q}`
         : `https://vidlink.pro/tv/${t.id}/${t.season}/${t.episode}${q}`;
     },
+  },
+  {
+    id: 'videasy.net',
+    name: 'Videasy',
+    tracksProgress: true,
+    url: (t, r) =>
+      t.type === 'movie'
+        ? `https://player.videasy.net/movie/${t.id}?color=${ACCENT}&autoplay=true${sec(r) ? `&progress=${sec(r)}` : ''}`
+        : `https://player.videasy.net/tv/${t.id}/${t.season}/${t.episode}?color=${ACCENT}&nextEpisode=true&episodeSelector=false&autoplayNextEpisode=false${sec(r) ? `&progress=${sec(r)}` : ''}`,
   },
   {
     id: 'vidsrc.pro',

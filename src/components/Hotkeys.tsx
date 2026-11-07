@@ -26,16 +26,18 @@ const SECTIONS: { title: string; keys: [string[], string][] }[] = [
   { title: 'Go to', keys: Object.entries(GO).map(([k, v]) => [['g', k], v.label]) },
   { title: 'Home', keys: [[['←', '→'], 'Previous / next featured title']] },
   { title: 'Title page', keys: [[['p'], 'Play / resume (episodes for TV)'], [['b'], 'Add to / remove from watchlist'], [['t'], 'Play trailer']] },
-  { title: 'Player', keys: [[['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 10s'], [['↑', '↓'], 'Volume'], [['f'], 'Fullscreen'], [['m'], 'Mute'], [['c'], 'Subtitles'], [['n'], 'Next episode']] },
+  { title: 'Player', keys: [[['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 10s'], [['↑', '↓'], 'Volume'], [['f'], 'Fullscreen'], [['m'], 'Mute'], [['c'], 'Subtitles'], [['i'], 'Picture in picture'], [['n'], 'Next episode'], [['Shift', 'P'], 'Previous episode'], [['e'], 'Episodes'], [['s'], 'Servers']] },
+  { title: 'Episodes list', keys: [[['←', '→'], 'Previous / next season'], [['p'], 'Play / resume'], [['Esc'], 'Close']] },
 ];
 
 /** Global desktop shortcuts: ⌘K / Ctrl+K and "/" search, "g" + letter navigation, "?" help. */
-export default function Hotkeys({ openSearch }: { openSearch: () => void }) {
+export default function Hotkeys({ openSearch }: { openSearch?: () => void }) {
   const navigate = useNavigate();
   const [help, setHelp] = useState(false);
   hotkeysCtl.help = () => setHelp(true);
-  const search = useRef(openSearch);
-  search.current = openSearch;
+  // Without a search bar on the page (e.g. the player), search keys open Discover.
+  const search = useRef<() => void>(() => {});
+  search.current = openSearch ?? (() => navigate('/discover'));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

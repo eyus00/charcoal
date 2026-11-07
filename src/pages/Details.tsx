@@ -222,14 +222,14 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
   );
 }
 
-/** "S2 · E5 airs Fri, Nov 14" for returning shows, or "Ended". */
+/** "S2 · E5 airs Fri, Nov 14" when a new episode is scheduled. */
 function AirStatus({ d }: { d: D }) {
   const next = d.next_episode_to_air;
   let text = '';
   if (next?.air_date && isFuture(next.air_date)) {
     const when = new Date(next.air_date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     text = `${epLabel(next.season_number, next.episode_number)} airs ${when}`;
-  } else if (d.status === 'Ended' || d.status === 'Canceled') text = d.status;
+  }
   if (!text) return null;
   return (
     <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/85">

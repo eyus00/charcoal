@@ -25,6 +25,7 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
         </Suspense>
         <Toaster />
         <OfflineNotice />
+        <Hotkeys />
       </>
     );
   }

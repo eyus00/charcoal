@@ -337,7 +337,8 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
-      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
+      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('[aria-modal="true"]')) return;
       const map: Record<string, () => void> = {
         ' ': toggle,
         k: toggle,
@@ -350,6 +351,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
         m: toggleMute,
         f: toggleFullscreen,
         c: toggleCaptions,
+        i: togglePip,
         n: () => next?.go(),
         Escape: () => setMenu(null),
       };
@@ -361,7 +363,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, next, poke, flash]);
+  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, togglePip, next, poke, flash]);
 
   // ---------- media session (lock screen / hardware keys) ----------
   useEffect(() => {
@@ -467,7 +469,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
         </button>
       )}
       {notice && (
-        <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-lg bg-black/75 px-4 py-2 text-sm">{notice}</div>
+        <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">{notice}</div>
       )}
 
       {exhausted && (
@@ -482,11 +484,11 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                   setExhausted(false);
                   setSourceIdx(0);
                 }}
-                className="h-10 rounded-lg bg-white/10 px-4 text-sm hover:bg-white/15"
+                className="h-11 rounded-full px-5 text-sm ring-1 ring-white/25 hover:bg-white/10"
               >
                 Retry
               </button>
-              <button onClick={onExhausted} className="h-10 rounded-lg bg-white px-4 text-sm font-semibold text-black hover:bg-white/90">
+              <button onClick={onExhausted} className="h-11 rounded-full bg-white px-5 text-sm font-medium text-black hover:bg-white/90">
                 Use another server
               </button>
             </div>
@@ -495,14 +497,14 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       )}
 
       {countdown !== null && next && (
-        <div className="absolute right-4 bottom-28 z-20 w-72 rounded-xl border border-line bg-raised/95 p-4 shadow-2xl md:right-8">
+        <div className="absolute right-4 bottom-28 z-20 w-72 rounded-2xl bg-raised/95 p-4 shadow-2xl ring-1 ring-white/10 backdrop-blur-md md:right-8">
           <div className="text-xs text-muted">Up next in {countdown}s</div>
           <div className="mt-1 line-clamp-2 text-sm font-medium">{next.label}</div>
           <div className="mt-3 flex gap-2">
-            <button onClick={() => next.go()} className="h-9 flex-1 rounded-lg bg-white text-sm font-semibold text-black">
+            <button onClick={() => next.go()} className="h-10 flex-1 rounded-full bg-white text-sm font-medium text-black hover:bg-white/90">
               Play now
             </button>
-            <button onClick={() => setCountdown(null)} className="h-9 rounded-lg bg-white/10 px-3 text-sm hover:bg-white/15">
+            <button onClick={() => setCountdown(null)} className="h-10 rounded-full px-4 text-sm ring-1 ring-white/20 hover:bg-white/10">
               Cancel
             </button>
           </div>
@@ -581,7 +583,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
               </div>
             )}
             <div className="relative">
-              <IconButton label="Settings" active={menu === 'settings'} onClick={() => setMenu(menu === 'settings' ? null : 'settings')}>
+              <IconButton label="Settings (quality, source, speed)" active={menu === 'settings'} onClick={() => setMenu(menu === 'settings' ? null : 'settings')}>
                 <Settings className="size-5" />
               </IconButton>
               {menu === 'settings' && (
@@ -643,7 +645,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                           setRate(sp);
                           actions.updateSettings({ playbackRate: sp });
                         }}
-                        className={cx('h-7 rounded px-2 text-xs', rate === sp ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20')}
+                        className={cx('h-8 rounded-full px-3 text-xs', rate === sp ? 'bg-white font-medium text-black' : 'bg-white/10 hover:bg-white/20')}
                       >
                         {sp}×
                       </button>
@@ -653,7 +655,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
               )}
             </div>
             {'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && (
-              <IconButton label="Picture in picture" onClick={togglePip} className="hidden sm:grid">
+              <IconButton label="Picture in picture (i)" onClick={togglePip} className="hidden sm:grid">
                 <PictureInPicture2 className="size-5" />
               </IconButton>
             )}
@@ -688,7 +690,7 @@ function IconButton({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={cx('grid size-10 place-items-center rounded-lg transition-colors hover:bg-white/15', active ? 'text-accent' : 'text-white', className)}
+      className={cx('grid size-10 place-items-center rounded-full transition-colors hover:bg-white/15', active ? 'bg-white/15 text-white' : 'text-white', className)}
     >
       {children}
     </button>
@@ -696,7 +698,7 @@ function IconButton({
 }
 
 const Popover = ({ children }: { children: ReactNode }) => (
-  <div className="absolute right-0 bottom-12 z-30 max-h-[60vh] w-64 overflow-y-auto rounded-xl border border-line bg-raised/95 p-1 shadow-2xl backdrop-blur-sm">
+  <div className="absolute right-0 bottom-12 z-30 max-h-[60vh] w-64 overflow-y-auto rounded-2xl bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md">
     {children}
   </div>
 );
@@ -705,7 +707,7 @@ const MenuLabel = ({ children }: { children: ReactNode }) => (
 );
 function MenuItem({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10">
+    <button onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10">
       <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
       {children}
     </button>
@@ -752,14 +754,14 @@ function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration:
     >
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/25 transition-[height] group-hover/seek:h-1.5">
         <div className="absolute inset-y-0 left-0 bg-white/35" style={{ width: `${duration ? Math.min(100, (buffered / duration) * 100) : 0}%` }} />
-        <div className="absolute inset-y-0 left-0 bg-accent" style={{ width: `${shown * 100}%` }} />
+        <div className="absolute inset-y-0 left-0 bg-white" style={{ width: `${shown * 100}%` }} />
       </div>
       <div
         className="absolute size-3.5 -translate-x-1/2 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/seek:opacity-100"
         style={{ left: `${shown * 100}%`, opacity: scrub !== null ? 1 : undefined }}
       />
       {tip !== null && duration > 0 && (
-        <div className="pointer-events-none absolute bottom-6 -translate-x-1/2 rounded bg-black/85 px-2 py-0.5 text-xs tabular-nums" style={{ left: `${tip * 100}%` }}>
+        <div className="pointer-events-none absolute bottom-6 -translate-x-1/2 rounded-full bg-black/85 px-2.5 py-0.5 text-xs tabular-nums" style={{ left: `${tip * 100}%` }}>
           {formatClock(tip * duration)}
         </div>
       )}
