@@ -27,16 +27,23 @@ export default function Profile() {
     ];
   }, [history, titles.length, watchlist.length]);
 
+  // Library (history + watchlist) or Settings; links like /profile#settings pick the tab.
+  const [tab, setTab] = useState<'library' | 'settings'>(hash === '#settings' ? 'settings' : 'library');
+  useEffect(() => {
+    if (hash === '#settings') setTab('settings');
+    else if (hash === '#history' || hash === '#watchlist') setTab('library');
+  }, [hash]);
+
   // Links like /profile#watchlist scroll to and briefly highlight the section.
   useEffect(() => {
-    if (!hash) return;
+    if (!hash || hash === '#profile') return;
     const el = document.querySelector(hash);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     el.classList.add('highlight');
     const t = setTimeout(() => el.classList.remove('highlight'), 1000);
     return () => clearTimeout(t);
-  }, [hash]);
+  }, [hash, tab]);
 
   return (
     <div className="space-y-8 pb-10 md:space-y-10">
@@ -60,24 +67,41 @@ export default function Profile() {
         </div>
       </section>
 
-      <div id="history" className="scroll-mt-10">
-        {titles.length ? (
-          <ContinueWatching items={titles} title="Watch history" />
-        ) : (
-          <>
-            <SectionHeader title="Watch history" />
-            <EmptyCard icon={Film} title="Nothing watched yet" body="Movies and episodes you play will show up here." />
-          </>
-        )}
+      <div className="flex rounded-full bg-surface p-1 sm:inline-flex" role="tablist" aria-label="Profile sections">
+        {(['library', 'settings'] as const).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={cx('h-10 flex-1 rounded-full px-6 text-sm transition sm:flex-none', tab === t ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
+          >
+            {t === 'library' ? 'Library' : 'Settings'}
+          </button>
+        ))}
       </div>
 
-      <div id="watchlist" className="scroll-mt-10">
-        <Watchlist />
-      </div>
-
-      <div id="settings" className="scroll-mt-10">
-        <SettingsSection />
-      </div>
+      {tab === 'library' ? (
+        <>
+          <div id="history" className="scroll-mt-10">
+            {titles.length ? (
+              <ContinueWatching items={titles} title="Watch history" />
+            ) : (
+              <>
+                <SectionHeader title="Watch history" />
+                <EmptyCard icon={Film} title="Nothing watched yet" body="Movies and episodes you play will show up here." />
+              </>
+            )}
+          </div>
+          <div id="watchlist" className="scroll-mt-10">
+            <Watchlist />
+          </div>
+        </>
+      ) : (
+        <div id="settings" className="scroll-mt-10">
+          <SettingsSection />
+        </div>
+      )}
     </div>
   );
 }
@@ -213,7 +237,6 @@ function SettingsSection() {
   const card = 'rounded-3xl bg-surface p-5 md:p-6';
   return (
     <section>
-      <SectionHeader title="Settings" />
       <div className="grid gap-4 md:grid-cols-2">
         <div className={cx(card, 'space-y-5')}>
           <h3 className="font-medium">Playback</h3>
