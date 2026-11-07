@@ -50,7 +50,7 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className="h-12 rounded-2xl bg-surface px-6 text-[15px] text-white/85 transition hover:bg-raised disabled:opacity-50"
+        className="h-12 rounded-full bg-surface px-6 text-[15px] text-white/85 transition hover:bg-raised disabled:opacity-50"
       >
         {busy ? 'Loading…' : 'Load more'}
       </button>
@@ -63,7 +63,7 @@ export function ErrorBox({ onRetry, message = 'Something went wrong loading this
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-muted">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="h-11 rounded-2xl bg-surface px-5 text-sm hover:bg-raised">
+        <button onClick={onRetry} className="h-11 rounded-full bg-surface px-5 text-sm hover:bg-raised">
           Try again
         </button>
       )}

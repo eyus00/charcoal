@@ -65,6 +65,12 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     list.current?.querySelector(`[data-ep="${focus.episode}"]`)?.scrollIntoView({ block: 'center' });
   }, [data, season, focus?.season, focus?.episode]);
 
+  // keep the selected season's tab visible (long-running shows have dozens)
+  const tabs = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabs.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [season]);
+
   const pick = (n: number) => {
     setSeason(n);
     onSeasonChange?.(n);
@@ -92,7 +98,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           </button>
         </div>
 
-        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="tablist" aria-label="Seasons">
+        <div ref={tabs} className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="tablist" aria-label="Seasons">
           {seasons.map((s) => (
             <button
               key={s.season_number}

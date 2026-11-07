@@ -8,7 +8,8 @@ import { Pill, SectionHeader } from '../components/Row';
 import { GRID, GRID_SIZES } from '../components/Skeletons';
 import { EMBEDS } from '../lib/servers';
 import { checkProxy, normalizeProxy } from '../lib/proxy';
-import { actions, historyByTitle, useStore, type WatchStatus } from '../lib/store';
+import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
+import { toast } from '../components/Toast';
 import { cx, useTitle } from '../lib/util';
 
 /** Fixed container card for each profile section (matches the settings cards). */
@@ -164,7 +165,11 @@ function Watchlist() {
                   overlay={
                     <div className="absolute top-3.5 right-3.5 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
                       <button
-                        onClick={() => actions.removeBookmark(w.mediaType, w.id)}
+                        onClick={() => {
+                          const before = getState().watchlist;
+                          actions.removeBookmark(w.mediaType, w.id);
+                          toast(`Removed “${w.title}” from your watchlist`, { label: 'Undo', run: () => actions.restore({ watchlist: before }) });
+                        }}
                         aria-label={`Remove ${w.title} from watchlist`}
                         title="Remove"
                         className="grid size-8 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
@@ -283,7 +288,12 @@ function SettingsSection() {
               (confirmClear ? (
                 <span className="flex items-center gap-2 text-sm">
                   Clear all history?
-                  <button onClick={() => (actions.clearHistory(), setConfirmClear(false))} className="h-11 rounded-xl bg-red-500/80 px-4 hover:bg-red-500">
+                  <button onClick={() => {
+                    const before = getState().history;
+                    actions.clearHistory();
+                    setConfirmClear(false);
+                    toast('Watch history cleared', { label: 'Undo', run: () => actions.restore({ history: before }) });
+                  }} className="h-11 rounded-xl bg-red-500/80 px-4 hover:bg-red-500">
                     Clear
                   </button>
                   <button onClick={() => setConfirmClear(false)} className="h-11 rounded-xl bg-raised px-4">
@@ -355,7 +365,7 @@ function EmptyCard({ icon: Icon, title, body }: { icon?: typeof Film; title: str
       <p className="font-medium">{title}</p>
       {body && <p className="max-w-sm text-sm text-muted">{body}</p>}
       {Icon && (
-        <Link to="/" className="mt-3 h-11 rounded-xl bg-raised px-5 text-sm leading-[2.75rem] hover:bg-line">
+        <Link to="/discover" className="mt-3 h-11 rounded-full bg-white px-5 text-sm leading-[2.75rem] font-medium text-black hover:bg-white/90">
           Browse titles
         </Link>
       )}

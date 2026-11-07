@@ -52,6 +52,7 @@ export default function Home() {
 /** Pull full-bleed sections under the top bar (76px on phones, 92px from md). */
 export const BLEED = '-mx-4 -mt-[76px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
 const HERO_SIZES = '100vw';
+const REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function Hero() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ function Hero() {
   useKeys({ ArrowLeft: () => go(-1), ArrowRight: () => go(1) }, items.length > 1);
 
   useEffect(() => {
-    if (items.length < 2 || paused || dragging) return;
+    if (items.length < 2 || paused || dragging || REDUCED_MOTION) return;
     const t = setTimeout(() => !document.hidden && setIndex((i) => (i + 1) % items.length), 9000);
     return () => clearTimeout(t);
   }, [items.length, paused, dragging, index]);

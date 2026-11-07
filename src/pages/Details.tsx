@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play, RotateCcw, Star, X } from 'lucide-react';
+import { CalendarClock, Play, RotateCcw, Share2, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
@@ -12,7 +12,8 @@ import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
 import { certificationOf, cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
-import { cx, formatClock, formatRuntime, useKeys, useTitle } from '../lib/util';
+import { cx, formatClock, formatRuntime, isFuture, useKeys, useTitle } from '../lib/util';
+import { toast } from '../components/Toast';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
 
@@ -99,24 +100,28 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             <h1 className="text-3xl leading-tight font-semibold tracking-tight md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
-            <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-white/80">
-              {d.vote_average > 0 && (
-                <span className="flex items-center gap-1">
-                  <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
-                  {d.vote_average.toFixed(1)}
-                </span>
-              )}
-              {[yearOf(d), length, cert].filter(Boolean).map((x) => (
-                <span key={x} className="flex items-center gap-2.5">
-                  <span className="text-white/30">|</span>
-                  {x}
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
+              {[yearOf(d), d.vote_average > 0 ? 'rating' : '', length].filter(Boolean).map((x, i) => (
+                <span key={x} className="flex items-center gap-2">
+                  {i > 0 && <span className="text-white/35">·</span>}
+                  {x === 'rating' ? (
+                    <span className="flex items-center gap-1 font-medium">
+                      <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
+                      {d.vote_average.toFixed(1)}
+                    </span>
+                  ) : (
+                    x
+                  )}
                 </span>
               ))}
+              {cert && <span className="rounded-md px-1.5 py-px text-xs text-white/70 ring-1 ring-white/30">{cert}</span>}
             </div>
+            {type === 'tv' && <AirStatus d={d} />}
             <Overview text={d.overview} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={openEpisodes} />
               <BookmarkMenu variant="round" hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
+              <ShareButton title={title} />
             </div>
           </div>
         </div>
@@ -188,7 +193,7 @@ function TrailerModal({ video, onClose }: { video: Video; onClose: () => void })
   return (
     <div role="dialog" aria-modal="true" aria-label={video.name} className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-4" onClick={onClose}>
       <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} aria-label="Close trailer" className="absolute -top-12 right-0 grid size-10 place-items-center rounded-full bg-white/10 hover:bg-white/20">
+        <button autoFocus onClick={onClose} aria-label="Close trailer" className="absolute -top-12 right-0 grid size-10 place-items-center rounded-full bg-white/10 hover:bg-white/20">
           <X className="size-5" />
         </button>
         <iframe
@@ -214,6 +219,54 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
         ))}
       </Scroller>
     </section>
+  );
+}
+
+/** "S2 · E5 airs Fri, Nov 14" for returning shows, or "Ended". */
+function AirStatus({ d }: { d: D }) {
+  const next = d.next_episode_to_air;
+  let text = '';
+  if (next?.air_date && isFuture(next.air_date)) {
+    const when = new Date(next.air_date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    text = `${epLabel(next.season_number, next.episode_number)} airs ${when}`;
+  } else if (d.status === 'Ended' || d.status === 'Canceled') text = d.status;
+  if (!text) return null;
+  return (
+    <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/85">
+      <CalendarClock className="size-3.5" /> {text}
+    </p>
+  );
+}
+
+/** Native share sheet on phones, otherwise copy the link. */
+function ShareButton({ title }: { title: string }) {
+  const share = async () => {
+    const url = window.location.href.split('?')[0];
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        /* cancelled */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied');
+    } catch {
+      toast('Couldn’t copy the link');
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={share}
+      aria-label="Share"
+      title="Share"
+      className="grid size-12 place-items-center rounded-full text-white ring-2 ring-white/70 transition hover:bg-white/15 active:scale-95"
+    >
+      <Share2 className="size-[18px]" />
+    </button>
   );
 }
 

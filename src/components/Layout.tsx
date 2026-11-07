@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { ArrowUp, Bookmark, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
+import { addRecent, clearRecent, getRecent, removeRecent } from '../lib/recent';
 import { actions, useStore } from '../lib/store';
 import { cx } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
@@ -9,6 +10,7 @@ import { PageSkeleton } from './Skeletons';
 import { LogoMark } from './Logo';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
+import { OfflineNotice, Toaster } from './Toast';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -17,9 +19,13 @@ const searchCtl = { open: () => {} };
 export default function Layout({ bare = false }: { bare?: boolean }) {
   if (bare) {
     return (
-      <Suspense fallback={<div className="fixed inset-0 bg-black" />}>
-        <Outlet />
-      </Suspense>
+      <>
+        <Suspense fallback={<div className="fixed inset-0 bg-black" />}>
+          <Outlet />
+        </Suspense>
+        <Toaster />
+        <OfflineNotice />
+      </>
     );
   }
   return <Shell />;
@@ -42,6 +48,8 @@ function Shell() {
       <BottomBar />
       <ScrollTop />
       <Hotkeys openSearch={() => searchCtl.open()} />
+      <Toaster />
+      <OfflineNotice />
     </div>
   );
 }
@@ -207,6 +215,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const [draft, setDraft] = useState<Filters>(() => (onDiscover ? parseFilters(params) : EMPTY_FILTERS));
   const [open, setOpen] = useState(onDiscover);
   const [menu, setMenu] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
   const typing = useRef(false);
   const form = useRef<HTMLFormElement>(null);
 
@@ -266,6 +276,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const submit = () => {
     typing.current = false;
     setMenu(false);
+    addRecent(text);
     apply(text.trim(), draft, onDiscover);
     searchInput.current?.blur();
   };
@@ -315,7 +326,16 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               setText(e.target.value);
             }}
             onKeyDown={(e) => e.key === 'Escape' && close()}
-            onFocus={() => setOpen(true)}
+            onFocus={() => {
+              setOpen(true);
+              setFocused(true);
+              setRecent(getRecent());
+            }}
+            onBlur={() => {
+              setFocused(false);
+              // Live results never press Enter: remember the query once the user is done typing.
+              if (onDiscover) addRecent(text);
+            }}
             type="search"
             enterKeyHint="search"
             autoComplete="off"
@@ -348,6 +368,56 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
             </button>
           )}
         </div>
+        {focused && !text && !menu && recent.length > 0 && (
+          <div
+            className="absolute inset-x-4 top-full z-50 mt-2 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5 md:inset-x-0"
+            // Keep focus in the input while picking.
+            onPointerDown={(e) => e.preventDefault()}
+          >
+            <div className="flex items-center justify-between px-3 pt-1.5 pb-1 text-xs text-faint">
+              Recent searches
+              <button
+                type="button"
+                onClick={() => {
+                  clearRecent();
+                  setRecent([]);
+                }}
+                className="rounded-full px-2 py-0.5 hover:bg-white/10 hover:text-white"
+              >
+                Clear
+              </button>
+            </div>
+            {recent.map((r) => (
+              <div key={r} className="group/recent flex items-center rounded-xl hover:bg-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    typing.current = false;
+                    setText(r);
+                    addRecent(r);
+                    apply(r, draft, onDiscover);
+                    searchInput.current?.blur();
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-sm"
+                >
+                  <History className="size-4 shrink-0 text-faint" />
+                  <span className="truncate">{r}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove “${r}” from recent searches`}
+                  onClick={() => {
+                    removeRecent(r);
+                    setRecent(getRecent());
+                  }}
+                  className="mr-1 grid size-8 shrink-0 place-items-center rounded-full text-faint opacity-0 transition group-hover/recent:opacity-100 hover:bg-white/10 hover:text-white focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         {menu && !onDiscover && (
           <QuickFilterMenu
             filters={draft}

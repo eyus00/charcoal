@@ -2,7 +2,8 @@ import { useQueries } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
 import EpisodeTile, { Chip } from './EpisodeTile';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
-import { actions, percent, watchUrl, type HistoryItem } from '../lib/store';
+import { toast } from './Toast';
+import { actions, getState, percent, watchUrl, type HistoryItem } from '../lib/store';
 import { q, type Episode } from '../lib/tmdb';
 import { formatRuntime } from '../lib/util';
 
@@ -59,7 +60,11 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
       secondary={tv ? h.title : left ? `${formatRuntime(left)} left` : h.isCompleted ? 'Finished' : 'Movie'}
     >
       <button
-        onClick={() => actions.removeHistory(h.mediaType, h.id)}
+        onClick={() => {
+          const before = getState().history;
+          actions.removeHistory(h.mediaType, h.id);
+          toast(`Removed “${h.title}” from your history`, { label: 'Undo', run: () => actions.restore({ history: before }) });
+        }}
         aria-label={`Remove ${h.title} from continue watching`}
         title="Remove"
         className="absolute top-3.5 right-3.5 grid size-7 place-items-center rounded-full bg-black/60 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"

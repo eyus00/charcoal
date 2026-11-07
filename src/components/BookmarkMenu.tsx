@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Bookmark, Check, CircleCheck, Clock3, Eye, type LucideIcon } from 'lucide-react';
-import { actions, useStore, type WatchStatus } from '../lib/store';
+import { actions, getState, useStore, type WatchStatus } from '../lib/store';
+import { toast } from './Toast';
 import type { MediaType } from '../lib/tmdb';
 import { cx, useDismiss, useKeys } from '../lib/util';
 
@@ -45,14 +46,23 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
   const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, ref);
 
+  const remove = () => {
+    const before = getState().watchlist;
+    actions.removeBookmark(item.mediaType, item.id);
+    toast(`Removed “${item.title}” from your watchlist`, { label: 'Undo', run: () => actions.restore({ watchlist: before }) });
+  };
+  const save = (status: WatchStatus) => {
+    actions.setBookmark({ ...item, status });
+    toast(`${current ? 'Moved to' : 'Added to'} ${STATUS_LABEL[status]}`);
+  };
   // Picking the current status again removes the title from the watchlist.
   const choose = (status: WatchStatus) => {
-    if (current?.status === status) actions.removeBookmark(item.mediaType, item.id);
-    else actions.setBookmark({ ...item, status });
+    if (current?.status === status) remove();
+    else save(status);
     setOpen(false);
   };
   // "b": quick add as "To watch", or remove if already saved.
-  useKeys({ b: () => (current ? actions.removeBookmark(item.mediaType, item.id) : actions.setBookmark({ ...item, status: 'planned' })) }, !!hotkey);
+  useKeys({ b: () => (current ? remove() : save('planned')) }, !!hotkey);
 
   return (
     <div ref={ref} className={cx('relative', className)} onClick={(e) => e.stopPropagation()}>

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import RouteError, { clearChunkReloadFlag } from './pages/RouteError';
 import './index.css';
 
 // Route-level code splitting: the player (and hls.js) never loads while browsing.
@@ -49,6 +50,7 @@ function LibraryRedirect() {
 const router = createBrowserRouter([
   {
     element: <Layout />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <Home /> },
       { path: 'movies', element: <TypeRedirect type="movie" /> },
@@ -62,8 +64,11 @@ const router = createBrowserRouter([
       { path: '*', element: <NotFound /> },
     ],
   },
-  { path: 'watch/:type/:id', element: <Layout bare />, children: [{ index: true, element: <Watch /> }] },
+  { path: 'watch/:type/:id', element: <Layout bare />, errorElement: <RouteError />, children: [{ index: true, element: <Watch /> }] },
 ]);
+
+// The app booted fine, so a later stale-chunk error may reload once again.
+window.setTimeout(clearChunkReloadFlag, 10_000);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

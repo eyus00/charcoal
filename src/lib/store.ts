@@ -239,6 +239,11 @@ export const actions = {
     setState((s) => ({ ...s, history: s.history.filter((h) => !sameEntry(h, item)) }));
   },
 
+  /** Put lists back as they were (used by "Undo" after a removal). */
+  restore(snapshot: Partial<Pick<State, 'history' | 'watchlist'>>) {
+    setState((s) => ({ ...s, ...snapshot }));
+  },
+
   clearHistory() {
     setState((s) => ({ ...s, history: [] }));
   },
