@@ -33,6 +33,78 @@ const PUBLIC_URL =
 // Same public key the Charcoal frontend ships with; override with TMDB_API_KEY.
 const TMDB_API_KEY = process.env.TMDB_API_KEY || '50404130561567acf3e0725aeb09ec5d';
 
+// Opt-in: drop HLS sources whose video segments the host refuses (e.g. Cloudflare
+// "you have been blocked" pages served to datacenter IPs). Checked from THIS
+// server, so leave it off if playback goes through a separate proxy (Worker).
+const VALIDATE_SEGMENTS = process.env.VALIDATE_SEGMENTS === 'true';
+
+type ProxyTarget = { url: string; headers?: Record<string, string> };
+
+function decodeTarget(proxyUrl: string): ProxyTarget | null {
+    try {
+        const data = new URL(proxyUrl).searchParams.get('data');
+        return data ? (JSON.parse(data) as ProxyTarget) : null;
+    } catch {
+        return null;
+    }
+}
+
+async function fetchText(t: ProxyTarget, url: string): Promise<string | null> {
+    const res = await fetch(url, { headers: t.headers ?? {}, signal: AbortSignal.timeout(6000) });
+    return res.ok ? res.text() : null;
+}
+
+const firstUri = (playlist: string, base: string) => {
+    const line = playlist.split('\n').map((l) => l.trim()).find((l) => l && !l.startsWith('#'));
+    return line ? new URL(line, base).toString() : null;
+};
+
+/** 'blocked' only when the host clearly refuses; network hiccups count as 'ok'. */
+async function segmentStatus(t: ProxyTarget): Promise<'ok' | 'blocked'> {
+    try {
+        let url = t.url;
+        let text = await fetchText(t, url);
+        if (text === null) return 'blocked';
+        if (text.includes('#EXT-X-STREAM-INF')) {
+            const variant = firstUri(text, url);
+            if (!variant) return 'ok';
+            url = variant;
+            text = await fetchText(t, url);
+            if (text === null) return 'blocked';
+        }
+        const seg = firstUri(text, url);
+        if (!seg) return 'ok';
+        const res = await fetch(seg, { headers: { ...(t.headers ?? {}), Range: 'bytes=0-1023' }, signal: AbortSignal.timeout(6000) });
+        const type = res.headers.get('content-type') ?? '';
+        res.body?.cancel().catch(() => {});
+        return res.status === 401 || res.status === 403 || type.includes('text/html') ? 'blocked' : 'ok';
+    } catch {
+        return 'ok';
+    }
+}
+
+type SourceResult = Awaited<ReturnType<OMSSServerProvider['getMovieSources']>>;
+type OMSSServerProvider = ReturnType<ReturnType<OMSSServer['getRegistry']>['getProviders']>[number];
+
+async function dropBlocked(result: SourceResult, label: string): Promise<SourceResult> {
+    const byHost = new Map<string, Promise<'ok' | 'blocked'>>();
+    const keep = await Promise.all(
+        result.sources.map(async (src) => {
+            if (src.type !== 'hls') return true;
+            const t = decodeTarget(src.url);
+            if (!t) return true;
+            const host = new URL(t.url).hostname;
+            if (!byHost.has(host)) byHost.set(host, segmentStatus(t)); // one check per host
+            return (await byHost.get(host)) === 'ok';
+        })
+    );
+    const sources = result.sources.filter((_, i) => keep[i]);
+    if (sources.length < result.sources.length) {
+        console.warn(`[Jelly] ${label}: dropped ${result.sources.length - sources.length} source(s) whose host blocks this server`);
+    }
+    return { ...result, sources };
+}
+
 async function main() {
     if (!process.env.TMDB_API_KEY) console.warn('[Jelly] TMDB_API_KEY not set, using the default public key');
     if (!PUBLIC_URL) console.warn('[Jelly] PUBLIC_URL not set; stream URLs will point at localhost');
@@ -91,8 +163,9 @@ async function main() {
     for (const provider of registry.getProviders()) {
         const getMovie = provider.getMovieSources.bind(provider);
         const getTV = provider.getTVSources.bind(provider);
-        provider.getMovieSources = (media) => withTimeout(getMovie(media), provider.name);
-        provider.getTVSources = (media) => withTimeout(getTV(media), provider.name);
+        const check = (r: SourceResult) => (VALIDATE_SEGMENTS ? dropBlocked(r, provider.name) : r);
+        provider.getMovieSources = (media) => withTimeout(getMovie(media), provider.name).then(check);
+        provider.getTVSources = (media) => withTimeout(getTV(media), provider.name).then(check);
     }
 
     await server.start();
