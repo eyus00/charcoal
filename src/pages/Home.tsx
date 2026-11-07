@@ -30,7 +30,7 @@ export default function Home() {
 
 // ---------- hero (full-bleed, sits under the floating top bar) ----------
 
-/** Pull full-bleed sections under the top bar (its height: 76px on phones, 92px from md). */
+/** Pull full-bleed sections under the top bar (76px on phones, 92px from md). */
 export const BLEED = '-mx-4 -mt-[76px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
 const HERO_SIZES = '100vw';
 const SWIPE_PX = 50;
@@ -108,18 +108,33 @@ function Hero() {
         ))}
       </div>
       <img aria-hidden alt="" src={imageUrl(next.backdrop_path, 'backdrop', 780)} srcSet={imageSrcSet(next.backdrop_path, 'backdrop')} sizes={HERO_SIZES} className="pointer-events-none absolute size-px opacity-0" />
-      <div className="absolute inset-x-0 bottom-6 z-20 flex justify-center gap-1.5 md:bottom-8">
-        {items.map((m, i) => (
-          <button
-            key={m.id}
-            onClick={() => setIndex(i)}
-            aria-label={`Show ${titleOf(m)}`}
-            aria-current={i === index}
-            className="grid h-6 place-items-center px-0.5"
-          >
-            <span className={cx('block h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
-          </button>
-        ))}
+      <div className="absolute inset-x-0 bottom-5 z-20 flex items-end justify-between gap-4 px-4 md:bottom-7 md:px-8 lg:px-10">
+        <div className="flex gap-0.5 pb-1">
+          {items.map((m, i) => (
+            <button key={m.id} onClick={() => setIndex(i)} aria-label={`Show ${titleOf(m)}`} aria-current={i === index} className="grid h-6 place-items-center px-0.5">
+              <span className={cx('block h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
+            </button>
+          ))}
+        </div>
+        {/* previous · current · next */}
+        <div className="flex items-end gap-2 py-1 md:gap-2.5">
+          {[-1, 0, 1].map((d) => {
+            const m = items[(index + d + items.length) % items.length];
+            return (
+              <button
+                key={d}
+                onClick={() => (d === 0 ? navigate(`/${typeOf(m)}/${m.id}`) : go(d))}
+                aria-label={d === 0 ? `Open ${titleOf(m)}` : `${d < 0 ? 'Previous' : 'Next'}: ${titleOf(m)}`}
+                className={cx(
+                  'shrink-0 overflow-hidden rounded-xl bg-surface transition-all duration-300',
+                  d === 0 ? 'h-[84px] w-14 ring-2 ring-white md:h-24 md:w-16' : 'h-[68px] w-[46px] opacity-60 hover:opacity-100 md:h-20 md:w-[54px]',
+                )}
+              >
+                <img src={imageUrl(m.poster_path, 'poster', 92)} alt="" loading="lazy" decoding="async" draggable={false} className="size-full object-cover" />
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -143,7 +158,7 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-bg/40" />
 
-      <div className="absolute inset-x-0 bottom-20 px-4 md:bottom-24 md:px-8 lg:px-10">
+      <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
         <div className="max-w-2xl">
           <p className="text-sm text-white/70">{[yearOf(item), genres.join(', '), type === 'movie' ? 'Movie' : 'Series'].filter(Boolean).join('  ·  ')}</p>
           <h2 className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</h2>

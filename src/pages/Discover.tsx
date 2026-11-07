@@ -1,36 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Compass } from 'lucide-react';
 import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
-import SearchInput from '../components/SearchInput';
 import { useDiscover, useTextSearch, useTrendingPages } from '../lib/browse';
 import { genresFor, hasActiveFilters, matchesFilters, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { cleanList } from '../lib/tmdb';
 import { cx, useTitle } from '../lib/util';
-import { Empty, PageHeader } from './Catalog';
+import { Empty, PageHeader } from '../components/PageHeader';
 
-const TYPES: { key: Filters['type']; label: string; placeholder: string }[] = [
-  { key: 'all', label: 'All', placeholder: 'Search movies & TV shows' },
-  { key: 'movie', label: 'Movies', placeholder: 'Search movies' },
-  { key: 'tv', label: 'TV Shows', placeholder: 'Search TV shows' },
+const TYPES: { key: Filters['type']; label: string; title: string }[] = [
+  { key: 'all', label: 'All', title: 'Discover' },
+  { key: 'movie', label: 'Movies', title: 'Movies' },
+  { key: 'tv', label: 'TV Shows', title: 'TV Shows' },
 ];
 
 /** Search + browse in one place: everything, or only movies / only TV. */
 export default function Discover() {
   const [params, setParams] = useSearchParams();
-  const location = useLocation();
   const filters = useMemo(() => parseFilters(params), [params]);
   const query = (params.get('q') ?? '').trim();
   const set = useUrlFilters();
   const [open, setOpen] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
   const kind = TYPES.find((t) => t.key === filters.type)!;
-
-  // Arriving from the search button: take over focus from the keyboard primer.
-  useEffect(() => {
-    if ((location.state as { focus?: boolean } | null)?.focus) input.current?.focus();
-  }, [location.key, location.state]);
 
   // No search and no filters: show what's trending; otherwise search or browse the full catalog.
   const plain = !query && !hasActiveFilters(filters);
@@ -51,7 +43,7 @@ export default function Discover() {
   }, [filteredEmpty, isFetchingNextPage, fetchNextPage]);
 
   const total = query || plain ? undefined : browse.data?.pages[0]?.total;
-  useTitle(query ? `“${query}”` : 'Discover');
+  useTitle(query ? `“${query}”` : kind.title);
 
   const setType = (type: Filters['type']) => {
     // Drop genres that don't exist for the new type (e.g. Horror has no TV equivalent).
@@ -61,21 +53,8 @@ export default function Discover() {
 
   return (
     <div className="pb-10">
-      <PageHeader title="Discover" label={plain ? 'Trending this week' : undefined} count={total} onClear={hasActiveFilters(filters) ? () => set({ genres: [], from: undefined, to: undefined, rating: 0 }) : undefined} />
-      <SearchInput
-        large
-        inputRef={input}
-        value={query}
-        placeholder={kind.placeholder}
-        onChange={(v) => {
-          const next = new URLSearchParams(params);
-          if (v) next.set('q', v);
-          else next.delete('q');
-          setParams(next, { replace: true, preventScrollReset: true });
-        }}
-      />
-
-      <div className="my-5 inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
+      <PageHeader title={query ? `“${query}”` : kind.title} label={query ? `Results for${filters.type === 'all' ? '' : ` · ${kind.label}`}` : plain ? 'Trending this week' : undefined} count={total} onClear={hasActiveFilters(filters) ? () => set({ genres: [], from: undefined, to: undefined, rating: 0 }) : undefined} />
+      <div className="mb-5 inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
         {TYPES.map((t) => (
           <button
             key={t.key}
