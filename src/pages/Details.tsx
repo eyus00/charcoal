@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarClock, Play, RotateCcw, Share2, Star, X } from 'lucide-react';
+import { Play, RotateCcw, Share2, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
@@ -11,7 +11,7 @@ import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll }
 import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
-import { certificationOf, cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
+import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
 import { cx, formatClock, formatRuntime, isFuture, useKeys, useTitle } from '../lib/util';
 import { toast } from '../components/Toast';
 import { BLEED } from './Home';
@@ -56,7 +56,6 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
   const navigate = useNavigate();
   const location = useLocation();
   const title = titleOf(d);
-  const cert = certificationOf(d);
   const trailers = trailersOf(d);
   const [trailer, setTrailer] = useState<Video | null>(null);
   const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 20);
@@ -97,7 +96,11 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
         <div className="absolute inset-0 hidden bg-gradient-to-r from-bg/80 via-bg/20 to-transparent md:block" />
 
         <div className="relative w-full px-4 pb-6 md:px-8 md:pb-10 lg:px-10">
+          {/* Phones: the next-episode card sits above the info card. */}
+          {type === 'tv' && <NextEpisodeCard d={d} className="mb-3 md:hidden" />}
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
+            {/* Wider screens: it hangs off the info card's bottom-right corner. */}
+            {type === 'tv' && <NextEpisodeCard d={d} className="absolute bottom-0 left-full z-10 hidden -translate-x-24 translate-y-1/2 md:flex" />}
             <h1 className="text-3xl leading-tight font-semibold tracking-tight md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
@@ -114,9 +117,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
                   )}
                 </span>
               ))}
-              {cert && <span className="rounded-md px-1.5 py-px text-xs text-white/70 ring-1 ring-white/30">{cert}</span>}
             </div>
-            {type === 'tv' && <AirStatus d={d} />}
             <Overview text={d.overview} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={openEpisodes} />
@@ -222,19 +223,29 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
   );
 }
 
-/** "S2 · E5 airs Fri, Nov 14" when a new episode is scheduled. */
-function AirStatus({ d }: { d: D }) {
+/** Small card for a scheduled new episode: when it airs, and which one. */
+function NextEpisodeCard({ d, className }: { d: D; className?: string }) {
   const next = d.next_episode_to_air;
-  let text = '';
-  if (next?.air_date && isFuture(next.air_date)) {
-    const when = new Date(next.air_date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    text = `${epLabel(next.season_number, next.episode_number)} airs ${when}`;
-  }
-  if (!text) return null;
+  if (!next?.air_date || !isFuture(next.air_date)) return null;
+  const date = new Date(next.air_date + 'T00:00:00');
+  const days = Math.round((date.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
+  const when = days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const name = next.name && !/^Episode \d+$/i.test(next.name) ? next.name : '';
   return (
-    <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/85">
-      <CalendarClock className="size-3.5" /> {text}
-    </p>
+    <div className={cx('flex w-64 items-center gap-3.5 rounded-2xl bg-raised/90 p-3.5 shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl', className)}>
+      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white py-1.5 text-black">
+        <span className="text-[10px] font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
+        <span className="text-lg leading-6 font-semibold tabular-nums">{date.getDate()}</span>
+      </span>
+      <div className="min-w-0">
+        <div className="text-[11px] font-medium tracking-wider text-muted uppercase">New episode</div>
+        <div className="truncate text-[15px] font-medium">{when}</div>
+        <div className="truncate text-xs text-white/60">
+          {epLabel(next.season_number, next.episode_number)}
+          {name ? ` · ${name}` : ''}
+        </div>
+      </div>
+    </div>
   );
 }
 

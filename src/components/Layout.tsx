@@ -194,19 +194,10 @@ function Rail() {
   );
 }
 
-/** True once the page is scrolled past the very top (drives the sticky bar's backdrop). */
-function useScrolled(threshold = 8) {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > threshold);
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
-  }, [threshold]);
-  return scrolled;
-}
-
 // ---------- top bar: wordmark + universal search ----------
+
+/** Floating pill look shared by the logo and the search field (matches the sidebar's group boxes). */
+const FLOAT = 'bg-bg/70 ring-white/[0.08] hover:ring-white/15';
 
 const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV shows', movie: 'Search movies', tv: 'Search TV shows' };
 
@@ -229,7 +220,6 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const [open, setOpen] = useState(onDiscover);
   const [menu, setMenu] = useState(false);
   const [focused, setFocused] = useState(false);
-  const scrolled = useScrolled();
   const [recent, setRecent] = useState<string[]>([]);
   const typing = useRef(false);
   const form = useRef<HTMLFormElement>(null);
@@ -311,15 +301,20 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 
   return (
     <header
-      className={cx(
-        // Sticks from md up (phones have the bottom bar for search). Once scrolled, a blurred
-        // backdrop bleeds out to the page edges behind it.
-        'relative z-30 flex h-[76px] items-center gap-3 md:sticky md:top-0 md:h-[92px] md:gap-4',
-        "before:pointer-events-none before:absolute before:inset-y-0 before:-inset-x-4 before:-z-10 before:border-b before:border-white/5 before:bg-bg/80 before:opacity-0 before:backdrop-blur-xl before:transition-opacity before:content-[''] md:before:-inset-x-8 lg:before:-inset-x-10",
-        scrolled && 'md:before:opacity-100',
-      )}
+      // Sticks from md up (phones have the bottom bar for search). No bar behind it: the logo and
+      // the search field float as separate pills, styled like the sidebar's group boxes. The header
+      // itself ignores clicks so the page between them stays usable.
+      className="pointer-events-none relative z-30 flex h-[76px] items-center gap-3 md:sticky md:top-0 md:h-[92px] md:gap-4"
     >
-      <Link to="/" className={cx('flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight', hideLogo && 'lg:hidden')} aria-label="Charcoal home">
+      <Link
+        to="/"
+        className={cx(
+          'pointer-events-auto flex h-12 shrink-0 items-center gap-2.5 rounded-full pr-5 pl-2 text-lg font-semibold tracking-tight ring-1 backdrop-blur-xl transition',
+          FLOAT,
+          hideLogo && 'lg:hidden',
+        )}
+        aria-label="Charcoal home"
+      >
         <LogoMark className="size-8" />
         Charcoal
       </Link>
@@ -327,6 +322,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
         ref={form}
         role="search"
         className={cx(
+          'pointer-events-auto',
           open
             ? 'fixed inset-x-0 top-0 z-50 bg-bg/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md md:relative md:inset-auto md:ml-auto md:w-full md:max-w-md md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none'
             : 'sr-only lg:not-sr-only lg:relative lg:ml-auto lg:w-full lg:max-w-md',
@@ -336,7 +332,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
           submit();
         }}
       >
-        <div className="group/search flex h-12 items-center gap-1.5 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
+        <div className={cx('group/search pointer-events-auto flex h-12 items-center gap-1.5 rounded-full pr-1.5 pl-4 ring-1 backdrop-blur-xl transition focus-within:ring-white/25', FLOAT)}>
           <Search className="size-[18px] shrink-0 text-muted" />
           <input
             ref={(el) => {
@@ -366,8 +362,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
             className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
           {!text && <Kbd className="mr-1.5 group-focus-within/search:hidden">{MOD} K</Kbd>}
-          {/* Pages with the full filter bar (results / Movies / TV) don't also get quick filters. */}
-          {!onDiscover && (
+          {/* Quick filters live in the search bar on every page. */}
+          {(
             <button
               type="button"
               onClick={() => setMenu((m) => !m)}
@@ -440,7 +436,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
             ))}
           </div>
         )}
-        {menu && !onDiscover && (
+        {menu && (
           <QuickFilterMenu
             filters={draft}
             set={(patch) => setDraft((d) => ({ ...d, ...patch, genres: patch.type ? (patch.genres ?? d.genres).filter((g) => genresFor(patch.type!).some((x) => x.slug === g)) : (patch.genres ?? d.genres) }))}

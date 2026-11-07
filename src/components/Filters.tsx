@@ -1,7 +1,7 @@
-import { useEffect, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { SlidersHorizontal, Star, X } from 'lucide-react';
-import { RATINGS, YEAR_PRESETS, activeFilterCount, genresFor, writeFilters, type Filters } from '../lib/filters';
+import { Star } from 'lucide-react';
+import { RATINGS, YEAR_PRESETS, genresFor, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
 import { Pill } from './Row';
 
@@ -24,23 +24,13 @@ const toggleGenre = (f: Filters, slug: string): Partial<Filters> => ({
 
 // ---------- page filter bar: Filters button + quick pills ----------
 
-export function FilterBar({ filters: f, set, onOpen, withType, className }: { filters: Filters; set: Set; onOpen: () => void; withType?: boolean; className?: string }) {
-  const count = activeFilterCount(f, withType);
+export function FilterBar({ filters: f, set, className }: { filters: Filters; set: Set; className?: string }) {
   return (
     <div className={cx('flex min-w-0 items-center gap-2.5', className)}>
-      <button
-        onClick={onOpen}
-        aria-label="All filters"
-        className={cx('flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm transition', count ? 'bg-accent font-medium text-black' : 'bg-surface text-white/85 hover:bg-raised')}
-      >
-        <SlidersHorizontal className="size-4" />
-        <span className="hidden sm:inline">Filters</span>
-        {count > 0 && <span className="grid size-5 place-items-center rounded-full bg-black/15 text-xs">{count}</span>}
-      </button>
       <div className="no-scrollbar scroll-row -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0">
         {[7, 8].map((r) => (
           <Pill key={r} on={f.rating === r} onClick={() => set({ rating: f.rating === r ? 0 : r })} className="flex items-center gap-1.5">
-            <Star className={cx('size-3.5 fill-current', f.rating === r ? 'text-black' : 'text-star')} strokeWidth={0} />
+            <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
             {r}+
           </Pill>
         ))}
@@ -67,7 +57,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={cx('h-9 rounded-xl px-3.5 text-sm transition', on ? 'bg-white font-medium text-black' : 'bg-raised text-white/80 hover:bg-line hover:text-white')}
+      className={cx('h-9 rounded-full px-3.5 text-sm transition', on ? 'bg-white font-medium text-black' : 'bg-raised text-white/80 hover:bg-line hover:text-white')}
     >
       {children}
     </button>
@@ -99,7 +89,10 @@ function Sections({ f, set, withType, compact }: { f: Filters; set: Set; withTyp
       <Section title="Rating">
         {RATINGS.map((r) => (
           <Chip key={r} on={f.rating === r} onClick={() => set({ rating: f.rating === r ? 0 : r })}>
-            ★ {r}+
+            <span className="flex items-center gap-1.5">
+              <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
+              {r}+
+            </span>
           </Chip>
         ))}
       </Section>
@@ -121,54 +114,6 @@ function Sections({ f, set, withType, compact }: { f: Filters; set: Set; withTyp
   );
 }
 
-const clearAll = (withType?: boolean): Partial<Filters> => ({ genres: [], from: undefined, to: undefined, rating: 0, ...(withType ? { type: 'all' as const } : {}) });
-
-// ---------- full filter panel (sheet on mobile, dialog on desktop) ----------
-
-export function AdvancedFilters({ open, onClose, filters: f, set, withType, total }: { open: boolean; onClose: () => void; filters: Filters; set: Set; withType?: boolean; total?: number }) {
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [open, onClose]);
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 md:items-center md:p-8" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Filters"
-        className="flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl md:max-w-xl md:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <h2 className="text-xl font-semibold">Filters</h2>
-          <button onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-xl bg-raised hover:bg-line">
-            <X className="size-5" />
-          </button>
-        </div>
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 pb-6">
-          <Sections f={f} set={set} withType={withType} />
-        </div>
-        <div className="flex gap-3 border-t border-line p-4 md:px-6">
-          <button onClick={() => set(clearAll(withType))} className="h-12 flex-1 rounded-2xl bg-raised text-[15px] hover:bg-line">
-            Clear
-          </button>
-          <button onClick={onClose} className="h-12 flex-[2] rounded-2xl bg-accent text-[15px] font-medium text-black hover:bg-accent-hover">
-            Show results{total !== undefined ? ` (${total.toLocaleString()})` : ''}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ---------- quick filter popover on the search bar ----------
 
 export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }: { filters: Filters; set: Set; onClear: () => void; onApply: () => void; placement: 'below' | 'above' }) {
@@ -181,10 +126,10 @@ export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }
         <Sections f={f} set={set} withType compact />
       </div>
       <div className="mt-5 flex gap-2.5">
-        <button type="button" onClick={onClear} className="h-11 flex-1 rounded-2xl bg-raised text-sm hover:bg-line">
+        <button type="button" onClick={onClear} className="h-11 flex-1 rounded-full bg-raised text-sm hover:bg-line">
           Clear
         </button>
-        <button type="button" onClick={onApply} className="h-11 flex-[2] rounded-2xl bg-accent text-sm font-medium text-black hover:bg-accent-hover">
+        <button type="button" onClick={onApply} className="h-11 flex-[2] rounded-full bg-accent text-sm font-medium text-black hover:bg-accent-hover">
           Search
         </button>
       </div>
