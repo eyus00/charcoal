@@ -243,24 +243,31 @@ function TopBar() {
             aria-label="Search"
             className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
-          <button
-            type="button"
-            onClick={() => setMenu((m) => !m)}
-            aria-label="Quick filters"
-            title="Filters"
-            aria-expanded={menu}
-            className={cx('relative grid size-9 place-items-center rounded-full transition', menu ? 'bg-white text-black' : 'text-muted hover:bg-white/10 hover:text-white')}
-          >
-            <SlidersHorizontal className="size-4" />
-            {count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
-          </button>
+          {/* Pages with the full filter bar (results / Movies / TV) don't also get quick filters. */}
+          {!onDiscover && (
+            <button
+              type="button"
+              onClick={() => setMenu((m) => !m)}
+              aria-label={count ? `Quick filters (${count} active)` : 'Quick filters'}
+              title="Filters"
+              aria-expanded={menu}
+              className={cx(
+                'flex h-9 shrink-0 items-center gap-1.5 rounded-full transition',
+                count ? 'px-3' : 'w-9 justify-center',
+                menu ? 'bg-white text-black' : count ? 'bg-white/15 text-white hover:bg-white/20' : 'text-muted hover:bg-white/10 hover:text-white',
+              )}
+            >
+              <SlidersHorizontal className="size-4" />
+              {count > 0 && <span className="text-xs font-medium tabular-nums">{count}</span>}
+            </button>
+          )}
           {(text || !onDiscover) && (
             <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
               <X className="size-4" />
             </button>
           )}
         </div>
-        {menu && (
+        {menu && !onDiscover && (
           <QuickFilterMenu
             filters={draft}
             set={(patch) => setDraft((d) => ({ ...d, ...patch, genres: patch.type ? (patch.genres ?? d.genres).filter((g) => genresFor(patch.type!).some((x) => x.slug === g)) : (patch.genres ?? d.genres) }))}
