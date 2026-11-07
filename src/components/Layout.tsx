@@ -1,10 +1,13 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User } from 'lucide-react';
+import { ArrowUp, Bookmark, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
+
+/** The one search input on the page; the mobile bar's search button focuses it directly (opens the keyboard). */
+const searchInput: { current: HTMLInputElement | null } = { current: null };
 
 export default function Layout({ bare = false }: { bare?: boolean }) {
   if (bare) {
@@ -18,7 +21,7 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
     <div className="relative min-h-dvh lg:pl-[88px]">
       <ScrollRestoration />
       <Rail />
-      <div className="min-w-0 px-4 pb-32 md:px-8 lg:px-10 lg:pb-12">
+      <div className="min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
         <TopBar />
         <main>
           <Suspense fallback={<PageSkeleton />}>
@@ -26,16 +29,15 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
           </Suspense>
         </main>
       </div>
-      <MobileNav />
+      <BottomBar />
       <ScrollTop />
     </div>
   );
 }
 
-const Logo = () => (
-  <Link to="/" className="flex items-center gap-2.5" aria-label="Charcoal home">
-    <img src="/icon.png" alt="" width={34} height={34} className="size-[34px] rounded-xl" />
-    <span className="text-lg font-semibold tracking-tight lg:hidden">Charcoal</span>
+const Wordmark = () => (
+  <Link to="/" className="shrink-0 text-xl font-semibold tracking-tight" aria-label="Charcoal home">
+    Charcoal
   </Link>
 );
 
@@ -72,9 +74,8 @@ function RailLink({ to, label, icon: Icon, active }: { to: string; label: string
 function Rail() {
   const { pathname, hash } = useLocation();
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-white/5 bg-bg py-6 lg:flex">
-      <Logo />
-      <nav className="mt-10 flex flex-col gap-2">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-white/5 bg-bg pt-[104px] pb-6 lg:flex">
+      <nav className="flex flex-col gap-2">
         {RAIL.map((n) => (
           <RailLink key={n.to} to={n.to} label={n.label} icon={n.icon} active={n.match(pathname)} />
         ))}
@@ -88,9 +89,9 @@ function Rail() {
   );
 }
 
-// ---------- search state (desktop bar + mobile panel) ----------
+// ---------- top bar: wordmark, search (+ quick filters), profile ----------
 
-/** Search text + filters. On /search they edit the URL; elsewhere they're a draft applied on search. */
+/** Search text + filters. On /search they edit the URL; elsewhere they're a draft applied on submit. */
 function useSearchState() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -114,104 +115,92 @@ function useSearchState() {
     navigate(`/search?${base}`, { replace: onSearch });
     setDraft(EMPTY_FILTERS);
   };
-  return { query, setQuery, filters, setFilters, clearFilters, submit, count: activeFilterCount(filters) };
+  return { query, setQuery, filters, setFilters, clearFilters, submit, count: activeFilterCount(filters, true) };
 }
-
-function SearchField({
-  s,
-  inputRef,
-  menuOpen,
-  setMenuOpen,
-  placement,
-  onDone,
-}: {
-  s: ReturnType<typeof useSearchState>;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  menuOpen: boolean;
-  setMenuOpen: (o: boolean) => void;
-  placement: 'below' | 'above';
-  onDone?: () => void;
-}) {
-  const run = () => {
-    s.submit();
-    setMenuOpen(false);
-    inputRef.current?.blur();
-    onDone?.();
-  };
-  return (
-    <form
-      role="search"
-      className="relative min-w-0 flex-1"
-      onSubmit={(e) => {
-        e.preventDefault();
-        run();
-      }}
-    >
-      <div className="flex h-12 items-center gap-3 rounded-full bg-black/30 pr-1.5 pl-4 ring-1 ring-white/10 backdrop-blur-md transition focus-within:bg-black/50 focus-within:ring-white/25">
-        <Search className="size-[18px] shrink-0 text-muted" />
-        <input
-          ref={inputRef}
-          value={s.query}
-          onChange={(e) => s.setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Escape' && (setMenuOpen(false), onDone?.())}
-          type="search"
-          enterKeyHint="search"
-          placeholder="Search movies & shows"
-          aria-label="Search movies and TV"
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
-        />
-                <button
-          type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Filters"
-          title="Filters"
-          aria-expanded={menuOpen}
-          className={cx('relative grid size-9 place-items-center rounded-full transition', menuOpen ? 'bg-white text-black' : 'text-muted hover:bg-white/10 hover:text-white')}
-        >
-          <SlidersHorizontal className="size-4" />
-          {s.count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
-        </button>
-      </div>
-      {menuOpen && <QuickFilterMenu filters={s.filters} set={s.setFilters} onClear={s.clearFilters} onApply={run} placement={placement} />}
-    </form>
-  );
-}
-
-// ---------- top bar ----------
 
 function TopBar() {
   const s = useSearchState();
-  const input = useRef<HTMLInputElement>(null);
   const [menu, setMenu] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-  useOutside(menu, () => setMenu(false), box);
+  const box = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const onDown = (e: PointerEvent) => box.current && !box.current.contains(e.target as Node) && setMenu(false);
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [menu]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === '/' && !/input|textarea|select/i.test(el.tagName) && !el.isContentEditable) {
         e.preventDefault();
-        input.current?.focus();
+        searchInput.current?.focus();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  const run = () => {
+    s.submit();
+    setMenu(false);
+    searchInput.current?.blur();
+  };
+
   return (
-    <header className="relative z-30 flex items-center gap-3 pt-5 pb-5 md:pt-6">
-      <div className="lg:hidden">
-        <Logo />
-      </div>
-      <div ref={box} className="ml-auto hidden w-full max-w-md md:block">
-        <SearchField s={s} inputRef={input} menuOpen={menu} setMenuOpen={setMenu} placement="below" />
-      </div>
+    <header className="relative z-30 grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 pt-4 pb-4 md:flex md:gap-4 md:pt-6 md:pb-5">
+      <Wordmark />
+      <form
+        ref={box}
+        role="search"
+        className="relative col-span-2 row-start-2 md:ml-auto md:w-full md:max-w-md"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run();
+        }}
+      >
+        <div className="flex h-12 items-center gap-3 rounded-full bg-black/30 pr-1.5 pl-4 ring-1 ring-white/10 backdrop-blur-md transition focus-within:bg-black/50 focus-within:ring-white/25">
+          <Search className="size-[18px] shrink-0 text-muted" />
+          <input
+            ref={(el) => {
+              searchInput.current = el;
+            }}
+            value={s.query}
+            onChange={(e) => s.setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Escape' && (setMenu(false), e.currentTarget.blur())}
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            placeholder="Search movies & shows"
+            aria-label="Search movies and TV"
+            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
+          />
+          {s.query && (
+            <button type="button" aria-label="Clear search" onClick={() => (s.setQuery(''), searchInput.current?.focus())} className="grid size-8 place-items-center rounded-full text-muted hover:text-white">
+              <X className="size-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setMenu((m) => !m)}
+            aria-label="Filters"
+            title="Filters"
+            aria-expanded={menu}
+            className={cx('relative grid size-9 place-items-center rounded-full transition', menu ? 'bg-white text-black' : 'text-muted hover:bg-white/10 hover:text-white')}
+          >
+            <SlidersHorizontal className="size-4" />
+            {s.count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
+          </button>
+        </div>
+        {menu && <QuickFilterMenu filters={s.filters} set={s.setFilters} onClear={s.clearFilters} onApply={run} placement="below" />}
+      </form>
       <NavLink
         to="/profile#profile"
         aria-label="Profile"
         title="Profile"
         className={({ isActive }) =>
-          cx('ml-auto grid size-12 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:ml-0', isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')
+          cx('grid size-11 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:size-12', isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')
         }
       >
         <User className="size-5" />
@@ -220,64 +209,35 @@ function TopBar() {
   );
 }
 
-// ---------- mobile bottom bar (< lg) with pop-up search ----------
+// ---------- bottom bar (< lg), fixed to the screen edge ----------
 
-function MobileNav() {
+function BottomBar() {
   const { pathname } = useLocation();
-  const s = useSearchState();
-  const [panel, setPanel] = useState(false);
-  const [menu, setMenu] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-  const root = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => {
-    setPanel(false);
-    setMenu(false);
-  }, []);
-  useOutside(panel, close, root);
-  useEffect(close, [pathname, close]);
-
-  const onSearchButton = () => {
-    if (!panel) {
-      setPanel(true);
-      setTimeout(() => input.current?.focus(), 50);
-    } else if (s.query.trim() || s.count) {
-      s.submit();
-      close();
-    } else close();
-  };
   const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} aria-label={label} title={label} className={cx('grid h-12 flex-1 place-items-center rounded-2xl transition', active ? 'text-white' : 'text-faint')}>
+    <Link to={to} className={cx('flex flex-1 flex-col items-center gap-1 py-2 text-[11px] transition', active ? 'text-white' : 'text-faint')}>
       <Icon className="size-[22px]" />
+      {label}
     </Link>
   );
-
   return (
-    <div ref={root} className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
-      {panel && (
-        <div className="mx-auto mb-3 max-w-xl">
-          <SearchField s={s} inputRef={input} menuOpen={menu} setMenuOpen={setMenu} placement="above" onDone={close} />
-        </div>
-      )}
-      <nav className="mx-auto flex max-w-xl items-center gap-1 rounded-full bg-surface/90 p-1.5 shadow-2xl shadow-black/40 ring-1 ring-white/5 backdrop-blur-md">
-        {item('/', Home, 'Home', pathname === '/')}
-        {item('/movies', Film, 'Movies', pathname === '/movies')}
-        <button onClick={onSearchButton} aria-label="Search" title="Search" className="mx-1 grid size-12 shrink-0 place-items-center rounded-full bg-white text-black transition active:scale-95">
-          <Search className="size-[22px]" />
-        </button>
-        {item('/tv', Tv, 'TV Shows', pathname === '/tv')}
-        {item('/profile#profile', User, 'Profile', pathname === '/profile')}
-      </nav>
-    </div>
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
+      {item('/', Home, 'Home', pathname === '/')}
+      {item('/movies', Film, 'Movies', pathname === '/movies')}
+      <button
+        onClick={() => {
+          // Focus synchronously inside the tap so mobile browsers open the keyboard.
+          searchInput.current?.focus();
+          window.scrollTo({ top: 0 });
+        }}
+        className={cx('flex flex-1 flex-col items-center gap-1 py-2 text-[11px] transition', pathname === '/search' ? 'text-white' : 'text-faint')}
+      >
+        <Search className="size-[22px]" />
+        Search
+      </button>
+      {item('/tv', Tv, 'TV', pathname === '/tv')}
+      {item('/profile#profile', User, 'Profile', pathname === '/profile')}
+    </nav>
   );
-}
-
-function useOutside(active: boolean, onOut: () => void, ref: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    if (!active) return;
-    const onDown = (e: PointerEvent) => ref.current && !ref.current.contains(e.target as Node) && onOut();
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [active, onOut, ref]);
 }
 
 /** Shows once a sentinel 1.5 screens down scrolls out of view — no scroll listener. */
@@ -298,7 +258,7 @@ function ScrollTop() {
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         aria-label="Scroll to top"
         className={cx(
-          'fixed right-4 bottom-28 z-30 grid size-12 place-items-center rounded-full bg-raised text-white shadow-lg transition-all hover:bg-line lg:right-8 lg:bottom-8',
+          'fixed right-4 bottom-24 z-30 grid size-11 place-items-center rounded-full bg-raised text-white shadow-lg transition-all hover:bg-line lg:right-8 lg:bottom-8',
           show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-16 opacity-0',
         )}
       >

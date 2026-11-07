@@ -40,7 +40,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-8 pb-10 md:space-y-10">
-      <section id="profile" className="scroll-mt-6 space-y-3">
+      <section id="profile" className="scroll-mt-10 space-y-3">
         <div className="flex items-center gap-4 rounded-3xl bg-surface p-5">
           <div className="grid size-14 place-items-center rounded-2xl bg-raised text-accent">
             <UserCircle className="size-7" />
@@ -60,7 +60,7 @@ export default function Profile() {
         </div>
       </section>
 
-      <div id="history" className="scroll-mt-6">
+      <div id="history" className="scroll-mt-10">
         {titles.length ? (
           <ContinueWatching items={titles} title="Watch history" />
         ) : (
@@ -71,11 +71,11 @@ export default function Profile() {
         )}
       </div>
 
-      <div id="watchlist" className="scroll-mt-6">
+      <div id="watchlist" className="scroll-mt-10">
         <Watchlist />
       </div>
 
-      <div id="settings" className="scroll-mt-6">
+      <div id="settings" className="scroll-mt-10">
         <SettingsSection />
       </div>
     </div>
@@ -115,7 +115,7 @@ function Watchlist() {
         <EmptyCard icon={Bookmark} title="Your watchlist is empty" body="Use the bookmark button on any movie or show to save it here." />
       ) : (
         <>
-          <div className="no-scrollbar -mx-1 mb-6 flex gap-2.5 overflow-x-auto px-1">
+          <div className="no-scrollbar scroll-row -mx-1 mb-6 flex gap-2.5 overflow-x-auto px-1">
             {FILTERS.map((f) => (
               <Pill key={f.id} on={active.has(f.id)} onClick={() => toggle(f.id)} className="flex items-center gap-2">
                 {f.status && <span className={cx('size-2 rounded-full', STATUS_DOT[f.status])} />}

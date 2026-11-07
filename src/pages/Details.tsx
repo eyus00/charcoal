@@ -1,16 +1,16 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ListVideo, Play, RotateCcw, Star } from 'lucide-react';
+import { Play, RotateCcw, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
 import MediaCard from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
-import { epLabel, regularSeasons } from '../lib/episodes';
+import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
-import { certificationOf, cleanList, HttpError, q, titleOf, yearOf, type Details as D, type MediaItem, type MediaType } from '../lib/tmdb';
+import { certificationOf, cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
 import { cx, formatClock, formatRuntime, useTitle } from '../lib/util';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
@@ -55,6 +55,8 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
   const location = useLocation();
   const title = titleOf(d);
   const cert = certificationOf(d);
+  const trailers = trailersOf(d);
+  const [trailer, setTrailer] = useState<Video | null>(null);
   const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 20);
   const length = type === 'movie' ? formatRuntime(d.runtime) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons > 1 ? 's' : ''}` : '';
 
@@ -88,8 +90,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
 
         <div className="relative w-full px-4 pb-6 md:px-8 md:pb-10 lg:px-10">
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
-            <BookmarkMenu variant="round" className="absolute top-4 right-4 md:top-6 md:right-6" item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
-            <h1 className="pr-14 text-3xl leading-tight font-semibold tracking-tight md:text-4xl">{title}</h1>
+            <h1 className="text-3xl leading-tight font-semibold tracking-tight md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-white/80">
               {d.vote_average > 0 && (
@@ -108,12 +109,15 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             <Overview text={d.overview} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={openEpisodes} />
+              <BookmarkMenu variant="round" item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
             </div>
           </div>
         </div>
       </section>
 
+      {trailers.length > 0 && <Trailers videos={trailers} onPlay={setTrailer} />}
       {recs.length > 0 && <MoreLikeThis items={recs} type={type} />}
+      {trailer && <TrailerModal video={trailer} onClose={() => setTrailer(null)} />}
 
       {type === 'tv' && episodesParam !== null && (
         <EpisodeSelector
@@ -124,6 +128,60 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           replace
         />
       )}
+    </div>
+  );
+}
+
+function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => void }) {
+  const { ref, scroll } = useRowScroll();
+  return (
+    <section className="mt-10">
+      <SectionHeader title="Trailers & videos" action={<RowArrows onScroll={scroll} />} />
+      <Scroller label="Trailers and videos" scrollRef={ref}>
+        {videos.map((v) => (
+          <button key={v.key} onClick={() => onPlay(v)} className="group w-64 shrink-0 snap-start text-left sm:w-80" role="listitem">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface">
+              <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+              <span className="absolute inset-0 grid place-items-center">
+                <span className="grid size-12 place-items-center rounded-full bg-black/40 backdrop-blur-sm transition group-hover:bg-white group-hover:text-black">
+                  <Play className="ml-0.5 size-5 fill-current" strokeWidth={0} />
+                </span>
+              </span>
+            </div>
+            <div className="mt-2.5 truncate text-[15px] font-medium">{v.name}</div>
+            <div className="text-[13px] text-muted">{v.type}</div>
+          </button>
+        ))}
+      </Scroller>
+    </section>
+  );
+}
+
+function TrailerModal({ video, onClose }: { video: Video; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+  return (
+    <div role="dialog" aria-modal="true" aria-label={video.name} className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-4" onClick={onClose}>
+      <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} aria-label="Close trailer" className="absolute -top-12 right-0 grid size-10 place-items-center rounded-full bg-white/10 hover:bg-white/20">
+          <X className="size-5" />
+        </button>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1&rel=0`}
+          title={video.name}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          className="aspect-video w-full rounded-3xl bg-black"
+        />
+      </div>
     </div>
   );
 }
@@ -181,17 +239,12 @@ function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisode
     );
   }
   const r = resumeTarget(history, 'tv', d.id);
-  const s = r?.season ?? regularSeasons(d)[0]?.season_number ?? 1;
-  const e = r?.episode ?? 1;
+  const label = r?.season !== undefined ? `${r.isNext ? 'Play' : 'Resume'} ${epLabel(r.season, r.episode)}` : 'Watch now';
+  // Opens the episode selector; its footer button resumes / plays.
   return (
-    <>
-      <Link to={`/watch/tv/${d.id}?season=${s}&episode=${e}`} className={PRIMARY}>
-        <Play className="size-4 fill-current" strokeWidth={0} />
-        {r ? `${r.isNext ? 'Play' : 'Resume'} ${epLabel(s, e)}` : 'Watch now'}
-      </Link>
-      <button onClick={onEpisodes} className={SECONDARY}>
-        <ListVideo className="size-4" /> Episodes
-      </button>
-    </>
+    <button onClick={onEpisodes} className={PRIMARY} aria-haspopup="dialog">
+      <Play className="size-4 fill-current" strokeWidth={0} />
+      {label}
+    </button>
   );
 }

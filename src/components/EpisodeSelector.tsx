@@ -92,7 +92,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           </button>
         </div>
 
-        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pb-4 md:px-7" role="tablist" aria-label="Seasons">
+        <div className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="tablist" aria-label="Seasons">
           {seasons.map((s) => (
             <button
               key={s.season_number}

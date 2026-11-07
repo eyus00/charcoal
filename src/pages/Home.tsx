@@ -30,7 +30,8 @@ export default function Home() {
 
 // ---------- hero (full-bleed, sits under the floating top bar) ----------
 
-export const BLEED = '-mx-4 -mt-[92px] md:-mx-8 md:-mt-[96px] lg:-mx-10';
+/** Pull full-bleed sections under the top bar (its height: 136px on phones, 92px from md). */
+export const BLEED = '-mx-4 -mt-[136px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
 const HERO_SIZES = '100vw';
 
 function Hero() {
@@ -64,7 +65,7 @@ function Hero() {
       <img aria-hidden alt="" src={imageUrl(next.backdrop_path, 'backdrop', 780)} srcSet={imageSrcSet(next.backdrop_path, 'backdrop')} sizes={HERO_SIZES} className="pointer-events-none absolute size-px opacity-0" />
 
       {/* poster strip doubles as the slide picker */}
-      <div className="no-scrollbar absolute inset-x-0 bottom-6 z-20 flex gap-2.5 overflow-x-auto px-4 md:bottom-8 md:px-8 lg:px-10">
+      <div className="no-scrollbar absolute inset-x-0 bottom-5 z-20 flex gap-2.5 overflow-x-auto px-4 py-1.5 md:bottom-7 md:px-8 lg:px-10">
         {items.map((m, i) => (
           <button
             key={m.id}
@@ -155,7 +156,7 @@ function Browse() {
     <section>
       <h2 className="mb-4 text-lg font-semibold tracking-tight md:text-xl">Discover</h2>
       <div className="mb-5 flex items-center gap-3">
-        <div className="no-scrollbar -mx-1 flex min-w-0 flex-1 gap-2.5 overflow-x-auto px-1" role="tablist" aria-label="Categories">
+        <div className="no-scrollbar scroll-row -mx-1 flex min-w-0 flex-1 gap-2.5 overflow-x-auto px-1" role="tablist" aria-label="Categories">
           {CATEGORIES.map((c) => (
             <Pill key={c} on={c === cat} onClick={() => choose(c)}>
               {c === 'trending' ? 'Trending' : GENRES.find((g) => g.slug === c)!.name}

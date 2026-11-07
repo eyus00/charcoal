@@ -40,20 +40,31 @@
   }
 }
 
+/* Horizontal scrollers clip vertically too; give rings/shadows room without shifting layout. */
+@utility scroll-row {
+  padding-block: 8px;
+  margin-block: -8px;
+}
+
 @utility skeleton {
   background: var(--color-surface);
   animation: pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes highlight {
+  0%,
+  100% {
+    outline-color: transparent;
+  }
   50% {
-    box-shadow: 0 0 0 2px rgb(255 255 255 / 0.35);
-    background-color: rgb(255 255 255 / 0.03);
+    outline-color: rgb(255 255 255 / 0.45);
   }
 }
 .highlight {
-  animation: highlight 1s ease-in-out;
-  border-radius: 1.5rem;
+  outline: 2px solid transparent;
+  outline-offset: 6px;
+  border-radius: 1.75rem;
+  animation: highlight 1.2s ease-in-out;
 }
 
 @keyframes pulse {
