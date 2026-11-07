@@ -46,3 +46,14 @@ export function useTextSearch(query: string, f: Filters) {
   });
 }
 
+
+/** Trending this week (all / movies / tv), paged — the default Discover view. */
+export function useTrendingPages(type: MediaType | 'all', enabled = true) {
+  return useInfiniteQuery({
+    queryKey: ['trending-pages', type],
+    enabled,
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => tmdb<Page<MediaItem>>(`/trending/${type}/week`, { page: pageParam }, signal),
+    getNextPageParam: (last) => (last.page < Math.min(last.total_pages, 20) ? last.page + 1 : undefined),
+  });
+}

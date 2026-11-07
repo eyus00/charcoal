@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { Film, Search, Tv, X, type LucideIcon } from 'lucide-react';
+import { Film, Tv, X, type LucideIcon } from 'lucide-react';
 import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
+import SearchInput from '../components/SearchInput';
 import { useDiscover, useTextSearch } from '../lib/browse';
 import { hasActiveFilters, matchesFilters, parseFilters } from '../lib/filters';
 import { cleanList, type MediaType } from '../lib/tmdb';
@@ -59,7 +60,7 @@ export default function Catalog({ type }: { type: MediaType }) {
   return (
     <div className="pb-10">
       <PageHeader title={label} count={total} onClear={hasActiveFilters(filters) ? clear : undefined} />
-      <CatalogSearch
+      <SearchInput
         key={type}
         value={query}
         placeholder={type === 'movie' ? 'Search movies' : 'Search TV shows'}
@@ -90,49 +91,6 @@ export default function Catalog({ type }: { type: MediaType }) {
       />
       <AdvancedFilters open={open} onClose={() => setOpen(false)} filters={filters} set={set} total={total} />
     </div>
-  );
-}
-
-/** Search box scoped to the catalog page; updates ?q= as you type (debounced). */
-function CatalogSearch({ value, placeholder, onChange }: { value: string; placeholder: string; onChange: (v: string) => void }) {
-  const [text, setText] = useState(value);
-  const typing = useRef(false);
-  useEffect(() => {
-    if (!typing.current) setText(value);
-  }, [value]);
-  useEffect(() => {
-    if (!typing.current) return;
-    const t = setTimeout(() => {
-      typing.current = false;
-      if (text.trim() !== value) onChange(text.trim());
-    }, 350);
-    return () => clearTimeout(t);
-  }, [text, value, onChange]);
-
-  return (
-    <form role="search" className="mb-4 max-w-xl" onSubmit={(e) => (e.preventDefault(), (typing.current = false), onChange(text.trim()), (document.activeElement as HTMLElement)?.blur())}>
-      <div className="flex h-12 items-center gap-3 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/5 transition focus-within:ring-white/25">
-        <Search className="size-[18px] shrink-0 text-muted" />
-        <input
-          value={text}
-          onChange={(e) => {
-            typing.current = true;
-            setText(e.target.value);
-          }}
-          type="search"
-          enterKeyHint="search"
-          autoComplete="off"
-          placeholder={placeholder}
-          aria-label={placeholder}
-          className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
-        />
-        {text && (
-          <button type="button" aria-label="Clear search" onClick={() => ((typing.current = false), setText(''), onChange(''))} className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
-            <X className="size-4" />
-          </button>
-        )}
-      </div>
-    </form>
   );
 }
 

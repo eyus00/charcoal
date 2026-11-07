@@ -1,14 +1,23 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
-import { EMPTY_FILTERS, activeFilterCount, parseFilters, writeFilters, type Filters } from '../lib/filters';
+import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router';
+import { ArrowUp, Bookmark, Compass, Film, History, Home, Search, Settings, Tv, User } from 'lucide-react';
 import { cx } from '../lib/util';
-import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 
-/** The one search input on the page; the search buttons focus it directly inside the tap (opens the keyboard). */
-const searchInput: { current: HTMLInputElement | null } = { current: null };
-const searchCtl = { open: () => {} };
+/**
+ * Mobile browsers only open the keyboard if an input is focused inside the tap.
+ * The search buttons focus this hidden "primer" input synchronously, navigate to
+ * Discover, and Discover moves focus to its own search box (the keyboard stays up).
+ */
+const primer: { current: HTMLInputElement | null } = { current: null };
+function useOpenSearch() {
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+  return () => {
+    primer.current?.focus({ preventScroll: true });
+    navigate(pathname === '/discover' ? `/discover${search}` : '/discover', { state: { focus: true }, replace: pathname === '/discover' });
+  };
+}
 
 export default function Layout({ bare = false }: { bare?: boolean }) {
   if (bare) {
@@ -32,6 +41,15 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
       </div>
       <BottomBar />
       <ScrollTop />
+      <input
+        ref={(el) => {
+          primer.current = el;
+        }}
+        aria-hidden
+        tabIndex={-1}
+        type="search"
+        className="pointer-events-none fixed top-0 left-0 size-px opacity-0"
+      />
     </div>
   );
 }
@@ -48,7 +66,7 @@ const RAIL = [
   { to: '/', label: 'Home', icon: Home, match: (p: string) => p === '/' },
   { to: '/movies', label: 'Movies', icon: Film, match: (p: string) => p.startsWith('/movie') },
   { to: '/tv', label: 'TV Shows', icon: Tv, match: (p: string) => p === '/tv' || p.startsWith('/tv/') },
-  { to: '/search', label: 'Search', icon: Search, match: (p: string) => p === '/search' },
+  { to: '/discover', label: 'Discover', icon: Compass, match: (p: string) => p === '/discover' },
 ];
 const RAIL_LIBRARY = [
   { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark, hash: '#watchlist' },
@@ -90,159 +108,33 @@ function Rail() {
   );
 }
 
-// ---------- top bar: wordmark, search (+ quick filters), profile ----------
-
-/** Search text + filters. On /search they edit the URL; elsewhere they're a draft applied on submit. */
-function useSearchState() {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const [params, setParams] = useSearchParams();
-  const onSearch = pathname === '/search';
-  const [query, setQuery] = useState(onSearch ? (params.get('q') ?? '') : '');
-  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
-  const filters = onSearch ? parseFilters(params) : draft;
-
-  const urlQ = onSearch ? (params.get('q') ?? '') : null;
-  useEffect(() => {
-    if (urlQ !== null) setQuery(urlQ);
-  }, [urlQ]);
-
-  const setFilters = (patch: Partial<Filters>) =>
-    onSearch ? setParams(writeFilters(params, patch), { replace: true }) : setDraft((d) => ({ ...d, ...patch }));
-  const clearFilters = () => setFilters({ type: 'all', genres: [], from: undefined, to: undefined, rating: 0 });
-  const submit = () => {
-    const base = writeFilters(new URLSearchParams(), filters);
-    if (query.trim()) base.set('q', query.trim());
-    navigate(`/search?${base}`, { replace: onSearch });
-    setDraft(EMPTY_FILTERS);
-  };
-  return { query, setQuery, filters, setFilters, clearFilters, submit, count: activeFilterCount(filters, true) };
-}
+// ---------- top bar: wordmark, search shortcut (desktop), profile ----------
 
 function TopBar() {
-  const { pathname } = useLocation();
-  const s = useSearchState();
-  const [open, setOpen] = useState(pathname === '/search');
-  const [menu, setMenu] = useState(false);
-  const box = useRef<HTMLFormElement>(null);
-
-  // Focus first (same tick as the tap, so mobile keyboards open), then reveal.
-  const openSearch = () => {
-    searchInput.current?.focus({ preventScroll: true });
-    setOpen(true);
-  };
-  const close = () => {
-    setMenu(false);
-    setOpen(false);
-    searchInput.current?.blur();
-  };
-  searchCtl.open = openSearch;
-
-  useEffect(() => {
-    if (pathname === '/search') setOpen(true);
-    else if (!searchInput.current?.value) setOpen(false);
-    setMenu(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!menu && !open) return;
-    const onDown = (e: PointerEvent) => {
-      if (box.current?.contains(e.target as Node)) return;
-      setMenu(false);
-      if (!searchInput.current?.value && pathname !== '/search') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
-  }, [menu, open, pathname]);
-
+  const openSearch = useOpenSearch();
+  const openRef = useRef(openSearch);
+  openRef.current = openSearch;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === '/' && !/input|textarea|select/i.test(el.tagName) && !el.isContentEditable) {
         e.preventDefault();
-        searchCtl.open();
+        openRef.current();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const run = () => {
-    s.submit();
-    setMenu(false);
-    searchInput.current?.blur();
-  };
-
+  const round = 'grid size-11 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:size-12';
   return (
-    <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4">
+    <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px]">
       <Wordmark />
-      <form
-        ref={box}
-        role="search"
-        className={cx(
-          open
-            ? 'fixed inset-x-0 top-0 z-50 bg-bg/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md md:relative md:inset-auto md:ml-auto md:w-full md:max-w-md md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none'
-            : 'sr-only',
-        )}
-        onSubmit={(e) => {
-          e.preventDefault();
-          run();
-        }}
-      >
-        <div className="flex h-12 items-center gap-2 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
-          <Search className="size-[18px] shrink-0 text-muted" />
-          <input
-            ref={(el) => {
-              searchInput.current = el;
-            }}
-            value={s.query}
-            onChange={(e) => s.setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Escape' && close()}
-            tabIndex={open ? 0 : -1}
-            type="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            placeholder="Search movies & shows"
-            aria-label="Search movies and TV"
-            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
-          />
-          <button
-            type="button"
-            onClick={() => setMenu((m) => !m)}
-            aria-label="Filters"
-            title="Filters"
-            aria-expanded={menu}
-            className={cx('relative grid size-9 place-items-center rounded-full transition', menu ? 'bg-white text-black' : 'text-muted hover:bg-white/10 hover:text-white')}
-          >
-            <SlidersHorizontal className="size-4" />
-            {s.count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
-          </button>
-          <button type="button" aria-label="Close search" onClick={() => (s.setQuery(''), close())} className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
-            <X className="size-4" />
-          </button>
-        </div>
-        {menu && <QuickFilterMenu filters={s.filters} set={s.setFilters} onClear={s.clearFilters} onApply={run} placement="below" />}
-      </form>
       <div className="ml-auto flex items-center gap-2 md:gap-3">
-        {!open && (
-          <button
-            type="button"
-            onClick={openSearch}
-            aria-label="Search"
-            title="Search (/)"
-            className="hidden size-12 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 backdrop-blur-md transition hover:bg-black/50 md:grid"
-          >
-            <Search className="size-5" />
-          </button>
-        )}
-        <NavLink
-          to="/profile#profile"
-          aria-label="Profile"
-          title="Profile"
-          className={({ isActive }) =>
-            cx('grid size-11 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:size-12', isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')
-          }
-        >
+        <button type="button" onClick={openSearch} aria-label="Search" title="Search (/)" className={cx(round, 'hidden bg-black/30 hover:bg-black/50 lg:grid')}>
+          <Search className="size-5" />
+        </button>
+        <NavLink to="/profile#profile" aria-label="Profile" title="Profile" className={({ isActive }) => cx(round, isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')}>
           <User className="size-5" />
         </NavLink>
       </div>
@@ -254,23 +146,29 @@ function TopBar() {
 
 function BottomBar() {
   const { pathname } = useLocation();
+  const openSearch = useOpenSearch();
   const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} className={cx('flex flex-1 flex-col items-center gap-1 py-2 text-[11px] transition', active ? 'text-white' : 'text-faint')}>
+    <Link to={to} className={cx('flex flex-1 flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] transition', active ? 'text-white' : 'text-faint')}>
       <Icon className="size-[22px]" />
       {label}
     </Link>
   );
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-end border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
       {item('/', Home, 'Home', pathname === '/')}
       {item('/movies', Film, 'Movies', pathname === '/movies')}
-      <button
-        onClick={() => searchCtl.open()}
-        className={cx('flex flex-1 flex-col items-center gap-1 py-2 text-[11px] transition', pathname === '/search' ? 'text-white' : 'text-faint')}
-      >
-        <Search className="size-[22px]" />
-        Search
-      </button>
+      <div className="flex flex-1 justify-center">
+        <button
+          onClick={openSearch}
+          aria-label="Search and discover"
+          className={cx(
+            '-mt-6 mb-2 grid size-14 place-items-center rounded-full shadow-lg shadow-black/50 ring-4 ring-bg transition active:scale-95',
+            pathname === '/discover' ? 'bg-white text-black' : 'bg-raised text-white',
+          )}
+        >
+          <Search className="size-6" />
+        </button>
+      </div>
       {item('/tv', Tv, 'TV', pathname === '/tv')}
       {item('/profile#profile', User, 'Profile', pathname === '/profile')}
     </nav>

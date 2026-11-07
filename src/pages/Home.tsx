@@ -189,7 +189,7 @@ function Browse() {
 
   return (
     <section>
-      <h2 className="mb-4 text-lg font-semibold tracking-tight md:text-xl">Discover</h2>
+      <h2 className="mb-4 text-lg font-semibold tracking-tight md:text-xl">Popular picks</h2>
       <div className="mb-5 flex items-center gap-3">
         <div className="no-scrollbar scroll-row -mx-1 flex min-w-0 flex-1 gap-2.5 overflow-x-auto px-1" role="tablist" aria-label="Categories">
           {CATEGORIES.map((c) => (
@@ -208,7 +208,7 @@ function Browse() {
             <MediaCard key={typeOf(m) + m.id} item={m} sizes={ROW_SIZES} className={ROW_ITEM} />
           ))}
           <Link
-            to={cat === 'trending' ? '/search' : `/search?genres=${cat}`}
+            to={cat === 'trending' ? '/discover' : `/discover?genres=${cat}`}
             className="grid w-[140px] shrink-0 snap-start place-items-center self-start aspect-[2/3] rounded-2xl bg-surface text-[15px] text-muted transition hover:bg-raised hover:text-white sm:w-[170px] lg:w-[190px]"
           >
             See all
