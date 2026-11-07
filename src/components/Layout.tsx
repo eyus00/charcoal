@@ -1,7 +1,9 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, Compass, Film, History, Home, Search, Settings, Tv, User, X } from 'lucide-react';
+import { ArrowUp, Bookmark, Compass, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
+import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
+import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
@@ -97,58 +99,78 @@ function Rail() {
 
 // ---------- top bar: wordmark + universal search ----------
 
-const PLACEHOLDER: Record<string, string> = { movie: 'Search movies', tv: 'Search TV shows' };
+const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV shows', movie: 'Search movies', tv: 'Search TV shows' };
 
+/**
+ * Universal search. The bar keeps a draft (text + type + quick filters):
+ * - the search button always starts a universal search (type All, no filters);
+ * - on the results page (/discover) typing writes text, type and filters to the URL live,
+ *   and changes made on the page (type switch, filter pills) flow back into the draft;
+ * - elsewhere, Enter / "Search" in the quick filters opens the results page.
+ */
 function TopBar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
   const onDiscover = pathname === '/discover';
   const urlQ = onDiscover ? (params.get('q') ?? '') : '';
+  const urlKey = onDiscover ? params.toString() : '';
   const [text, setText] = useState(urlQ);
+  const [draft, setDraft] = useState<Filters>(() => (onDiscover ? parseFilters(params) : EMPTY_FILTERS));
   const [open, setOpen] = useState(onDiscover);
+  const [menu, setMenu] = useState(false);
   const typing = useRef(false);
   const form = useRef<HTMLFormElement>(null);
 
-  // The results page always shows the bar; elsewhere it's opened on demand.
   useEffect(() => {
     if (onDiscover) setOpen(true);
     else if (!searchInput.current?.value) setOpen(false);
+    setMenu(false);
   }, [onDiscover, pathname]);
-  useEffect(() => {
-    if (!typing.current) setText(urlQ);
-  }, [urlQ]);
 
-  // On the results page, typing updates the results live (debounced).
+  // URL → draft (results page only), unless the user is mid-typing.
+  useEffect(() => {
+    if (!onDiscover || typing.current) return;
+    const p = new URLSearchParams(urlKey);
+    setText(p.get('q') ?? '');
+    setDraft(parseFilters(p));
+  }, [onDiscover, urlKey]);
+
+  const apply = (q: string, f: Filters, replace: boolean) => {
+    const next = writeFilters(new URLSearchParams(), f);
+    if (q) next.set('q', q);
+    navigate(`/discover?${next}`, { replace, preventScrollReset: true });
+  };
+
+  // Live results while typing on the results page.
   useEffect(() => {
     if (!onDiscover || !typing.current) return;
     const t = setTimeout(() => {
       typing.current = false;
       const v = text.trim();
-      if (v === urlQ) return;
-      const next = new URLSearchParams(params);
-      if (v) next.set('q', v);
-      else next.delete('q');
-      setParams(next, { replace: true, preventScrollReset: true });
+      if (v !== urlQ || draft.type !== parseFilters(params).type) apply(v, draft, true);
     }, 350);
     return () => clearTimeout(t);
-  }, [text, onDiscover, urlQ, params, setParams]);
+  }, [text]);
 
   // Close when tapping elsewhere with an empty field (not on the results page).
   useEffect(() => {
-    if (!open || onDiscover) return;
+    if (!open && !menu) return;
     const onDown = (e: PointerEvent) => {
       if (form.current?.contains(e.target as Node) || (e.target as Element).closest?.('[data-search-trigger]')) return;
-      if (!searchInput.current?.value) setOpen(false);
+      setMenu(false);
+      if (!onDiscover && !searchInput.current?.value) setOpen(false);
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
-  }, [open, onDiscover]);
+  }, [open, menu, onDiscover]);
 
-  // Focus first, inside the tap (opens the keyboard), then reveal.
+  // Focus first, inside the tap (opens the keyboard), then reveal a fresh universal search.
   searchCtl.open = () => {
     searchInput.current?.focus({ preventScroll: true });
     setOpen(true);
+    setMenu(false);
+    setDraft(EMPTY_FILTERS);
   };
 
   useEffect(() => {
@@ -165,17 +187,14 @@ function TopBar() {
 
   const submit = () => {
     typing.current = false;
-    const v = text.trim();
-    // On the results page keep the current type/filters; elsewhere search everything.
-    const next = new URLSearchParams(onDiscover ? params : undefined);
-    if (v) next.set('q', v);
-    else next.delete('q');
-    navigate(`/discover?${next}`, { replace: onDiscover });
+    setMenu(false);
+    apply(text.trim(), draft, onDiscover);
     searchInput.current?.blur();
   };
   const close = () => {
     typing.current = false;
     setText('');
+    setMenu(false);
     if (onDiscover && urlQ) {
       const next = new URLSearchParams(params);
       next.delete('q');
@@ -184,6 +203,7 @@ function TopBar() {
     if (!onDiscover) setOpen(false);
     searchInput.current?.blur();
   };
+  const count = activeFilterCount(draft, true);
 
   return (
     <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4">
@@ -203,7 +223,7 @@ function TopBar() {
           submit();
         }}
       >
-        <div className="flex h-12 items-center gap-2 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
+        <div className="flex h-12 items-center gap-1.5 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
           <Search className="size-[18px] shrink-0 text-muted" />
           <input
             ref={(el) => {
@@ -219,16 +239,36 @@ function TopBar() {
             type="search"
             enterKeyHint="search"
             autoComplete="off"
-            placeholder={onDiscover ? (PLACEHOLDER[params.get('type') ?? ''] ?? 'Search movies & TV shows') : 'Search movies & TV shows'}
+            placeholder={PLACEHOLDER[draft.type]}
             aria-label="Search"
-            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
+            className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
+          <button
+            type="button"
+            onClick={() => setMenu((m) => !m)}
+            aria-label="Quick filters"
+            title="Filters"
+            aria-expanded={menu}
+            className={cx('relative grid size-9 place-items-center rounded-full transition', menu ? 'bg-white text-black' : 'text-muted hover:bg-white/10 hover:text-white')}
+          >
+            <SlidersHorizontal className="size-4" />
+            {count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
+          </button>
           {(text || !onDiscover) && (
             <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
               <X className="size-4" />
             </button>
           )}
         </div>
+        {menu && (
+          <QuickFilterMenu
+            filters={draft}
+            set={(patch) => setDraft((d) => ({ ...d, ...patch, genres: patch.type ? (patch.genres ?? d.genres).filter((g) => genresFor(patch.type!).some((x) => x.slug === g)) : (patch.genres ?? d.genres) }))}
+            onClear={() => setDraft(EMPTY_FILTERS)}
+            onApply={submit}
+            placement="below"
+          />
+        )}
       </form>
       {!open && (
         <button

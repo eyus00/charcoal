@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { Compass } from 'lucide-react';
+import { Compass, X } from 'lucide-react';
 import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
 import { useDiscover, useTextSearch, useTrendingPages } from '../lib/browse';
 import { genresFor, hasActiveFilters, matchesFilters, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { cleanList } from '../lib/tmdb';
 import { cx, useTitle } from '../lib/util';
-import { Empty, PageHeader } from '../components/PageHeader';
+import { Empty } from '../components/PageHeader';
 
 const TYPES: { key: Filters['type']; label: string; title: string }[] = [
   { key: 'all', label: 'All', title: 'Discover' },
@@ -53,8 +53,8 @@ export default function Discover() {
 
   return (
     <div className="pb-10">
-      <PageHeader title={query ? `“${query}”` : kind.title} label={query ? `Results for${filters.type === 'all' ? '' : ` · ${kind.label}`}` : plain ? 'Trending this week' : undefined} count={total} onClear={hasActiveFilters(filters) ? () => set({ genres: [], from: undefined, to: undefined, rating: 0 }) : undefined} />
-      <div className="mb-5 inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+<div className="inline-flex rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
         {TYPES.map((t) => (
           <button
             key={t.key}
@@ -66,6 +66,12 @@ export default function Discover() {
             {t.label}
           </button>
         ))}
+      </div>
+        {hasActiveFilters(filters) && (
+          <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-muted transition hover:bg-surface hover:text-white">
+            <X className="size-4" /> Clear filters
+          </button>
+        )}
       </div>
 
       <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} />

@@ -116,19 +116,31 @@ function Hero() {
             </button>
           ))}
         </div>
-        {/* previous · current · next */}
-        <div className="flex items-end gap-2 py-1 md:gap-2.5">
-          {[-1, 0, 1].map((d) => {
-            const m = items[(index + d + items.length) % items.length];
+        {/* previous · current · next — a sliding track: every poster sits at its distance from the
+            current slide, so changes glide instead of jumping */}
+        <div className="relative h-[92px] w-[176px] shrink-0 md:h-[104px] md:w-[206px]">
+          {items.map((m, i) => {
+            const n = items.length;
+            let o = (i - index + n) % n;
+            if (o > n / 2) o -= n;
+            const visible = Math.abs(o) <= 1;
             return (
               <button
-                key={d}
-                onClick={() => (d === 0 ? navigate(`/${typeOf(m)}/${m.id}`) : go(d))}
-                aria-label={d === 0 ? `Open ${titleOf(m)}` : `${d < 0 ? 'Previous' : 'Next'}: ${titleOf(m)}`}
+                key={m.id}
+                tabIndex={visible ? 0 : -1}
+                aria-hidden={!visible}
+                onClick={() => (o === 0 ? navigate(`/${typeOf(m)}/${m.id}`) : go(o))}
+                aria-label={o === 0 ? `Open ${titleOf(m)}` : `${o < 0 ? 'Previous' : 'Next'}: ${titleOf(m)}`}
                 className={cx(
-                  'shrink-0 overflow-hidden rounded-xl bg-surface transition-all duration-300',
-                  d === 0 ? 'h-[84px] w-14 ring-2 ring-white md:h-24 md:w-16' : 'h-[68px] w-[46px] opacity-60 hover:opacity-100 md:h-20 md:w-[54px]',
+                  'absolute bottom-1 left-1/2 h-[84px] w-14 overflow-hidden rounded-xl bg-surface transition-[transform,opacity,box-shadow] duration-500 ease-out md:h-24 md:w-16',
+                  o === 0 ? 'ring-2 ring-white' : 'ring-0',
+                  !visible && 'pointer-events-none',
                 )}
+                style={{
+                  transform: `translateX(calc(-50% + ${Math.max(-2, Math.min(2, o))} * var(--hero-step))) scale(${o === 0 ? 1 : 0.82})`,
+                  transformOrigin: 'bottom center',
+                  opacity: visible ? (o === 0 ? 1 : 0.6) : 0,
+                }}
               >
                 <img src={imageUrl(m.poster_path, 'poster', 92)} alt="" loading="lazy" decoding="async" draggable={false} className="size-full object-cover" />
               </button>
@@ -140,19 +152,31 @@ function Hero() {
   );
 }
 
+/** Text rises in when its slide becomes active. */
+const RISE = 'transition-[transform,opacity] duration-700 ease-out';
+const SHOWN = 'translate-y-0 opacity-100';
+const HIDDEN = 'translate-y-4 opacity-0 delay-0!';
+
 function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
   const type = typeOf(item);
   const [seen, setSeen] = useState(active);
+  // `shown` flips a frame after `active`, so a slide mounted already-active still animates in.
+  const [shown, setShown] = useState(false);
   useEffect(() => {
     if (active) setSeen(true);
+    if (!active) return setShown(false);
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => (r2 = requestAnimationFrame(() => setShown(true))));
+    return () => (cancelAnimationFrame(r1), cancelAnimationFrame(r2));
   }, [active]);
   if (!seen) return null; // don't download slides nobody has reached yet
 
   const title = titleOf(item);
   const genres = (item.genre_ids ?? []).map((g) => genreName(type, g)).filter(Boolean).slice(0, 2) as string[];
   return (
-    <div aria-hidden={!active} className={cx('absolute inset-0 transition-opacity duration-700', active ? 'z-10 opacity-100' : 'pointer-events-none opacity-0')}>
-      <div className="absolute inset-0">
+    <div aria-hidden={!active} className={cx('absolute inset-0 transition-opacity duration-700 ease-out', active ? 'z-10' : 'pointer-events-none', shown ? 'opacity-100' : 'opacity-0')}>
+      {/* slow settle-in zoom on the incoming image */}
+      <div className={cx('absolute inset-0 transition-transform duration-[1600ms] ease-out', shown ? 'scale-100' : 'scale-[1.06]')}>
         <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="size-full" imgClassName="object-[70%_20%] pointer-events-none" />
       </div>
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/55 to-transparent" />
@@ -160,10 +184,12 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
 
       <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
         <div className="max-w-2xl">
-          <p className="text-sm text-white/70">{[yearOf(item), genres.join(', '), type === 'movie' ? 'Movie' : 'Series'].filter(Boolean).join('  ·  ')}</p>
-          <h2 className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</h2>
-          <p className="mt-4 line-clamp-2 max-w-lg text-[15px] text-white/70">{item.overview}</p>
-          <div className="mt-6 flex items-center gap-3">
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-100 text-sm text-white/70')}>{[yearOf(item), genres.join(', '), type === 'movie' ? 'Movie' : 'Series'].filter(Boolean).join('  ·  ')}</p>
+          <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-200')}>
+            <span className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</span>
+          </h2>
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-300 mt-4 line-clamp-2 max-w-lg text-[15px] text-white/70')}>{item.overview}</p>
+          <div className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-6 flex items-center gap-3 delay-[400ms]')}>
             <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
             </Link>

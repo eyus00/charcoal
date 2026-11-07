@@ -166,3 +166,26 @@ export function AdvancedFilters({ open, onClose, filters: f, set, withType, tota
     </div>
   );
 }
+
+// ---------- quick filter popover on the search bar ----------
+
+export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }: { filters: Filters; set: Set; onClear: () => void; onApply: () => void; placement: 'below' | 'above' }) {
+  return (
+    <div
+      className={cx('absolute inset-x-4 z-[70] rounded-3xl bg-surface p-5 shadow-2xl shadow-black/50 ring-1 ring-line md:inset-x-auto md:right-0 md:w-[380px]', placement === 'below' ? 'top-full mt-2 md:mt-3' : 'bottom-full mb-3')}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="max-h-[50dvh] space-y-5 overflow-y-auto pr-1">
+        <Sections f={f} set={set} withType compact />
+      </div>
+      <div className="mt-5 flex gap-2.5">
+        <button type="button" onClick={onClear} className="h-11 flex-1 rounded-2xl bg-raised text-sm hover:bg-line">
+          Clear
+        </button>
+        <button type="button" onClick={onApply} className="h-11 flex-[2] rounded-2xl bg-accent text-sm font-medium text-black hover:bg-accent-hover">
+          Search
+        </button>
+      </div>
+    </div>
+  );
+}
