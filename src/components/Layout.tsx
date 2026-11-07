@@ -6,8 +6,9 @@ import { cx } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 
-/** The one search input on the page; the mobile bar's search button focuses it directly (opens the keyboard). */
+/** The one search input on the page; the search buttons focus it directly inside the tap (opens the keyboard). */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
+const searchCtl = { open: () => {} };
 
 export default function Layout({ bare = false }: { bare?: boolean }) {
   if (bare) {
@@ -119,23 +120,47 @@ function useSearchState() {
 }
 
 function TopBar() {
+  const { pathname } = useLocation();
   const s = useSearchState();
+  const [open, setOpen] = useState(pathname === '/search');
   const [menu, setMenu] = useState(false);
   const box = useRef<HTMLFormElement>(null);
 
+  // Focus first (same tick as the tap, so mobile keyboards open), then reveal.
+  const openSearch = () => {
+    searchInput.current?.focus({ preventScroll: true });
+    setOpen(true);
+  };
+  const close = () => {
+    setMenu(false);
+    setOpen(false);
+    searchInput.current?.blur();
+  };
+  searchCtl.open = openSearch;
+
   useEffect(() => {
-    if (!menu) return;
-    const onDown = (e: PointerEvent) => box.current && !box.current.contains(e.target as Node) && setMenu(false);
+    if (pathname === '/search') setOpen(true);
+    else if (!searchInput.current?.value) setOpen(false);
+    setMenu(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menu && !open) return;
+    const onDown = (e: PointerEvent) => {
+      if (box.current?.contains(e.target as Node)) return;
+      setMenu(false);
+      if (!searchInput.current?.value && pathname !== '/search') setOpen(false);
+    };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
-  }, [menu]);
+  }, [menu, open, pathname]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === '/' && !/input|textarea|select/i.test(el.tagName) && !el.isContentEditable) {
         e.preventDefault();
-        searchInput.current?.focus();
+        searchCtl.open();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -149,18 +174,22 @@ function TopBar() {
   };
 
   return (
-    <header className="relative z-30 grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 pt-4 pb-4 md:flex md:gap-4 md:pt-6 md:pb-5">
+    <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4">
       <Wordmark />
       <form
         ref={box}
         role="search"
-        className="relative col-span-2 row-start-2 md:ml-auto md:w-full md:max-w-md"
+        className={cx(
+          open
+            ? 'fixed inset-x-0 top-0 z-50 bg-bg/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md md:relative md:inset-auto md:ml-auto md:w-full md:max-w-md md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none'
+            : 'sr-only',
+        )}
         onSubmit={(e) => {
           e.preventDefault();
           run();
         }}
       >
-        <div className="flex h-12 items-center gap-3 rounded-full bg-black/30 pr-1.5 pl-4 ring-1 ring-white/10 backdrop-blur-md transition focus-within:bg-black/50 focus-within:ring-white/25">
+        <div className="flex h-12 items-center gap-2 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
           <Search className="size-[18px] shrink-0 text-muted" />
           <input
             ref={(el) => {
@@ -168,7 +197,8 @@ function TopBar() {
             }}
             value={s.query}
             onChange={(e) => s.setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Escape' && (setMenu(false), e.currentTarget.blur())}
+            onKeyDown={(e) => e.key === 'Escape' && close()}
+            tabIndex={open ? 0 : -1}
             type="search"
             enterKeyHint="search"
             autoComplete="off"
@@ -176,11 +206,6 @@ function TopBar() {
             aria-label="Search movies and TV"
             className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
-          {s.query && (
-            <button type="button" aria-label="Clear search" onClick={() => (s.setQuery(''), searchInput.current?.focus())} className="grid size-8 place-items-center rounded-full text-muted hover:text-white">
-              <X className="size-4" />
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setMenu((m) => !m)}
@@ -192,19 +217,35 @@ function TopBar() {
             <SlidersHorizontal className="size-4" />
             {s.count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
           </button>
+          <button type="button" aria-label="Close search" onClick={() => (s.setQuery(''), close())} className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
+            <X className="size-4" />
+          </button>
         </div>
         {menu && <QuickFilterMenu filters={s.filters} set={s.setFilters} onClear={s.clearFilters} onApply={run} placement="below" />}
       </form>
-      <NavLink
-        to="/profile#profile"
-        aria-label="Profile"
-        title="Profile"
-        className={({ isActive }) =>
-          cx('grid size-11 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:size-12', isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')
-        }
-      >
-        <User className="size-5" />
-      </NavLink>
+      <div className="ml-auto flex items-center gap-2 md:gap-3">
+        {!open && (
+          <button
+            type="button"
+            onClick={openSearch}
+            aria-label="Search"
+            title="Search (/)"
+            className="hidden size-12 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 backdrop-blur-md transition hover:bg-black/50 md:grid"
+          >
+            <Search className="size-5" />
+          </button>
+        )}
+        <NavLink
+          to="/profile#profile"
+          aria-label="Profile"
+          title="Profile"
+          className={({ isActive }) =>
+            cx('grid size-11 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:size-12', isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')
+          }
+        >
+          <User className="size-5" />
+        </NavLink>
+      </div>
     </header>
   );
 }
@@ -224,11 +265,7 @@ function BottomBar() {
       {item('/', Home, 'Home', pathname === '/')}
       {item('/movies', Film, 'Movies', pathname === '/movies')}
       <button
-        onClick={() => {
-          // Focus synchronously inside the tap so mobile browsers open the keyboard.
-          searchInput.current?.focus();
-          window.scrollTo({ top: 0 });
-        }}
+        onClick={() => searchCtl.open()}
         className={cx('flex flex-1 flex-col items-center gap-1 py-2 text-[11px] transition', pathname === '/search' ? 'text-white' : 'text-faint')}
       >
         <Search className="size-[22px]" />

@@ -1,33 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Search as SearchIcon } from 'lucide-react';
 import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
-import { hasActiveFilters, matchesFilters, parseFilters, type Filters } from '../lib/filters';
-import { cleanList, q, tmdb, type MediaItem, type Page } from '../lib/tmdb';
+import { useDiscover, useTextSearch } from '../lib/browse';
+import { hasActiveFilters, matchesFilters, parseFilters } from '../lib/filters';
+import { cleanList, q } from '../lib/tmdb';
 import { useTitle } from '../lib/util';
-import { Empty, PageHeader, useDiscover } from './Catalog';
-
-/** Text search. TMDB search only filters by year server-side; genre/rating/year ranges are applied to results. */
-function useTextSearch(query: string, f: Filters) {
-  return useInfiniteQuery({
-    queryKey: ['search', query, f.type, f.from === f.to ? f.from : undefined],
-    enabled: !!query,
-    initialPageParam: 1,
-    queryFn: async ({ pageParam, signal }) => {
-      if (f.type === 'all') return tmdb<Page<MediaItem>>('/search/multi', { query, page: pageParam, include_adult: 'false' }, signal);
-      const yearKey = f.type === 'movie' ? 'primary_release_year' : 'first_air_date_year';
-      const res = await tmdb<Page<MediaItem>>(
-        `/search/${f.type}`,
-        { query, page: pageParam, include_adult: 'false', [yearKey]: f.from && f.from === f.to ? f.from : undefined },
-        signal,
-      );
-      return { ...res, results: res.results.map((m) => ({ ...m, media_type: f.type as 'movie' | 'tv' })) };
-    },
-    getNextPageParam: (last) => (last.page < Math.min(last.total_pages, 50) ? last.page + 1 : undefined),
-  });
-}
+import { Empty, PageHeader } from './Catalog';
 
 export default function Search() {
   const [params] = useSearchParams();

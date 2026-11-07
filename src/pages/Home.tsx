@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Play } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
@@ -13,7 +13,7 @@ import { imageSrcSet, imageUrl } from '../lib/images';
 import { continueWatching, useStore } from '../lib/store';
 import { cleanList, q, titleOf, typeOf, yearOf, type MediaItem } from '../lib/tmdb';
 import { cx, useTitle } from '../lib/util';
-import { useDiscover } from './Catalog';
+import { useDiscover } from '../lib/browse';
 
 export default function Home() {
   useTitle();
@@ -30,15 +30,20 @@ export default function Home() {
 
 // ---------- hero (full-bleed, sits under the floating top bar) ----------
 
-/** Pull full-bleed sections under the top bar (its height: 136px on phones, 92px from md). */
-export const BLEED = '-mx-4 -mt-[136px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
+/** Pull full-bleed sections under the top bar (its height: 76px on phones, 92px from md). */
+export const BLEED = '-mx-4 -mt-[76px] md:-mx-8 md:-mt-[92px] lg:-mx-10';
 const HERO_SIZES = '100vw';
+const SWIPE_PX = 50;
 
 function Hero() {
+  const navigate = useNavigate();
   const { data, isError } = useQuery(q.trending('all', 'day'));
   const items = useMemo(() => cleanList(data?.results ?? []).filter((m) => m.backdrop_path).slice(0, 8), [data]);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const drag = useRef<{ x: number; y: number; id: number; axis?: 'x' | 'y' } | null>(null);
+  const go = (d: number) => setIndex((i) => (i + d + items.length) % items.length);
 
   useEffect(() => {
     if (items.length < 2 || paused) return;
@@ -47,37 +52,72 @@ function Hero() {
   }, [items.length, paused, index]);
 
   if (isError) return null;
-  const frame = cx(BLEED, 'relative h-[82svh] min-h-[540px] max-h-[860px] overflow-hidden');
+  const frame = cx(BLEED, 'relative h-[78svh] min-h-[520px] max-h-[820px] overflow-hidden');
   if (!items.length) return <div className={cx(frame, 'skeleton')} />;
 
+  const item = items[index];
   const next = items[(index + 1) % items.length];
+
+  // Swipe/drag: horizontal movement switches slides; a tap (no movement) opens details.
+  const onDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('a,button')) return;
+    drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  };
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.axis && Math.abs(dx) + Math.abs(dy) > 8) {
+      d.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (d.axis === 'x') (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    if (d.axis === 'x') setDragX(dx);
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    setDragX(0);
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    if (d.axis === 'x' && Math.abs(dx) > SWIPE_PX) go(dx < 0 ? 1 : -1);
+    else if (!d.axis) navigate(`/${typeOf(item)}/${item.id}`);
+  };
+
   return (
     <section
       aria-roledescription="carousel"
       aria-label="Trending today"
-      className={frame}
+      tabIndex={0}
+      className={cx(frame, 'cursor-pointer touch-pan-y outline-none select-none')}
       onPointerEnter={(e) => e.pointerType === 'mouse' && setPaused(true)}
       onPointerLeave={() => setPaused(false)}
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={() => ((drag.current = null), setDragX(0))}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight') go(1);
+        if (e.key === 'ArrowLeft') go(-1);
+        if (e.key === 'Enter' && e.target === e.currentTarget) navigate(`/${typeOf(item)}/${item.id}`);
+      }}
     >
-      {items.map((m, i) => (
-        <HeroSlide key={typeOf(m) + m.id} item={m} active={i === index} />
-      ))}
+      <div className="absolute inset-0" style={dragX ? { transform: `translateX(${dragX * 0.25}px)` } : undefined}>
+        {items.map((m, i) => (
+          <HeroSlide key={typeOf(m) + m.id} item={m} active={i === index} />
+        ))}
+      </div>
       <img aria-hidden alt="" src={imageUrl(next.backdrop_path, 'backdrop', 780)} srcSet={imageSrcSet(next.backdrop_path, 'backdrop')} sizes={HERO_SIZES} className="pointer-events-none absolute size-px opacity-0" />
-
-      {/* poster strip doubles as the slide picker */}
-      <div className="no-scrollbar absolute inset-x-0 bottom-5 z-20 flex gap-2.5 overflow-x-auto px-4 py-1.5 md:bottom-7 md:px-8 lg:px-10">
+      <div className="absolute inset-x-0 bottom-6 z-20 flex justify-center gap-1.5 md:bottom-8">
         {items.map((m, i) => (
           <button
             key={m.id}
             onClick={() => setIndex(i)}
             aria-label={`Show ${titleOf(m)}`}
             aria-current={i === index}
-            className={cx(
-              'relative h-[72px] w-12 shrink-0 overflow-hidden rounded-xl transition md:h-20 md:w-14',
-              i === index ? 'opacity-100 ring-2 ring-white' : 'opacity-50 hover:opacity-90',
-            )}
+            className="grid h-6 place-items-center px-0.5"
           >
-            <img src={imageUrl(m.poster_path, 'poster', 92)} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+            <span className={cx('block h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
           </button>
         ))}
       </div>
@@ -98,24 +138,19 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
   return (
     <div aria-hidden={!active} className={cx('absolute inset-0 transition-opacity duration-700', active ? 'z-10 opacity-100' : 'pointer-events-none opacity-0')}>
       <div className="absolute inset-0">
-        <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="size-full" imgClassName="object-[70%_20%]" />
+        <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="size-full" imgClassName="object-[70%_20%] pointer-events-none" />
       </div>
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-bg/40" />
 
-      <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
+      <div className="absolute inset-x-0 bottom-20 px-4 md:bottom-24 md:px-8 lg:px-10">
         <div className="max-w-2xl">
-          <p className="text-sm text-white/70">
-            {[yearOf(item), genres.join(', '), type === 'movie' ? 'Movie' : 'Series'].filter(Boolean).join('  ·  ')}
-          </p>
+          <p className="text-sm text-white/70">{[yearOf(item), genres.join(', '), type === 'movie' ? 'Movie' : 'Series'].filter(Boolean).join('  ·  ')}</p>
           <h2 className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</h2>
           <p className="mt-4 line-clamp-2 max-w-lg text-[15px] text-white/70">{item.overview}</p>
           <div className="mt-6 flex items-center gap-3">
             <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
-            </Link>
-            <Link to={`/${type}/${item.id}`} className="flex h-12 items-center rounded-full px-6 text-[15px] ring-1 ring-white/40 transition hover:bg-white/10 hover:ring-white/70">
-              Details
             </Link>
             <BookmarkMenu
               variant="round"
