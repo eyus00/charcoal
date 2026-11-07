@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, ListVideo, Server, ShieldCheck, X } from 'lucide-react';
-import EpisodeList, { SeasonPicker } from '../components/EpisodeList';
+import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
 import { viaProxy } from '../lib/proxy';
@@ -65,6 +65,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   const [server, setServer] = useState(settings.server);
   const [fallbackNote, setFallbackNote] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
+  const closeDrawer = useCallback(() => setDrawer(false), []);
 
   const target = useMemo<Target>(() => ({ type, id, season, episode }), [type, id, season, episode]);
   const title = d ? titleOf(d) : '';
@@ -182,7 +183,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         </>
       )}
 
-      {drawer && type === 'tv' && d && <EpisodeDrawer tvId={id} seasons={allSeasons(d)} current={{ season: season!, episode: episode! }} onClose={() => setDrawer(false)} />}
+      {drawer && type === 'tv' && d && (
+        <EpisodeSelector show={d} current={{ season: season!, episode: episode! }} onClose={closeDrawer} onPick={closeDrawer} replace />
+      )}
     </div>
   );
 }
@@ -351,35 +354,6 @@ function Banner({ text, onClose }: { text: string; onClose: () => void }) {
       <button onClick={onClose} aria-label="Dismiss" className="text-amber-100/70 hover:text-white">
         <X className="size-4" />
       </button>
-    </div>
-  );
-}
-
-function EpisodeDrawer({ tvId, seasons, current, onClose }: { tvId: number; seasons: ReturnType<typeof allSeasons>; current: { season: number; episode: number }; onClose: () => void }) {
-  const [season, setSeason] = useState(current.season);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60" onClick={onClose}>
-      <aside
-        role="dialog"
-        aria-label="Episodes"
-        className="flex h-full w-full max-w-md flex-col border-l border-line bg-bg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 border-b border-line p-3">
-          <SeasonPicker seasons={seasons} value={season} onChange={setSeason} />
-          <button onClick={onClose} aria-label="Close episodes" className="ml-auto grid size-9 place-items-center rounded-lg hover:bg-white/10">
-            <X className="size-5" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2">
-          <EpisodeList tvId={tvId} season={season} current={current} compact onSelect={onClose} />
-        </div>
-      </aside>
     </div>
   );
 }

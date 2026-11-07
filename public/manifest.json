@@ -4,7 +4,7 @@
   "description": "Movies and TV",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#11181b",
-  "theme_color": "#11181b",
+  "background_color": "#0d1016",
+  "theme_color": "#0d1016",
   "icons": [{ "src": "/icon.png", "sizes": "460x460", "type": "image/png", "purpose": "any" }]
 }

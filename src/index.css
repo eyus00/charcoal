@@ -1,14 +1,14 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-bg: #11181b;
-  --color-surface: #192226;
-  --color-raised: #222d32;
-  --color-line: #2a363c;
-  --color-muted: #9aa8ae;
-  --color-faint: #66757c;
-  --color-accent: #f5c518;
-  --color-accent-hover: #ffd54a;
+  --color-bg: #0d1016;
+  --color-surface: #161a22;
+  --color-raised: #1f242e;
+  --color-line: #2a303b;
+  --color-muted: #98a0ad;
+  --color-faint: #636b78;
+  --color-accent: #f4f5f7;
+  --color-accent-hover: #ffffff;
   --color-star: #f5c518;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -47,8 +47,8 @@
 
 @keyframes highlight {
   50% {
-    box-shadow: 0 0 0 2px rgb(245 197 24 / 0.5);
-    background-color: rgb(245 197 24 / 0.05);
+    box-shadow: 0 0 0 2px rgb(255 255 255 / 0.35);
+    background-color: rgb(255 255 255 / 0.03);
   }
 }
 .highlight {

@@ -40,15 +40,15 @@ function ContinueCard({ h, ep, className, sizes }: { h: HistoryItem; ep?: Episod
           kind={still ? 'still' : h.backdropPath ? 'backdrop' : 'poster'}
           sizes={sizes}
           alt=""
-          className="aspect-[16/8]"
+          className="aspect-video"
           imgClassName="transition-transform duration-300 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/50" />
-        <div className="absolute top-3 right-10 left-3.5 truncate text-sm font-medium">{h.title}</div>
-        <span className="absolute bottom-3 left-3 grid size-8 place-items-center rounded-full bg-white/20 backdrop-blur-sm transition group-hover:bg-accent group-hover:text-black">
-          <Play className="ml-0.5 size-3.5 fill-current" strokeWidth={0} />
+        <div className="absolute top-3.5 right-11 left-4 truncate text-[15px] font-medium">{h.title}</div>
+        <span className="absolute bottom-3.5 left-3.5 grid size-10 place-items-center rounded-full bg-white/20 backdrop-blur-sm transition group-hover:bg-white group-hover:text-black">
+          <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
         </span>
-        <span className="absolute right-3 bottom-3 flex overflow-hidden rounded-lg bg-black/45 text-xs backdrop-blur-sm">
+        <span className="absolute right-3.5 bottom-3.5 flex overflow-hidden rounded-full bg-black/45 text-xs backdrop-blur-sm">
           {isNext ? (
             <span className="px-2.5 py-1">Up next · {label}</span>
           ) : (
@@ -60,7 +60,7 @@ function ContinueCard({ h, ep, className, sizes }: { h: HistoryItem; ep?: Episod
         </span>
         {pct > 0 && !h.isCompleted && (
           <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
-            <span className="block h-full bg-accent" style={{ width: `${pct}%` }} />
+            <span className="block h-full bg-white" style={{ width: `${pct}%` }} />
           </span>
         )}
       </Link>
@@ -76,18 +76,6 @@ function ContinueCard({ h, ep, className, sizes }: { h: HistoryItem; ep?: Episod
   );
 }
 
-/** Vertical list for the sidebar. */
-export function CompactContinueList({ items }: { items: HistoryItem[] }) {
-  const eps = useEpisodes(items);
-  return (
-    <div className="space-y-3" role="list" aria-label="Continue watching">
-      {items.map((h, i) => (
-        <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} sizes="220px" />
-      ))}
-    </div>
-  );
-}
-
 /** Horizontal row (home on small screens, profile page). */
 export default function ContinueWatching({ items, title = 'Continue Watching', className }: { items: HistoryItem[]; title?: string; className?: string }) {
   const eps = useEpisodes(items);
@@ -98,7 +86,7 @@ export default function ContinueWatching({ items, title = 'Continue Watching', c
       <SectionHeader title={title} action={<RowArrows onScroll={scroll} />} />
       <Scroller label={title} scrollRef={ref}>
         {items.map((h, i) => (
-          <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} sizes="300px" className="w-[260px] shrink-0 snap-start sm:w-[300px]" />
+          <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} sizes="(min-width: 640px) 360px, 280px" className="w-[280px] shrink-0 snap-start sm:w-[360px]" />
         ))}
       </Scroller>
     </section>

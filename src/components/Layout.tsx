@@ -1,10 +1,8 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, ChevronDown, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User } from 'lucide-react';
+import { ArrowUp, Bookmark, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, parseFilters, writeFilters, type Filters } from '../lib/filters';
-import { continueWatching, useStore } from '../lib/store';
 import { cx } from '../lib/util';
-import { CompactContinueList } from './ContinueWatching';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 
@@ -17,10 +15,10 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
     );
   }
   return (
-    <div className="relative min-h-dvh lg:flex">
+    <div className="relative min-h-dvh lg:pl-[88px]">
       <ScrollRestoration />
-      <Sidebar />
-      <div className="min-w-0 flex-1 px-4 pb-32 md:px-8 lg:pb-10 lg:pl-4">
+      <Rail />
+      <div className="min-w-0 px-4 pb-32 md:px-8 lg:px-10 lg:pb-12">
         <TopBar />
         <main>
           <Suspense fallback={<PageSkeleton />}>
@@ -35,57 +33,57 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
 }
 
 const Logo = () => (
-  <Link to="/" className="flex items-center gap-3">
-    <img src="/icon.png" alt="" width={36} height={36} className="size-9 rounded-xl" />
-    <span className="text-xl font-semibold tracking-tight">Charcoal</span>
+  <Link to="/" className="flex items-center gap-2.5" aria-label="Charcoal home">
+    <img src="/icon.png" alt="" width={34} height={34} className="size-[34px] rounded-xl" />
+    <span className="text-lg font-semibold tracking-tight lg:hidden">Charcoal</span>
   </Link>
 );
 
-// ---------- sidebar (lg+) ----------
+// ---------- icon rail (lg+) ----------
 
-const NAV = [
-  { to: '/', label: 'Home', icon: Home, end: true },
-  { to: '/movies', label: 'Movies', icon: Film },
-  { to: '/tv', label: 'TV Shows', icon: Tv },
+const RAIL = [
+  { to: '/', label: 'Home', icon: Home, match: (p: string) => p === '/' },
+  { to: '/movies', label: 'Movies', icon: Film, match: (p: string) => p.startsWith('/movie') },
+  { to: '/tv', label: 'TV Shows', icon: Tv, match: (p: string) => p === '/tv' || p.startsWith('/tv/') },
+  { to: '/search', label: 'Search', icon: Search, match: (p: string) => p === '/search' },
 ];
-const LIBRARY = [
-  { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark },
-  { to: '/profile#history', label: 'History', icon: History },
+const RAIL_LIBRARY = [
+  { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark, hash: '#watchlist' },
+  { to: '/profile#history', label: 'History', icon: History, hash: '#history' },
+  { to: '/profile#settings', label: 'Settings', icon: Settings, hash: '#settings' },
 ];
 
-function Sidebar() {
-  const { pathname, hash } = useLocation();
-  const history = useStore((s) => s.history);
-  const resume = useMemo(() => continueWatching(history).slice(0, 8), [history]);
-  const item = (to: string, label: string, Icon: typeof Home, active: boolean) => (
+function RailLink({ to, label, icon: Icon, active }: { to: string; label: string; icon: typeof Home; active: boolean }) {
+  return (
     <Link
-      key={to}
       to={to}
+      aria-label={label}
       aria-current={active ? 'page' : undefined}
-      className={cx('flex items-center gap-4 rounded-xl px-3 py-2.5 text-[15px] transition', active ? 'text-white' : 'text-muted hover:text-white')}
+      className={cx('group relative grid size-12 place-items-center rounded-2xl transition', active ? 'bg-white text-black' : 'text-muted hover:bg-surface hover:text-white')}
     >
-      <Icon className={cx('size-5', active && 'text-accent')} />
-      {label}
+      <Icon className="size-5" />
+      <span className="pointer-events-none absolute left-full ml-3 rounded-lg bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+        {label}
+      </span>
     </Link>
   );
+}
+
+function Rail() {
+  const { pathname, hash } = useLocation();
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[268px] shrink-0 flex-col overflow-y-auto px-6 py-7 lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-white/5 bg-bg py-6 lg:flex">
       <Logo />
-      <nav className="mt-10 space-y-1">
-        {NAV.map((n) => item(n.to, n.label, n.icon, n.end ? pathname === '/' : pathname.startsWith(n.to)))}
+      <nav className="mt-10 flex flex-col gap-2">
+        {RAIL.map((n) => (
+          <RailLink key={n.to} to={n.to} label={n.label} icon={n.icon} active={n.match(pathname)} />
+        ))}
       </nav>
-      <nav className="mt-8 space-y-1">
-        {LIBRARY.map((n) => item(n.to, n.label, n.icon, pathname === '/profile' && hash === n.to.slice(8)))}
-        {item('/profile#settings', 'Settings', Settings, pathname === '/profile' && hash === '#settings')}
+      <nav className="mt-auto flex flex-col gap-2">
+        {RAIL_LIBRARY.map((n) => (
+          <RailLink key={n.to} to={n.to} label={n.label} icon={n.icon} active={pathname === '/profile' && hash === n.hash} />
+        ))}
       </nav>
-      {resume.length > 0 && (
-        <div className="mt-10">
-          <div className="mb-4 flex items-center gap-4 px-3 text-[15px] text-muted">
-            <History className="size-5" /> Continue Watching
-          </div>
-          <CompactContinueList items={resume} />
-        </div>
-      )}
     </aside>
   );
 }
@@ -149,8 +147,8 @@ function SearchField({
         run();
       }}
     >
-      <div className="flex h-14 items-center gap-3 rounded-2xl bg-surface pr-2 pl-5 transition focus-within:bg-raised">
-        <Search className="size-5 shrink-0 text-muted" />
+      <div className="flex h-12 items-center gap-3 rounded-full bg-black/30 pr-1.5 pl-4 ring-1 ring-white/10 backdrop-blur-md transition focus-within:bg-black/50 focus-within:ring-white/25">
+        <Search className="size-[18px] shrink-0 text-muted" />
         <input
           ref={inputRef}
           value={s.query}
@@ -158,21 +156,20 @@ function SearchField({
           onKeyDown={(e) => e.key === 'Escape' && (setMenuOpen(false), onDone?.())}
           type="search"
           enterKeyHint="search"
-          placeholder="Movies, series, shows…"
+          placeholder="Search movies & shows"
           aria-label="Search movies and TV"
-          className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
         />
-        <div className="h-7 w-px bg-line" />
-        <button
+                <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Filters"
           title="Filters"
           aria-expanded={menuOpen}
-          className={cx('relative grid size-10 place-items-center rounded-xl transition', menuOpen ? 'bg-raised text-white' : 'text-muted hover:text-white')}
+          className={cx('relative grid size-9 place-items-center rounded-full transition', menuOpen ? 'bg-white text-black' : 'text-muted hover:bg-white/10 hover:text-white')}
         >
-          <SlidersHorizontal className="size-5" />
-          {s.count > 0 && <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-accent" />}
+          <SlidersHorizontal className="size-4" />
+          {s.count > 0 && <span className="absolute top-1 right-1 size-2 rounded-full bg-star" />}
         </button>
       </div>
       {menuOpen && <QuickFilterMenu filters={s.filters} set={s.setFilters} onClear={s.clearFilters} onApply={run} placement={placement} />}
@@ -202,36 +199,22 @@ function TopBar() {
   }, []);
 
   return (
-    <header className="flex items-center gap-3 pt-5 pb-6 md:gap-4 md:pt-7">
+    <header className="relative z-30 flex items-center gap-3 pt-5 pb-5 md:pt-6">
       <div className="lg:hidden">
         <Logo />
       </div>
-      <div ref={box} className="hidden min-w-0 flex-1 items-center gap-3 md:flex md:gap-4">
-        <label className="relative shrink-0">
-          <span className="sr-only">Search in</span>
-          <select
-            value={s.filters.type}
-            onChange={(e) => s.setFilters({ type: e.target.value as Filters['type'] })}
-            className="h-14 appearance-none rounded-2xl bg-surface pr-11 pl-5 text-[15px] outline-none hover:bg-raised"
-          >
-            <option value="all">All</option>
-            <option value="movie">Movies</option>
-            <option value="tv">TV Shows</option>
-          </select>
-          <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted" />
-        </label>
+      <div ref={box} className="ml-auto hidden w-full max-w-md md:block">
         <SearchField s={s} inputRef={input} menuOpen={menu} setMenuOpen={setMenu} placement="below" />
       </div>
       <NavLink
         to="/profile#profile"
+        aria-label="Profile"
+        title="Profile"
         className={({ isActive }) =>
-          cx('ml-auto flex h-14 shrink-0 items-center gap-3 rounded-2xl pr-4 pl-2 transition md:ml-0', isActive ? 'bg-raised' : 'bg-surface hover:bg-raised')
+          cx('ml-auto grid size-12 shrink-0 place-items-center rounded-full ring-1 ring-white/10 backdrop-blur-md transition md:ml-0', isActive ? 'bg-white text-black' : 'bg-black/30 text-white hover:bg-black/50')
         }
       >
-        <span className="grid size-10 place-items-center rounded-xl bg-raised text-accent">
-          <User className="size-5" />
-        </span>
-        <span className="hidden text-[15px] font-medium sm:block">Profile</span>
+        <User className="size-5" />
       </NavLink>
     </header>
   );
@@ -263,7 +246,7 @@ function MobileNav() {
     } else close();
   };
   const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} aria-label={label} title={label} className={cx('grid h-12 flex-1 place-items-center rounded-2xl transition', active ? 'text-accent' : 'text-muted')}>
+    <Link to={to} aria-label={label} title={label} className={cx('grid h-12 flex-1 place-items-center rounded-2xl transition', active ? 'text-white' : 'text-faint')}>
       <Icon className="size-[22px]" />
     </Link>
   );
@@ -275,10 +258,10 @@ function MobileNav() {
           <SearchField s={s} inputRef={input} menuOpen={menu} setMenuOpen={setMenu} placement="above" onDone={close} />
         </div>
       )}
-      <nav className="mx-auto flex max-w-xl items-center gap-1 rounded-3xl bg-surface/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-md">
+      <nav className="mx-auto flex max-w-xl items-center gap-1 rounded-full bg-surface/90 p-1.5 shadow-2xl shadow-black/40 ring-1 ring-white/5 backdrop-blur-md">
         {item('/', Home, 'Home', pathname === '/')}
         {item('/movies', Film, 'Movies', pathname === '/movies')}
-        <button onClick={onSearchButton} aria-label="Search" title="Search" className="mx-1 grid size-12 shrink-0 place-items-center rounded-2xl bg-accent text-black transition active:scale-95">
+        <button onClick={onSearchButton} aria-label="Search" title="Search" className="mx-1 grid size-12 shrink-0 place-items-center rounded-full bg-white text-black transition active:scale-95">
           <Search className="size-[22px]" />
         </button>
         {item('/tv', Tv, 'TV Shows', pathname === '/tv')}
@@ -315,7 +298,7 @@ function ScrollTop() {
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         aria-label="Scroll to top"
         className={cx(
-          'fixed right-4 bottom-28 z-30 grid size-12 place-items-center rounded-2xl bg-raised text-white shadow-lg transition-all hover:bg-line lg:right-8 lg:bottom-8',
+          'fixed right-4 bottom-28 z-30 grid size-12 place-items-center rounded-full bg-raised text-white shadow-lg transition-all hover:bg-line lg:right-8 lg:bottom-8',
           show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-16 opacity-0',
         )}
       >

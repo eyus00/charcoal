@@ -33,7 +33,7 @@ export function RowArrows({ onScroll }: { onScroll: (dir: 1 | -1) => void }) {
 
 export function SquareButton({ label, onClick, children, className }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={cx('grid size-11 place-items-center rounded-2xl bg-surface text-white/80 transition hover:bg-raised hover:text-white', className)}>
+    <button type="button" onClick={onClick} aria-label={label} title={label} className={cx('grid size-10 place-items-center rounded-full bg-surface text-white/80 transition hover:bg-raised hover:text-white', className)}>
       {children}
     </button>
   );
@@ -62,7 +62,7 @@ export function Pill({ on, onClick, children, className }: { on?: boolean; onCli
       aria-pressed={on}
       onClick={onClick}
       className={cx(
-        'h-11 shrink-0 rounded-2xl px-5 text-[15px] whitespace-nowrap transition',
+        'h-10 shrink-0 rounded-full px-4 text-sm whitespace-nowrap transition',
         on ? 'bg-white font-medium text-black' : 'bg-surface text-white/85 hover:bg-raised hover:text-white',
         className,
       )}
