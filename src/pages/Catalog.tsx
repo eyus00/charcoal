@@ -1,36 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { Film, Tv, X, type LucideIcon } from 'lucide-react';
 import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
-import { discoverParams, hasActiveFilters, parseFilters, type Filters } from '../lib/filters';
-import { cleanList, tmdb, type MediaItem, type MediaType, type Page } from '../lib/tmdb';
+import SearchInput from '../components/SearchInput';
+import { useDiscover, useTextSearch } from '../lib/browse';
+import { hasActiveFilters, matchesFilters, parseFilters } from '../lib/filters';
+import { cleanList, type MediaType } from '../lib/tmdb';
 import { useTitle } from '../lib/util';
-
-/** /discover infinite query; for type "all" it merges a movie and a TV page per step. */
-export function useDiscover(f: Filters, enabled = true) {
-  return useInfiniteQuery({
-    queryKey: ['discover', f],
-    enabled,
-    initialPageParam: 1,
-    queryFn: async ({ pageParam, signal }) => {
-      const types: MediaType[] = f.type === 'all' ? ['movie', 'tv'] : [f.type];
-      const pages = await Promise.all(
-        types.map(async (t) => {
-          const params = discoverParams(t, f, pageParam);
-          if (!params) return { page: pageParam, results: [], total_pages: 0, total_results: 0 } as Page<MediaItem>;
-          const res = await tmdb<Page<MediaItem>>(`/discover/${t}`, params, signal);
-          return { ...res, results: res.results.map((m) => ({ ...m, media_type: t })) };
-        }),
-      );
-      const results = pages.flatMap((p) => p.results);
-      if (types.length > 1) results.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
-      return { results, more: pages.some((p) => pageParam < Math.min(p.total_pages, 500)), total: pages.reduce((n, p) => n + p.total_results, 0) };
-    },
-    getNextPageParam: (last, _all, page) => (last.more ? page + 1 : undefined),
-  });
-}
 
 /** Page title with result count, plus a clear-filters action. */
 export function PageHeader({ label, title, count, onClear }: { icon?: LucideIcon; label?: string; title: ReactNode; count?: number; onClear?: () => void }) {
@@ -53,31 +30,64 @@ export function PageHeader({ label, title, count, onClear }: { icon?: LucideIcon
 }
 
 export default function Catalog({ type }: { type: MediaType }) {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(params, type), [params, type]);
+  const query = (params.get('q') ?? '').trim();
   const set = useUrlFilters();
   const [open, setOpen] = useState(false);
-  const query = useDiscover(filters);
-  const items = useMemo(() => cleanList(query.data?.pages.flatMap((p) => p.results) ?? [], type), [query.data, type]);
-  const total = query.data?.pages[0]?.total;
+
+  // Searching here only looks in this catalog (movies OR tv), not everything.
+  const text = useTextSearch(query, filters);
+  const browse = useDiscover(filters, !query);
+  const active = query ? text : browse;
+  const items = useMemo(() => {
+    const all = cleanList(active.data?.pages.flatMap((p) => p.results) ?? [], type);
+    return query ? all.filter((m) => matchesFilters(m, filters)) : all;
+  }, [active.data, query, filters, type]);
+
+  // Filters can hide whole pages of text results; keep loading until something shows.
+  const filteredEmpty = !!query && hasActiveFilters(filters) && items.length === 0 && !!active.hasNextPage && (active.data?.pages.length ?? 0) < 5;
+  const { isFetchingNextPage, fetchNextPage } = active;
+  useEffect(() => {
+    if (filteredEmpty && !isFetchingNextPage) fetchNextPage();
+  }, [filteredEmpty, isFetchingNextPage, fetchNextPage]);
+
+  const total = query ? undefined : browse.data?.pages[0]?.total;
   const label = type === 'movie' ? 'Movies' : 'TV Shows';
   const clear = () => set({ genres: [], from: undefined, to: undefined, rating: 0 });
-  useTitle(label);
+  useTitle(query ? `${label}: ${query}` : label);
 
   return (
     <div className="pb-10">
       <PageHeader title={label} count={total} onClear={hasActiveFilters(filters) ? clear : undefined} />
+      <SearchInput
+        key={type}
+        value={query}
+        placeholder={type === 'movie' ? 'Search movies' : 'Search TV shows'}
+        onChange={(v) => {
+          const next = new URLSearchParams(params);
+          if (v) next.set('q', v);
+          else next.delete('q');
+          setParams(next, { replace: true, preventScrollReset: true });
+        }}
+      />
       <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} />
       <Grid
         items={items}
         type={type}
-        loading={query.isPending}
-        error={query.error}
-        onRetry={() => query.refetch()}
-        hasMore={query.hasNextPage}
-        loadingMore={query.isFetchingNextPage}
-        onLoadMore={() => !query.isFetchingNextPage && query.fetchNextPage()}
-        empty={<Empty icon={type === 'movie' ? Film : Tv} title={`No ${label.toLowerCase()} found`} body={`We couldn't find any ${label.toLowerCase()} matching your filters. Try adjusting your selection.`} />}
+        loading={active.isPending || filteredEmpty}
+        error={active.error}
+        onRetry={() => active.refetch()}
+        hasMore={active.hasNextPage}
+        loadingMore={active.isFetchingNextPage}
+        onLoadMore={() => !active.isFetchingNextPage && active.fetchNextPage()}
+        empty={
+          <Empty
+            icon={type === 'movie' ? Film : Tv}
+            title={query ? `No ${label.toLowerCase()} match “${query}”` : `No ${label.toLowerCase()} found`}
+            body={hasActiveFilters(filters) ? 'Try removing some filters.' : 'Try a different search.'}
+          />
+        }
       />
       <AdvancedFilters open={open} onClose={() => setOpen(false)} filters={filters} set={set} total={total} />
     </div>

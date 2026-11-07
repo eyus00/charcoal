@@ -9,7 +9,7 @@ import './index.css';
 
 // Route-level code splitting: the player (and hls.js) never loads while browsing.
 const Catalog = lazy(() => import('./pages/Catalog'));
-const Search = lazy(() => import('./pages/Search'));
+const Discover = lazy(() => import('./pages/Discover'));
 const Details = lazy(() => import('./pages/Details'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Watch = lazy(() => import('./pages/Watch'));
@@ -24,6 +24,12 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/** Old /search links keep working (same query string). */
+function SearchRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/discover${search}`} replace />;
+}
 
 /** /library links from the interim version → the profile sections. */
 function LibraryRedirect() {
@@ -40,7 +46,8 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'movies', element: <Catalog type="movie" /> },
       { path: 'tv', element: <Catalog type="tv" /> },
-      { path: 'search', element: <Search /> },
+      { path: 'discover', element: <Discover /> },
+      { path: 'search', element: <SearchRedirect /> },
       { path: 'movie/:id', element: <Details type="movie" /> },
       { path: 'tv/:id', element: <Details type="tv" /> },
       { path: 'profile', element: <Profile /> },
