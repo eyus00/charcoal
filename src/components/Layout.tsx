@@ -5,6 +5,8 @@ import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters
 import { cx } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
+import { LogoMark } from './Logo';
+import Hotkeys from './Hotkeys';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -32,6 +34,7 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
       </div>
       <BottomBar />
       <ScrollTop />
+      <Hotkeys openSearch={() => searchCtl.open()} />
     </div>
   );
 }
@@ -170,20 +173,10 @@ function TopBar() {
     searchInput.current?.focus({ preventScroll: true });
     setOpen(true);
     setMenu(false);
-    setDraft(EMPTY_FILTERS);
+    // Keep the page's type on Movies / TV (results page); elsewhere start a universal search.
+    setDraft(onDiscover ? parseFilters(params) : EMPTY_FILTERS);
   };
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement;
-      if (e.key === '/' && !/input|textarea|select/i.test(el.tagName) && !el.isContentEditable) {
-        e.preventDefault();
-        searchCtl.open();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   const submit = () => {
     typing.current = false;
@@ -203,11 +196,13 @@ function TopBar() {
     if (!onDiscover) setOpen(false);
     searchInput.current?.blur();
   };
-  const count = activeFilterCount(draft, true);
+  // Type isn't counted: it's shown by the placeholder (and the page switch on results).
+  const count = activeFilterCount(draft);
 
   return (
     <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4">
-      <Link to="/" className="shrink-0 text-xl font-semibold tracking-tight" aria-label="Charcoal home">
+      <Link to="/" className="flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight" aria-label="Charcoal home">
+        <LogoMark className="size-8" />
         Charcoal
       </Link>
       <form
@@ -283,7 +278,7 @@ function TopBar() {
           data-search-trigger
           onClick={() => searchCtl.open()}
           aria-label="Search"
-          title="Search (/)"
+          title="Search (⌘K)"
           className="ml-auto hidden size-12 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 backdrop-blur-md transition hover:bg-black/50 lg:grid"
         >
           <Search className="size-5" />

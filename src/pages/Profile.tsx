@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Bookmark, Download, Film, Trash2, Upload, UserCircle, X } from 'lucide-react';
-import { STATUS_DOT, STATUS_LABEL } from '../components/BookmarkMenu';
+import { STATUS_ICON, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
 import { Pill, SectionHeader } from '../components/Row';
@@ -142,7 +142,7 @@ function Watchlist() {
           <div className="no-scrollbar scroll-row -mx-1 mb-6 flex gap-2.5 overflow-x-auto px-1">
             {FILTERS.map((f) => (
               <Pill key={f.id} on={active.has(f.id)} onClick={() => toggle(f.id)} className="flex items-center gap-2">
-                {f.status && <span className={cx('size-2 rounded-full', STATUS_DOT[f.status])} />}
+                {f.status && (() => { const I = STATUS_ICON[f.status]; return <I className="size-4" />; })()}
                 {f.label}
               </Pill>
             ))}
@@ -157,29 +157,9 @@ function Watchlist() {
                   sizes={GRID_SIZES}
                   type={w.mediaType}
                   item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
-                  badge={
-                    <span className="flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-xs backdrop-blur-sm">
-                      <span className={cx('size-2 rounded-full', STATUS_DOT[w.status])} />
-                      {STATUS_LABEL[w.status]}
-                    </span>
-                  }
+                  badge={<StatusTag status={w.status} />}
                   overlay={
                     <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
-                      <label className="relative grid size-8 cursor-pointer place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80" title="Change status">
-                        <span className={cx('size-2.5 rounded-full', STATUS_DOT[w.status])} />
-                        <select
-                          aria-label={`Status for ${w.title}`}
-                          value={w.status}
-                          onChange={(e) => actions.setBookmark({ ...w, status: e.target.value as WatchStatus })}
-                          className="absolute inset-0 cursor-pointer opacity-0"
-                        >
-                          {(Object.keys(STATUS_LABEL) as WatchStatus[]).map((st) => (
-                            <option key={st} value={st}>
-                              {STATUS_LABEL[st]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
                       <button
                         onClick={() => actions.removeBookmark(w.mediaType, w.id)}
                         aria-label={`Remove ${w.title} from watchlist`}

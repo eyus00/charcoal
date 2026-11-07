@@ -11,7 +11,7 @@ import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
 import { certificationOf, cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
-import { cx, formatClock, formatRuntime, useTitle } from '../lib/util';
+import { cx, formatClock, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
 
@@ -67,6 +67,12 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
     next.set('episodes', '');
     setParams(next, { state: { modal: true }, preventScrollReset: true });
   };
+  // Desktop shortcuts: p = play / episodes, t = trailer (b = watchlist, bound by BookmarkMenu).
+  useKeys({
+    p: () => (type === 'tv' ? openEpisodes() : navigate(`/watch/movie/${d.id}`)),
+    t: () => trailers[0] && setTrailer(trailers[0]),
+  });
+
   const closeEpisodes = useCallback(() => {
     if ((location.state as { modal?: boolean } | null)?.modal) navigate(-1);
     else {
@@ -109,7 +115,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             <Overview text={d.overview} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={openEpisodes} />
-              <BookmarkMenu variant="round" item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
+              <BookmarkMenu variant="round" hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
             </div>
           </div>
         </div>
