@@ -47,11 +47,11 @@ function LazyRow({
 }
 
 /** Title, a short overview, then "year · ★ rating" with the type icon bottom-right. */
-function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
+function CardText({ item, type, big }: { item: MediaItem; type: MediaType; big?: boolean }) {
   return (
-    <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3')}>
-      <div className="line-clamp-1 text-[15px] leading-5 font-medium">{titleOf(item)}</div>
-      <p className="mt-1.5 line-clamp-4 text-[13px] leading-[18px] text-muted">{item.overview}</p>
+    <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3', big && 'lg:px-4 lg:py-3.5')}>
+      <div className={cx('line-clamp-1 text-[15px] leading-5 font-medium', big && 'lg:text-base lg:leading-6')}>{titleOf(item)}</div>
+      <p className={cx('mt-1.5 line-clamp-4 text-[13px] leading-[18px] text-muted', big && 'lg:line-clamp-5 lg:text-sm lg:leading-5')}>{item.overview}</p>
       <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
     </div>
   );
@@ -72,12 +72,13 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
     <Link to={`/${t}/${item.id}`} {...usePrefetch(t, item.id)} className="group flex shrink-0 snap-start items-center" role="listitem" aria-label={`${rank}. ${titleOf(item)}`}>
-      <span aria-hidden className="-mr-3 w-[0.62em] shrink-0 text-center text-[104px] leading-none font-black tracking-tighter text-transparent select-none md:text-[124px]" style={OUTLINE}>
+      <span aria-hidden className="-mr-3 w-[0.62em] shrink-0 text-center text-[104px] leading-none font-black tracking-tighter text-transparent select-none md:text-[124px] lg:-mr-4 lg:text-[160px]" style={OUTLINE}>
         {rank}
       </span>
-      <div className={LIST_CARD}>
-        <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className={LIST_POSTER} />
-        <CardText item={item} type={t} />
+      {/* Bigger on desktop: the Top 10 is the home page's showcase row. */}
+      <div className={cx(LIST_CARD, 'lg:w-[408px]')}>
+        <Img path={item.poster_path} kind="poster" sizes="(min-width: 1024px) 136px, 104px" alt="" className={cx(LIST_POSTER, 'lg:w-[136px]')} />
+        <CardText item={item} type={t} big />
       </div>
     </Link>
   );
@@ -89,7 +90,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={listSkeleton(4, 'ml-12')}
+      skeleton={listSkeleton(4, 'ml-12 lg:h-[204px] lg:w-[408px]')}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { Compass, X } from 'lucide-react';
-import { AdvancedFilters, FilterBar, useUrlFilters } from '../components/Filters';
+import { FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
 import { useDiscover, useTextSearch, useTrendingPages } from '../lib/browse';
 import { genresFor, hasActiveFilters, matchesFilters, parseFilters, writeFilters, type Filters } from '../lib/filters';
@@ -21,7 +21,6 @@ export default function Discover() {
   const filters = useMemo(() => parseFilters(params), [params]);
   const query = (params.get('q') ?? '').trim();
   const set = useUrlFilters();
-  const [open, setOpen] = useState(false);
   const kind = TYPES.find((t) => t.key === filters.type)!;
 
   // No search and no filters: show what's trending; otherwise search or browse the full catalog.
@@ -59,13 +58,8 @@ export default function Discover() {
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-3xl">“{query}”</h1>
         </div>
       )}
-      {/* Type switch + filters: two rows on phones, one sticky row under the top bar on desktop. */}
-      <div
-        className={cx(
-          'relative z-20 mb-7 flex flex-wrap items-center gap-3 lg:sticky lg:top-[92px] lg:flex-nowrap lg:gap-4 lg:py-3',
-          "lg:before:pointer-events-none lg:before:absolute lg:before:inset-y-0 lg:before:-inset-x-10 lg:before:-z-10 lg:before:bg-bg/80 lg:before:backdrop-blur-xl lg:before:content-['']",
-        )}
-      >
+      {/* Type switch + quick filters: two rows on phones, one row on desktop. */}
+      <div className="mb-7 flex flex-wrap items-center gap-3 lg:flex-nowrap lg:gap-4">
         <div className="inline-flex shrink-0 rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
           {TYPES.map((t) => (
             <button
@@ -79,7 +73,7 @@ export default function Discover() {
             </button>
           ))}
         </div>
-        <FilterBar filters={filters} set={set} onOpen={() => setOpen(true)} className="order-last basis-full lg:order-none lg:basis-auto lg:flex-1" />
+        <FilterBar filters={filters} set={set} className="order-last basis-full lg:order-none lg:basis-auto lg:flex-1" />
         {hasActiveFilters(filters) && (
           <div className="ml-auto flex shrink-0 items-center gap-1">
             {total !== undefined && <span className="px-2 text-sm whitespace-nowrap text-faint tabular-nums">{total.toLocaleString()} titles</span>}
@@ -107,7 +101,6 @@ export default function Discover() {
           />
         }
       />
-      <AdvancedFilters open={open} onClose={() => setOpen(false)} filters={filters} set={set} total={total} />
     </div>
   );
 }
