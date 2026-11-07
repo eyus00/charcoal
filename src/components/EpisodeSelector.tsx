@@ -136,7 +136,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 const body = (
                   <>
                     <div className="relative overflow-hidden rounded-2xl">
-                      <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-40' : 'transition-transform duration-300 group-hover:scale-[1.03]'} />
+                      <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-40' : undefined} />
                       {!upcoming && (
                         <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
                           <span className="grid size-11 place-items-center rounded-full bg-white text-black">

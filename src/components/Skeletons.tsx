@@ -7,10 +7,12 @@ export const Bone = ({ className }: { className?: string }) => <div className={c
 
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cx('rounded-[20px] p-1.5 pb-2.5 ring-1 ring-white/[0.06]', className)}>
-      <Bone className="aspect-[2/3] w-full rounded-[14px]" />
-      <Bone className="mx-1.5 mt-3 h-3.5 w-3/4" />
-      <Bone className="mx-1.5 mt-2 h-3 w-1/3" />
+    <div className={className}>
+      <Bone className="aspect-[2/3] w-full rounded-b-none rounded-t-2xl" />
+      <div className="rounded-b-2xl border border-t-0 border-white/[0.08] px-3 pt-3 pb-3">
+        <Bone className="h-3.5 w-3/4" />
+        <Bone className="mt-2 h-3 w-1/3" />
+      </div>
     </div>
   );
 }

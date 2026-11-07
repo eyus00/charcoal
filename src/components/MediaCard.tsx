@@ -19,6 +19,9 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
+/** The bordered info area under a card's image (the image itself has no border). */
+export const CARD_INFO = 'rounded-b-2xl border border-t-0 border-white/[0.08] transition group-hover:border-white/20';
+
 /** Small movie / TV icon, pushed to the right edge of a meta row. */
 export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
   const Icon = type === 'tv' ? Tv : Film;
@@ -60,18 +63,15 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
   const href = `/${t}/${item.id}`;
   return (
     <div className={cx('group relative', className)}>
-      <Link to={href} className="block rounded-[20px] bg-surface/60 p-1.5 pb-2.5 ring-1 ring-white/[0.06] transition group-hover:bg-surface group-hover:ring-white/15" {...usePrefetch(t, item.id)}>
-        <div className="relative overflow-hidden rounded-[14px]">
-          <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" imgClassName="transition-transform duration-300 group-hover:scale-[1.03]" />
+      <Link to={href} className="block" {...usePrefetch(t, item.id)}>
+        <div className="relative overflow-hidden rounded-t-2xl">
+          <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
         </div>
-        <div className="mt-2.5 truncate px-1.5 text-[15px] font-medium text-white/95">{title}</div>
-        <Meta
-          year={yearOf(item)}
-          rating={item.vote_average}
-          className="mt-0.5 px-1.5"
-          extra={<TypeIcon type={t} />}
-        />
+        <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
+          <div className="truncate text-[15px] font-medium text-white/95">{title}</div>
+          <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" extra={<TypeIcon type={t} />} />
+        </div>
       </Link>
       {overlay}
     </div>

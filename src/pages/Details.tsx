@@ -5,6 +5,7 @@ import { Play, RotateCcw, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
+import Kbd from '../components/Kbd';
 import MediaCard from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import { epLabel } from '../lib/episodes';
@@ -142,12 +143,22 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
   const { ref, scroll } = useRowScroll();
   return (
     <section className="mt-10">
-      <SectionHeader title="Trailers & videos" action={<RowArrows onScroll={scroll} />} />
+      <SectionHeader
+        title="Trailers & videos"
+        action={
+          <div className="flex items-center gap-3">
+            <span className="hidden items-center gap-1.5 text-xs text-faint lg:flex">
+              Play trailer <Kbd>T</Kbd>
+            </span>
+            <RowArrows onScroll={scroll} />
+          </div>
+        }
+      />
       <Scroller label="Trailers and videos" scrollRef={ref}>
         {videos.map((v) => (
           <button key={v.key} onClick={() => onPlay(v)} className="group w-64 shrink-0 snap-start text-left sm:w-80" role="listitem">
             <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface">
-              <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+              <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
               <span className="absolute inset-0 grid place-items-center">
                 <span className="grid size-12 place-items-center rounded-full bg-black/40 backdrop-blur-sm transition group-hover:bg-white group-hover:text-black">
                   <Play className="ml-0.5 size-5 fill-current" strokeWidth={0} />
@@ -235,6 +246,7 @@ function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisode
         <Link to={`/watch/movie/${d.id}`} className={PRIMARY}>
           <Play className="size-4 fill-current" strokeWidth={0} />
           {resumable ? `Resume ${formatClock(p.progress!.watched)}` : 'Watch now'}
+          <Kbd light>P</Kbd>
         </Link>
         {resumable && (
           <Link to={`/watch/movie/${d.id}?t=0`} className={SECONDARY}>
@@ -251,6 +263,7 @@ function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisode
     <button onClick={onEpisodes} className={PRIMARY} aria-haspopup="dialog">
       <Play className="size-4 fill-current" strokeWidth={0} />
       {label}
+      <Kbd light>P</Kbd>
     </button>
   );
 }

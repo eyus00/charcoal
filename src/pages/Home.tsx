@@ -6,6 +6,7 @@ import BookmarkMenu from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
+import Kbd from '../components/Kbd';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_ITEM, ROW_SIZES, RowArrows, Scroller, useRowScroll } from '../components/Row';
 import { RowSkeleton } from '../components/Skeletons';
@@ -26,8 +27,8 @@ export default function Home() {
       {resume.length > 0 && <ContinueWatching items={resume} />}
       <Top10 />
       <Browse />
-      <InTheaters />
       <AiringThisWeek />
+      <InTheaters />
       <TopRated />
     </div>
   );
@@ -139,12 +140,13 @@ function Hero() {
       })}
 
       <div className="absolute inset-x-0 bottom-5 z-20 flex items-end justify-between gap-4 px-4 md:bottom-7 md:px-8 lg:px-10">
-        <div className="flex gap-0.5 pb-1">
+        <div className="flex items-center gap-0.5 pb-1">
           {items.map((m, i) => (
             <button key={m.id} onClick={() => setIndex(i)} aria-label={`Show ${titleOf(m)}`} aria-current={i === index} className="grid h-6 place-items-center px-0.5">
               <span className={cx('block h-1.5 rounded-full transition-all duration-500', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
             </button>
           ))}
+          <Kbd className="ml-3">← →</Kbd>
         </div>
         {/* previous · current · next — a sliding track that glides on every change */}
         <div className="relative h-[92px] w-[176px] shrink-0 md:h-[104px] md:w-[206px]">
@@ -210,15 +212,21 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
             <TypeIcon className="size-3.5" />
             {type === 'movie' ? 'Movie' : 'Series'}
           </span>
-          {genres.length > 0 && <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 text-sm text-white/70 delay-75')}>{genres.join(', ')}</p>}
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-1.5 flex items-center gap-2 text-sm text-white/80 delay-75')}>
-            {yearOf(item) && <span>{yearOf(item)}</span>}
-            {yearOf(item) && item.vote_average > 0 && <span className="text-white/40">·</span>}
-            {item.vote_average > 0 && (
-              <span className="flex items-center gap-1 font-medium text-star">
-                <Star className="size-3.5 fill-current" strokeWidth={0} />
-                {item.vote_average.toFixed(1)}
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75 delay-75')}>
+            {[genres.join(', '), yearOf(item)].filter(Boolean).map((t, k) => (
+              <span key={k} className="contents">
+                {k > 0 && <span className="text-white/40">·</span>}
+                <span>{t}</span>
               </span>
+            ))}
+            {item.vote_average > 0 && (
+              <>
+                <span className="text-white/40">·</span>
+                <span className="flex items-center gap-1 font-medium text-star">
+                  <Star className="size-3.5 fill-current" strokeWidth={0} />
+                  {item.vote_average.toFixed(1)}
+                </span>
+              </>
             )}
           </p>
           <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-150')}>

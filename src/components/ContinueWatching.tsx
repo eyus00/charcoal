@@ -42,7 +42,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
       image={{ path: still ?? h.backdropPath ?? h.posterPath, kind: still ? 'still' : h.backdropPath ? 'backdrop' : 'poster' }}
       progress={watched ? Math.round(percent(h)) : 0}
       topLeft={isNext ? <Chip light>Up next</Chip> : h.isCompleted ? <Chip><Check className="size-3.5" /> Watched</Chip> : null}
-      bottomLeft={watched ? <Chip>{formatRuntime(watched)} watched</Chip> : null}
+      bottomLeft={watched ? <Chip light>{formatRuntime(watched)}</Chip> : null}
       bottomRight={runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
       primary={
         tv ? (

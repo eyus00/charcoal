@@ -62,7 +62,7 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'}
-        title={current ? STATUS_LABEL[current.status] : 'Add to watchlist'}
+        title={(current ? STATUS_LABEL[current.status] : 'Add to watchlist') + (hotkey ? ' (B)' : '')}
         className={cx(
           'flex items-center justify-center gap-2 transition active:scale-95',
           variant === 'round'
@@ -70,7 +70,7 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
             : cx('h-12 rounded-full px-5 text-[15px] font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
         )}
       >
-        <Bookmark className={cx('size-5', current && 'fill-current')} />
+        <Bookmark className={current ? 'size-4 fill-current' : 'size-[18px]'} />
         {variant === 'full' && (current ? STATUS_LABEL[current.status] : 'Watchlist')}
       </button>
       {open && (

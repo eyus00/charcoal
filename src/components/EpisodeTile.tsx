@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Play } from 'lucide-react';
 import Img from './Img';
-import { TypeIcon } from './MediaCard';
+import { CARD_INFO, TypeIcon } from './MediaCard';
 import { Bone } from './Skeletons';
 import type { ImageKind } from '../lib/images';
 import type { MediaType } from '../lib/tmdb';
@@ -41,14 +41,9 @@ interface Props {
 export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, title, className, linkProps, children }: Props) {
   return (
     <div className={cx('group relative', TILE, className)} role="listitem">
-      <Link
-        to={to}
-        title={title}
-        className="block rounded-[20px] bg-surface/60 p-1.5 pb-2.5 ring-1 ring-white/[0.06] transition group-hover:bg-surface group-hover:ring-white/15"
-        {...linkProps}
-      >
-        <div className="relative overflow-hidden rounded-[14px]">
-          <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" imgClassName="transition-transform duration-300 group-hover:scale-[1.03]" />
+      <Link to={to} title={title} className="block" {...linkProps}>
+        <div className="relative overflow-hidden rounded-t-2xl">
+          <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
           {playable && (
             <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
               <span className="grid size-11 place-items-center rounded-full bg-white text-black">
@@ -65,10 +60,12 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
             </span>
           )}
         </div>
-        <div className="mt-2.5 truncate px-1.5 text-[15px] font-medium text-white/95">{primary}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 px-1.5 text-[13px] text-muted">
-          <span className="min-w-0 truncate">{secondary}</span>
-          <TypeIcon type={type} />
+        <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
+          <div className="truncate text-[15px] font-medium text-white/95">{primary}</div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted">
+            <span className="min-w-0 truncate">{secondary}</span>
+            <TypeIcon type={type} />
+          </div>
         </div>
       </Link>
       {children}
@@ -77,9 +74,11 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
 }
 
 export const TileSkeleton = () => (
-  <div className={cx(TILE, 'rounded-[20px] p-1.5 pb-2.5 ring-1 ring-white/[0.06]')}>
-    <Bone className="aspect-video w-full rounded-[14px]" />
-    <Bone className="mx-1.5 mt-3 h-3.5 w-3/4" />
-    <Bone className="mx-1.5 mt-2 h-3 w-1/2" />
+  <div className={TILE}>
+    <Bone className="aspect-video w-full rounded-b-none rounded-t-2xl" />
+    <div className="rounded-b-2xl border border-t-0 border-white/[0.08] p-3">
+      <Bone className="h-3.5 w-3/4" />
+      <Bone className="mt-2 h-3 w-1/2" />
+    </div>
   </div>
 );

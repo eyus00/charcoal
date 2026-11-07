@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { Keyboard, X } from 'lucide-react';
 import { isTypingTarget, keyState } from '../lib/util';
 
-const GO: Record<string, { to: string; label: string }> = {
+export const GO: Record<string, { to: string; label: string }> = {
   h: { to: '/', label: 'Home' },
   m: { to: '/discover?type=movie', label: 'Movies' },
   t: { to: '/discover?type=tv', label: 'TV shows' },
@@ -11,10 +11,14 @@ const GO: Record<string, { to: string; label: string }> = {
   p: { to: '/profile#profile', label: 'Profile' },
   w: { to: '/profile#watchlist', label: 'Watchlist' },
   s: { to: '/profile#settings', label: 'Settings' },
+  y: { to: '/profile#history', label: 'History' },
 };
 
 const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
 export const MOD = isMac ? '⌘' : 'Ctrl';
+
+/** Lets other components (e.g. the rail's help button) open the shortcuts dialog. */
+export const hotkeysCtl = { help: () => {} };
 
 const SECTIONS: { title: string; keys: [string[], string][] }[] = [
   { title: 'Everywhere', keys: [[[MOD, 'K'], 'Search'], [['/'], 'Search'], [['?'], 'Show shortcuts'], [['Esc'], 'Close search / dialogs']] },
@@ -28,6 +32,7 @@ const SECTIONS: { title: string; keys: [string[], string][] }[] = [
 export default function Hotkeys({ openSearch }: { openSearch: () => void }) {
   const navigate = useNavigate();
   const [help, setHelp] = useState(false);
+  hotkeysCtl.help = () => setHelp(true);
   const search = useRef(openSearch);
   search.current = openSearch;
 

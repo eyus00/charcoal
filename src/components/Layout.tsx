@@ -1,12 +1,13 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, Compass, Film, History, Home, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
+import { ArrowUp, Bookmark, Compass, Film, History, Home, Keyboard, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 import { LogoMark } from './Logo';
-import Hotkeys from './Hotkeys';
+import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
+import Kbd from './Kbd';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -47,54 +48,94 @@ function useSection() {
   if (pathname === '/discover') return params.get('type') === 'movie' ? 'movies' : params.get('type') === 'tv' ? 'tv' : 'discover';
   if (pathname.startsWith('/movie/')) return 'movies';
   if (pathname.startsWith('/tv/')) return 'tv';
-  if (pathname === '/profile') return hash ? `profile${hash}` : 'profile';
+  if (pathname === '/profile') return hash && hash !== '#profile' ? `profile${hash}` : 'profile';
   return '';
 }
 
 // ---------- icon rail (lg+) ----------
 
-const RAIL = [
-  { to: '/', label: 'Home', icon: Home, id: 'home' },
-  { to: '/discover?type=movie', label: 'Movies', icon: Film, id: 'movies' },
-  { to: '/discover?type=tv', label: 'TV Shows', icon: Tv, id: 'tv' },
-  { to: '/discover', label: 'Discover', icon: Compass, id: 'discover' },
-];
-const RAIL_LIBRARY = [
-  { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark, id: 'profile#watchlist' },
-  { to: '/profile#history', label: 'History', icon: History, id: 'profile#history' },
-  { to: '/profile#settings', label: 'Settings', icon: Settings, id: 'profile#settings' },
-  { to: '/profile#profile', label: 'Profile', icon: User, id: 'profile#profile' },
-];
+interface RailItem { to: string; label: string; icon: typeof Home; id: string; keys?: string }
+interface RailGroup extends RailItem { children: RailItem[] }
 
-function RailLink({ to, label, icon: Icon, active }: { to: string; label: string; icon: typeof Home; active: boolean }) {
+const HOME: RailItem = { to: '/', label: 'Home', icon: Home, id: 'home', keys: 'G H' };
+const DISCOVER: RailGroup = {
+  to: '/discover', label: 'Discover', icon: Compass, id: 'discover', keys: 'G D',
+  children: [
+    { to: '/discover?type=movie', label: 'Movies', icon: Film, id: 'movies', keys: 'G M' },
+    { to: '/discover?type=tv', label: 'TV Shows', icon: Tv, id: 'tv', keys: 'G T' },
+  ],
+};
+const PROFILE: RailGroup = {
+  to: '/profile#profile', label: 'Profile', icon: User, id: 'profile', keys: 'G P',
+  children: [
+    { to: '/profile#history', label: 'History', icon: History, id: 'profile#history', keys: 'G Y' },
+    { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark, id: 'profile#watchlist', keys: 'G W' },
+    { to: '/profile#settings', label: 'Settings', icon: Settings, id: 'profile#settings', keys: 'G S' },
+  ],
+};
+
+function Tip({ label, keys }: { label: string; keys?: string }) {
+  return (
+    <span className="pointer-events-none absolute left-full z-50 ml-3 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100">
+      {label}
+      {keys && <Kbd>{keys}</Kbd>}
+    </span>
+  );
+}
+
+function RailLink({ item, active, child, within }: { item: RailItem; active: boolean; child?: boolean; within?: boolean }) {
+  const Icon = item.icon;
   return (
     <Link
-      to={to}
-      aria-label={label}
+      to={item.to}
+      aria-label={item.label}
       aria-current={active ? 'page' : undefined}
-      className={cx('group relative grid size-12 place-items-center rounded-2xl transition', active ? 'bg-white text-black' : 'text-muted hover:bg-surface hover:text-white')}
+      className={cx(
+        'group relative grid place-items-center transition',
+        child ? 'size-10 rounded-xl' : 'size-12 rounded-2xl',
+        active ? 'bg-white text-black' : within ? 'bg-surface text-white' : 'text-muted hover:bg-surface hover:text-white',
+      )}
     >
-      <Icon className="size-5" />
-      <span className="pointer-events-none absolute left-full ml-3 rounded-lg bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-        {label}
-      </span>
+      <Icon className={child ? 'size-[18px]' : 'size-5'} />
+      <Tip label={item.label} keys={item.keys} />
     </Link>
+  );
+}
+
+/** A parent icon with its sub-sections hanging below it on a connecting line. */
+function RailTree({ group, section }: { group: RailGroup; section: string }) {
+  const childActive = group.children.some((c) => c.id === section);
+  return (
+    <div className="flex flex-col items-center">
+      <RailLink item={group} active={section === group.id} within={childActive} />
+      <div className="relative mt-1.5 flex flex-col gap-1.5 pl-7">
+        {/* trunk + one branch per child */}
+        <span aria-hidden className="absolute top-0 bottom-5 left-[17px] w-px bg-white/15" />
+        {group.children.map((c) => (
+          <div key={c.id} className="relative">
+            <span aria-hidden className="absolute top-1/2 -left-[11px] h-px w-[11px] bg-white/15" />
+            <RailLink item={c} child active={section === c.id} />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
 function Rail() {
   const section = useSection();
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-white/5 bg-bg pt-[104px] pb-6 lg:flex">
-      <nav className="flex flex-col gap-2">
-        {RAIL.map((n) => (
-          <RailLink key={n.to} to={n.to} label={n.label} icon={n.icon} active={section === n.id} />
-        ))}
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-white/5 bg-bg pt-[104px] pb-5 lg:flex">
+      <nav className="flex flex-col items-center gap-2" aria-label="Browse">
+        <RailLink item={HOME} active={section === 'home'} />
+        <RailTree group={DISCOVER} section={section} />
       </nav>
-      <nav className="mt-auto flex flex-col gap-2">
-        {RAIL_LIBRARY.map((n) => (
-          <RailLink key={n.to} to={n.to} label={n.label} icon={n.icon} active={section === n.id || (n.id === 'profile#profile' && section === 'profile')} />
-        ))}
+      <nav className="mt-auto flex flex-col items-center gap-4" aria-label="Your library">
+        <RailTree group={PROFILE} section={section} />
+        <button type="button" onClick={() => hotkeysCtl.help()} aria-label="Keyboard shortcuts" className="group relative grid h-8 w-10 place-items-center rounded-lg text-xs font-medium text-faint ring-1 ring-white/10 transition hover:text-white hover:ring-white/25">
+          <Keyboard className="size-4" />
+          <Tip label="Keyboard shortcuts" keys="?" />
+        </button>
       </nav>
     </aside>
   );
@@ -211,14 +252,14 @@ function TopBar() {
         className={cx(
           open
             ? 'fixed inset-x-0 top-0 z-50 bg-bg/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md md:relative md:inset-auto md:ml-auto md:w-full md:max-w-md md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none'
-            : 'sr-only',
+            : 'sr-only lg:not-sr-only lg:relative lg:ml-auto lg:w-full lg:max-w-md',
         )}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
       >
-        <div className="flex h-12 items-center gap-1.5 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
+        <div className="group/search flex h-12 items-center gap-1.5 rounded-full bg-surface pr-1.5 pl-4 ring-1 ring-white/10 transition focus-within:ring-white/25 md:bg-black/30 md:backdrop-blur-md">
           <Search className="size-[18px] shrink-0 text-muted" />
           <input
             ref={(el) => {
@@ -230,7 +271,7 @@ function TopBar() {
               setText(e.target.value);
             }}
             onKeyDown={(e) => e.key === 'Escape' && close()}
-            tabIndex={open ? 0 : -1}
+            onFocus={() => setOpen(true)}
             type="search"
             enterKeyHint="search"
             autoComplete="off"
@@ -238,6 +279,7 @@ function TopBar() {
             aria-label="Search"
             className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
+          {!text && <Kbd className="mr-1.5 group-focus-within/search:hidden">{MOD} K</Kbd>}
           {/* Pages with the full filter bar (results / Movies / TV) don't also get quick filters. */}
           {!onDiscover && (
             <button
@@ -257,7 +299,7 @@ function TopBar() {
             </button>
           )}
           {(text || !onDiscover) && (
-            <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
+            <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className={cx('grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white', !text && 'lg:hidden')}>
               <X className="size-4" />
             </button>
           )}
@@ -272,18 +314,6 @@ function TopBar() {
           />
         )}
       </form>
-      {!open && (
-        <button
-          type="button"
-          data-search-trigger
-          onClick={() => searchCtl.open()}
-          aria-label="Search"
-          title="Search (⌘K)"
-          className="ml-auto hidden size-12 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 backdrop-blur-md transition hover:bg-black/50 lg:grid"
-        >
-          <Search className="size-5" />
-        </button>
-      )}
     </header>
   );
 }
