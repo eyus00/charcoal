@@ -35,8 +35,8 @@ export function Meta({ year, rating, extra, className }: { year?: string; rating
       {year && <span>{year}</span>}
       {year && rating ? <span className="text-faint">·</span> : null}
       {rating ? (
-        <span className="flex items-center gap-1 font-medium text-star">
-          <Star className="size-3.5 fill-current" strokeWidth={0} />
+        <span className="flex items-center gap-1 font-medium text-white/80">
+          <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
           {rating.toFixed(1)}
         </span>
       ) : null}

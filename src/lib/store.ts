@@ -46,6 +46,8 @@ export interface Settings {
   blockPopups: boolean;
   /** Optional stream proxy (e.g. a Cloudflare Worker) that replaces Jelly's /v1/proxy for playback. */
   proxyUrl: string;
+  /** Desktop sidebar shows labels. */
+  sidebarOpen: boolean;
 }
 
 export interface State {
@@ -68,6 +70,7 @@ const defaultSettings: Settings = {
   subtitleLabel: null,
   blockPopups: false,
   proxyUrl: '',
+  sidebarOpen: false,
 };
 
 // ---------- load / migrate ----------

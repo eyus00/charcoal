@@ -1,7 +1,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, Compass, Film, History, Home, Keyboard, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
+import { ArrowUp, Bookmark, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
+import { actions, useStore } from '../lib/store';
 import { cx } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
@@ -21,12 +22,17 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
       </Suspense>
     );
   }
+  return <Shell />;
+}
+
+function Shell() {
+  const sidebarOpen = useStore((s) => s.settings.sidebarOpen);
   return (
-    <div className="relative min-h-dvh lg:pl-[88px]">
+    <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[248px]' : 'lg:pl-[88px]')}>
       <ScrollRestoration />
       <Rail />
       <div className="min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
-        <TopBar />
+        <TopBar hideLogo={sidebarOpen} />
         <main>
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
@@ -74,67 +80,105 @@ const PROFILE: RailGroup = {
   ],
 };
 
+/** Hover label for the collapsed rail. */
 function Tip({ label, keys }: { label: string; keys?: string }) {
   return (
-    <span className="pointer-events-none absolute left-full z-50 ml-3 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100">
+    <span className="pointer-events-none absolute left-full z-50 ml-4 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100">
       {label}
       {keys && <Kbd>{keys}</Kbd>}
     </span>
   );
 }
 
-function RailLink({ item, active, child, within }: { item: RailItem; active: boolean; child?: boolean; within?: boolean }) {
+/**
+ * One rail row. Icons sit at the same x whether the rail is collapsed or expanded,
+ * so toggling only reveals/hides the labels.
+ */
+function RailLink({ item, active, open, size, within }: { item: RailItem; active: boolean; open: boolean; size: 'lg' | 'sm'; within?: boolean }) {
   const Icon = item.icon;
   return (
     <Link
       to={item.to}
-      aria-label={item.label}
+      aria-label={open ? undefined : item.label}
       aria-current={active ? 'page' : undefined}
       className={cx(
-        'group relative grid place-items-center transition',
-        child ? 'size-10 rounded-xl' : 'size-12 rounded-2xl',
-        active ? 'bg-white text-black' : within ? 'bg-surface text-white' : 'text-muted hover:bg-surface hover:text-white',
+        'group relative flex w-full items-center gap-3 transition-colors',
+        size === 'lg' ? 'h-12 rounded-2xl px-[14px]' : 'h-10 rounded-xl px-[10px]',
+        active ? 'bg-white text-black' : within ? 'text-white' : 'text-muted hover:bg-white/[0.06] hover:text-white',
       )}
     >
-      <Icon className={child ? 'size-[18px]' : 'size-5'} />
-      <Tip label={item.label} keys={item.keys} />
+      <Icon className="size-5 shrink-0" />
+      {open ? (
+        <>
+          <span className={cx('truncate text-sm', size === 'lg' || within || active ? 'font-medium' : '')}>{item.label}</span>
+          {item.keys && <Kbd className={cx('ml-auto opacity-0 transition group-hover:opacity-100', active && 'bg-black/10 text-black/60 ring-0')}>{item.keys}</Kbd>}
+        </>
+      ) : (
+        <Tip label={item.label} keys={item.keys} />
+      )}
     </Link>
   );
 }
 
-/** A parent icon with its sub-sections hanging below it on a connecting line. */
-function RailTree({ group, section }: { group: RailGroup; section: string }) {
+/** A section and its sub-sections, grouped in one soft container. */
+function RailGroupBox({ group, section, open }: { group: RailGroup; section: string; open: boolean }) {
   const childActive = group.children.some((c) => c.id === section);
   return (
-    <div className="flex flex-col items-center">
-      <RailLink item={group} active={section === group.id} within={childActive} />
-      <div className="relative mt-1.5 flex flex-col gap-1.5 pl-7">
-        {/* trunk + one branch per child */}
-        <span aria-hidden className="absolute top-0 bottom-5 left-[17px] w-px bg-white/15" />
-        {group.children.map((c) => (
-          <div key={c.id} className="relative">
-            <span aria-hidden className="absolute top-1/2 -left-[11px] h-px w-[11px] bg-white/15" />
-            <RailLink item={c} child active={section === c.id} />
-          </div>
-        ))}
-      </div>
+    <div role="group" aria-label={group.label} className="flex flex-col gap-0.5 rounded-[20px] bg-white/[0.03] p-1 ring-1 ring-white/[0.06]">
+      <RailLink item={group} size="sm" open={open} active={section === group.id} within={childActive} />
+      <span aria-hidden className="mx-2.5 my-0.5 h-px bg-white/[0.06]" />
+      {group.children.map((c) => (
+        <RailLink key={c.id} item={c} size="sm" open={open} active={section === c.id} />
+      ))}
     </div>
   );
 }
 
 function Rail() {
   const section = useSection();
+  const open = useStore((s) => s.settings.sidebarOpen);
+  const toggle = () => actions.updateSettings({ sidebarOpen: !open });
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-white/5 bg-bg pt-[104px] pb-5 lg:flex">
-      <nav className="flex flex-col items-center gap-2" aria-label="Browse">
-        <RailLink item={HOME} active={section === 'home'} />
-        <RailTree group={DISCOVER} section={section} />
+    <aside
+      className={cx(
+        'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/5 bg-bg px-5 pb-5 transition-[width] duration-300 ease-out lg:flex',
+        open ? 'w-[248px] overflow-hidden' : 'w-[88px]',
+      )}
+    >
+      <div className="flex h-[92px] shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-expanded={open}
+          className="group relative grid size-12 shrink-0 place-items-center rounded-2xl text-muted transition hover:bg-white/[0.06] hover:text-white"
+        >
+          {open ? <PanelLeftClose className="size-5" /> : <PanelLeftOpen className="size-5" />}
+          {!open && <Tip label="Expand sidebar" keys="[" />}
+        </button>
+        {open && (
+          <Link to="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
+            <LogoMark className="size-7" />
+            Charcoal
+          </Link>
+        )}
+      </div>
+      <nav className="mt-3 flex flex-col gap-3" aria-label="Browse">
+        <RailLink item={HOME} size="lg" open={open} active={section === 'home'} />
+        <RailGroupBox group={DISCOVER} section={section} open={open} />
       </nav>
-      <nav className="mt-auto flex flex-col items-center gap-4" aria-label="Your library">
-        <RailTree group={PROFILE} section={section} />
-        <button type="button" onClick={() => hotkeysCtl.help()} aria-label="Keyboard shortcuts" className="group relative grid h-8 w-10 place-items-center rounded-lg text-xs font-medium text-faint ring-1 ring-white/10 transition hover:text-white hover:ring-white/25">
-          <Keyboard className="size-4" />
-          <Tip label="Keyboard shortcuts" keys="?" />
+      <nav className="mt-auto flex flex-col gap-3" aria-label="Your library">
+        <RailGroupBox group={PROFILE} section={section} open={open} />
+        <button
+          type="button"
+          onClick={() => hotkeysCtl.help()}
+          aria-label="Keyboard shortcuts"
+          className={cx('group relative flex h-10 items-center gap-2 rounded-xl text-faint transition hover:text-white', open ? 'px-[14px]' : 'justify-center')}
+        >
+          <Keyboard className="size-[18px] shrink-0" />
+          {open && <span className="text-sm">Shortcuts</span>}
+          <Kbd className={open ? 'ml-auto' : ''}>?</Kbd>
+          {!open && <Tip label="Keyboard shortcuts" />}
         </button>
       </nav>
     </aside>
@@ -152,7 +196,7 @@ const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV 
  *   and changes made on the page (type switch, filter pills) flow back into the draft;
  * - elsewhere, Enter / "Search" in the quick filters opens the results page.
  */
-function TopBar() {
+function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
@@ -242,7 +286,7 @@ function TopBar() {
 
   return (
     <header className="relative z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4">
-      <Link to="/" className="flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight" aria-label="Charcoal home">
+      <Link to="/" className={cx('flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight', hideLogo && 'lg:hidden')} aria-label="Charcoal home">
         <LogoMark className="size-8" />
         Charcoal
       </Link>
