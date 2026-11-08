@@ -67,7 +67,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     } else if (current && e.key === 'P' && prev) {
       e.preventDefault();
       prev();
-    } else if (current && (e.key === 'n' || e.key === 'N') && next) {
+    } else if (current && e.key === 'N' && next) {
       e.preventDefault();
       next();
     } else if ((e.key === 'p' || e.key === 'P') && !current) {
@@ -116,29 +116,6 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             <h2 className="truncate text-lg font-semibold md:text-xl">Episodes</h2>
             <p className="truncate text-sm text-muted">{titleOf(show)}</p>
           </div>
-          {current && (prev || next) && (
-            <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                onClick={() => prev?.()}
-                disabled={!prev}
-                aria-label="Previous episode (Shift P)"
-                title="Previous episode (Shift P)"
-                className="grid size-10 place-items-center rounded-full bg-raised transition hover:bg-line disabled:opacity-30 disabled:hover:bg-raised"
-              >
-                <SkipBack className="size-[18px]" />
-              </button>
-              <button
-                onClick={() => next?.()}
-                disabled={!next}
-                aria-label="Next episode (N)"
-                title="Next episode (N)"
-                className="grid size-10 place-items-center rounded-full bg-raised transition hover:bg-line disabled:opacity-30 disabled:hover:bg-raised"
-              >
-                <SkipForward className="size-[18px]" />
-              </button>
-              <span aria-hidden className="mx-1 h-6 w-px bg-line" />
-            </div>
-          )}
           <button onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
             <X className="size-5" />
           </button>
@@ -248,7 +225,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           )}
         </div>
 
-        <div className={cx('flex shrink-0 items-center gap-3 border-t border-line px-5 py-4 md:px-7', current && 'hidden lg:flex')}>
+        <div className={cx('flex shrink-0 items-center gap-3 border-t border-line px-5 py-4 md:px-7', current && !prev && !next && 'hidden lg:flex')}>
           <div className="hidden items-center gap-4 text-xs text-faint lg:flex">
             {seasons.length > 1 && (
               <span className="flex items-center gap-1.5">
@@ -256,20 +233,33 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 <Kbd>→</Kbd> Season
               </span>
             )}
-            {current && prev && (
-              <span className="flex items-center gap-1.5">
-                <Kbd>Shift P</Kbd> Previous
-              </span>
-            )}
-            {current && next && (
-              <span className="flex items-center gap-1.5">
-                <Kbd>N</Kbd> Next
-              </span>
-            )}
             <span className="flex items-center gap-1.5">
               <Kbd>Esc</Kbd> Close
             </span>
           </div>
+          {/* Player: previous / next episode, where the details page has its play button. */}
+          {current && (prev || next) && (
+            <div className="ml-auto flex items-center gap-2.5">
+              <button
+                onClick={() => prev?.()}
+                disabled={!prev}
+                className="flex h-12 items-center gap-2 rounded-full px-5 text-body-sm ring-1 ring-white/25 transition hover:bg-white/10 enabled:active:scale-[0.96] disabled:opacity-30"
+              >
+                <SkipBack className="size-4" strokeWidth={1.5} />
+                <span className="hidden sm:inline">Previous</span>
+                <Kbd>Shift P</Kbd>
+              </button>
+              <button
+                onClick={() => next?.()}
+                disabled={!next}
+                className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90 enabled:active:scale-[0.96] disabled:opacity-30"
+              >
+                <SkipForward className="size-4 fill-current" />
+                Next episode
+                <Kbd light>Shift N</Kbd>
+              </button>
+            </div>
+          )}
           {!current && (
             <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="ml-auto flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} />
