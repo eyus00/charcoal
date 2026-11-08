@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cx, scrollBehavior } from '../lib/util';
+import { btn } from './Button';
 
 /**
  * Rows run edge to edge: they extend past the page padding to the screen edge, while the first
@@ -45,7 +46,7 @@ export function RowArrows({ onScroll }: { onScroll: (dir: 1 | -1) => void }) {
 
 export function SquareButton({ label, onClick, children, className }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={cx('grid size-10 place-items-center rounded-full bg-surface text-white/80 transition hover:bg-raised hover:text-white', className)}>
+    <button type="button" onClick={onClick} aria-label={label} title={label} className={cx(btn({ icon: true }), className)}>
       {children}
     </button>
   );

@@ -10,6 +10,7 @@ import { PageSkeleton } from './Skeletons';
 import { LogoMark } from './Logo';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
+import { btn } from './Button';
 import { OfflineNotice, Toaster, toast } from './Toast';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
@@ -505,7 +506,9 @@ function ScrollTop() {
         inert={!show}
         aria-label="Scroll to top"
         className={cx(
-          'fixed right-4 bottom-24 z-30 grid size-11 place-items-center rounded-full border border-transparent bg-raised text-white shadow-lg transition-[translate,opacity,background-color] duration-150 ease-out hover:bg-line lg:right-8 lg:bottom-8',
+          btn({ icon: true }),
+          // Floats over content, so it keeps a backdrop behind its outline.
+          'fixed right-4 bottom-24 z-30 size-11 border border-transparent bg-bg/80 shadow-lg backdrop-blur-md transition-[translate,opacity,background-color,box-shadow] lg:right-8 lg:bottom-8',
           show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-16 opacity-0',
         )}
       >

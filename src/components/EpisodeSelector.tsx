@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import Img from './Img';
 import Modal from './Modal';
+import { btn } from './Button';
 import { Chip } from './EpisodeTile';
 import Kbd from './Kbd';
 import { CARD_INFO } from './MediaCard';
@@ -116,7 +117,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             <h2 className="truncate text-lg font-semibold md:text-xl">Episodes</h2>
             <p className="truncate text-sm text-muted">{titleOf(show)}</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
+          <button onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
             <X className="size-5" />
           </button>
         </div>
@@ -258,7 +259,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               <button
                 onClick={() => prev?.()}
                 disabled={!prev}
-                className="flex h-12 items-center gap-2.5 rounded-full px-6 text-body-sm font-medium ring-1 ring-white/25 ring-inset transition hover:bg-white/10 enabled:active:scale-[0.96] disabled:opacity-30"
+                className={btn({ size: 'lg' })}
               >
                 <SkipBack className="size-4 fill-current" />
                 Previous
@@ -266,7 +267,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               <button
                 onClick={() => next?.()}
                 disabled={!next}
-                className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90 enabled:active:scale-[0.96] disabled:opacity-30"
+                className={btn({ variant: 'primary', size: 'lg' })}
               >
                 <SkipForward className="size-4 fill-current" />
                 Next
@@ -275,7 +276,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             </div>
           )}
           {!current && (
-            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="ml-auto flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90">
+            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
               <Play className="size-4 fill-current" strokeWidth={0} />
               {cta.label} {epLabel(cta.s, cta.e)}
             </Link>

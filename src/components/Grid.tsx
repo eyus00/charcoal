@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { MediaItem, MediaType } from '../lib/tmdb';
 import MediaCard from './MediaCard';
+import { btn } from './Button';
 import { CardSkeleton, GRID, GRID_SIZES, GridSkeleton } from './Skeletons';
 
 interface Props {
@@ -50,7 +51,7 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className="h-12 rounded-full bg-surface px-6 text-body-sm text-white/85 transition hover:bg-raised disabled:opacity-50"
+        className={btn({ size: 'lg' })}
       >
         {busy ? 'Loading…' : 'Load more'}
       </button>
@@ -63,7 +64,7 @@ export function ErrorBox({ onRetry, message = 'Couldn’t load these titles. Che
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-muted">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="h-11 rounded-full bg-surface px-5 text-sm hover:bg-raised">
+        <button onClick={onRetry} className={btn()}>
           Try again
         </button>
       )}

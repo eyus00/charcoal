@@ -4,6 +4,7 @@ import { Keyboard, X } from 'lucide-react';
 import { actions, getState } from '../lib/store';
 import { isTypingTarget, keyState } from '../lib/util';
 import Modal from './Modal';
+import { btn } from './Button';
 
 export const GO: Record<string, { to: string; label: string }> = {
   h: { to: '/', label: 'Home' },
@@ -89,7 +90,7 @@ export default function Hotkeys({ openSearch }: { openSearch?: () => void }) {
         <div className="mb-5 flex items-center gap-3">
           <Keyboard className="size-5 text-muted" />
           <h2 className="flex-1 text-lg font-semibold">Keyboard shortcuts</h2>
-          <button onClick={() => setHelp(false)} aria-label="Close" className="grid size-9 place-items-center rounded-full bg-raised hover:bg-line">
+          <button onClick={() => setHelp(false)} aria-label="Close" className={btn({ icon: true })}>
             <X className="size-4" />
           </button>
         </div>

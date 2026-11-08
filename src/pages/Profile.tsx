@@ -9,6 +9,7 @@ import { EMBEDS } from '../lib/servers';
 import { checkProxy, normalizeProxy } from '../lib/proxy';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
+import { btn } from '../components/Button';
 import { cx, scrollBehavior, useTitle } from '../lib/util';
 
 /** Fixed container card for each profile section (matches the settings cards). */
@@ -272,7 +273,7 @@ function SettingsSection() {
               aria-label="Stream proxy URL"
               className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
             />
-            <button className="h-11 rounded-xl bg-accent px-5 text-sm font-medium text-black hover:bg-accent-hover">Save</button>
+            <button className={btn({ variant: 'primary' })}>Save</button>
           </form>
           {/* Always mounted, so screen readers announce the result. */}
           <p role="status" className={cx('text-sm empty:hidden', proxyState?.ok === false ? 'text-danger' : 'text-success')}>
@@ -284,10 +285,10 @@ function SettingsSection() {
           <h3 className="font-medium">Your data</h3>
           <p className="text-sm text-muted">History and watchlist are stored only in this browser. Back them up or move them to another device.</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={download} className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm hover:bg-line">
+            <button onClick={download} className={btn()}>
               <Download className="size-4" strokeWidth={1.5} /> Export
             </button>
-            <button onClick={() => file.current?.click()} className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm hover:bg-line">
+            <button onClick={() => file.current?.click()} className={btn()}>
               <Upload className="size-4" strokeWidth={1.5} /> Import
             </button>
             {historyCount > 0 && (
@@ -297,7 +298,7 @@ function SettingsSection() {
                   actions.clearHistory();
                   toast('Watch history cleared', { label: 'Undo', run: () => actions.restore({ history: before }) });
                 }}
-                className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm text-danger hover:bg-danger/15"
+                className={cx(btn(), 'text-danger! ring-danger/40! hover:bg-danger/10! hover:ring-danger/70!')}
               >
                 <Trash2 className="size-4" strokeWidth={1.5} /> Clear history
               </button>
@@ -364,7 +365,7 @@ function EmptyCard({ icon: Icon, title, body }: { icon?: typeof Film; title: str
       <p className="font-medium">{title}</p>
       {body && <p className="max-w-sm text-sm text-pretty text-muted">{body}</p>}
       {Icon && (
-        <Link to="/discover" className="mt-3 h-11 rounded-full bg-white px-5 text-sm leading-[2.75rem] font-medium text-black hover:bg-white/90">
+        <Link to="/discover" className={cx(btn({ variant: 'primary' }), 'mt-3')}>
           Browse titles
         </Link>
       )}
