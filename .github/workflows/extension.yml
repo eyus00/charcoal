@@ -30,9 +30,14 @@ jobs:
       # Firefox only installs signed add-ons permanently. Unlisted signing is free and automatic.
       - name: Sign for Firefox
         if: ${{ env.AMO_JWT_ISSUER != '' }}
+        # A signing problem (wrong keys, Mozilla slow) must not stop the Chrome zip from being released.
+        continue-on-error: true
         run: |
+          # Pasted secrets often carry stray spaces or line breaks; Mozilla then rejects the signature.
+          KEY=$(printf '%s' "$AMO_JWT_ISSUER" | tr -d '[:space:]')
+          SECRET=$(printf '%s' "$AMO_JWT_SECRET" | tr -d '[:space:]')
           npx --yes web-ext@8 sign --channel unlisted --source-dir apps/extension/dist --artifacts-dir web-ext-artifacts \
-            --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
+            --api-key "$KEY" --api-secret "$SECRET"
           cp web-ext-artifacts/*.xpi "charcoal-helper-$VERSION.xpi"
       - uses: softprops/action-gh-release@v2
         with:

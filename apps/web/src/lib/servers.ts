@@ -23,6 +23,14 @@ export interface JellyResponse {
   expiresAt: string;
   sources: JellySource[];
   subtitles: JellySubtitle[];
+  diagnostics?: { message?: string }[];
+}
+
+/** How one provider did for this title (shown in the player's Source menu). */
+export interface ProviderReport {
+  name: string;
+  ok: boolean;
+  reason?: string;
 }
 
 export interface Target { type: MediaType; id: number; season?: number; episode?: number }
@@ -34,6 +42,7 @@ export type JellyResult = JellyResponse & {
   /** extension: found and played from this browser through Charcoal Helper (no server involved). */
   via: 'extension' | 'own' | 'hosted';
   ownError?: string;
+  report?: ProviderReport[];
 };
 
 /** Sources for a title: from the viewer's own server if set, falling back to the hosted one. */
@@ -52,7 +61,7 @@ export async function fetchJelly(t: Target, signal: AbortSignal): Promise<JellyR
   return { ...(await fetchFrom(HOSTED_SERVER, t, signal)), via: 'hosted', ownError };
 }
 
-async function fetchFrom(base: string, t: Target, signal: AbortSignal): Promise<JellyResponse> {
+async function fetchFrom(base: string, t: Target, signal: AbortSignal): Promise<JellyResponse & { report: ProviderReport[] }> {
   const path =
     t.type === 'movie' ? `/v1/movies/${t.id}` : `/v1/tv/${t.id}/seasons/${t.season}/episodes/${t.episode}`;
 
@@ -68,7 +77,7 @@ async function fetchFrom(base: string, t: Target, signal: AbortSignal): Promise<
     const data = body as JellyResponse;
     const sources = (data.sources ?? []).filter((s) => s?.url);
     if (!sources.length) throw new Error('No sources found for this title');
-    return { ...data, sources: sortSources(sources), subtitles: data.subtitles ?? [] };
+    return { ...data, sources: sortSources(sources), subtitles: data.subtitles ?? [], report: reportFrom(sources, data.diagnostics) };
   } catch (e) {
     if (ctrl.signal.aborted && !signal.aborted) throw new Error('The server took too long to respond');
     if (e instanceof TypeError) throw new Error('Couldn’t reach the server');
@@ -77,6 +86,18 @@ async function fetchFrom(base: string, t: Target, signal: AbortSignal): Promise<
     clearTimeout(timer);
     signal.removeEventListener('abort', onAbort);
   }
+}
+
+/** Turns the server's diagnostics ("Name: reason", "Provider 'Name' failed: reason") into a report. */
+function reportFrom(sources: JellySource[], diagnostics: JellyResponse['diagnostics'] = []): ProviderReport[] {
+  const ok = [...new Set(sources.map((s) => s.provider.name))].map((name) => ({ name, ok: true }));
+  const failed: ProviderReport[] = [];
+  for (const d of diagnostics) {
+    const m = d.message ?? '';
+    const hit = m.match(/^Provider '([^']+)' failed: (.*)$/) ?? m.match(/^([A-Za-z0-9 ]{2,30}): (.*)$/);
+    if (hit && !ok.some((o) => o.name === hit[1]) && !failed.some((f) => f.name === hit[1])) failed.push({ name: hit[1], ok: false, reason: hit[2] });
+  }
+  return [...ok, ...failed];
 }
 
 // ---------- the viewer's own server ----------
