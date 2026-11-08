@@ -13,7 +13,7 @@ export function useUrlFilters(): (patch: Partial<Filters>) => void {
 
 const THIS_YEAR = new Date().getFullYear();
 /** The handful of genres offered as quick pills (everything else lives in All filters). */
-const QUICK_GENRES = ['action', 'comedy', 'drama', 'scifi', 'horror', 'animation', 'crime'];
+const QUICK_GENRES = ['action', 'adventure', 'comedy', 'drama', 'scifi', 'horror', 'thriller', 'animation', 'crime', 'romance', 'mystery', 'fantasy', 'documentary'];
 type Set = (p: Partial<Filters>) => void;
 
 const toggleYear = (f: Filters, from: number, to: number): Partial<Filters> =>
@@ -27,14 +27,14 @@ const toggleGenre = (f: Filters, slug: string): Partial<Filters> => ({
 export function FilterBar({ filters: f, set, className }: { filters: Filters; set: Set; className?: string }) {
   return (
     <div className={cx('flex min-w-0 items-center gap-2.5', className)}>
-      <div className="no-scrollbar scroll-row -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0">
+      <div className="no-scrollbar scroll-row -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0 md:[mask-image:linear-gradient(to_right,black_94%,transparent)]">
         {[7, 8].map((r) => (
           <Pill key={r} on={f.rating === r} onClick={() => set({ rating: f.rating === r ? 0 : r })} className="flex items-center gap-1.5">
             <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
             {r}+
           </Pill>
         ))}
-        {[THIS_YEAR, THIS_YEAR - 1].map((y) => (
+        {[THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2].map((y) => (
           <Pill key={y} on={f.from === y && f.to === y} onClick={() => set(toggleYear(f, y, y))}>
             {y}
           </Pill>

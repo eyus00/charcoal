@@ -34,15 +34,17 @@ interface Props {
   shade?: boolean;
   title?: string;
   className?: string;
+  /** Replaces the default tile width classes. */
+  width?: string;
   linkProps?: Record<string, unknown>;
   /** Extra controls over the tile (e.g. a remove button). */
   children?: ReactNode;
 }
 
 /** Outlined landscape card: still image with corner chips, two text lines, type icon bottom-right. */
-export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, linkProps, children }: Props) {
+export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, children }: Props) {
   return (
-    <div className={cx('group relative', TILE, className)} role="listitem">
+    <div className={cx('group relative', width, className)} role="listitem">
       <Link to={to} title={title} className="block" {...linkProps}>
         <div className="relative overflow-hidden rounded-t-2xl">
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
