@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
+import { jellyProxyService } from './proxy.js';
+import { BenchedError, checkBench, record, report } from './health.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -151,7 +153,7 @@ async function main() {
             origin: process.env.CORS_ORIGIN ?? '*',
             methods: ['GET', 'OPTIONS'],
             allowedHeaders: ['Content-Type', 'Authorization', 'Range'],
-            exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length', 'ETag'],
+            exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length', 'ETag', 'X-Upstream-Status'],
             preflightContinue: false,
             optionsSuccessStatus: 204
         }
@@ -164,9 +166,33 @@ async function main() {
         const getMovie = provider.getMovieSources.bind(provider);
         const getTV = provider.getTVSources.bind(provider);
         const check = (r: SourceResult) => (VALIDATE_SEGMENTS ? dropBlocked(r, provider.name) : r);
-        provider.getMovieSources = (media) => withTimeout(getMovie(media), provider.name).then(check);
-        provider.getTVSources = (media) => withTimeout(getTV(media), provider.name).then(check);
+        // Timeout, then health bookkeeping: a provider that keeps failing sits out for a while.
+        const run = async (call: () => Promise<SourceResult>) => {
+            checkBench(provider.id, provider.name);
+            const started = Date.now();
+            try {
+                const r = await check(await withTimeout(call(), provider.name));
+                record(provider.id, provider.name, r.sources.length ? 'success' : 'empty', Date.now() - started);
+                return r;
+            } catch (e) {
+                if (!(e instanceof BenchedError)) record(provider.id, provider.name, 'failure', Date.now() - started, (e as Error)?.message);
+                throw e;
+            }
+        };
+        provider.getMovieSources = (media) => run(() => getMovie(media));
+        provider.getTVSources = (media) => run(() => getTV(media));
     }
+
+    // Our own stream proxy replaces the framework's (see proxy.ts). The framework's controller
+    // decodes `data` a second time after Fastify already did, which breaks URLs containing "%";
+    // encoding it once more first makes that second decode harmless.
+    (server as unknown as { proxyController: { proxyService: unknown } }).proxyController.proxyService = jellyProxyService;
+    const app = server.getInstance();
+    app.addHook('onRequest', async (request) => {
+        const q = request.query as Record<string, string> | undefined;
+        if (request.url.startsWith('/v1/proxy') && typeof q?.data === 'string') q.data = encodeURIComponent(q.data);
+    });
+    app.get('/v1/providers/health', async () => report());
 
     await server.start();
 }
