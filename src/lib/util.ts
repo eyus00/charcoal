@@ -40,6 +40,17 @@ export function timeAgo(ts: number) {
   return new Date(ts).toLocaleDateString();
 }
 
+/** Air-date tag: "Today", "Tomorrow", "Airs Thursday" (this week) or "Airs Nov 15, 2026". */
+export function airsLabel(d?: string | null) {
+  if (!d) return '';
+  const day = new Date(d + 'T00:00:00');
+  const days = Math.round((day.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days > 1 && days < 7) return 'Airs ' + day.toLocaleDateString(undefined, { weekday: 'long' });
+  return 'Airs ' + formatDate(d);
+}
+
 export const isFuture = (d?: string | null) => !!d && new Date(d + 'T00:00:00').getTime() > Date.now();
 
 export function useTitle(title?: string) {
