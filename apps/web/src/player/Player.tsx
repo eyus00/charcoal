@@ -1112,6 +1112,9 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                   {view === 'source' && (
                     <>
                       <BackHeader onBack={() => setView('main')}>Source</BackHeader>
+                      <p className="px-3 pb-1.5 text-xs text-muted">
+                        Found by {data.via === 'extension' ? 'this browser (Charcoal Helper)' : data.via === 'own' ? 'your server' : 'Charcoal’s server'}
+                      </p>
                       {data.sources.map((s, i) => (
                         <MenuItem
                           key={s.url}
@@ -1133,6 +1136,21 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                           </span>
                         </MenuItem>
                       ))}
+                      {/* Every other provider, and why it had nothing: useful when a title won't play. */}
+                      {data.report?.some((r) => !r.ok) && (
+                        <>
+                          <Divider />
+                          <p className="px-3 pt-1 pb-1 text-xs text-muted">No stream from</p>
+                          {data.report
+                            .filter((r) => !r.ok)
+                            .map((r) => (
+                              <div key={r.name} className="flex items-baseline gap-2 px-3 py-1 text-xs" title={r.reason}>
+                                <span className="shrink-0 text-white/80">{r.name}</span>
+                                <span className="min-w-0 truncate text-faint">{r.reason}</span>
+                              </div>
+                            ))}
+                        </>
+                      )}
                     </>
                   )}
                   {view === 'speed' && (
