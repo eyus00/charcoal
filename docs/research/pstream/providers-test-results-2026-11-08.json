@@ -1,0 +1,422 @@
+{
+  "catflix": {
+    "name": "Catflix",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "flixhq": {
+    "name": "FlixHQ",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: no search results match"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: no search results match"
+    }
+  },
+  "remotestream": {
+    "name": "Remote Stream",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "kissasian": {
+    "name": "KissAsian",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Episode not found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Episode not found"
+    }
+  },
+  "showbox": {
+    "name": "Showbox",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'find')"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'find')"
+    }
+  },
+  "gomovies": {
+    "name": "GOmovies",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Media not found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Media not found"
+    }
+  },
+  "zoechip": {
+    "name": "ZoeChip",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: no search results match"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: no search results match"
+    }
+  },
+  "vidsrc": {
+    "name": "VidSrc",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "failed to find episode element"
+    }
+  },
+  "lookmovie": {
+    "name": "LookMovie",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "stream-dead",
+      "tries": [
+        {
+          "via": "direct",
+          "type": "hls",
+          "ok": false,
+          "why": "playlist 200 WRONG HASH!"
+        }
+      ],
+      "embeds": []
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'auto')"
+    }
+  },
+  "nsbx": {
+    "name": "NSBX",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "smashystream": {
+    "name": "SmashyStream",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "stream-dead",
+      "tries": [
+        {
+          "via": "smashystream-f",
+          "ok": false,
+          "why": "embed: Cannot read properties of undefined (reading '0')"
+        },
+        {
+          "via": "smashystream-o",
+          "ok": false,
+          "why": "embed: Cannot read properties of undefined (reading '0')"
+        }
+      ],
+      "embeds": [
+        "smashystream-f",
+        "smashystream-o"
+      ]
+    },
+    "Breaking Bad S2E3": {
+      "result": "stream-dead",
+      "tries": [
+        {
+          "via": "smashystream-f",
+          "ok": false,
+          "why": "embed: Cannot read properties of undefined (reading '0')"
+        },
+        {
+          "via": "smashystream-o",
+          "ok": false,
+          "why": "embed: Cannot read properties of undefined (reading '0')"
+        }
+      ],
+      "embeds": [
+        "smashystream-f",
+        "smashystream-o"
+      ]
+    }
+  },
+  "ridomovies": {
+    "name": "RidoMovies",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'items')"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'items')"
+    }
+  },
+  "vidsrcto": {
+    "name": "VidSrcTo",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "No data-id found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "No data-id found"
+    }
+  },
+  "nepu": {
+    "name": "Nepu",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Unexpected token '<', \"<html>\r\n<h\"... is not valid JSON"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Unexpected token '<', \"<html>\r\n<h\"... is not valid JSON"
+    }
+  },
+  "goojara": {
+    "name": "Goojara",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Media not found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Media not found"
+    }
+  },
+  "hdrezka": {
+    "name": "HDRezka",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No translator id found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No translator id found"
+    }
+  },
+  "m4ufree": {
+    "name": "M4UFree",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "primewire": {
+    "name": "Primewire",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "warezcdn": {
+    "name": "WarezCDN",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "insertunit": {
+    "name": "Insertunit",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No result found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No result found"
+    }
+  },
+  "nites": {
+    "name": "Nites",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    }
+  },
+  "soapertv": {
+    "name": "SoaperTV",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "autoembed": {
+    "name": "Autoembed",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "tugaflix": {
+    "name": "Tugaflix",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    }
+  },
+  "ee3": {
+    "name": "EE3",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Unexpected token 'C', \"Cross-site\"... is not valid JSON"
+    },
+    "Breaking Bad S2E3": {
+      "result": "n/a"
+    }
+  },
+  "whvx": {
+    "name": "VidBinge",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "fsharetv": {
+    "name": "FshareTV",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "File ID not found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "n/a"
+    }
+  },
+  "redstar": {
+    "name": "redStar",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Couldn't find a stream: No watchable item found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Couldn't find a stream: No watchable item found"
+    }
+  },
+  "bombtheirish": {
+    "name": "bombthe.irish",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "vidsrcsu": {
+    "name": "vidsrc.su (FlixHQ)",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No flixhq playlist found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No flixhq playlist found"
+    }
+  },
+  "tasf": {
+    "name": "theyallsayflix.su",
+    "disabledUpstream": true,
+    "Inception": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "mp4hydra": {
+    "name": "Mp4Hydra",
+    "disabledUpstream": false,
+    "Inception": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    },
+    "Breaking Bad S2E3": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    }
+  }
+}
