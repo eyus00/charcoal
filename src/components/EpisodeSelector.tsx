@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Play, SkipBack, SkipForward, X } from 'lucide-react';
+import { CalendarClock, Check, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import Img from './Img';
 import Modal from './Modal';
 import { btn } from './Button';
@@ -29,6 +29,8 @@ interface Props {
   /** Player: jump to the previous / next episode from inside the list. */
   prev?: (() => void) | null;
   next?: (() => void) | null;
+  /** An episode to highlight, scroll to and offer as the play button (e.g. from "Airing this week"). */
+  selected?: { season: number; episode: number };
 }
 
 /**
@@ -36,13 +38,16 @@ interface Props {
  * season, prefetches a season when its tab is hovered, and scrolls the current
  * or resume episode into view.
  */
-export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick, prev, next }: Props) {
+/** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
+const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
+
+export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick, prev, next, selected }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const history = useStore((s) => s.history);
   const seasons = allSeasons(show);
   const resume = resumeTarget(history, 'tv', show.id);
-  const focus = current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined);
+  const focus = selected ?? current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined);
   const first = regularSeasons(show)[0]?.season_number ?? seasons[0]?.season_number ?? 1;
   const [season, setSeason] = useState(() =>
     initialSeason !== undefined && seasons.some((s) => s.season_number === initialSeason) ? initialSeason : (focus?.season ?? first),
@@ -71,7 +76,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     } else if (current && e.key === 'N' && next) {
       e.preventDefault();
       next();
-    } else if ((e.key === 'p' || e.key === 'P') && !current) {
+    } else if ((e.key === 'p' || e.key === 'P') && !current && !ctaAirs) {
       e.preventDefault();
       onPick?.();
       navigate(href(cta.s, cta.e), { replace });
@@ -103,7 +108,14 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     list.current?.scrollTo({ top: 0 });
   };
   const href = (s: number, e: number) => `/watch/tv/${show.id}?season=${s}&episode=${e}`;
-  const cta = resume?.season !== undefined ? { s: resume.season, e: resume.episode!, label: resume.isNext ? 'Play' : 'Resume' } : { s: first, e: 1, label: 'Play' };
+  const cta = selected
+    ? { s: selected.season, e: selected.episode, label: 'Play' }
+    : resume?.season !== undefined
+      ? { s: resume.season, e: resume.episode!, label: resume.isNext ? 'Play' : 'Resume' }
+      : { s: first, e: 1, label: 'Play' };
+  // A selected episode that hasn't aired yet can't be played: the button says when it airs.
+  const ctaEp = data?.episodes.find((x) => cta.s === season && x.episode_number === cta.e);
+  const ctaAirs = ctaEp && isFuture(ctaEp.air_date) ? ctaEp.air_date : null;
 
   return (
     <Modal label={`${titleOf(show)} episodes`} onClose={onClose}>
@@ -163,11 +175,30 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 const pct = percent(h);
                 const upcoming = isFuture(ep.air_date);
                 const isCurrent = current?.season === season && current.episode === ep.episode_number;
+                const isSelected = selected?.season === season && selected.episode === ep.episode_number;
                 const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
                 const body = (
                   <>
                     <div className="relative overflow-hidden rounded-t-2xl">
-                      <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-40' : undefined} />
+                      {ep.still_path ? (
+                        <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
+                      ) : (
+                        // No still yet (usually an upcoming episode): a calm placeholder with the air date.
+                        <div className="grid aspect-video place-items-center bg-white/[0.04]">
+                          {ep.air_date ? (
+                            <div className="text-center">
+                              <div className="text-micro font-medium tracking-wider text-faint uppercase">
+                                {new Date(ep.air_date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long' })}
+                              </div>
+                              <div className="mt-0.5 text-2xl font-semibold tracking-tight text-white/70 tabular-nums">
+                                {new Date(ep.air_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </div>
+                            </div>
+                          ) : (
+                            <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
+                          )}
+                        </div>
+                      )}
                       {!upcoming && (
                         <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
                           <span className="grid size-11 place-items-center rounded-full bg-white text-black">
@@ -177,7 +208,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       )}
                       {(isCurrent || upcoming) && (
                         <span className="absolute top-2.5 left-2.5">
-                          {isCurrent ? <Chip light>Now playing</Chip> : <Chip>Airs {formatDate(ep.air_date)}</Chip>}
+                          {isCurrent ? <Chip light>Now playing</Chip> : ep.still_path ? <Chip>Airs {formatDate(ep.air_date)}</Chip> : <Chip>Upcoming</Chip>}
                         </span>
                       )}
                       {h?.isCompleted ? (
@@ -202,22 +233,30 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         </span>
                       )}
                     </div>
-                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
+                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 px-3.5 pt-2.5 pb-3', (isCurrent || isSelected) && 'border-white/30')}>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                        <h3 className="line-clamp-2 min-w-0 text-body-sm font-medium text-balance text-white/95">{ep.name}</h3>
+                        <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
                       </div>
                       {!upcoming && ep.air_date && <div className="text-caption text-faint">{formatDate(ep.air_date)}</div>}
-                      {ep.overview && <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>}
+                      {ep.overview ? (
+                        <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
+                      ) : (
+                        // No synopsis yet: quiet placeholder lines (skeleton shapes, not animated).
+                        <div aria-hidden className="mt-2.5 space-y-2">
+                          <div className="h-2.5 w-full rounded-full bg-white/[0.05]" />
+                          <div className="h-2.5 w-2/3 rounded-full bg-white/[0.05]" />
+                        </div>
+                      )}
                     </div>
                   </>
                 );
                 return upcoming ? (
-                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className="flex cursor-not-allowed flex-col">
+                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl', isSelected && SELECTED)}>
                     {body}
                   </div>
                 ) : (
-                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className="group flex flex-col rounded-2xl" aria-current={isCurrent || undefined}>
+                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className={cx('group flex flex-col rounded-2xl', isSelected && SELECTED)} aria-current={isCurrent || undefined}>
                     {body}
                   </Link>
                 );
@@ -244,7 +283,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 <Kbd>Shift N</Kbd> Next
               </span>
             )}
-            {!current && (
+            {!current && !ctaAirs && (
               <span className="flex items-center gap-1.5">
                 <Kbd>P</Kbd> {cta.label}
               </span>
@@ -275,12 +314,18 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               </button>
             </div>
           )}
-          {!current && (
-            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
-              <Play className="size-4 fill-current" strokeWidth={0} />
-              {cta.label} {epLabel(cta.s, cta.e)}
-            </Link>
-          )}
+          {!current &&
+            (ctaAirs ? (
+              <span className={cx(btn({ size: 'lg' }), 'pointer-events-none ml-auto')}>
+                <CalendarClock className="size-4" strokeWidth={1.5} />
+                {epLabel(cta.s, cta.e)} airs {formatDate(ctaAirs)}
+              </span>
+            ) : (
+              <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
+                <Play className="size-4 fill-current" strokeWidth={0} />
+                {cta.label} {epLabel(cta.s, cta.e)}
+              </Link>
+            ))}
         </div>
       </div>
     </div>

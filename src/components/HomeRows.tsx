@@ -174,7 +174,7 @@ function AiringCard({ show }: { show: MediaItem }) {
   const label = airLabel(ep?.air_date);
   return (
     <EpisodeTile
-      to={ep ? `/tv/${show.id}?episodes=${ep.season_number}` : `/tv/${show.id}`}
+      to={ep ? `/tv/${show.id}?episodes=${ep.season_number}&ep=${ep.episode_number}` : `/tv/${show.id}`}
       type="tv"
       linkProps={usePrefetch('tv', show.id)}
       image={{ path: ep?.still_path || show.backdrop_path, kind: ep?.still_path ? 'still' : 'backdrop' }}

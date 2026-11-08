@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play, RotateCcw, Share2, Star, X } from 'lucide-react';
+import { ChevronRight, Play, RotateCcw, Share2, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
@@ -15,7 +15,7 @@ import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
 import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
-import { cx, formatClock, formatRuntime, isFuture, useKeys, useTitle } from '../lib/util';
+import { cx, formatClock, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { toast } from '../components/Toast';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
@@ -64,11 +64,16 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
   const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 20);
   const length = type === 'movie' ? formatRuntime(d.runtime) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
 
-  // Episode selector open state lives in the URL (?episodes=<season>), so Back closes it.
+  // Episode selector open state lives in the URL (?episodes=<season>[&ep=<n>]), so Back closes it.
+  // `ep` highlights one episode and makes it the play button (Airing this week, new-episode card).
   const episodesParam = params.get('episodes');
-  const openEpisodes = () => {
+  const epParam = Number(params.get('ep'));
+  const selectedEp = episodesParam && epParam > 0 ? { season: Number(episodesParam), episode: epParam } : undefined;
+  const openEpisodes = (at?: { season: number; episode: number }) => {
     const next = new URLSearchParams(params);
-    next.set('episodes', '');
+    next.set('episodes', at ? String(at.season) : '');
+    if (at) next.set('ep', String(at.episode));
+    else next.delete('ep');
     setParams(next, { state: { modal: true }, preventScrollReset: true });
   };
   // Desktop shortcuts: p = play / episodes, t = trailer (b = watchlist, bound by BookmarkMenu).
@@ -82,6 +87,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
     else {
       const next = new URLSearchParams(params);
       next.delete('episodes');
+      next.delete('ep');
       setParams(next, { replace: true, preventScrollReset: true });
     }
   }, [location.state, navigate, params, setParams]);
@@ -100,10 +106,10 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
 
         <div className="relative w-full px-4 pb-6 md:px-8 md:pb-10 lg:px-10">
           {/* Phones: the next-episode card sits above the info card. */}
-          {type === 'tv' && <NextEpisodeCard d={d} className="mb-3 md:hidden" />}
+          {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="mb-3 md:hidden" />}
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             {/* Wider screens: it hangs off the info card's bottom-right corner. */}
-            {type === 'tv' && <NextEpisodeCard d={d} className="absolute bottom-0 left-full z-10 hidden -translate-x-24 translate-y-1/2 md:flex" />}
+            {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="absolute bottom-0 left-full z-10 hidden -translate-x-24 translate-y-1/2 md:flex" />}
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
@@ -123,7 +129,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             </div>
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
-              <PlayActions d={d} type={type} onEpisodes={openEpisodes} />
+              <PlayActions d={d} type={type} onEpisodes={() => openEpisodes()} />
               <BookmarkMenu variant="round" hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
               <ShareButton title={title} />
             </div>
@@ -140,6 +146,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           show={d}
           initialSeason={episodesParam ? Number(episodesParam) : undefined}
           onSeasonChange={setEpisodesSeason}
+          selected={selectedEp}
           onClose={closeEpisodes}
           replace
         />
@@ -221,28 +228,38 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
 }
 
 /** Small card for a scheduled new episode: when it airs, and which one. */
-function NextEpisodeCard({ d, className }: { d: D; className?: string }) {
+function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season: number; episode: number }) => void; className?: string }) {
   const next = d.next_episode_to_air;
-  if (!next?.air_date || !isFuture(next.air_date)) return null;
+  if (!next?.air_date) return null;
   const date = new Date(next.air_date + 'T00:00:00');
   const days = Math.round((date.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
-  const when = days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const name = next.name && !/^Episode \d+$/i.test(next.name) ? next.name : '';
+  if (days < 0) return null; // shown from today onwards
+  const when =
+    days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const name = next.name && !/^Episode \d+$/i.test(next.name) ? next.name : `Episode ${next.episode_number}`;
   return (
-    <div className={cx('flex w-64 items-center gap-3.5 rounded-2xl bg-raised/90 p-3.5 shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl', className)}>
-      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white py-1.5 text-black">
-        <span className="text-micro font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
+    // Opens the episode list with this episode highlighted.
+    <button
+      type="button"
+      onClick={() => onOpen({ season: next.season_number, episode: next.episode_number })}
+      className={cx(
+        'group flex w-72 items-center gap-3 rounded-2xl border border-transparent bg-raised/95 p-3 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl transition-colors hover:bg-line',
+        className,
+      )}
+    >
+      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white/[0.07] py-1.5">
+        <span className="text-micro font-semibold tracking-wider text-muted uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
         <span className="text-lg leading-6 font-semibold tabular-nums">{date.getDate()}</span>
       </span>
-      <div className="min-w-0">
-        <div className="text-micro font-medium tracking-wider text-muted uppercase">New episode</div>
-        <div className="truncate text-body-sm font-medium">{when}</div>
-        <div className="truncate text-xs text-white/60">
-          {epLabel(next.season_number, next.episode_number)}
-          {name ? ` · ${name}` : ''}
-        </div>
-      </div>
-    </div>
+      <span className="min-w-0 flex-1">
+        <span className="block text-caption text-muted">
+          New episode · <span className="text-white/90">{when}</span>
+        </span>
+        <span className="block truncate text-body-sm font-medium">{name}</span>
+        <span className="block text-caption text-faint">{epLabel(next.season_number, next.episode_number)}</span>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-faint transition-colors group-hover:text-white" strokeWidth={1.5} />
+    </button>
   );
 }
 
