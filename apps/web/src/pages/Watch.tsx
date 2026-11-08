@@ -5,7 +5,7 @@ import { Check, ChevronDown, Keyboard, SkipBack, SkipForward, X } from 'lucide-r
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
-import { viaProxy } from '../lib/proxy';
+import { toast } from '../components/Toast';
 import { EMBEDS, embedById, fetchJelly, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
@@ -93,7 +93,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   }, [restart, type, id, season, episode]);
 
   const jelly = useQuery({
-    queryKey: ['jelly', type, id, season, episode],
+    queryKey: ['jelly', settings.serverUrl, type, id, season, episode],
     queryFn: ({ signal }) => fetchJelly(target, signal),
     enabled: server === 'jelly',
     retry: false,
@@ -101,8 +101,12 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     gcTime: 1000 * 60 * 30,
   });
 
-  // Route Jelly's streams through the user's own proxy (Profile → Settings), if set.
-  const streams = useMemo(() => (jelly.data ? viaProxy(jelly.data, settings.proxyUrl) : undefined), [jelly.data, settings.proxyUrl]);
+  const streams = jelly.data;
+  // Their own server didn't work, so the hosted one answered: say so once.
+  const ownError = jelly.data?.ownError;
+  useEffect(() => {
+    if (ownError) toast(`Your server didn’t work (${ownError.replace(/\.$/, '')}), so Charcoal’s server is being used`);
+  }, [ownError]);
 
   // Jelly found nothing → fall back to the first embed (without changing the saved preference).
   useEffect(() => {
@@ -183,7 +187,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         </>
       ) : streams ? (
         <Player
-          key={settings.proxyUrl}
+          key={settings.serverUrl}
           data={streams}
           media={target}
           title={title}

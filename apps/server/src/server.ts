@@ -197,6 +197,13 @@ async function main() {
     });
     app.get('/v1/providers/health', async () => report());
 
+    // Chrome asks before an https site may reach a server on the viewer's own computer or network
+    // (Private Network Access); answering yes lets a locally run server be used from Charcoal.
+    app.addHook('onSend', async (request, reply, payload) => {
+        if (request.headers['access-control-request-private-network'] === 'true') reply.header('Access-Control-Allow-Private-Network', 'true');
+        return payload;
+    });
+
     await server.start();
 }
 

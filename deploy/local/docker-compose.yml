@@ -1,0 +1,14 @@
+# Charcoal's server on your own computer. Requests to streaming sites leave from your home
+# connection, which they rarely block.
+#
+#   docker compose up -d        (in this folder)
+#   Charcoal → Profile → Settings → Your own server: http://localhost:8080
+#
+# Chrome may ask to allow the site to "access other apps and services on this device": allow it.
+services:
+  server:
+    image: ghcr.io/eyus00/charcoal-server:latest
+    restart: unless-stopped
+    ports: ['127.0.0.1:8080:8080']
+    environment:
+      PUBLIC_URL: http://localhost:8080

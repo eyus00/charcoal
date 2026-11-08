@@ -1,0 +1,25 @@
+# Charcoal's server on a VPS, behind Caddy for automatic HTTPS (Charcoal is an https site, so
+# browsers only load streams from an https server).
+#
+#   1. Point a domain (e.g. stream.example.com) at the VPS's IP address.
+#   2. In this folder: DOMAIN=stream.example.com docker compose up -d
+#   3. In Charcoal → Profile → Settings → Your own server: https://stream.example.com
+services:
+  server:
+    image: ghcr.io/eyus00/charcoal-server:latest
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: https://${DOMAIN:?set DOMAIN, e.g. DOMAIN=stream.example.com}
+      # TMDB_API_KEY: your own key (optional)
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [server]
+volumes:
+  caddy-data:

@@ -34,16 +34,35 @@ To point the local website at the local server, put `VITE_JELLY_URL=http://local
 
 ### Run the server yourself (VPS or your own computer)
 
+Anyone can run their own copy of the server and point Charcoal at it in **Profile → Settings →
+Your own server**. If it stops answering, Charcoal falls back to the hosted one.
+
+**On your own computer** (needs [Docker](https://docs.docker.com/get-docker/)):
+
 ```bash
-git clone https://github.com/eyus00/charcoal && cd charcoal
-docker build -f apps/server/Dockerfile -t charcoal-server .
-docker run -p 8080:8080 -e PUBLIC_URL=http://localhost:8080 charcoal-server
+docker run -d -p 127.0.0.1:8080:8080 --restart unless-stopped ghcr.io/eyus00/charcoal-server
 ```
 
-Set `PUBLIC_URL` to the address people will reach it at (the stream links it hands out point
-there). Other settings are in `apps/server/.env.example`. Without Docker: `npm install` then
-`npm run start:server`.
+Then use `http://localhost:8080` in Settings. Requests to streaming sites leave from your home
+connection, which they rarely block, so more sources play. Chrome may ask to let the site reach
+"apps and services on this device": allow it. (Or `docker compose up -d` in `deploy/local/`.)
 
-A server on your own computer fetches from your home connection, which streaming hosts rarely
-block. A VPS is a data-centre address, like Railway, so hosts that block Railway will likely
-block it too.
+**On a VPS**: Charcoal is an https site, so the server must be https too. `deploy/vps/` runs it
+behind Caddy, which gets a certificate automatically:
+
+```bash
+git clone https://github.com/eyus00/charcoal && cd charcoal/deploy/vps
+DOMAIN=stream.example.com docker compose up -d
+```
+
+Point the domain at the VPS first, then use `https://stream.example.com` in Settings. A VPS has a
+data-centre address like Railway, so hosts that block Railway will likely block it too; it gives
+you your own server, not more sources.
+
+**Without Docker**: `npm install` then `PORT=8080 npm run start:server` from the repository root.
+
+**Build the image yourself**: `docker build -f apps/server/Dockerfile -t charcoal-server .` from the
+repository root. The published image (`ghcr.io/eyus00/charcoal-server`) is built by
+`.github/workflows/server-image.yml` on every server change, for amd64 and arm64.
+
+Server settings (environment variables) are listed in `apps/server/.env.example`.

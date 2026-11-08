@@ -44,8 +44,8 @@ export interface Settings {
   subtitleLabel: string | null;
   /** Sandbox embed iframes so they can't open pop-ups (some servers refuse to play). */
   blockPopups: boolean;
-  /** Optional stream proxy (e.g. a Cloudflare Worker) that replaces Jelly's /v1/proxy for playback. */
-  proxyUrl: string;
+  /** The viewer's own server (local or VPS); '' = Charcoal's hosted server. */
+  serverUrl: string;
   /** Desktop sidebar shows labels. */
   sidebarOpen: boolean;
   /** Skip intros and recaps automatically (segments from TheIntroDB). */
@@ -84,7 +84,7 @@ const defaultSettings: Settings = {
   playbackRate: 1,
   subtitleLabel: null,
   blockPopups: false,
-  proxyUrl: '',
+  serverUrl: '',
   sidebarOpen: false,
   autoSkip: false,
   creditsNext: true,

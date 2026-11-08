@@ -1,6 +1,10 @@
 import type { MediaType } from './tmdb';
+import { getState } from './store';
 
-export const JELLY = (import.meta.env.VITE_JELLY_URL || 'https://jelly.up.railway.app').replace(/\/+$/, '');
+/** Charcoal's own server (Jelly). People can run their own and set it in Settings. */
+export const HOSTED_SERVER = (import.meta.env.VITE_JELLY_URL || 'https://jelly.up.railway.app').replace(/\/+$/, '');
+/** The server in use: the viewer's own if set, else the hosted one. */
+export const serverBase = () => getState().settings.serverUrl || HOSTED_SERVER;
 
 // ---------- Jelly (our scraper backend, OMSS API) ----------
 
@@ -23,7 +27,26 @@ export interface Target { type: MediaType; id: number; season?: number; episode?
 
 const JELLY_TIMEOUT_MS = 45_000;
 
-export async function fetchJelly(t: Target, signal: AbortSignal): Promise<JellyResponse> {
+/** Where a response came from: the viewer's own server, or the hosted one (also as a fallback). */
+export type JellyResult = JellyResponse & { via: 'own' | 'hosted'; ownError?: string };
+
+/** Sources for a title: from the viewer's own server if set, falling back to the hosted one. */
+export async function fetchJelly(t: Target, signal: AbortSignal): Promise<JellyResult> {
+  const own = getState().settings.serverUrl;
+  let ownError: string | undefined;
+  if (own) {
+    try {
+      return { ...(await fetchFrom(own, t, signal)), via: 'own' };
+    } catch (e) {
+      if (signal.aborted) throw e;
+      ownError = (e as Error).message;
+      console.warn('[server] own server failed, using the hosted one:', ownError);
+    }
+  }
+  return { ...(await fetchFrom(HOSTED_SERVER, t, signal)), via: 'hosted', ownError };
+}
+
+async function fetchFrom(base: string, t: Target, signal: AbortSignal): Promise<JellyResponse> {
   const path =
     t.type === 'movie' ? `/v1/movies/${t.id}` : `/v1/tv/${t.id}/seasons/${t.season}/episodes/${t.episode}`;
 
@@ -33,19 +56,61 @@ export async function fetchJelly(t: Target, signal: AbortSignal): Promise<JellyR
   const onAbort = () => ctrl.abort(signal.reason);
   signal.addEventListener('abort', onAbort);
   try {
-    const res = await fetch(JELLY + path, { signal: ctrl.signal });
+    const res = await fetch(base + path, { signal: ctrl.signal });
     const body = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(body?.error?.message || `Jelly returned ${res.status}`);
+    if (!res.ok) throw new Error(body?.error?.message || `The server returned ${res.status}`);
     const data = body as JellyResponse;
     const sources = (data.sources ?? []).filter((s) => s?.url);
     if (!sources.length) throw new Error('No sources found for this title');
     return { ...data, sources: sortSources(sources), subtitles: data.subtitles ?? [] };
   } catch (e) {
-    if (ctrl.signal.aborted && !signal.aborted) throw new Error('Jelly took too long to respond');
+    if (ctrl.signal.aborted && !signal.aborted) throw new Error('The server took too long to respond');
+    if (e instanceof TypeError) throw new Error('Couldn’t reach the server');
     throw e;
   } finally {
     clearTimeout(timer);
     signal.removeEventListener('abort', onAbort);
+  }
+}
+
+// ---------- the viewer's own server ----------
+
+/** Cleans up a pasted server address: origin + path, no trailing slash or /v1…; '' if invalid. */
+export function normalizeServer(input: string): string {
+  const raw = input.trim();
+  if (!raw) return '';
+  try {
+    const u = new URL(/^https?:\/\//i.test(raw) ? raw : `http://${raw}`);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+    return (u.origin + u.pathname).replace(/\/+$/, '').replace(/\/v1(\/.*)?$/, '');
+  } catch {
+    return '';
+  }
+}
+
+const isLocal = (u: URL) => ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname) || u.hostname.endsWith('.localhost');
+
+/** Checks that an address is a reachable Charcoal server (its /v1/health). */
+export async function checkServer(base: string): Promise<{ ok: true; providers: string } | { ok: false; error: string }> {
+  const u = new URL(base);
+  // An https site may not load from a plain-http server, except one on this computer.
+  if (location.protocol === 'https:' && u.protocol === 'http:' && !isLocal(u)) {
+    return { ok: false, error: 'this site is https, so the server must be too (http only works for localhost). See the self-hosting guide for HTTPS on a VPS' };
+  }
+  try {
+    const res = await fetch(`${base}/v1/health`, { signal: AbortSignal.timeout?.(8000) });
+    if (!res.ok) return { ok: false, error: `it answered with error ${res.status}` };
+    const body = await res.json().catch(() => null);
+    if (body?.status !== 'operational' || !body?.endpoints?.proxy) return { ok: false, error: 'that address isn’t a Charcoal server' };
+    const count = String(body.note ?? '').match(/(\d+) provider/)?.[1];
+    return { ok: true, providers: count ? `${count} sources` : 'running' };
+  } catch {
+    return {
+      ok: false,
+      error: isLocal(u)
+        ? 'couldn’t reach it. Is the server running? Your browser may also ask to allow access to devices on your network'
+        : 'couldn’t reach it. Check the address and that the server is running',
+    };
   }
 }
 
@@ -88,7 +153,7 @@ export interface ProviderHealth {
 
 /** Jelly's provider health table (GET /v1/providers/health); null if Jelly is older or down. */
 export async function fetchProviderHealth(signal?: AbortSignal): Promise<ProviderHealth[] | null> {
-  const res = await fetch(`${JELLY}/v1/providers/health`, { signal });
+  const res = await fetch(`${serverBase()}/v1/providers/health`, { signal });
   if (!res.ok) return null;
   const body = await res.json().catch(() => null);
   return Array.isArray(body?.providers) ? body.providers : null;
