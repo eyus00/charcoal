@@ -47,11 +47,11 @@ function LazyRow({
 }
 
 /** Title, a short overview, then "year · ★ rating" with the type icon bottom-right. */
-function CardText({ item, type, big }: { item: MediaItem; type: MediaType; big?: boolean }) {
+function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
-    <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3', big && 'lg:px-4 lg:py-3.5')}>
-      <div className={cx('line-clamp-1 text-[15px] leading-5 font-medium', big && 'lg:text-base lg:leading-6')}>{titleOf(item)}</div>
-      <p className={cx('mt-1.5 line-clamp-4 text-[13px] leading-[18px] text-muted', big && 'lg:line-clamp-5 lg:text-sm lg:leading-5')}>{item.overview}</p>
+    <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3')}>
+      <div className="line-clamp-1 text-[15px] leading-5 font-medium">{titleOf(item)}</div>
+      <p className="mt-1.5 line-clamp-4 text-[13px] leading-[18px] text-muted">{item.overview}</p>
       <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
     </div>
   );
@@ -64,22 +64,28 @@ const LIST_INFO = 'rounded-r-2xl border border-l-0 border-white/[0.08] transitio
 const listSkeleton = (n: number, extra = '') =>
   Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);
 
-// ---------- Top 10, as a row (below xl): big outlined rank number + list card ----------
+// ---------- Top 10: big outlined rank number + poster ----------
 
 const OUTLINE = { WebkitTextStroke: '2px rgb(255 255 255 / 0.28)' } as const;
 
 function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
-    <Link to={`/${t}/${item.id}`} {...usePrefetch(t, item.id)} className="group flex shrink-0 snap-start items-center" role="listitem" aria-label={`${rank}. ${titleOf(item)}`}>
-      <span aria-hidden className="-mr-3 w-[0.62em] shrink-0 text-center text-[104px] leading-none font-black tracking-tighter text-transparent select-none md:text-[124px] lg:-mr-4 lg:text-[160px]" style={OUTLINE}>
+    <Link to={`/${t}/${item.id}`} {...usePrefetch(t, item.id)} className="group flex shrink-0 snap-start items-end" role="listitem" aria-label={`${rank}. ${titleOf(item)}`}>
+      <span
+        aria-hidden
+        className="-mr-4 text-[110px] leading-[0.8] font-black tracking-tighter text-transparent select-none md:text-[140px] lg:-mr-5 lg:text-[170px]"
+        style={OUTLINE}
+      >
         {rank}
       </span>
-      {/* Bigger on desktop: the Top 10 is the home page's showcase row. */}
-      <div className={cx(LIST_CARD, 'lg:w-[408px]')}>
-        <Img path={item.poster_path} kind="poster" sizes="(min-width: 1024px) 136px, 104px" alt="" className={cx(LIST_POSTER, 'lg:w-[136px]')} />
-        <CardText item={item} type={t} big />
-      </div>
+      <Img
+        path={item.poster_path}
+        kind="poster"
+        sizes="(min-width: 1024px) 180px, (min-width: 768px) 150px, 118px"
+        alt=""
+        className="aspect-[2/3] w-[118px] rounded-2xl shadow-xl ring-1 shadow-black/40 ring-white/[0.08] transition group-hover:ring-white/25 md:w-[150px] lg:w-[180px]"
+      />
     </Link>
   );
 }
@@ -90,7 +96,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={listSkeleton(4, 'ml-12 lg:h-[204px] lg:w-[408px]')}
+      skeleton={Array.from({ length: 6 }, (_, i) => <Bone key={i} className="ml-14 aspect-[2/3] w-[118px] shrink-0 rounded-2xl md:w-[150px] lg:w-[180px]" />)}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );

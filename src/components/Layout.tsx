@@ -301,10 +301,10 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 
   return (
     <header
-      // Sticks from md up (phones have the bottom bar for search). No bar behind it: the logo and
-      // the search field float as separate pills, styled like the sidebar's group boxes. The header
-      // itself ignores clicks so the page between them stays usable.
-      className="pointer-events-none relative z-30 flex h-[76px] items-center gap-3 md:sticky md:top-0 md:h-[92px] md:gap-4"
+      // Sticky on every screen size. No bar behind it: the logo and the search field float as
+      // separate pills, styled like the sidebar's group boxes. The header itself ignores clicks so
+      // the page between them stays usable. On phones an open search takes the logo's place.
+      className="pointer-events-none sticky top-0 z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4"
     >
       <Link
         to="/"
@@ -312,6 +312,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
           'pointer-events-auto flex h-12 shrink-0 items-center gap-2.5 rounded-full pr-5 pl-2 text-lg font-semibold tracking-tight ring-1 backdrop-blur-xl transition',
           FLOAT,
           hideLogo && 'lg:hidden',
+          open && 'max-md:hidden',
         )}
         aria-label="Charcoal home"
       >
@@ -324,7 +325,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
         className={cx(
           'pointer-events-auto',
           open
-            ? 'fixed inset-x-0 top-0 z-50 bg-bg/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md md:relative md:inset-auto md:ml-auto md:w-full md:max-w-md md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none'
+            ? 'relative w-full md:ml-auto md:max-w-md'
             : 'sr-only lg:not-sr-only lg:relative lg:ml-auto lg:w-full lg:max-w-md',
         )}
         onSubmit={(e) => {
@@ -388,7 +389,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
         </div>
         {focused && !text && !menu && recent.length > 0 && (
           <div
-            className="absolute inset-x-4 top-full z-50 mt-2 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5 md:inset-x-0"
+            className="absolute inset-x-0 top-full z-50 mt-2 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
             // Keep focus in the input while picking.
             onPointerDown={(e) => e.preventDefault()}
           >

@@ -41,7 +41,6 @@ export default function Discover() {
     if (filteredEmpty && !isFetchingNextPage) fetchNextPage();
   }, [filteredEmpty, isFetchingNextPage, fetchNextPage]);
 
-  const total = query || plain ? undefined : browse.data?.pages[0]?.total;
   useTitle(query ? `“${query}”` : kind.title);
 
   const setType = (type: Filters['type']) => {
@@ -73,15 +72,15 @@ export default function Discover() {
             </button>
           ))}
         </div>
-        <FilterBar filters={filters} set={set} className="order-last basis-full lg:order-none lg:basis-auto lg:flex-1" />
         {hasActiveFilters(filters) && (
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            {total !== undefined && <span className="px-2 text-sm whitespace-nowrap text-faint tabular-nums">{total.toLocaleString()} titles</span>}
-            <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap text-muted transition hover:bg-surface hover:text-white">
-              <X className="size-4" /> Clear<span className="hidden xl:inline"> filters</span>
-            </button>
-          </div>
+          <button
+            onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })}
+            className="ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm whitespace-nowrap text-muted ring-1 ring-white/10 transition hover:bg-surface hover:text-white lg:ml-0"
+          >
+            <X className="size-4" /> Clear
+          </button>
         )}
+        <FilterBar filters={filters} set={set} className="order-last basis-full lg:order-none lg:basis-auto lg:flex-1" />
       </div>
 
       <Grid
