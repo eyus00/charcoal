@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { Star } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { RATINGS, YEAR_PRESETS, genresFor, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
 import { Pill, RowArrows, useRowScroll } from './Row';
@@ -131,7 +131,7 @@ export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }
       </div>
       <div className="mt-5 flex gap-2.5">
         <button type="button" onClick={onClear} className={cx(btn(), 'flex-1')}>
-          Clear
+          <X className="size-4" strokeWidth={1.5} /> Clear
         </button>
         <button type="button" onClick={onApply} className={cx(btn({ variant: 'primary' }), 'flex-[2]')}>
           Search
