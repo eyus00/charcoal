@@ -241,24 +241,32 @@ function Header({
 }) {
   return (
     <div className="flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
+      {/* Back stands on its own. */}
+      <div className={BOX}>
+        <HeaderButton label="Back to details" to={detailsUrl}>
+          <ArrowLeft className="size-[18px]" />
+        </HeaderButton>
+      </div>
       {/*
-        Left: one box with back, the title (links to details), the episode line and previous / next.
-        For TV, a press anywhere else on the box opens the episode list; the episode line is also a
-        real button so keyboards and screen readers can reach it.
+        Then one box: previous, the title (links to details) with the episode line, next. For TV,
+        pressing anywhere else on the box opens the episode list; the episode line is also a real
+        button so keyboards and screen readers can reach it.
       */}
       <div
         className={cx(BOX.replace('shrink-0', ''), 'min-w-0 flex-1 md:flex-initial', onEpisodes && 'cursor-pointer')}
         onClick={(e) => onEpisodes && !(e.target as HTMLElement).closest('a,button') && onEpisodes()}
       >
-        <HeaderButton label="Back to details" to={detailsUrl}>
-          <ArrowLeft className="size-[18px]" />
-        </HeaderButton>
-        <div className="min-w-0 flex-1 px-1.5 leading-tight md:max-w-md md:pr-3">
+        {onEpisodes && (
+          <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
+            <SkipBack className="size-[18px]" />
+          </HeaderButton>
+        )}
+        <div className={cx('min-w-0 flex-1 leading-tight md:max-w-md', onEpisodes ? 'px-2' : 'px-3')}>
           <Link to={detailsUrl} title={`${title}: details`} className={cx(TEXT_LINK, 'line-clamp-1 text-sm font-semibold md:text-base')}>
             {title}
           </Link>
           {onEpisodes ? (
-            <button type="button" onClick={onEpisodes} aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`} className="group/ep flex max-w-full items-center gap-1.5 text-left text-xs text-white/65 transition-colors hover:text-white md:text-caption">
+            <button type="button" onClick={onEpisodes} aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`} className="flex max-w-full items-center gap-1.5 text-left text-xs text-white/65 transition-colors hover:text-white md:text-caption">
               <span className="truncate">{subtitle}</span>
               <ChevronDown className="size-3.5 shrink-0" strokeWidth={1.5} />
               <Kbd className="ml-0.5">E</Kbd>
@@ -268,15 +276,9 @@ function Header({
           )}
         </div>
         {onEpisodes && (
-          <>
-            <span aria-hidden className="mx-0.5 h-6 w-px bg-white/10" />
-            <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev}>
-              <SkipBack className="size-[18px]" />
-            </HeaderButton>
-            <HeaderButton label="Next episode" keys="N" onClick={next} disabled={!next}>
-              <SkipForward className="size-[18px]" />
-            </HeaderButton>
-          </>
+          <HeaderButton label="Next episode" keys="N" onClick={next} disabled={!next}>
+            <SkipForward className="size-[18px]" />
+          </HeaderButton>
         )}
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
@@ -299,9 +301,9 @@ function Header({
 }
 
 /** Icon button with a hover label (and its key) shown below it. */
-function HeaderButton({ label, keys, onClick, to, disabled, children }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode }) {
-  // The back button sits at the left edge, so its label opens to the right.
-  const side = to ? 'left-0' : 'right-0';
+function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right' }) {
+  // Buttons near the left edge open their label to the right, so it stays on screen.
+  const side = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'left-0' : 'right-0';
   const cls = 'group relative grid size-10 shrink-0 place-items-center rounded-xl transition hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent';
   const tip = (
     <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
