@@ -14,7 +14,7 @@ export type ButtonSize = 'md' | 'lg';
 
 const BASE =
   'inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap select-none ' +
-  'transition-[background-color,color,box-shadow,scale] duration-150 ease-out active:scale-[0.96] ' +
+  'transition-[background-color,color,box-shadow] duration-150 ease-out ' +
   'disabled:pointer-events-none disabled:opacity-30 aria-disabled:pointer-events-none aria-disabled:opacity-30';
 
 const VARIANT: Record<ButtonVariant, string> = {
