@@ -172,8 +172,8 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
                 </span>
               </span>
             </div>
-            <div className="mt-2.5 line-clamp-2 text-[15px] font-medium text-pretty">{v.name}</div>
-            <div className="text-[13px] text-muted">{v.type}</div>
+            <div className="mt-2.5 line-clamp-2 text-body-sm font-medium text-pretty">{v.name}</div>
+            <div className="text-caption text-muted">{v.type}</div>
           </button>
         ))}
       </Scroller>
@@ -229,12 +229,12 @@ function NextEpisodeCard({ d, className }: { d: D; className?: string }) {
   return (
     <div className={cx('flex w-64 items-center gap-3.5 rounded-2xl bg-raised/90 p-3.5 shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl', className)}>
       <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white py-1.5 text-black">
-        <span className="text-[10px] font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
+        <span className="text-micro font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
         <span className="text-lg leading-6 font-semibold tabular-nums">{date.getDate()}</span>
       </span>
       <div className="min-w-0">
-        <div className="text-[11px] font-medium tracking-wider text-muted uppercase">New episode</div>
-        <div className="truncate text-[15px] font-medium">{when}</div>
+        <div className="text-micro font-medium tracking-wider text-muted uppercase">New episode</div>
+        <div className="truncate text-body-sm font-medium">{when}</div>
         <div className="truncate text-xs text-white/60">
           {epLabel(next.season_number, next.episode_number)}
           {name ? ` · ${name}` : ''}
@@ -299,7 +299,7 @@ function Overview({ text, title }: { text: string; title: string }) {
   return (
     <>
       <div className="mt-4 flex">
-        <p ref={ref} className="clamp-more max-h-[4.5rem] text-[15px] leading-6 text-white/80 md:max-h-24">
+        <p ref={ref} className="clamp-more max-h-[4.5rem] text-body-sm leading-6 text-white/80 md:max-h-24">
           {cut && (
             <button onClick={() => setOpen(true)} aria-haspopup="dialog" className="clamp-more-btn ml-1 font-medium text-white hover:underline">
               <span className="text-white/50">… </span>More
@@ -333,7 +333,7 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
           </button>
         </div>
         <div className="overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7 md:pb-7">
-          <p className="text-[15px] leading-relaxed text-white/80">{text}</p>
+          <p className="text-body-sm leading-relaxed text-white/80">{text}</p>
         </div>
       </div>
     </div>
@@ -341,8 +341,8 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
   );
 }
 
-const PRIMARY = 'flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90 active:scale-[0.96]';
-const SECONDARY = 'flex h-12 items-center gap-2 rounded-full px-5 text-[15px] ring-1 ring-white/40 transition hover:bg-white/10 hover:ring-white/70';
+const PRIMARY = 'flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.96]';
+const SECONDARY = 'flex h-12 items-center gap-2 rounded-full px-5 text-body-sm ring-1 ring-white/40 transition hover:bg-white/10 hover:ring-white/70';
 
 function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisodes: () => void }) {
   const history = useStore((s) => s.history);

@@ -184,7 +184,7 @@ function Rail() {
           aria-label="Keyboard shortcuts"
           className={cx('group relative flex h-10 items-center gap-2 rounded-xl text-faint transition hover:text-white', open ? 'px-[14px]' : 'justify-center')}
         >
-          <Keyboard className="size-[18px] shrink-0" />
+          <Keyboard className="size-[18px] shrink-0" strokeWidth={1.5} />
           {open && <span className="text-sm">Shortcuts</span>}
           <Kbd className={open ? 'ml-auto' : ''}>?</Kbd>
           {!open && <Tip label="Keyboard shortcuts" />}
@@ -459,7 +459,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 function BottomBar() {
   const section = useSection();
   const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} className={cx('flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] transition-colors', active ? 'text-white' : 'text-faint')}>
+    <Link to={to} className={cx('flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-micro transition-colors', active ? 'text-white' : 'text-faint')}>
       <Icon className="size-[22px]" />
       {label}
     </Link>

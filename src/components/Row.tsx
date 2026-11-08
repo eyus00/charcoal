@@ -3,10 +3,22 @@ import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cx, scrollBehavior } from '../lib/util';
 
+/**
+ * Rows run edge to edge: they extend past the page padding to the screen edge, while the first
+ * card (and every snap point) still lines up with the page content.
+ */
+export const ROW_BLEED = '-mx-4 px-4 scroll-px-4 md:-mx-8 md:px-8 md:scroll-px-8 lg:-mx-10 lg:px-10 lg:scroll-px-10';
+
 /** Horizontal scroller with native scrolling + snap. Arrows live in the header (see RowArrows). */
-export function Scroller({ children, label, scrollRef }: { children: ReactNode; label: string; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
+export function Scroller({ children, label, scrollRef, bleed = true }: { children: ReactNode; label: string; scrollRef?: React.RefObject<HTMLDivElement | null>; bleed?: boolean }) {
   return (
-    <div ref={scrollRef} role="group" aria-label={label} className="no-scrollbar scroll-row -mx-1 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1">
+    <div
+      ref={scrollRef}
+      role="group"
+      aria-label={label}
+      // Inside a padded card (e.g. the Profile panels) there is no page edge to run to.
+      className={cx('no-scrollbar scroll-row flex snap-x gap-4 overflow-x-auto overscroll-x-contain', bleed ? ROW_BLEED : '-mx-1 px-1')}
+    >
       {children}
     </div>
   );

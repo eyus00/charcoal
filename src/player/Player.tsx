@@ -633,7 +633,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                       <span className="flex-1">
                         {qualityLabel(s.quality)} · {s.provider.name}
                       </span>
-                      <span className={cx('text-[10px] tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
+                      <span className={cx('text-micro tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
                         {failed.current.has(i) ? 'failed' : s.type}
                       </span>
                     </MenuItem>
@@ -706,7 +706,7 @@ const Popover = ({ children }: { children: ReactNode }) => (
   </div>
 );
 const MenuLabel = ({ children }: { children: ReactNode }) => (
-  <div className="px-3 pt-2.5 pb-1 text-[11px] font-medium tracking-wider text-faint uppercase">{children}</div>
+  <div className="px-3 pt-2.5 pb-1 text-micro font-medium tracking-wider text-faint uppercase">{children}</div>
 );
 function MenuItem({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
   return (

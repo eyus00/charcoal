@@ -20,10 +20,25 @@
   --color-watching: #5aa2ff;
   --color-planned: #9cc4f5;
   --color-completed: #6f93c9;
+  /* Named type sizes in rem, so they follow the browser's font-size setting. */
+  --text-body-sm: 0.9375rem; /* 15px: card and list titles, body copy in cards */
+  --text-body-sm--line-height: 1.45;
+  --text-caption: 0.8125rem; /* 13px: card details, dates, secondary lines */
+  --text-caption--line-height: 1.4;
+  --text-micro: 0.6875rem; /* 11px: tiny labels, key chips, nav labels */
+  --text-micro--line-height: 1.35;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @layer base {
+  /*
+   * Icon lines keep the same on-screen weight at any icon size (lucide scales strokes with the
+   * icon, so small icons drew thin lines and big ones thick). 2px by default, for icons beside
+   * medium / semibold text; icons beside regular text pass strokeWidth={1.5}.
+   */
+  svg.lucide :where(path, line, polyline, polygon, circle, rect, ellipse) {
+    vector-effect: non-scaling-stroke;
+  }
   :root {
     --hero-step: 60px;
   }

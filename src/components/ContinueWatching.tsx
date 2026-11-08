@@ -77,14 +77,14 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
 }
 
 /** Horizontal row (home on small screens, profile page). */
-export default function ContinueWatching({ items, title = 'Continue watching', className }: { items: HistoryItem[]; title?: string; className?: string }) {
+export default function ContinueWatching({ items, title = 'Continue watching', className, bleed = true }: { items: HistoryItem[]; title?: string; className?: string; bleed?: boolean }) {
   const eps = useEpisodes(items);
   const { ref, scroll } = useRowScroll();
   if (!items.length) return null;
   return (
     <section className={className}>
       <SectionHeader title={title} action={<RowArrows onScroll={scroll} />} />
-      <Scroller label={title} scrollRef={ref}>
+      <Scroller label={title} scrollRef={ref} bleed={bleed}>
         {items.map((h, i) => (
           <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} />
         ))}

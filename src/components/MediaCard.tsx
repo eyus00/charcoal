@@ -25,13 +25,13 @@ export const CARD_INFO = 'rounded-b-2xl border border-t-0 border-white/[0.08] tr
 /** Small movie / TV icon, pushed to the right edge of a meta row. */
 export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
   const Icon = type === 'tv' ? Tv : Film;
-  return <Icon className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
+  return <Icon strokeWidth={1.5} className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
 }
 
 /** "2025 · ★ 7.2" */
 export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
   return (
-    <div className={cx('flex items-center gap-1.5 text-[13px] text-muted', className)}>
+    <div className={cx('flex items-center gap-1.5 text-caption text-muted', className)}>
       {year && <span>{year}</span>}
       {year && rating ? <span className="text-faint">·</span> : null}
       {rating ? (
@@ -69,7 +69,7 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
         </div>
         <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
-          <div className="truncate text-[15px] font-medium text-white/95" title={title}>{title}</div>
+          <div className="truncate text-body-sm font-medium text-white/95" title={title}>{title}</div>
           <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" extra={<TypeIcon type={t} />} />
         </div>
       </Link>

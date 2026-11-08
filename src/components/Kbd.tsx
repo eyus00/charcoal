@@ -6,7 +6,7 @@ export default function Kbd({ children, className, light }: { children: ReactNod
   return (
     <kbd
       className={cx(
-        'hidden min-w-5 items-center justify-center rounded-md px-1.5 py-px font-sans text-[11px] leading-4 font-medium lg:inline-flex',
+        'hidden min-w-5 items-center justify-center rounded-md px-1.5 py-px font-sans text-micro leading-4 font-medium lg:inline-flex',
         light ? 'bg-black/10 text-black/60' : 'bg-white/10 text-white/60 ring-1 ring-white/10',
         className,
       )}

@@ -66,8 +66,8 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           )}
         </div>
         <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
-          <div className="truncate text-[15px] font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{primary}</div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted">
+          <div className="truncate text-body-sm font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{primary}</div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
             <span className="min-w-0 truncate">{secondary}</span>
             <TypeIcon type={type} />
           </div>

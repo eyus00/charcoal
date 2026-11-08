@@ -93,7 +93,7 @@ export default function Profile() {
         <>
           <div id="history" className={cx(PANEL, 'scroll-mt-4')}>
             {titles.length ? (
-              <ContinueWatching items={titles} title="Watch history" />
+              <ContinueWatching items={titles} title="Watch history" bleed={false} />
             ) : (
               <>
                 <SectionHeader title="Watch history" />
@@ -285,10 +285,10 @@ function SettingsSection() {
           <p className="text-sm text-muted">History and watchlist are stored only in this browser. Back them up or move them to another device.</p>
           <div className="flex flex-wrap gap-2">
             <button onClick={download} className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm hover:bg-line">
-              <Download className="size-4" /> Export
+              <Download className="size-4" strokeWidth={1.5} /> Export
             </button>
             <button onClick={() => file.current?.click()} className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm hover:bg-line">
-              <Upload className="size-4" /> Import
+              <Upload className="size-4" strokeWidth={1.5} /> Import
             </button>
             {historyCount > 0 && (
               <button

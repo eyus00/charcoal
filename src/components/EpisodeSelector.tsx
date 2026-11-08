@@ -195,10 +195,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                     <div className={cx(CARD_INFO, 'h-full min-h-[112px] px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                        <h3 className="line-clamp-2 min-w-0 text-[15px] font-medium text-balance text-white/95">{ep.name}</h3>
+                        <h3 className="line-clamp-2 min-w-0 text-body-sm font-medium text-balance text-white/95">{ep.name}</h3>
                       </div>
-                      {!upcoming && ep.air_date && <div className="text-[13px] text-faint">{formatDate(ep.air_date)}</div>}
-                      {ep.overview && <p className="mt-1.5 text-[13px] leading-[1.4] text-pretty text-muted">{ep.overview}</p>}
+                      {!upcoming && ep.air_date && <div className="text-caption text-faint">{formatDate(ep.air_date)}</div>}
+                      {ep.overview && <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>}
                     </div>
                   </>
                 );
@@ -229,7 +229,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             </span>
           </div>
           {!current && (
-            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="ml-auto flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
+            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="ml-auto flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} />
               {cta.label} {epLabel(cta.s, cta.e)}
               <Kbd light>P</Kbd>

@@ -235,7 +235,7 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
       <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
         <div className="max-w-2xl">
           <span className={cx(RISE, shown ? SHOWN : HIDDEN, 'inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85 backdrop-blur-sm')}>
-            <TypeIcon className="size-3.5" />
+            <TypeIcon className="size-3.5" strokeWidth={1.5} />
             {type === 'movie' ? 'Movie' : 'TV show'}
           </span>
           <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75')}>
@@ -258,9 +258,9 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
           <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-100')}>
             <span className="mt-3 line-clamp-2 text-4xl leading-[1.1] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</span>
           </h2>
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-4 line-clamp-2 max-w-lg text-[15px] text-pretty text-white/70 delay-200')}>{item.overview}</p>
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-4 line-clamp-2 max-w-lg text-body-sm text-pretty text-white/70 delay-200')}>{item.overview}</p>
           <div className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-6 flex items-center gap-3 delay-300')}>
-            <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
+            <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
             </Link>
             <BookmarkMenu
@@ -320,7 +320,7 @@ function Browse() {
           ))}
           <Link
             to={cat === 'trending' ? '/discover' : `/discover?genres=${cat}`}
-            className="grid w-[156px] shrink-0 snap-start place-items-center self-start aspect-[2/3] rounded-2xl bg-surface text-[15px] text-muted transition hover:bg-raised hover:text-white sm:w-[190px] lg:w-[216px]"
+            className="grid w-[156px] shrink-0 snap-start place-items-center self-start aspect-[2/3] rounded-2xl bg-surface text-body-sm text-muted transition hover:bg-raised hover:text-white sm:w-[190px] lg:w-[216px]"
           >
             See all
           </Link>

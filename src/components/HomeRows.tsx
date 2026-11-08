@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import EpisodeTile, { Chip, TileSkeleton } from './EpisodeTile';
 import { Meta, TypeIcon, usePrefetch } from './MediaCard';
-import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
+import { ROW_BLEED, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { Bone } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type Details, type EpisodeRef, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx, formatDate, formatRuntime, isFuture, useInView } from '../lib/util';
@@ -40,7 +40,7 @@ function LazyRow({
           {items.map(render)}
         </Scroller>
       ) : (
-        <div className="flex gap-4 overflow-hidden">{skeleton}</div>
+        <div className={cx('flex gap-4 overflow-hidden', ROW_BLEED)}>{skeleton}</div>
       )}
     </section>
   );
@@ -50,8 +50,8 @@ function LazyRow({
 function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
     <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3')}>
-      <div className="line-clamp-1 text-[15px] leading-[1.3] font-medium" title={titleOf(item)}>{titleOf(item)}</div>
-      <p className="mt-1.5 line-clamp-4 text-[13px] leading-[1.4] text-muted">{item.overview}</p>
+      <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium" title={titleOf(item)}>{titleOf(item)}</div>
+      <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
       <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
     </div>
   );

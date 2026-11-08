@@ -153,7 +153,7 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
           'flex items-center justify-center gap-2 transition-[scale,background-color,color,box-shadow] duration-150 ease-out enabled:active:scale-[0.96]',
           variant === 'round'
             ? cx('size-12 rounded-full', current ? 'bg-white text-black' : 'text-white ring-2 ring-white/70 hover:bg-white/15')
-            : cx('h-12 rounded-full px-5 text-[15px] font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
+            : cx('h-12 rounded-full px-5 text-body-sm font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
         )}
       >
         <Bookmark className={current ? 'size-4 fill-current' : 'size-[18px]'} />

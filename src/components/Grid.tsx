@@ -50,7 +50,7 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className="h-12 rounded-full bg-surface px-6 text-[15px] text-white/85 transition hover:bg-raised disabled:opacity-50"
+        className="h-12 rounded-full bg-surface px-6 text-body-sm text-white/85 transition hover:bg-raised disabled:opacity-50"
       >
         {busy ? 'Loading…' : 'Load more'}
       </button>

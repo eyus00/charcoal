@@ -237,7 +237,7 @@ function Header({
       </div>
       <Link to={detailsUrl} className="min-w-0 flex-1 leading-tight">
         <div className="line-clamp-2 text-sm leading-tight font-semibold md:line-clamp-1 md:text-base">{title}</div>
-        {subtitle && <div className="truncate text-xs text-white/65 md:text-[13px]">{subtitle}</div>}
+        {subtitle && <div className="truncate text-xs text-white/65 md:text-caption">{subtitle}</div>}
       </Link>
       {onEpisodes && (
         <div className={BOX}>
@@ -252,7 +252,7 @@ function Header({
             <span aria-hidden className="mx-0.5 h-5 w-px bg-white/10" />
           </div>
           <button type="button" onClick={onEpisodes} className="flex h-10 items-center gap-2 rounded-xl px-2.5 text-sm transition hover:bg-white/10 md:px-3" aria-label="Episodes">
-            <ListVideo className="size-[18px]" />
+            <ListVideo className="size-[18px]" strokeWidth={1.5} />
             <span className="hidden md:inline">Episodes</span>
             <Kbd>E</Kbd>
           </button>
@@ -333,9 +333,9 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
       </div>
       {open && (
         <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
-          <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wider text-faint uppercase">Direct</div>
+          <div className="px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Direct</div>
           <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" dot={DOT[jellyState]} note={jellyState === 'failed' ? 'No sources for this title' : jellyState === 'loading' ? 'Checking sources…' : jellyState === 'ok' ? 'Sources found · ad-free · subtitles' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
-          <div className="px-3 pt-3 pb-1 text-[11px] font-medium tracking-wider text-faint uppercase">Embedded players</div>
+          <div className="px-3 pt-3 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Embedded players</div>
           {EMBEDS.map((e) => (
             <ServerItem key={e.id} selected={current === e.id} onClick={() => pick(e.id)} name={e.name} note={e.tracksProgress ? 'Saves progress' : 'Progress not saved'} />
           ))}
