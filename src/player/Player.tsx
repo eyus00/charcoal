@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type Hls from 'hls.js';
 import {
+  Airplay,
   AlertTriangle,
   Captions,
+  Cast,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +31,7 @@ import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segm
 import type { MediaType } from '../lib/tmdb';
 import { cx, formatClock } from '../lib/util';
 import { btn } from '../components/Button';
+import { useCast } from './cast';
 import { activeCues, CaptionOverlay, CueText, parseCaptions, SubtitleStyleControls, type Cue } from './captions';
 
 interface Props {
@@ -66,7 +69,7 @@ function upstreamHost(url: string): string {
 }
 
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
-type Track = { label: string; url?: string; text?: string };
+type Track = { label: string; url?: string; text?: string; format?: string };
 
 type Menu = null | 'captions' | 'settings';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
@@ -76,6 +79,13 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
   const settings = useStore((s) => s.settings);
+
+  // ---------- casting (Chromecast through the Cast SDK; AirPlay through Safari) ----------
+  const cast = useCast();
+  const casting = cast.state === 'CONNECTED';
+  const castingRef = useRef(casting);
+  castingRef.current = casting;
+  const [airplay, setAirplay] = useState<'none' | 'available' | 'active'>('none');
 
   // Start with the provider that last played, if it's in this response.
   const [sourceIdx, setSourceIdx] = useState(() => {
@@ -194,7 +204,15 @@ export default function Player({ data, media, title, subtitle, overview, poster,
 
   // ---------- skip segments ----------
   const segments = useSegments(media.type, media.id, media.season, media.episode);
-  const segment = duration ? segmentAt(segments, time, duration) : undefined;
+  // While casting, the TV's clock drives everything.
+  const now = casting ? cast.remote.time : time;
+  const dur = casting && cast.remote.duration ? cast.remote.duration : duration;
+  const isPlaying = casting ? cast.remote.active && !cast.remote.paused : playing;
+  const nowRef = useRef(now);
+  nowRef.current = now;
+  const durRef = useRef(dur);
+  durRef.current = dur;
+  const segment = dur ? segmentAt(segments, now, dur) : undefined;
   const skipped = useRef(new Set<number>()); // auto-skipped segment starts
   const creditsOffered = useRef(false);
 
@@ -248,7 +266,10 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     const play = () => v.play().catch(() => setPlaying(false)); // autoplay may be blocked; show the play button
 
     const nativeHls = v.canPlayType('application/vnd.apple.mpegurl') !== '';
-    if (source.type === 'hls' && !(nativeHls && !('MediaSource' in window))) {
+    // Safari plays HLS itself. Letting it (instead of hls.js) is what makes AirPlay work: AirPlay
+    // hands the TV the real stream address, which hls.js's in-tab blob: address can't be.
+    const airplayCapable = 'WebKitPlaybackTargetAvailabilityEvent' in window;
+    if (source.type === 'hls' && !(nativeHls && (airplayCapable || !('MediaSource' in window)))) {
       import('hls.js').then(({ default: HlsCtor }) => {
         if (cancelled) return;
         if (!HlsCtor.isSupported()) {
@@ -361,31 +382,32 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     hideTimer.current = window.setTimeout(() => setControls(false), 3000);
   }, []);
   // Paused and left alone: fade the controls and show what's playing (like a TV's pause screen).
-  const idleEligible = !playing && !buffering && !exhausted && countdown === null && menu === null && settings.pauseOverlay;
+  const idleEligible = !casting && !playing && !buffering && !exhausted && countdown === null && menu === null && settings.pauseOverlay;
   useEffect(() => {
     if (!idleEligible) return setPausedIdle(false);
     const t = window.setTimeout(() => setPausedIdle(true), PAUSE_OVERLAY_MS);
     return () => window.clearTimeout(t);
   }, [idleEligible, pokes]);
-  const showControls = !pausedIdle && (controls || !playing || menu !== null || exhausted || countdown !== null);
+  const showControls = !pausedIdle && (controls || !isPlaying || casting || menu !== null || exhausted || countdown !== null);
 
   // ---------- actions ----------
   const toggle = useCallback(() => {
+    if (castingRef.current) return cast.playOrPause();
     const v = video.current;
     if (!v) return;
     if (v.paused) v.play().catch(() => {});
     else v.pause();
   }, []);
   const seekTo = useCallback((t: number) => {
+    if (castingRef.current) return cast.seek(Math.max(0, Math.min(durRef.current - 0.5, t)));
     const v = video.current;
     if (!v || !v.duration) return;
     v.currentTime = Math.max(0, Math.min(v.duration - 0.5, t));
   }, []);
   const seekBy = useCallback(
     (s: number) => {
-      const v = video.current;
-      if (!v || !v.duration) return;
-      seekTo(v.currentTime + s);
+      if (!durRef.current) return;
+      seekTo(nowRef.current + s);
       flash(`${s > 0 ? '+' : ''}${s}s`);
       poke();
     },
@@ -393,11 +415,13 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   );
   const setVol = useCallback((vol: number) => {
     const val = Math.max(0, Math.min(1, vol));
+    if (castingRef.current) return cast.setVolume(val); // the TV's volume
     setVolume(val);
     setMuted(val === 0);
     actions.updateSettings({ volume: val, muted: val === 0 });
   }, []);
   const toggleMute = useCallback(() => {
+    if (castingRef.current) return cast.toggleMute();
     setMuted((m) => {
       actions.updateSettings({ muted: !m });
       return !m;
@@ -458,18 +482,93 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     if (!segment) return;
     if (segment.type === 'credits') {
       // Credits rolling with an episode to go to: start the "Up next" countdown now.
-      if (next && settings.creditsNext && settings.autoplayNext && !creditsOffered.current && playing) {
+      if (next && settings.creditsNext && settings.autoplayNext && !creditsOffered.current && isPlaying) {
         creditsOffered.current = true;
         setCountdown(10);
       }
       return;
     }
-    if (settings.autoSkip && segment.end !== null && !skipped.current.has(segment.start) && playing) {
+    if (settings.autoSkip && segment.end !== null && !skipped.current.has(segment.start) && isPlaying) {
       skipped.current.add(segment.start);
       seekTo(segment.end);
       flash(`Skipped ${segment.type}`);
     }
-  }, [segment, next, settings.creditsNext, settings.autoplayNext, settings.autoSkip, playing, seekTo, flash]);
+  }, [segment, next, settings.creditsNext, settings.autoplayNext, settings.autoSkip, isPlaying, seekTo, flash]);
+
+  // ---------- Chromecast: hand the stream over, keep progress, take it back ----------
+  const castLoaded = useRef<string | null>(null);
+  const lastRemote = useRef(0);
+  if (casting && cast.remote.time > 0) lastRemote.current = cast.remote.time;
+  useEffect(() => {
+    if (!casting) {
+      castLoaded.current = null;
+      return;
+    }
+    if (castLoaded.current === source.url) return;
+    castLoaded.current = source.url;
+    const v = video.current;
+    const startAt = v && v.currentTime > 1 ? v.currentTime : seekOnLoad.current;
+    v?.pause();
+    const t = subIdx >= 0 ? tracks[subIdx] : undefined;
+    // The default receiver reads WebVTT only, and only from a real URL (not a file loaded here).
+    const vtt = t?.url && (t.format === 'vtt' || /\.vtt(\?|$)/i.test(t.url)) ? t : undefined;
+    cast
+      .load({
+        url: new URL(source.url, location.href).href,
+        title,
+        subtitle,
+        poster,
+        startAt,
+        subtitles: vtt ? { url: new URL(vtt.url!, location.href).href, label: vtt.label } : undefined,
+        subtitleStyle: { color: settings.subColor, bg: settings.subBg, scale: settings.subSize, bold: settings.subBold },
+      })
+      .then((ok) => {
+        if (ok) return flash(`Playing on ${cast.device || 'your TV'}`);
+        castLoaded.current = null;
+        flash('The Chromecast couldn’t play this source');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [casting, source.url]);
+
+  // Casting ended: carry on here from where the TV was.
+  const wasCasting = useRef(false);
+  useEffect(() => {
+    if (wasCasting.current && !casting) {
+      const v = video.current;
+      if (v && lastRemote.current > 0) v.currentTime = lastRemote.current;
+      flash('Stopped casting');
+    }
+    wasCasting.current = casting;
+  }, [casting, flash]);
+
+  // Progress and the next-episode countdown while the TV is playing.
+  useEffect(() => {
+    if (!casting || !cast.remote.duration) return;
+    const id = window.setInterval(() => onProgress(nowRef.current, durRef.current), REPORT_EVERY_MS);
+    return () => window.clearInterval(id);
+  }, [casting, cast.remote.duration, onProgress]);
+  const remoteEnded = casting && cast.remote.ended;
+  useEffect(() => {
+    if (!remoteEnded) return;
+    onProgress(durRef.current, durRef.current, true);
+    if (next && settings.autoplayNext) setCountdown(8);
+  }, [remoteEnded, next, settings.autoplayNext, onProgress]);
+
+  // ---------- AirPlay (Safari) ----------
+  useEffect(() => {
+    const v = video.current as (HTMLVideoElement & { webkitCurrentPlaybackTargetIsWireless?: boolean }) | null;
+    if (!v || !('WebKitPlaybackTargetAvailabilityEvent' in window)) return;
+    const onAvail = (e: Event) =>
+      setAirplay((a) => ((e as Event & { availability?: string }).availability === 'available' ? (a === 'active' ? a : 'available') : a === 'active' ? a : 'none'));
+    const onWireless = () => setAirplay(v.webkitCurrentPlaybackTargetIsWireless ? 'active' : 'available');
+    v.addEventListener('webkitplaybacktargetavailabilitychanged', onAvail);
+    v.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', onWireless);
+    return () => {
+      v.removeEventListener('webkitplaybacktargetavailabilitychanged', onAvail);
+      v.removeEventListener('webkitcurrentplaybacktargetiswirelesschanged', onWireless);
+    };
+  }, []);
+  const showAirplayPicker = () => (video.current as HTMLVideoElement & { webkitShowPlaybackTargetPicker?: () => void })?.webkitShowPlaybackTargetPicker?.();
 
   // ---------- keyboard ----------
   useEffect(() => {
@@ -478,8 +577,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
       if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
       // YouTube-style keys, the de facto standard for web video.
-      const v = video.current;
-      const jumpTo = (frac: number) => v && v.duration && ((v.currentTime = v.duration * frac), flash(`${Math.round(frac * 100)}%`));
+      const jumpTo = (frac: number) => durRef.current && (seekTo(durRef.current * frac), flash(`${Math.round(frac * 100)}%`));
       const speed = (dir: 1 | -1) => {
         const i = SPEEDS.indexOf(rate);
         const sp = SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, (i < 0 ? SPEEDS.indexOf(1) : i) + dir))];
@@ -628,6 +726,8 @@ export default function Player({ data, media, title, subtitle, overview, poster,
         ref={video}
         className={cx('size-full', fill ? 'object-cover' : 'object-contain')}
         playsInline
+        // Lets Safari offer this video to AirPlay.
+        {...{ 'x-webkit-airplay': 'allow' }}
         onPlay={() => setPlaying(true)}
         onPause={() => {
           setPlaying(false);
@@ -661,7 +761,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       {/* Native (iOS) fullscreen can't show our caption overlay, so the track takes over there. */}
       <NativeFullscreenTracks video={video} />
 
-      <CaptionOverlay cues={cues} time={time - delay} raised={showControls} style={settings} />
+      {!casting && airplay !== 'active' && <CaptionOverlay cues={cues} time={time - delay} raised={showControls} style={settings} />}
 
       {/* tap/click surface */}
       <div
@@ -674,13 +774,30 @@ export default function Player({ data, media, title, subtitle, overview, poster,
         onDoubleClick={toggleFullscreen}
       />
 
+      {/* Playing on a TV: this tab is the remote. */}
+      {(casting || airplay === 'active') && (
+        <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/85 p-6 text-center">
+          <div>
+            {casting ? <Cast className="mx-auto size-10 text-white/80" /> : <Airplay className="mx-auto size-10 text-white/80" />}
+            <p className="mt-3 text-sm text-muted">Playing on</p>
+            <p className="text-xl font-semibold">{casting ? cast.device || 'Chromecast' : 'AirPlay'}</p>
+            <p className="mt-1 text-sm text-white/70">{subtitle ? `${title} · ${subtitle}` : title}</p>
+            {casting && (
+              <button onClick={cast.stop} className={cx(btn(), 'pointer-events-auto mt-5')}>
+                Stop casting
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* centre states */}
-      {buffering && !exhausted && (
+      {buffering && !exhausted && !casting && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
           <div className="size-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
         </div>
       )}
-      {!playing && !buffering && !exhausted && countdown === null && !pausedIdle && (
+      {!playing && !buffering && !exhausted && countdown === null && !pausedIdle && !casting && (
         <button onClick={toggle} aria-label="Play" className="absolute inset-0 m-auto grid size-20 place-items-center rounded-full bg-black/50 backdrop-blur-sm transition hover:bg-black/70">
           <Play className="ml-1 size-9 fill-white text-white" />
         </button>
@@ -792,10 +909,10 @@ export default function Player({ data, media, title, subtitle, overview, poster,
           showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <SeekBar time={time} duration={duration} buffered={buffered} segments={segments} onSeek={seekTo} />
+        <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />
         <div className="mt-1 flex items-center gap-1 md:gap-2">
-          <IconButton label={playing ? 'Pause (K)' : 'Play (K)'} onClick={toggle}>
-            {playing ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
+          <IconButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={toggle}>
+            {isPlaying ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
           </IconButton>
           <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
             <RotateCcw className="size-5" />
@@ -819,7 +936,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
             />
           </div>
           <span className="ml-1 text-xs text-white/85 tabular-nums md:text-sm">
-            {formatClock(time)} <span className="text-white/60">/ {formatClock(duration)}</span>
+            {formatClock(now)} <span className="text-white/60">/ {formatClock(dur)}</span>
           </span>
           <div className="ml-auto flex items-center gap-1 md:gap-2">
             {next && (
@@ -1013,7 +1130,17 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                 </Popover>
               )}
             </div>
-            {'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && (
+            {(cast.state === 'NOT_CONNECTED' || cast.state === 'CONNECTING' || casting) && (
+              <IconButton label={casting ? `Stop casting to ${cast.device}` : 'Cast to a TV'} active={casting} onClick={casting ? cast.stop : cast.start}>
+                <Cast className={cx('size-5', cast.state === 'CONNECTING' && 'animate-pulse')} />
+              </IconButton>
+            )}
+            {airplay !== 'none' && (
+              <IconButton label="AirPlay" active={airplay === 'active'} onClick={showAirplayPicker}>
+                <Airplay className="size-5" />
+              </IconButton>
+            )}
+            {'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && !casting && (
               <IconButton label="Picture in picture (I)" onClick={togglePip} className="hidden sm:grid">
                 <PictureInPicture2 className="size-5" />
               </IconButton>
@@ -1030,7 +1157,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
 
 // ---------- pieces ----------
 
-/** Shows the native caption track only while iOS's own fullscreen player is up. */
+/** Shows the native caption track only while iOS's own fullscreen player or AirPlay is up. */
 function NativeFullscreenTracks({ video }: { video: React.RefObject<HTMLVideoElement | null> }) {
   useEffect(() => {
     const v = video.current;
@@ -1041,10 +1168,14 @@ function NativeFullscreenTracks({ video }: { video: React.RefObject<HTMLVideoEle
     const on = set('showing');
     const off = set('hidden');
     off();
+    // On AirPlay the TV draws the native track too (our overlay stays on the phone).
+    const wireless = () => ((v as HTMLVideoElement & { webkitCurrentPlaybackTargetIsWireless?: boolean }).webkitCurrentPlaybackTargetIsWireless ? on() : off());
     v.addEventListener('webkitbeginfullscreen', on);
     v.addEventListener('webkitendfullscreen', off);
+    v.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', wireless);
     v.textTracks.addEventListener?.('addtrack', off);
     return () => {
+      v.removeEventListener('webkitcurrentplaybacktargetiswirelesschanged', wireless);
       v.removeEventListener('webkitbeginfullscreen', on);
       v.removeEventListener('webkitendfullscreen', off);
       v.textTracks.removeEventListener?.('addtrack', off);
@@ -1275,7 +1406,7 @@ function sortSubtitles(list: JellySubtitle[]): Track[] {
   return list
     .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url))
     .sort((a, b) => Number(/english/i.test(b.label)) - Number(/english/i.test(a.label)) || a.label.localeCompare(b.label))
-    .map((s) => ({ label: s.label, url: s.url }));
+    .map((s) => ({ label: s.label, url: s.url, format: s.format }));
 }
 
 /** Cues back to WebVTT (for the native fullscreen player), shifted by the timing offset. */
