@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Play, RotateCcw, Share2, Star, X } from 'lucide-react';
+import { Play, RotateCcw, Share2, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
@@ -232,31 +232,27 @@ function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season
   const date = new Date(next.air_date + 'T00:00:00');
   const days = Math.round((date.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
   if (days < 0) return null; // shown from today onwards
-  const when =
-    days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  const name = next.name && !/^Episode \d+$/i.test(next.name) ? next.name : `Episode ${next.episode_number}`;
+  const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const name = next.name && !/^Episode \d+$/i.test(next.name) ? next.name : '';
   return (
     // Opens the episode list with this episode highlighted.
     <button
       type="button"
       onClick={() => onOpen({ season: next.season_number, episode: next.episode_number })}
-      className={cx(
-        'group flex w-72 items-center gap-3 rounded-2xl border border-transparent bg-raised/95 p-3 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl transition-colors hover:bg-line',
-        className,
-      )}
+      className={cx('flex w-64 items-center gap-3.5 rounded-2xl bg-raised/90 p-3.5 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl transition-colors hover:bg-raised', className)}
     >
-      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white/[0.07] py-1.5">
-        <span className="text-micro font-semibold tracking-wider text-muted uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
+      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white py-1.5 text-black">
+        <span className="text-micro font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
         <span className="text-lg leading-6 font-semibold tabular-nums">{date.getDate()}</span>
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-caption text-muted">
-          New episode · <span className="text-white/90">{when}</span>
+      <span className="min-w-0">
+        <span className="block text-micro font-medium tracking-wider text-muted uppercase">New episode</span>
+        <span className="block truncate text-body-sm font-medium">{when}</span>
+        <span className="block truncate text-xs text-white/60">
+          {epLabel(next.season_number, next.episode_number)}
+          {name ? ` · ${name}` : ''}
         </span>
-        <span className="block truncate text-body-sm font-medium">{name}</span>
-        <span className="block text-caption text-faint">{epLabel(next.season_number, next.episode_number)}</span>
       </span>
-      <ChevronRight className="size-4 shrink-0 text-faint transition-colors group-hover:text-white" strokeWidth={1.5} />
     </button>
   );
 }
