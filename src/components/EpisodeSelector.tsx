@@ -38,6 +38,14 @@ interface Props {
  * season, prefetches a season when its tab is hovered, and scrolls the current
  * or resume episode into view.
  */
+/** Blurred stand-in synopses, varied in length so the cards don't look identical. */
+const FILLER = [
+  'The story for this episode has not been shared yet.',
+  'Details about this episode will be added closer to its air date, once the network shares them.',
+  'A new chapter is on the way. More soon.',
+  'Plot details for this one are still under wraps, check back after the next episode airs for more on what happens.',
+];
+
 /** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
 const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
 
@@ -111,9 +119,9 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   // Title page: a click selects an episode (ring) and the footer button plays it; clicking the
   // selected card again plays it too. Starts on the episode passed in, else the resume point.
   // In the player the list is a quick switcher, so a click plays straight away.
-  const [sel, setSel] = useState<{ season: number; episode: number } | null>(
-    () => selected ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : null),
-  );
+  // Only an episode opened from elsewhere (Airing this week, the new-episode card) is selected;
+  // clicking a card always plays it.
+  const sel = selected ?? null;
   const selEp = sel && sel.season === season ? data?.episodes.find((x) => x.episode_number === sel.episode) : undefined;
   const selUnaired = !!selEp && isFuture(selEp.air_date);
   const resumeCta = resume?.season !== undefined ? { s: resume.season, e: resume.episode!, label: resume.isNext ? 'Play' : 'Resume' } : null;
@@ -180,7 +188,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 const pct = percent(h);
                 const upcoming = isFuture(ep.air_date);
                 const isCurrent = current?.season === season && current.episode === ep.episode_number;
-                const isSelected = !current && sel?.season === season && sel.episode === ep.episode_number;
+                const isSelected = sel?.season === season && sel.episode === ep.episode_number;
                 const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
                 const body = (
                   <>
@@ -188,13 +196,13 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       {ep.still_path ? (
                         <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
                       ) : (
-                        // No still yet (usually an upcoming episode): a calm placeholder; the tag says when it airs.
+                        // No still yet (usually upcoming): a calm placeholder; the tag says when it airs.
                         <div className="grid aspect-video place-items-center bg-white/[0.04]">
                           <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
                         </div>
                       )}
                       {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
-                      {!upcoming && (current || isSelected) && (
+                      {!upcoming && (
                         <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
                           <span className="grid size-11 place-items-center rounded-full bg-white text-black">
                             <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
@@ -237,36 +245,19 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       {ep.overview ? (
                         <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
                       ) : (
-                        // No synopsis yet: quiet placeholder lines (skeleton shapes, not animated).
-                        <div aria-hidden className="mt-2.5 space-y-2">
-                          <div className="h-2.5 w-full rounded-full bg-white/[0.05]" />
-                          <div className="h-2.5 w-2/3 rounded-full bg-white/[0.05]" />
+                        // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
+                        <div className="relative mt-1.5">
+                          <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
+                            {FILLER[ep.episode_number % FILLER.length]}
+                          </p>
+                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Coming soon' : 'No synopsis'}</span>
                         </div>
                       )}
                     </div>
                   </>
                 );
-                if (!current)
-                  return (
-                    <button
-                      key={ep.id}
-                      type="button"
-                      data-ep={ep.episode_number}
-                      aria-pressed={isSelected}
-                      aria-label={`${epLabel(season, ep.episode_number)} ${ep.name}${upcoming ? `, ${airsLabel(ep.air_date)}` : isSelected ? ', selected, press again to play' : ''}`}
-                      onClick={() => {
-                        if (isSelected && !upcoming) {
-                          onPick?.();
-                          navigate(href(season, ep.episode_number), { replace });
-                        } else setSel({ season, episode: ep.episode_number });
-                      }}
-                      className={cx('group flex flex-col rounded-2xl text-left', isSelected && SELECTED)}
-                    >
-                      {body}
-                    </button>
-                  );
                 return upcoming ? (
-                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className="flex flex-col rounded-2xl">
+                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl', isSelected && SELECTED)}>
                     {body}
                   </div>
                 ) : (

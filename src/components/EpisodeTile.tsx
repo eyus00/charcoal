@@ -37,15 +37,27 @@ interface Props {
   /** Replaces the default tile width classes. */
   width?: string;
   linkProps?: Record<string, unknown>;
+  /** Makes one text line a link of its own (e.g. the show name to its details page). */
+  titleLink?: { to: string; line: 'primary' | 'secondary'; label?: string };
   /** Extra controls over the tile (e.g. a remove button). */
   children?: ReactNode;
 }
 
 /** Outlined landscape card: still image with corner chips, two text lines, type icon bottom-right. */
-export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, children }: Props) {
+export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, titleLink, children }: Props) {
+  const line = (which: 'primary' | 'secondary', content: ReactNode) =>
+    titleLink?.line === which ? (
+      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 underline-offset-4 decoration-white/40 hover:text-white hover:underline">
+        {content}
+      </Link>
+    ) : (
+      content
+    );
   return (
     <div className={cx('group relative', width, className)}>
-      <Link to={to} title={title} className="block" {...linkProps}>
+      {/* The whole card is one link (stretched under the content), so a title can be a link too. */}
+      <Link to={to} title={title} aria-label={title} className="absolute inset-0 z-0 rounded-2xl" {...linkProps} />
+      <div className="pointer-events-none relative [&_a]:pointer-events-auto">
         <div className="relative overflow-hidden rounded-t-2xl">
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
           {shade && <span className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/10 to-transparent" />}
@@ -66,13 +78,13 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           )}
         </div>
         <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
-          <div className="truncate text-body-sm font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{primary}</div>
+          <div className="truncate text-body-sm font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{line('primary', primary)}</div>
           <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
-            <span className="min-w-0 truncate">{secondary}</span>
+            <span className="min-w-0 truncate">{line('secondary', secondary)}</span>
             <TypeIcon type={type} />
           </div>
         </div>
-      </Link>
+      </div>
       {children}
     </div>
   );
