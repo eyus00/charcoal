@@ -1143,6 +1143,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                           <span className="min-w-0 flex-1">
                             {qualityLabel(s.quality)} · {s.provider.name}
                             {s.audioTracks?.[0]?.label && <span className="text-muted"> · {s.audioTracks[0].label}</span>}
+                            {!failed.current.has(i) && s.note && <span className="block truncate text-xs text-faint">{s.note}</span>}
                             {failed.current.has(i) && failReason.current.get(i) && (
                               <span className="block truncate text-xs text-faint" title={failReason.current.get(i)}>
                                 {failReason.current.get(i)}

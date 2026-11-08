@@ -4,6 +4,7 @@
  */
 import { scrapeAll, type Media } from '@charcoal/providers';
 import { extensionFetcher } from './extension';
+import { getState } from './store';
 import { sortSources, type JellyResult, type JellySource, type JellySubtitle, type ProviderReport, type Target } from './servers';
 import type { Details } from './tmdb';
 
@@ -17,7 +18,7 @@ export async function fetchViaExtension(t: Target, d: Details, signal: AbortSign
     season: t.season,
     episode: t.episode,
   };
-  const outcomes = await scrapeAll(media, { fetch: extensionFetcher, signal });
+  const outcomes = await scrapeAll(media, { fetch: extensionFetcher, signal, settings: { febboxToken: getState().settings.febboxToken || undefined } });
   const sources: JellySource[] = [];
   const subtitles: JellySubtitle[] = [];
   const report: ProviderReport[] = outcomes.map((o) => ({
@@ -36,6 +37,7 @@ export async function fetchViaExtension(t: Target, d: Details, signal: AbortSign
         type: s.type,
         quality: s.quality,
         headers: s.headers,
+        note: s.note,
         provider: { id: o.provider.id, name: o.provider.name },
         audioTracks: s.language ? [{ language: s.languageCode ?? 'und', label: s.language }] : undefined,
       });

@@ -38,7 +38,8 @@ Chrome on Android (they don't run extensions like this).
    The player then loads playlists and segments straight from the host.
 4. **`releaseStreams`**: closing the player (or the tab) removes those rules.
 
-What it deliberately doesn't do: work for any other website, read or send cookies, set
+What it deliberately doesn't do: work for any other website, read your browser's cookies, send a
+cookie anywhere except febbox.com (your own Febbox token, pasted in Charcoal's settings), set
 arbitrary headers, or reach private / local network addresses.
 
 ## Develop

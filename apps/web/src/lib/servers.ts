@@ -16,6 +16,8 @@ export interface JellySource {
   provider: { id: string; name: string };
   /** Direct (extension) streams only: headers the host expects; the extension adds them. */
   headers?: Record<string, string>;
+  /** Short file description (e.g. "BluRay · x265 · 1.4 GB"). */
+  note?: string;
 }
 export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string> }
 export interface JellyResponse {
@@ -149,12 +151,13 @@ export function qualityLabel(q: string): string {
   if (/720/.test(s)) return '720p';
   if (/480/.test(s)) return '480p';
   if (/360/.test(s)) return '360p';
+  if (/orig/.test(s)) return 'Original';
   if (/hd|auto|adaptive/.test(s)) return 'Auto';
   const n = s.replace(/\D/g, '');
   return n ? `${n}p` : 'SD';
 }
 
-const RANK: Record<string, number> = { Auto: 0, '1080p': 1, '4K': 2, '1440p': 3, '720p': 4, '480p': 5, '360p': 6, SD: 7 };
+const RANK: Record<string, number> = { Auto: 0, '1080p': 1, '4K': 2, '1440p': 3, Original: 4, '720p': 5, '480p': 6, '360p': 7, SD: 8 };
 
 /** Display name of a language code ("en" → "English"). */
 export const languageName = (code: string) => {
