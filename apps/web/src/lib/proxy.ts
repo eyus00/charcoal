@@ -1,7 +1,7 @@
 import type { JellyResponse } from './servers';
 
 /**
- * Optional user-supplied stream proxy (the Cloudflare Worker in jelly/worker).
+ * Optional user-supplied stream proxy (the Cloudflare Worker in apps/server/worker).
  * It speaks the same `/v1/proxy?data=…` format as Jelly, so we only swap the origin.
  */
 
