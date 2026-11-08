@@ -6,4 +6,3 @@ apps/web/src
 apps/server/vendor
 apps/server/tools
 apps/server/docs
-apps/server/worker

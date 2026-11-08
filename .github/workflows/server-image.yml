@@ -1,0 +1,38 @@
+# Publishes the server's Docker image to GitHub's registry, so anyone can run it without building:
+#   docker run -p 8080:8080 ghcr.io/eyus00/charcoal-server
+name: Server image
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/server/**', 'packages/**', 'package.json', 'package-lock.json', '.github/workflows/server-image.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/server/Dockerfile
+          # Intel/AMD servers and ARM ones (Raspberry Pi, Apple Silicon, cheap ARM VPSes).
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/charcoal-server:latest
+            ghcr.io/${{ github.repository_owner }}/charcoal-server:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

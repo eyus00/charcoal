@@ -6,6 +6,7 @@ import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
 import { jellyProxyService } from './proxy.js';
 import { BenchedError, checkBench, record, report } from './health.js';
+import { sharedProviders } from './shared.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -161,6 +162,8 @@ async function main() {
 
     const registry = server.getRegistry();
     await registry.discoverProviders(path.join(__dirname, './providers/'));
+    // Providers shared with the website (packages/providers).
+    for (const p of sharedProviders()) registry.register(p);
 
     for (const provider of registry.getProviders()) {
         const getMovie = provider.getMovieSources.bind(provider);
@@ -193,6 +196,13 @@ async function main() {
         if (request.url.startsWith('/v1/proxy') && typeof q?.data === 'string') q.data = encodeURIComponent(q.data);
     });
     app.get('/v1/providers/health', async () => report());
+
+    // Chrome asks before an https site may reach a server on the viewer's own computer or network
+    // (Private Network Access); answering yes lets a locally run server be used from Charcoal.
+    app.addHook('onSend', async (request, reply, payload) => {
+        if (request.headers['access-control-request-private-network'] === 'true') reply.header('Access-Control-Allow-Private-Network', 'true');
+        return payload;
+    });
 
     await server.start();
 }

@@ -1,7 +1,0 @@
-name = "charcoal-proxy"
-main = "proxy.js"
-compatibility_date = "2025-10-01"
-
-# Optional: only allow your own site(s) to use this proxy.
-# [vars]
-# ALLOWED_ORIGINS = "https://charcoal.eys0.fyi"

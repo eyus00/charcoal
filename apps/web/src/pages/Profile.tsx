@@ -5,10 +5,10 @@ import { StatusDot, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
-import { EMBEDS, fetchProviderHealth } from '../lib/servers';
+import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
+import { detectExtension } from '../lib/extension';
 import { SubtitleStyleControls } from '../player/captions';
-import { checkProxy, normalizeProxy } from '../lib/proxy';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
 import { btn } from '../components/Button';
@@ -202,21 +202,21 @@ function SettingsSection() {
   const historyCount = useStore((s) => s.history.length);
   const file = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [proxy, setProxy] = useState(settings.proxyUrl);
-  const [proxyState, setProxyState] = useState<{ ok: boolean; text: string } | null>(null);
+  const [server, setServer] = useState(settings.serverUrl);
+  const [serverState, setServerState] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const saveProxy = async () => {
-    const url = normalizeProxy(proxy);
-    if (proxy.trim() && !url) return setProxyState({ ok: false, text: 'Enter a full URL starting with https://' });
-    setProxy(url);
+  const saveServer = async () => {
+    const url = normalizeServer(server);
+    if (server.trim() && !url) return setServerState({ ok: false, text: 'Enter an address like http://localhost:8080 or https://stream.example.com' });
+    setServer(url);
     if (!url) {
-      actions.updateSettings({ proxyUrl: '' });
-      return setProxyState({ ok: true, text: 'Removed. Streams go through Jelly again.' });
+      actions.updateSettings({ serverUrl: '' });
+      return setServerState({ ok: true, text: 'Removed. Charcoal’s own server is used again.' });
     }
-    setProxyState({ ok: true, text: 'Checking…' });
-    const r = await checkProxy(url);
-    if (r.ok) actions.updateSettings({ proxyUrl: url });
-    setProxyState(r.ok ? { ok: true, text: 'Saved. The proxy responded and will be used for Jelly streams.' } : { ok: false, text: `Not saved: ${r.error}.` });
+    setServerState({ ok: true, text: 'Checking…' });
+    const r = await checkServer(url);
+    if (r.ok) actions.updateSettings({ serverUrl: url });
+    setServerState(r.ok ? { ok: true, text: `Saved. Your server answered (${r.providers}) and will be used from now on.` } : { ok: false, text: `Not saved: ${r.error}.` });
   };
 
   const download = () => {
@@ -253,34 +253,41 @@ function SettingsSection() {
         </div>
 
         <div className={cx(card, 'space-y-3')}>
-          <h3 className="font-medium">Stream proxy</h3>
+          <h3 className="font-medium">Your own server</h3>
           <p className="text-sm text-muted">
-            Optional. Paste the URL of your Cloudflare Worker proxy and Jelly streams will load through it instead of Jelly’s own server. Saved in this browser only.
+            Optional. Run Charcoal’s server on your computer or a VPS and paste its address. One on your own computer uses your home connection, so more sources
+            play.{' '}
+            <a href="https://github.com/eyus00/charcoal#run-the-server-yourself-vps-or-your-own-computer" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+              How to set one up
+            </a>
           </p>
           <form
             className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
-              saveProxy();
+              saveServer();
             }}
           >
             <input
-              value={proxy}
-              onChange={(e) => setProxy(e.target.value)}
-              placeholder="https://proxy.example.workers.dev"
+              value={server}
+              onChange={(e) => setServer(e.target.value)}
+              placeholder="http://localhost:8080"
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              aria-label="Stream proxy URL"
+              aria-label="Your server’s address"
               className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
             />
             <button className={btn({ variant: 'primary' })}>Save</button>
           </form>
           {/* Always mounted, so screen readers announce the result. */}
-          <p role="status" className={cx('text-sm empty:hidden', proxyState?.ok === false ? 'text-danger' : 'text-success')}>
-            {proxyState?.text ?? (settings.proxyUrl ? `Using ${settings.proxyUrl}` : '')}
+          <p role="status" className={cx('text-sm empty:hidden', serverState?.ok === false ? 'text-danger' : 'text-success')}>
+            {serverState?.text ?? (settings.serverUrl ? `Using ${settings.serverUrl}. If it doesn’t answer, Charcoal’s server takes over.` : '')}
           </p>
+          {!settings.serverUrl && !serverState && <p className="text-xs text-faint">Now using Charcoal’s server ({new URL(HOSTED_SERVER).host}).</p>}
         </div>
+
+        <HelperCard className={cx(card, 'space-y-3')} />
 
         <div className={cx(card, 'space-y-5')}>
           <h3 className="font-medium">
@@ -359,10 +366,46 @@ function SettingsSection() {
   );
 }
 
+/** Charcoal Helper: is it installed and allowed, and should Charcoal use it. */
+function HelperCard({ className }: { className: string }) {
+  const useExtension = useStore((s) => s.settings.useExtension);
+  const { data: info, isLoading, refetch } = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(true), staleTime: 0, retry: false });
+  const state = isLoading ? 'checking' : !info ? 'missing' : !info.hasPermission ? 'permission' : 'ready';
+  const TEXT = {
+    checking: 'Checking…',
+    missing: 'Not installed in this browser.',
+    permission: `Installed (v${info?.version}), but it needs access to streaming sites: click its icon in the toolbar and allow it.`,
+    ready: `Installed (v${info?.version}) and ready.`,
+  } as const;
+  return (
+    <div className={className}>
+      <h3 className="font-medium">Charcoal Helper</h3>
+      <p className="text-sm text-muted">
+        A browser extension that finds and plays sources from your own connection, with no server in between, so more of them work. For Chrome, Edge, Brave and
+        Firefox on a computer.{' '}
+        <a href="https://github.com/eyus00/charcoal/tree/main/apps/extension#install" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+          How to install
+        </a>
+      </p>
+      <p role="status" className={cx('flex items-center gap-2 text-sm', state === 'ready' ? 'text-success' : state === 'permission' ? 'text-warning' : 'text-muted')}>
+        <span aria-hidden className={cx('size-2 rounded-full', state === 'ready' ? 'bg-success' : state === 'permission' ? 'bg-warning' : 'bg-white/25')} />
+        {TEXT[state]}
+        {state !== 'checking' && state !== 'ready' && (
+          <button onClick={() => refetch()} className="ml-auto text-xs text-white/70 underline-offset-2 hover:text-white hover:underline">
+            Check again
+          </button>
+        )}
+      </p>
+      {info && <Toggle label="Use Charcoal Helper" hint="Your own server or Charcoal’s takes over if it finds nothing" on={useExtension} onChange={(v) => actions.updateSettings({ useExtension: v })} />}
+    </div>
+  );
+}
+
 /** Which of Jelly's sources are working right now (from its provider health table). */
 function SourceStatus({ className }: { className: string }) {
+  const serverUrl = useStore((s) => s.settings.serverUrl);
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['provider-health'],
+    queryKey: ['provider-health', serverUrl],
     queryFn: ({ signal }) => fetchProviderHealth(signal),
     staleTime: 30_000,
     retry: false,
@@ -373,16 +416,16 @@ function SourceStatus({ className }: { className: string }) {
   return (
     <div className={cx(className, 'space-y-3')}>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-medium">Jelly sources</h3>
+        <h3 className="font-medium">Sources {serverUrl ? <span className="text-sm font-normal text-muted">· your server</span> : null}</h3>
         <button onClick={() => refetch()} disabled={isFetching} className={btn({ variant: 'ghost' })}>
           {isFetching ? 'Checking…' : 'Refresh'}
         </button>
       </div>
-      <p className="text-sm text-muted">How each source did since Jelly last restarted. One that keeps failing rests for a while so it doesn’t slow down playback.</p>
+      <p className="text-sm text-muted">How each source did since the server last restarted. One that keeps failing rests for a while so it doesn’t slow down playback.</p>
       {isLoading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : !list.length ? (
-        <p className="text-sm text-muted">{data === null || data === undefined ? 'Jelly didn’t answer. It may be starting up or running an older version.' : 'No requests yet. Play something first.'}</p>
+        <p className="text-sm text-muted">{data === null || data === undefined ? 'The server didn’t answer. It may be starting up.' : 'No requests yet. Play something first.'}</p>
       ) : (
         <ul className="grid gap-x-10 md:grid-cols-2 [&>li]:border-b [&>li]:border-white/[0.06]">
           {list.map((p) => (

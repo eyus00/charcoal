@@ -1,0 +1,14 @@
+{
+  "name": "@charcoal/providers",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Source scrapers shared by the server (Node) and the website (through the browser extension)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "try": "tsx scripts/try.ts"
+  }
+}

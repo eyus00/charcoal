@@ -1,0 +1,8 @@
+{$DOMAIN} {
+	reverse_proxy server:8080 {
+		# Video can take a while to start; don't cut slow upstreams short.
+		transport http {
+			response_header_timeout 60s
+		}
+	}
+}
