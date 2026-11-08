@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Bookmark, Check, CircleCheck, Clock3, Eye, type LucideIcon } from 'lucide-react';
+import { Bookmark, Check } from 'lucide-react';
 import { actions, getState, useStore, type WatchStatus } from '../lib/store';
 import { toast } from './Toast';
 import type { MediaType } from '../lib/tmdb';
@@ -9,11 +9,6 @@ export const STATUS_LABEL: Record<WatchStatus, string> = {
   watching: 'Watching',
   planned: 'To watch',
   completed: 'Watched',
-};
-export const STATUS_ICON: Record<WatchStatus, LucideIcon> = {
-  watching: Eye,
-  planned: Clock3,
-  completed: CircleCheck,
 };
 /** Each status gets its own shade of blue (text / tinted background / ring). */
 export const STATUS_TONE: Record<WatchStatus, { text: string; bg: string; ring: string }> = {
@@ -25,12 +20,16 @@ const STATUSES = Object.keys(STATUS_LABEL) as WatchStatus[];
 const MENU_W = 192;
 const MENU_H = 156;
 
-/** Small status tag (icon + label) used on watchlist cards. */
+/** The status's colour as a small dot (used instead of icons everywhere). */
+export function StatusDot({ status, className }: { status: WatchStatus; className?: string }) {
+  return <span aria-hidden className={cx('size-2 shrink-0 rounded-full', STATUS_TONE[status].bg, className)} />;
+}
+
+/** Small status tag (dot + label) used on watchlist cards. */
 export function StatusTag({ status }: { status: WatchStatus }) {
-  const Icon = STATUS_ICON[status];
   return (
     <span className="flex items-center gap-1.5 rounded-full bg-black/60 py-1 pr-2.5 pl-2 text-xs backdrop-blur-sm">
-      <Icon className={cx('size-3.5', STATUS_TONE[status].text)} />
+      <StatusDot status={status} />
       {STATUS_LABEL[status]}
     </span>
   );
@@ -118,7 +117,6 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
           )}
         >
           {STATUSES.map((s) => {
-            const tone = STATUS_TONE[s];
             const on = current?.status === s;
             return (
               <button
@@ -132,7 +130,7 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
                   on ? 'bg-white font-medium text-black' : 'text-white/85 hover:bg-white/[0.06] hover:text-white',
                 )}
               >
-                <span className={cx('size-2 shrink-0 rounded-full', tone.bg)} />
+                <StatusDot status={s} />
                 <span className="flex-1">{STATUS_LABEL[s]}</span>
                 {on && <Check className="size-4" />}
               </button>
