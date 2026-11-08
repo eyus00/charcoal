@@ -7,7 +7,8 @@ import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
-import { detectExtension } from '../lib/extension';
+import { detectExtension, extensionFetcher } from '../lib/extension';
+import { checkFebboxToken } from '@charcoal/providers';
 import { SubtitleStyleControls } from '../player/captions';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
@@ -292,6 +293,8 @@ function SettingsSection() {
 
         <HelperCard className={cx(card, 'space-y-3')} />
 
+        <FebboxCard className={cx(card, 'space-y-3')} />
+
         <div className={cx(card, 'space-y-5')}>
           <h3 className="font-medium">
             Player <span className="text-sm font-normal text-muted">· Jelly player only</span>
@@ -380,6 +383,75 @@ function SettingsSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** The viewer's own Febbox token: up to 4K originals, found and played through Charcoal Helper. */
+function FebboxCard({ className }: { className: string }) {
+  const saved = useStore((s) => s.settings.febboxToken);
+  const [value, setValue] = useState(saved);
+  const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
+  const { data: helper } = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(true), staleTime: 0, retry: false });
+  const save = async () => {
+    const token = value.trim().replace(/^ui=/, '').replace(/;.*$/, '');
+    setValue(token);
+    if (!token) {
+      actions.updateSettings({ febboxToken: '' });
+      return setState({ ok: true, text: 'Removed.' });
+    }
+    if (!helper?.hasPermission) {
+      actions.updateSettings({ febboxToken: token });
+      return setState({ ok: true, text: 'Saved. It’s used once Charcoal Helper is installed and allowed.' });
+    }
+    setState({ ok: true, text: 'Checking with Febbox…' });
+    const r = await checkFebboxToken(extensionFetcher, token);
+    if (r === 'invalid') return setState({ ok: false, text: 'Not saved: Febbox didn’t accept it. Log in to febbox.com again and copy a fresh “ui” cookie.' });
+    actions.updateSettings({ febboxToken: token });
+    setState({ ok: true, text: r === 'ok' ? 'Saved. Febbox accepted it.' : 'Saved (Febbox couldn’t be checked right now).' });
+  };
+  return (
+    <div className={className}>
+      <h3 className="font-medium">
+        Febbox <span className="text-sm font-normal text-muted">· up to 4K</span>
+      </h3>
+      <p className="text-sm text-muted">
+        Original Blu-ray files, often 4K, from your own free Febbox account (100 GB of fast traffic a month). Needs Charcoal Helper. The token stays in this browser and
+        is only sent to febbox.com.
+      </p>
+      <ol className="list-decimal space-y-0.5 pl-5 text-xs text-muted">
+        <li>
+          Log in at{' '}
+          <a href="https://www.febbox.com" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+            febbox.com
+          </a>{' '}
+          (a separate Google account is safest).
+        </li>
+        <li>Open DevTools → Application (Storage in Firefox) → Cookies → www.febbox.com.</li>
+        <li>Copy the value of the “ui” cookie and paste it here. Don’t log out of Febbox afterwards.</li>
+      </ol>
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          type="password"
+          placeholder={saved ? 'Token saved' : 'Paste the “ui” cookie value'}
+          autoComplete="off"
+          spellCheck={false}
+          aria-label="Febbox token"
+          className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
+        />
+        <button className={btn({ variant: 'primary' })}>Save</button>
+      </form>
+      <p role="status" className={cx('text-sm empty:hidden', state?.ok === false ? 'text-danger' : 'text-success')}>
+        {state?.text ?? (saved ? 'A token is saved.' : '')}
+      </p>
+    </div>
   );
 }
 

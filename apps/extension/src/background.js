@@ -10,8 +10,9 @@
  *                   made by that Charcoal tab.
  *  releaseStreams → removes those rules for the tab.
  *
- * Deliberately not offered (unlike some similar extensions): reading cookies, sending cookies,
- * arbitrary headers, private / local network addresses, or use by any other website.
+ * Deliberately not offered (unlike some similar extensions): reading the browser's cookies, sending
+ * cookies anywhere but febbox.com (where the viewer's own pasted token goes), arbitrary headers,
+ * private / local network addresses, or use by any other website.
  */
 const ALLOWED = ['https://charcoal.eys0.fyi'];
 const isAllowedOrigin = (o) => ALLOWED.includes(o) || /^http:\/\/localhost(:\d+)?$/.test(o);
@@ -19,7 +20,13 @@ const isAllowedOrigin = (o) => ALLOWED.includes(o) || /^http:\/\/localhost(:\d+)
 /** Request headers a scraper may set. */
 const HEADER_ALLOWLIST = ['user-agent', 'referer', 'origin', 'accept', 'accept-language', 'content-type', 'x-requested-with', 'range'];
 /** These can't be set by fetch(), so they go on a short-lived network rule instead. */
-const RULE_HEADERS = ['user-agent', 'referer', 'origin'];
+const RULE_HEADERS = ['user-agent', 'referer', 'origin', 'cookie'];
+/**
+ * The only sites a Cookie header may be sent to: the viewer pastes their own login token for these
+ * in Charcoal's settings. The browser's real cookies are never read or sent (credentials: 'omit').
+ */
+const COOKIE_HOSTS = ['febbox.com'];
+const cookieAllowed = (host) => COOKIE_HOSTS.some((d) => host === d || host.endsWith(`.${d}`));
 const MAX_BODY = 15 * 1024 * 1024;
 const TIMEOUT_MS = 20000;
 
@@ -59,11 +66,12 @@ const ruleHeaders = (headers) =>
     .filter(([k]) => RULE_HEADERS.includes(k))
     .map(([header, value]) => ({ header, operation: 'set', value }));
 
-function cleanHeaders(input) {
+function cleanHeaders(input, host = '') {
   const out = {};
   for (const [k, v] of Object.entries(input || {})) {
     const key = k.toLowerCase();
-    if (HEADER_ALLOWLIST.includes(key) && typeof v === 'string' && v.length < 2000) out[key] = v;
+    const allowed = HEADER_ALLOWLIST.includes(key) || (key === 'cookie' && cookieAllowed(host));
+    if (allowed && typeof v === 'string' && v.length < 4000) out[key] = v;
   }
   return out;
 }
@@ -87,10 +95,10 @@ async function hello() {
 async function request({ url, method = 'GET', headers, body }) {
   if (!isPublicUrl(url)) throw new Error('Address not allowed');
   if (!['GET', 'POST', 'HEAD'].includes(method)) throw new Error('Method not allowed');
-  const h = cleanHeaders(headers);
+  const host = new URL(url).hostname;
+  const h = cleanHeaders(headers, host);
   const special = ruleHeaders(h);
   const plain = Object.fromEntries(Object.entries(h).filter(([k]) => !RULE_HEADERS.includes(k)));
-  const host = new URL(url).hostname;
   const id = takeId();
   if (special.length) {
     await dnr.updateSessionRules({

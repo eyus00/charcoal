@@ -84,4 +84,6 @@ function adapt(p: Provider): BaseProvider {
     return new Shared();
 }
 
-export const sharedProviders = (): BaseProvider[] => providers.map(adapt);
+// Providers that need a viewer's own login (Febbox) only run in the viewer's browser; the server never
+// gets those tokens.
+export const sharedProviders = (): BaseProvider[] => providers.filter((p) => !p.requires).map(adapt);
