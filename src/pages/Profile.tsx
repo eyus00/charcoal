@@ -5,7 +5,9 @@ import { StatusDot, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
-import { EMBEDS } from '../lib/servers';
+import { EMBEDS, fetchProviderHealth } from '../lib/servers';
+import { useQuery } from '@tanstack/react-query';
+import { SubtitleStyleControls } from '../player/captions';
 import { checkProxy, normalizeProxy } from '../lib/proxy';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
@@ -247,7 +249,6 @@ function SettingsSection() {
               ))}
             </select>
           </Row>
-          <Toggle label="Autoplay next episode" hint="Only in the Jelly player" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle label="Block pop-ups in embeds" hint="Some servers refuse to play when on" on={settings.blockPopups} onChange={(v) => actions.updateSettings({ blockPopups: v })} />
         </div>
 
@@ -280,6 +281,34 @@ function SettingsSection() {
             {proxyState?.text ?? (settings.proxyUrl ? `Using ${settings.proxyUrl}` : '')}
           </p>
         </div>
+
+        <div className={cx(card, 'space-y-5')}>
+          <h3 className="font-medium">
+            Player <span className="text-sm font-normal text-muted">· Jelly player only</span>
+          </h3>
+          <Toggle label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
+          <Toggle label="Skip intros and recaps automatically" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
+          <Toggle label="Next episode when the credits start" hint="Starts the autoplay countdown early" on={settings.creditsNext} onChange={(v) => actions.updateSettings({ creditsNext: v })} />
+          <Toggle label="Show details while paused" hint="Title and overview after a few seconds" on={settings.pauseOverlay} onChange={(v) => actions.updateSettings({ pauseOverlay: v })} />
+          <Toggle label="Press and hold for 2× speed" on={settings.holdToSpeed} onChange={(v) => actions.updateSettings({ holdToSpeed: v })} />
+          <p className="text-xs text-muted">
+            Intro, recap and credits times come from{' '}
+            <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+              TheIntroDB
+            </a>
+            , a community database.
+          </p>
+        </div>
+
+        <div className={cx(card, 'space-y-2')}>
+          <h3 className="font-medium">Subtitles</h3>
+          <p className="text-sm text-muted">In the player you can also load your own .srt / .vtt file, fix the timing (Z / X) and read the transcript.</p>
+          <div className="-mx-3">
+            <SubtitleStyleControls />
+          </div>
+        </div>
+
+        <SourceStatus className={cx(card, 'md:col-span-2')} />
 
         <div className={cx(card, 'space-y-3 md:col-span-2')}>
           <h3 className="font-medium">Your data</h3>
@@ -327,6 +356,49 @@ function SettingsSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Which of Jelly's sources are working right now (from its provider health table). */
+function SourceStatus({ className }: { className: string }) {
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['provider-health'],
+    queryFn: ({ signal }) => fetchProviderHealth(signal),
+    staleTime: 30_000,
+    retry: false,
+  });
+  const DOT = { ok: 'bg-success', failing: 'bg-warning', benched: 'bg-danger', unknown: 'bg-white/25' } as const;
+  const LABEL = { ok: 'Working', failing: 'Failing', benched: 'Resting', unknown: '' } as const;
+  const list = (data ?? []).slice().sort((a, b) => ['ok', 'failing', 'unknown', 'benched'].indexOf(a.status) - ['ok', 'failing', 'unknown', 'benched'].indexOf(b.status));
+  return (
+    <div className={cx(className, 'space-y-3')}>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-medium">Jelly sources</h3>
+        <button onClick={() => refetch()} disabled={isFetching} className={btn({ variant: 'ghost' })}>
+          {isFetching ? 'Checking…' : 'Refresh'}
+        </button>
+      </div>
+      <p className="text-sm text-muted">How each source did since Jelly last restarted. One that keeps failing rests for a while so it doesn’t slow down playback.</p>
+      {isLoading ? (
+        <p className="text-sm text-muted">Loading…</p>
+      ) : !list.length ? (
+        <p className="text-sm text-muted">{data === null || data === undefined ? 'Jelly didn’t answer. It may be starting up or running an older version.' : 'No requests yet. Play something first.'}</p>
+      ) : (
+        <ul className="grid gap-x-10 md:grid-cols-2 [&>li]:border-b [&>li]:border-white/[0.06]">
+          {list.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 py-2 text-sm" title={p.lastError}>
+              <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[p.status])} />
+              <span className="flex-1 truncate">{p.name}</span>
+              <span className="text-xs text-muted tabular-nums">
+                {LABEL[p.status] || (p.empty ? 'Had nothing so far' : 'Not tried yet')}
+                {p.status === 'benched' && p.benchedForSeconds ? ` · ${Math.ceil(p.benchedForSeconds / 60)} min` : ''}
+                {p.success ? ` · ${p.success} found` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

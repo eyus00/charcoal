@@ -48,6 +48,21 @@ export interface Settings {
   proxyUrl: string;
   /** Desktop sidebar shows labels. */
   sidebarOpen: boolean;
+  /** Skip intros and recaps automatically (segments from TheIntroDB). */
+  autoSkip: boolean;
+  /** When the end credits start, offer the next episode (with the autoplay countdown). */
+  creditsNext: boolean;
+  /** Show the title and overview over the video after it has been paused for a moment. */
+  pauseOverlay: boolean;
+  /** Press and hold the video to play at 2× until released. */
+  holdToSpeed: boolean;
+  /** Subtitle look: size multiplier, text colour, background opacity (0–1), bold. */
+  subSize: number;
+  subColor: string;
+  subBg: number;
+  subBold: boolean;
+  /** The Jelly provider that last played, tried first next time. */
+  lastProvider: string | null;
 }
 
 export interface State {
@@ -71,6 +86,15 @@ const defaultSettings: Settings = {
   blockPopups: false,
   proxyUrl: '',
   sidebarOpen: false,
+  autoSkip: false,
+  creditsNext: true,
+  pauseOverlay: true,
+  holdToSpeed: true,
+  subSize: 1,
+  subColor: '#ffffff',
+  subBg: 0.5,
+  subBold: false,
+  lastProvider: null,
 };
 
 // ---------- load / migrate ----------
