@@ -119,7 +119,7 @@ function Sections({ f, set, withType, compact }: { f: Filters; set: Set; withTyp
 export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }: { filters: Filters; set: Set; onClear: () => void; onApply: () => void; placement: 'below' | 'above' }) {
   return (
     <div
-      className={cx('absolute inset-x-4 z-[70] rounded-3xl bg-surface p-5 shadow-2xl shadow-black/50 ring-1 ring-line md:inset-x-auto md:right-0 md:w-[380px]', placement === 'below' ? 'top-full mt-2 md:mt-3' : 'bottom-full mb-3')}
+      className={cx('absolute inset-x-0 z-[70] rounded-3xl bg-surface p-5 shadow-2xl shadow-black/50 ring-1 ring-line md:inset-x-auto md:right-0 md:w-[380px]', placement === 'below' ? 'top-full mt-2 md:mt-3' : 'bottom-full mb-3')}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="max-h-[50dvh] space-y-5 overflow-y-auto pr-1">
