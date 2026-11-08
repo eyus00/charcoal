@@ -5,7 +5,7 @@ import { StatusDot, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
-import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, normalizeServer } from '../lib/servers';
+import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
 import { detectExtension } from '../lib/extension';
 import { SubtitleStyleControls } from '../player/captions';
@@ -20,6 +20,9 @@ const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,190px)]
 
 /** "1 history entry" / "3 history entries". */
 const plural = (n: number, one: string, other: string) => `${n} ${new Intl.PluralRules('en').select(n) === 'one' ? one : other}`;
+
+/** Common audio languages for the preference (the browser's own is added if missing). */
+const AUDIO_LANGS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'hi', 'ta', 'te', 'ja', 'ko', 'zh', 'ar', 'ru', 'tr', 'nl', 'pl', 'sv'];
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 
@@ -293,6 +296,20 @@ function SettingsSection() {
           <h3 className="font-medium">
             Player <span className="text-sm font-normal text-muted">· Jelly player only</span>
           </h3>
+          <Row label="Audio language" hint="Sources in it are tried first; streams with several languages switch to it">
+            <select
+              value={settings.audioLang}
+              onChange={(e) => actions.updateSettings({ audioLang: e.target.value })}
+              aria-label="Audio language"
+              className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
+            >
+              {[...new Set([settings.audioLang, ...AUDIO_LANGS])].map((c) => (
+                <option key={c} value={c}>
+                  {languageName(c)}
+                </option>
+              ))}
+            </select>
+          </Row>
           <Toggle label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle label="Skip intros and recaps automatically" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
           <Toggle label="Next episode when the credits start" hint="Starts the autoplay countdown early" on={settings.creditsNext} onChange={(v) => actions.updateSettings({ creditsNext: v })} />

@@ -65,6 +65,9 @@ export interface Settings {
   subBold: boolean;
   /** The Jelly provider that last played, tried first next time. */
   lastProvider: string | null;
+  /** Preferred audio language (ISO 639-1, e.g. "en"): sources in it go first, and streams with
+   *  several audio tracks switch to it. */
+  audioLang: string;
 }
 
 export interface State {
@@ -98,6 +101,7 @@ const defaultSettings: Settings = {
   subBg: 0.5,
   subBold: false,
   lastProvider: null,
+  audioLang: (typeof navigator !== 'undefined' && navigator.language?.slice(0, 2).toLowerCase()) || 'en',
 };
 
 // ---------- load / migrate ----------

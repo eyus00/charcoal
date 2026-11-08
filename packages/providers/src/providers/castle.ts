@@ -36,7 +36,8 @@ const VIDEO_BODY = {
 };
 
 type Row = { id?: number | string; redirectId?: number | string; title?: string; name?: string };
-type Episode = { id: number | string; number: number; tracks?: { languageId?: number | string; languageName?: string; existIndividualVideo?: boolean }[] };
+type Track = { languageId?: number | string; languageName?: string; abbreviate?: string; isDefault?: boolean; existIndividualVideo?: boolean };
+type Episode = { id: number | string; number: number; tracks?: Track[] };
 type Details = { seasons?: { number: number; movieId?: number | string }[]; episodes?: Episode[] };
 type Video = {
   videoUrl?: string;
@@ -134,15 +135,16 @@ export const castle: Provider = {
 
     const streams: Stream[] = [];
     const captions: Caption[] = [];
-    const add = (video: Video, language: string) => {
+    const add = (video: Video, language: string, languageCode?: string) => {
       for (const entry of video.videos?.length ? video.videos : [{}]) {
         // Each quality may carry its own URL; otherwise they share the top-level one.
         const url = entry.url || video.videoUrl;
-        if (!url) continue;
-        const quality = String(entry.resolutionDescription ?? entry.resolution ?? '720')
-          .replace(/^(SD|HD|FHD|UHD)\s+/i, '')
-          .replace(/p$/i, '');
-        streams.push({ url, type: url.includes('.mp4') ? 'mp4' : 'hls', quality, headers: PLAYBACK_HEADERS, language });
+        if (!url || streams.some((s) => s.url === url)) continue; // same stream under another label
+        // The URL's own resolution folder (".../720/index.m3u8") beats the label, which can be wrong
+        // when several labels share one URL.
+        const quality = url.match(/\/(2160|1440|1080|720|480|360)\//)?.[1] ??
+          String(entry.resolutionDescription ?? entry.resolution ?? '720').replace(/^(SD|HD|FHD|UHD)\s+/i, '').replace(/p$/i, '');
+        streams.push({ url, type: url.includes('.mp4') ? 'mp4' : 'hls', quality, headers: PLAYBACK_HEADERS, language, languageCode });
       }
       for (const s of video.subtitles ?? []) {
         if (!s.url || captions.some((c) => c.url === s.url)) continue;
@@ -150,16 +152,16 @@ export const castle: Provider = {
       }
     };
 
-    // One stream per audio language where available, else the shared stream.
-    for (const t of episode.tracks ?? []) {
-      if (!t.existIndividualVideo || !t.languageId) continue;
-      try {
-        add(await api.video(key, movieId, episode.id, t.languageId), t.languageName || 'Unknown');
-      } catch {
-        /* try the next language */
-      }
+    // Ask for every audio language Castle lists: some titles default to a dub (often Hindi), and a
+    // language may come as its own stream even when Castle says it doesn't.
+    const tracks = (episode.tracks ?? []).filter((t) => t.languageId);
+    const name = (t: Track) => (/^ost$/i.test(t.languageName ?? '') ? 'Original' : t.languageName || 'Unknown');
+    const byLanguage = await Promise.all(tracks.map((t) => api.video(key, movieId, episode.id, t.languageId).catch(() => null)));
+    byLanguage.forEach((video, i) => video && add(video, name(tracks[i]), /^ost$/i.test(tracks[i].languageName ?? '') ? undefined : tracks[i].abbreviate?.toLowerCase()));
+    if (!streams.length) {
+      const fallback = tracks.find((t) => t.isDefault);
+      add(await api.video(key, movieId, episode.id), fallback ? name(fallback) : 'Original', fallback?.abbreviate?.toLowerCase());
     }
-    if (!streams.length) add(await api.video(key, movieId, episode.id), 'Original');
     if (!streams.length) throw new NotFoundError('Castle: no video');
 
     streams.sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0));
