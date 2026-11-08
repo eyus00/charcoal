@@ -21,10 +21,10 @@ not committed (it imports the fork's TypeScript directly). Raw output is in
 | Why it fails | Sources |
 |---|---|
 | **Domain gone** (no DNS) | autoembed, whvx, catflix, soapertv, remotestream, bombtheirish, nsbx, theyallsayflix (tasf), warezcdn |
-| **Server unreachable** | m4ufree, primewire, flixhq, ee3 |
-| **Site changed, scraper finds nothing** | gomovies, goojara, zoechip, kissasian, insertunit, vidsrc, vidsrcto, vidsrcsu, nites, tugaflix, fsharetv, showbox, redstar, nepu |
+| **Server unreachable** | m4ufree, primewire |
+| **Site changed, scraper finds nothing** | flixhq, gomovies, goojara, zoechip, kissasian, insertunit, vidsrc, vidsrcto, vidsrcsu, nites, tugaflix, fsharetv, showbox, redstar, nepu |
 | **Site down or "back soon"** | mp4hydra |
-| **Bot check / 403 for servers** | ridomovies (Cloudflare "Just a moment"), hdrezka (403) |
+| **Bot check / 403 for servers** | ridomovies (Cloudflare "Just a moment"), hdrezka (403), ee3 (refuses cross-site requests) |
 | **Found a stream, but it's dead** | lookmovie (playlist answers "WRONG HASH!": tied to the requesting IP), smashystream (embed broken) |
 
 ## Conclusion
