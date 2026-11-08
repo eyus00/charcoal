@@ -188,9 +188,12 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       {ep.still_path ? (
                         <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
                       ) : (
-                        // No still yet (usually an upcoming episode): a calm placeholder; the tag says when it airs.
-                        <div className="grid aspect-video place-items-center bg-white/[0.04]">
-                          <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
+                        // No still yet (usually upcoming): the show's backdrop, blurred, with a short note.
+                        <div className="relative aspect-video overflow-hidden bg-white/[0.04]">
+                          {show.backdrop_path && (
+                            <Img path={show.backdrop_path} kind="backdrop" sizes="300px" alt="" className="absolute! inset-0 scale-110 opacity-40 blur-lg" />
+                          )}
+                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Not out yet' : 'No image'}</span>
                         </div>
                       )}
                       {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
@@ -237,10 +240,12 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       {ep.overview ? (
                         <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
                       ) : (
-                        // No synopsis yet: quiet placeholder lines (skeleton shapes, not animated).
-                        <div aria-hidden className="mt-2.5 space-y-2">
-                          <div className="h-2.5 w-full rounded-full bg-white/[0.05]" />
-                          <div className="h-2.5 w-2/3 rounded-full bg-white/[0.05]" />
+                        // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
+                        <div className="relative mt-1.5">
+                          <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
+                            The story for this episode hasn't been shared yet, check back closer to the air date.
+                          </p>
+                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Synopsis coming soon' : 'No synopsis'}</span>
                         </div>
                       )}
                     </div>
