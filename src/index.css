@@ -141,21 +141,3 @@ video::cue {
   animation: toast-in 0.3s ease-out both;
 }
 
-/*
- * Clamped text with an inline "… More" at the end of the last visible line.
- * The wrapper is a flex row so the text's percentage height resolves; a float as tall as the
- * box minus one line pushes the floated button down to the last line's end.
- */
-.clamp-more {
-  overflow: hidden;
-}
-.clamp-more::before {
-  content: '';
-  float: right;
-  height: 100%;
-  margin-bottom: -1.5rem; /* one line (leading-6) */
-}
-.clamp-more > .clamp-more-btn {
-  float: right;
-  clear: both;
-}

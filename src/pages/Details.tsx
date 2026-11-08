@@ -276,36 +276,76 @@ function ShareButton({ title }: { title: string }) {
   );
 }
 
+/**
+ * Overview clamped to 3 lines (4 from md). When it doesn't fit, the text is cut at a word
+ * boundary, trailing spaces and punctuation are dropped, and "… more" follows the last letter:
+ * "Bay begins a… more". The cut is measured on a hidden copy and redone when the width changes.
+ */
 function Overview({ text, title }: { text: string; title: string }) {
   const [open, setOpen] = useState(false);
-  const [cut, setCut] = useState(false);
-  const ref = useRef<HTMLParagraphElement>(null);
-  // Only offer "More" when the text really is cut off (re-checked when the width changes).
+  const [shown, setShown] = useState<string | null>(null); // null = the full text fits
+  const box = useRef<HTMLDivElement>(null);
+  const probe = useRef<HTMLParagraphElement>(null);
+
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const check = () => {
-      const btn = el.querySelector<HTMLElement>('.clamp-more-btn');
-      if (btn) btn.style.display = 'none';
-      setCut(el.scrollHeight > el.clientHeight + 1);
-      if (btn) btn.style.display = '';
+    const wrap = box.current;
+    const p = probe.current;
+    if (!wrap || !p || !text) return;
+    const measure = () => {
+      const lines = matchMedia('(min-width: 768px)').matches ? 4 : 3;
+      const max = lines * parseFloat(getComputedStyle(p).lineHeight) + 1;
+      const fits = (t: string, suffix: boolean) => {
+        p.textContent = t;
+        if (suffix) {
+          const more = document.createElement('span');
+          more.className = 'font-medium';
+          more.textContent = '\u2026 more';
+          p.append(more);
+        }
+        return p.offsetHeight <= max;
+      };
+      if (fits(text, false)) return setShown(null);
+      // Word boundaries to try, longest first fitting wins (binary search).
+      const cuts: number[] = [];
+      for (let i = 1; i < text.length; i++) if (text[i] === ' ' && text[i - 1] !== ' ') cuts.push(i);
+      const clean = (n: number) => text.slice(0, n).replace(/[\s.,;:!?\u2026\-\u2013\u2014(\[{"'\u201c\u2018]+$/u, '');
+      let lo = 0;
+      let hi = cuts.length - 1;
+      let best = '';
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const t = clean(cuts[mid]);
+        if (fits(t, true)) {
+          best = t;
+          lo = mid + 1;
+        } else hi = mid - 1;
+      }
+      setShown(best || clean(cuts[0] ?? text.length));
     };
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
     return () => ro.disconnect();
   }, [text]);
+
   if (!text) return null;
+  const cls = 'text-body-sm leading-6 text-pretty text-white/80';
   return (
     <>
-      <div className="mt-4 flex">
-        <p ref={ref} className="clamp-more max-h-[4.5rem] text-body-sm leading-6 text-white/80 md:max-h-24">
-          {cut && (
-            <button onClick={() => setOpen(true)} aria-haspopup="dialog" className="clamp-more-btn ml-1 font-medium text-white hover:underline">
-              <span className="text-white/50">… </span>More
-            </button>
+      <div ref={box} className="relative mt-4">
+        {/* Hidden copy used only for measuring. */}
+        <p ref={probe} aria-hidden className={cx(cls, 'pointer-events-none invisible absolute inset-x-0 top-0')} />
+        <p className={cls}>
+          {shown === null ? (
+            text
+          ) : (
+            <>
+              {shown}
+              <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="Read the full overview" className="font-medium text-white hover:underline">
+                <span className="text-white/60">…</span> more
+              </button>
+            </>
           )}
-          {text}
         </p>
       </div>
       {open && <OverviewDialog title={title} text={text} onClose={() => setOpen(false)} />}
@@ -313,7 +353,6 @@ function Overview({ text, title }: { text: string; title: string }) {
   );
 }
 
-/** The full description in a small popup (sheet on phones). */
 function OverviewDialog({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
   return (
     <Modal label={`About ${title}`} onClose={onClose}>
