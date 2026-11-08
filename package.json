@@ -5,6 +5,7 @@
   "workspaces": [
     "apps/web",
     "apps/server",
+    "apps/extension",
     "packages/*"
   ],
   "scripts": {
@@ -12,7 +13,8 @@
     "dev:server": "npm run dev --workspace apps/server",
     "build:web": "npm run build --workspace apps/web",
     "start:server": "npm run start --workspace apps/server",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build:extension": "npm run build --workspace apps/extension"
   },
   "engines": {
     "node": ">=22"

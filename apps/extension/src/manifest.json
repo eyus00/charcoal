@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Charcoal Helper",
+  "version": "0.1.0",
+  "description": "Lets Charcoal find and play streams from your own connection, without its server in between.",
+  "icons": { "128": "icon.png" },
+  "action": { "default_title": "Charcoal Helper", "default_popup": "popup.html", "default_icon": "icon.png" },
+  "background": { "service_worker": "background.js", "scripts": ["background.js"] },
+  "permissions": ["declarativeNetRequestWithHostAccess", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["https://charcoal.eys0.fyi/*", "http://localhost/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": { "id": "helper@charcoal.eys0.fyi", "strict_min_version": "128.0" }
+  }
+}

@@ -46,6 +46,8 @@ export interface Settings {
   blockPopups: boolean;
   /** The viewer's own server (local or VPS); '' = Charcoal's hosted server. */
   serverUrl: string;
+  /** Use the Charcoal Helper extension (when installed) to find and play sources from this browser. */
+  useExtension: boolean;
   /** Desktop sidebar shows labels. */
   sidebarOpen: boolean;
   /** Skip intros and recaps automatically (segments from TheIntroDB). */
@@ -85,6 +87,7 @@ const defaultSettings: Settings = {
   subtitleLabel: null,
   blockPopups: false,
   serverUrl: '',
+  useExtension: true,
   sidebarOpen: false,
   autoSkip: false,
   creditsNext: true,

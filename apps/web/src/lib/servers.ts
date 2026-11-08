@@ -14,8 +14,10 @@ export interface JellySource {
   quality: string;
   audioTracks?: { language: string; label: string }[];
   provider: { id: string; name: string };
+  /** Direct (extension) streams only: headers the host expects; the extension adds them. */
+  headers?: Record<string, string>;
 }
-export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string }
+export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string> }
 export interface JellyResponse {
   responseId: string;
   expiresAt: string;
@@ -28,7 +30,11 @@ export interface Target { type: MediaType; id: number; season?: number; episode?
 const JELLY_TIMEOUT_MS = 45_000;
 
 /** Where a response came from: the viewer's own server, or the hosted one (also as a fallback). */
-export type JellyResult = JellyResponse & { via: 'own' | 'hosted'; ownError?: string };
+export type JellyResult = JellyResponse & {
+  /** extension: found and played from this browser through Charcoal Helper (no server involved). */
+  via: 'extension' | 'own' | 'hosted';
+  ownError?: string;
+};
 
 /** Sources for a title: from the viewer's own server if set, falling back to the hosted one. */
 export async function fetchJelly(t: Target, signal: AbortSignal): Promise<JellyResult> {
@@ -130,7 +136,7 @@ export function qualityLabel(q: string): string {
 const RANK: Record<string, number> = { Auto: 0, '1080p': 1, '4K': 2, '1440p': 3, '720p': 4, '480p': 5, '360p': 6, SD: 7 };
 
 /** Adaptive/1080p HLS first; MKV last (most browsers can't play it). */
-function sortSources(list: JellySource[]): JellySource[] {
+export function sortSources(list: JellySource[]): JellySource[] {
   const typeRank = (t: string) => (t === 'hls' ? 0 : t === 'mp4' ? 1 : 2);
   return [...list].sort(
     (a, b) =>

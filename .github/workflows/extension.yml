@@ -1,0 +1,46 @@
+# Builds Charcoal Helper and attaches it to a GitHub release. Trigger: push a tag extension-vX.Y.Z.
+name: Extension release
+
+on:
+  push:
+    tags: ['extension-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      # Empty when the secrets aren't set; the signing step is then skipped.
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: |
+          npm run build --workspace apps/extension
+          VERSION=$(node -p "require('./apps/extension/package.json').version")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          cd apps/extension/dist && zip -qr "$GITHUB_WORKSPACE/charcoal-helper-$VERSION.zip" .
+      # Firefox only installs signed add-ons permanently. Unlisted signing is free and automatic.
+      - name: Sign for Firefox
+        if: ${{ env.AMO_JWT_ISSUER != '' }}
+        run: |
+          npx --yes web-ext@8 sign --channel unlisted --source-dir apps/extension/dist --artifacts-dir web-ext-artifacts \
+            --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
+          cp web-ext-artifacts/*.xpi "charcoal-helper-$VERSION.xpi"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('extension-v{0}', env.VERSION) }}
+          name: Charcoal Helper ${{ env.VERSION }}
+          body: |
+            Install: see apps/extension/README.md (Chrome/Edge/Brave: Load unpacked; Firefox: the .xpi if attached).
+          files: |
+            charcoal-helper-*.zip
+            charcoal-helper-*.xpi
+          fail_on_unmatched_files: false

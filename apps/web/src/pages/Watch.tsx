@@ -6,6 +6,8 @@ import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
+import { detectExtension } from '../lib/extension';
+import { fetchViaExtension } from '../lib/direct';
 import { EMBEDS, embedById, fetchJelly, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
@@ -93,8 +95,19 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   }, [restart, type, id, season, episode]);
 
   const jelly = useQuery({
-    queryKey: ['jelly', settings.serverUrl, type, id, season, episode],
-    queryFn: ({ signal }) => fetchJelly(target, signal),
+    queryKey: ['jelly', settings.serverUrl, settings.useExtension, type, id, season, episode],
+    queryFn: async ({ signal }) => {
+      // Charcoal Helper installed: find and play from this browser; the server is the fallback.
+      if (settings.useExtension && d && (await detectExtension())?.hasPermission) {
+        try {
+          return await fetchViaExtension(target, d, signal);
+        } catch (e) {
+          if (signal.aborted) throw e;
+          console.warn('[helper]', (e as Error).message, '- asking the server');
+        }
+      }
+      return fetchJelly(target, signal);
+    },
     enabled: server === 'jelly',
     retry: false,
     staleTime: 1000 * 60 * 30,

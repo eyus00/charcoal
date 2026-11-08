@@ -7,6 +7,7 @@ import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
+import { detectExtension } from '../lib/extension';
 import { SubtitleStyleControls } from '../player/captions';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
@@ -286,6 +287,8 @@ function SettingsSection() {
           {!settings.serverUrl && !serverState && <p className="text-xs text-faint">Now using Charcoal’s server ({new URL(HOSTED_SERVER).host}).</p>}
         </div>
 
+        <HelperCard className={cx(card, 'space-y-3')} />
+
         <div className={cx(card, 'space-y-5')}>
           <h3 className="font-medium">
             Player <span className="text-sm font-normal text-muted">· Jelly player only</span>
@@ -360,6 +363,41 @@ function SettingsSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Charcoal Helper: is it installed and allowed, and should Charcoal use it. */
+function HelperCard({ className }: { className: string }) {
+  const useExtension = useStore((s) => s.settings.useExtension);
+  const { data: info, isLoading, refetch } = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(true), staleTime: 0, retry: false });
+  const state = isLoading ? 'checking' : !info ? 'missing' : !info.hasPermission ? 'permission' : 'ready';
+  const TEXT = {
+    checking: 'Checking…',
+    missing: 'Not installed in this browser.',
+    permission: `Installed (v${info?.version}), but it needs access to streaming sites: click its icon in the toolbar and allow it.`,
+    ready: `Installed (v${info?.version}) and ready.`,
+  } as const;
+  return (
+    <div className={className}>
+      <h3 className="font-medium">Charcoal Helper</h3>
+      <p className="text-sm text-muted">
+        A browser extension that finds and plays sources from your own connection, with no server in between, so more of them work. For Chrome, Edge, Brave and
+        Firefox on a computer.{' '}
+        <a href="https://github.com/eyus00/charcoal/tree/main/apps/extension#install" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+          How to install
+        </a>
+      </p>
+      <p role="status" className={cx('flex items-center gap-2 text-sm', state === 'ready' ? 'text-success' : state === 'permission' ? 'text-warning' : 'text-muted')}>
+        <span aria-hidden className={cx('size-2 rounded-full', state === 'ready' ? 'bg-success' : state === 'permission' ? 'bg-warning' : 'bg-white/25')} />
+        {TEXT[state]}
+        {state !== 'checking' && state !== 'ready' && (
+          <button onClick={() => refetch()} className="ml-auto text-xs text-white/70 underline-offset-2 hover:text-white hover:underline">
+            Check again
+          </button>
+        )}
+      </p>
+      {info && <Toggle label="Use Charcoal Helper" hint="Your own server or Charcoal’s takes over if it finds nothing" on={useExtension} onChange={(v) => actions.updateSettings({ useExtension: v })} />}
+    </div>
   );
 }
 

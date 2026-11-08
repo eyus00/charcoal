@@ -6,9 +6,20 @@ A movie & TV streaming frontend and the server that finds its streams, in one re
 apps/
   web/        Charcoal, the website (React, Vite)                    → Vercel
   server/     Jelly, finds sources and relays video (Node, OMSS)     → Railway, Docker, your own machine
+  extension/  Charcoal Helper, finds and plays sources from the viewer's browser → GitHub Releases
 packages/
   providers/  Source scrapers shared by the server and the website
 ```
+
+## Where streams come from
+
+Charcoal tries these in order, falling back to the next:
+
+1. **Charcoal Helper** (browser extension), if installed: the scrapers in `packages/providers` run in
+   the page and everything loads from the viewer's own connection. See `apps/extension`.
+2. **Your own server**, if set in Settings (local or VPS, see below).
+3. **Charcoal's server** on Railway.
+4. **Embedded players** from other sites.
 
 ## Develop
 

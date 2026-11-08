@@ -25,17 +25,18 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { qualityLabel, type JellyResponse, type JellySubtitle } from '../lib/servers';
+import { qualityLabel, type JellyResult, type JellySubtitle } from '../lib/servers';
 import { actions, getState, useStore } from '../lib/store';
 import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segments';
 import type { MediaType } from '../lib/tmdb';
 import { cx, formatClock } from '../lib/util';
 import { btn } from '../components/Button';
 import { useCast } from './cast';
+import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension';
 import { activeCues, CaptionOverlay, CueText, parseCaptions, SubtitleStyleControls, type Cue } from './captions';
 
 interface Props {
-  data: JellyResponse;
+  data: Omit<JellyResult, 'via'> & { via?: JellyResult['via'] };
   /** What is playing (for skip segments). */
   media: { type: MediaType; id: number; season?: number; episode?: number };
   title: string;
@@ -69,7 +70,7 @@ function upstreamHost(url: string): string {
 }
 
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
-type Track = { label: string; url?: string; text?: string; format?: string };
+type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string> };
 
 type Menu = null | 'captions' | 'settings';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
@@ -125,6 +126,9 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   }, []);
 
   const source = data.sources[sourceIdx];
+  /** Streams found through Charcoal Helper load straight from the host (the extension adds headers). */
+  const direct = data.via === 'extension';
+  useEffect(() => (direct ? () => releaseStreams() : undefined), [direct]);
 
   // ---------- notices ----------
   const noticeTimer = useRef<number>(undefined);
@@ -151,8 +155,11 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     if (!t) return setCues([]);
     if (t.text !== undefined) return setCues(parseCaptions(t.text));
     let stale = false;
-    fetch(t.url!)
-      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+    // Direct (extension) subtitles may need headers and aren't readable cross-site: the extension fetches them.
+    const load = direct
+      ? extensionFetcher(t.url!, { headers: t.headers }).then((r) => (r.ok ? r.body : Promise.reject(new Error(String(r.status)))))
+      : fetch(t.url!).then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))));
+    load
       .then((text) => !stale && setCues(parseCaptions(text)))
       .catch(() => {
         if (stale) return;
@@ -162,7 +169,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     return () => {
       stale = true;
     };
-  }, [subIdx, tracks, flash]);
+  }, [subIdx, tracks, flash, direct]);
 
   const chooseSub = useCallback(
     (i: number, label?: string) => {
@@ -276,7 +283,22 @@ export default function Player({ data, media, title, subtitle, overview, poster,
           v.src = source.url;
           return play();
         }
-        const h = new HlsCtor({ capLevelToPlayerSize: true, startPosition: startAt > 0 ? startAt : -1, maxBufferLength: 30 });
+        // Direct streams: before the first request to each host, have the extension allow it.
+        const headers = source.headers ?? {};
+        const Base = HlsCtor.DefaultConfig.loader as unknown as new (config: unknown) => { load(context: { url: string }, config: unknown, callbacks: unknown): void };
+        class HelperLoader extends Base {
+          load(context: { url: string }, config: unknown, callbacks: unknown) {
+            allowStream(new URL(context.url).hostname, headers)
+              .catch((e) => console.warn('[helper]', e.message))
+              .finally(() => super.load(context, config, callbacks));
+          }
+        }
+        const h = new HlsCtor({
+          capLevelToPlayerSize: true,
+          startPosition: startAt > 0 ? startAt : -1,
+          maxBufferLength: 30,
+          ...(direct ? { loader: HelperLoader as unknown as typeof HlsCtor.DefaultConfig.loader } : {}),
+        });
         hls.current = h;
         h.on(HlsCtor.Events.MANIFEST_PARSED, () => {
           setLevels(
@@ -317,12 +339,18 @@ export default function Player({ data, media, title, subtitle, overview, poster,
         h.attachMedia(v);
       });
     } else {
-      v.src = source.url;
       const onMeta = () => {
         if (startAt > 0 && startAt < v.duration - 10) v.currentTime = startAt;
       };
       v.addEventListener('loadedmetadata', onMeta, { once: true });
-      play();
+      const start = () => {
+        if (cancelled) return;
+        v.src = source.url;
+        play();
+      };
+      // Direct files: have the extension allow the host first.
+      if (direct) allowStream(new URL(source.url).hostname, source.headers).catch(() => {}).finally(start);
+      else start();
     }
 
     return () => {
@@ -334,7 +362,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       v.removeAttribute('src');
       v.load(); // stop downloading
     };
-  }, [source, fail]);
+  }, [source, fail, direct]);
 
   // Apply persisted volume/speed (hold-to-speed overrides the speed while held).
   useEffect(() => {
@@ -1130,7 +1158,8 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                 </Popover>
               )}
             </div>
-            {(cast.state === 'NOT_CONNECTED' || cast.state === 'CONNECTING' || casting) && (
+            {/* A TV can't add the headers direct (extension) streams need. */}
+            {!direct && (cast.state === 'NOT_CONNECTED' || cast.state === 'CONNECTING' || casting) && (
               <IconButton label={casting ? `Stop casting to ${cast.device}` : 'Cast to a TV'} active={casting} onClick={casting ? cast.stop : cast.start}>
                 <Cast className={cx('size-5', cast.state === 'CONNECTING' && 'animate-pulse')} />
               </IconButton>
@@ -1406,7 +1435,7 @@ function sortSubtitles(list: JellySubtitle[]): Track[] {
   return list
     .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url))
     .sort((a, b) => Number(/english/i.test(b.label)) - Number(/english/i.test(a.label)) || a.label.localeCompare(b.label))
-    .map((s) => ({ label: s.label, url: s.url, format: s.format }));
+    .map((s) => ({ label: s.label, url: s.url, format: s.format, headers: s.headers }));
 }
 
 /** Cues back to WebVTT (for the native fullscreen player), shifted by the timing offset. */
