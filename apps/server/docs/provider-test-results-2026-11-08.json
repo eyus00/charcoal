@@ -1,0 +1,567 @@
+{
+ "4khdhub": {
+  "movie": {
+   "found": 14,
+   "probes": [
+    {
+     "q": "2160p",
+     "fmt": "?",
+     "ok": false,
+     "why": "206 text/html; charset=UTF-8 6390B"
+    },
+    {
+     "q": "2160p",
+     "fmt": "mkv",
+     "ok": true,
+     "why": "206 video/x-matroska 2048B"
+    },
+    {
+     "q": "2160p",
+     "fmt": "?",
+     "ok": false,
+     "why": "206 text/html; charset=UTF-8 6390B"
+    }
+   ]
+  },
+  "tv": {
+   "found": 10,
+   "probes": [
+    {
+     "q": "2160p",
+     "fmt": "?",
+     "ok": false,
+     "why": "206 text/html; charset=UTF-8 6390B"
+    },
+    {
+     "q": "2160p",
+     "fmt": "mkv",
+     "ok": true,
+     "why": "206 video/x-matroska 2048B"
+    },
+    {
+     "q": "2160p",
+     "fmt": "?",
+     "ok": false,
+     "why": "206 text/html; charset=UTF-8 6390B"
+    }
+   ]
+  }
+ },
+ "allmovieland": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "animekai": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "animepahe": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "anizone": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "castle": {
+  "movie": {
+   "found": 5,
+   "probes": [
+    {
+     "q": "1080P",
+     "fmt": "m3u8",
+     "ok": true,
+     "why": "segment 206 2048B"
+    },
+    {
+     "q": "720P",
+     "fmt": "m3u8",
+     "ok": true,
+     "why": "segment 206 2048B"
+    },
+    {
+     "q": "720P",
+     "fmt": "m3u8",
+     "ok": true,
+     "why": "segment 206 2048B"
+    }
+   ]
+  },
+  "tv": {
+   "found": 3,
+   "probes": [
+    {
+     "q": "1080P",
+     "fmt": "m3u8",
+     "ok": true,
+     "why": "segment 206 2048B"
+    },
+    {
+     "q": "720P",
+     "fmt": "m3u8",
+     "ok": true,
+     "why": "segment 206 2048B"
+    },
+    {
+     "q": "480P",
+     "fmt": "m3u8",
+     "ok": true,
+     "why": "segment 206 2048B"
+    }
+   ]
+  }
+ },
+ "cinemacity": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "cinevibe": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "dahmermovies": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "dooflix": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "dvdplay": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "hdhub4u": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "hianime": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "kurage": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "mallumv": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "movieblast": {
+  "movie": {
+   "found": 4,
+   "probes": [
+    {
+     "q": "1080p",
+     "fmt": "?",
+     "ok": false,
+     "why": "fetch failed"
+    },
+    {
+     "q": "720p",
+     "fmt": "?",
+     "ok": false,
+     "why": "fetch failed"
+    },
+    {
+     "q": "720p",
+     "fmt": "?",
+     "ok": false,
+     "why": "fetch failed"
+    }
+   ]
+  },
+  "tv": {
+   "found": 2,
+   "probes": [
+    {
+     "q": "720p",
+     "fmt": "?",
+     "ok": false,
+     "why": "fetch failed"
+    },
+    {
+     "q": "480p",
+     "fmt": "?",
+     "ok": false,
+     "why": "fetch failed"
+    }
+   ]
+  }
+ },
+ "moviebox": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "moviesdrive": {
+  "movie": {
+   "found": 3,
+   "probes": [
+    {
+     "q": 480,
+     "fmt": "mkv",
+     "ok": true,
+     "why": "206 video/x-matroska 2048B"
+    },
+    {
+     "q": 720,
+     "fmt": "mkv",
+     "ok": true,
+     "why": "206 video/x-matroska 2048B"
+    },
+    {
+     "q": 1080,
+     "fmt": "mkv",
+     "ok": true,
+     "why": "206 video/x-matroska 2048B"
+    }
+   ]
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "moviesmod": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "mycima": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "myflixer-extractor": {
+  "movie": {
+   "error": "mod.getStreams is not a function"
+  },
+  "tv": {
+   "error": "mod.getStreams is not a function"
+  }
+ },
+ "netmirror": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "reanime": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "showbox": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "streamflix": {
+  "movie": {
+   "found": 4,
+   "probes": [
+    {
+     "q": "1080p",
+     "fmt": "mkv",
+     "ok": false,
+     "why": "404 application/xml 405B"
+    },
+    {
+     "q": "1080p",
+     "fmt": "mkv",
+     "ok": false,
+     "why": "404 application/xml 405B"
+    },
+    {
+     "q": "720p",
+     "fmt": "mkv",
+     "ok": false,
+     "why": "fetch failed"
+    }
+   ]
+  },
+  "tv": {
+   "found": 1,
+   "probes": [
+    {
+     "q": "720p",
+     "fmt": "mkv",
+     "ok": false,
+     "why": "404 application/xml 405B"
+    }
+   ]
+  }
+ },
+ "uhdmovies": {
+  "movie": {
+   "found": 5,
+   "probes": [
+    {
+     "q": "2160p",
+     "fmt": "?",
+     "ok": false,
+     "why": "200 text/html; charset=UTF-8 733B"
+    },
+    {
+     "q": "2160p",
+     "fmt": "?",
+     "ok": false,
+     "why": "200 text/html; charset=UTF-8 733B"
+    },
+    {
+     "q": "1080p",
+     "fmt": "?",
+     "ok": false,
+     "why": "200 text/html; charset=UTF-8 733B"
+    }
+   ]
+  },
+  "tv": {
+   "found": 5,
+   "probes": [
+    {
+     "q": "Unknown",
+     "fmt": "?",
+     "ok": false,
+     "why": "200 text/html; charset=UTF-8 733B"
+    },
+    {
+     "q": "Unknown",
+     "fmt": "?",
+     "ok": false,
+     "why": "200 text/html; charset=UTF-8 733B"
+    },
+    {
+     "q": "Unknown",
+     "fmt": "?",
+     "ok": false,
+     "why": "200 text/html; charset=UTF-8 733B"
+    }
+   ]
+  }
+ },
+ "videasy": {
+  "movie": {
+   "error": "timeout"
+  },
+  "tv": {
+   "error": "timeout"
+  }
+ },
+ "vidlink": {
+  "movie": {
+   "found": 3,
+   "probes": [
+    {
+     "q": "1080p",
+     "fmt": "mp4",
+     "ok": false,
+     "why": "429 text/html 587B"
+    },
+    {
+     "q": "480p",
+     "fmt": "mp4",
+     "ok": false,
+     "why": "429 text/html 587B"
+    },
+    {
+     "q": "360p",
+     "fmt": "mp4",
+     "ok": false,
+     "why": "429 text/html 587B"
+    }
+   ]
+  },
+  "tv": {
+   "found": 4,
+   "probes": [
+    {
+     "q": "1080p",
+     "fmt": "mp4",
+     "ok": false,
+     "why": "429 text/html 587B"
+    },
+    {
+     "q": "720p",
+     "fmt": "mp4",
+     "ok": false,
+     "why": "429 text/html 587B"
+    },
+    {
+     "q": "480p",
+     "fmt": "mp4",
+     "ok": false,
+     "why": "429 text/html 587B"
+    }
+   ]
+  }
+ },
+ "vidnest-anime": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "vidnest": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "vidrock": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "vixsrc": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "xprime": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ },
+ "yflix": {
+  "movie": {
+   "found": 0,
+   "probes": []
+  },
+  "tv": {
+   "found": 0,
+   "probes": []
+  }
+ }
+}

@@ -1,29 +1,20 @@
 {
-  "name": "charcoal",
+  "name": "charcoal-monorepo",
   "private": true,
-  "version": "2.0.0",
-  "type": "module",
+  "description": "Charcoal (website), its server (Jelly) and shared packages",
+  "workspaces": [
+    "apps/web",
+    "apps/server",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:server": "npm run dev --workspace apps/server",
+    "build:web": "npm run build --workspace apps/web",
+    "start:server": "npm run start --workspace apps/server",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
-  "dependencies": {
-    "@tanstack/react-query": "^5.107.1",
-    "hls.js": "^1.7.4",
-    "lucide-react": "^0.577.0",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "react-router": "^7.18.5"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.5",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.2.1",
-    "tailwindcss": "^4.3.5",
-    "typescript": "~5.9.3",
-    "vite": "^8.3.6"
+  "engines": {
+    "node": ">=22"
   }
 }
