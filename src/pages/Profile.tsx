@@ -298,7 +298,7 @@ function SettingsSection() {
                   actions.clearHistory();
                   toast('Watch history cleared', { label: 'Undo', run: () => actions.restore({ history: before }) });
                 }}
-                className={cx(btn(), 'text-danger! ring-danger/40! hover:bg-danger/10! hover:ring-danger/70!')}
+                className={cx(btn(), 'bg-danger/10! text-danger! hover:bg-danger/20!')}
               >
                 <Trash2 className="size-4" strokeWidth={1.5} /> Clear history
               </button>

@@ -1,5 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { WifiOff, X } from 'lucide-react';
+import { btn } from './Button';
+import { cx } from '../lib/util';
 
 interface ToastItem {
   id: number;
@@ -60,7 +62,7 @@ export function Toaster() {
               {t.action.label}
             </button>
           )}
-          <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="grid size-8 shrink-0 place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white">
+          <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className={cx(btn({ variant: 'ghost', icon: true }), 'size-8 text-white/60')}>
             <X className="size-4" />
           </button>
         </div>

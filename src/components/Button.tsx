@@ -4,7 +4,7 @@ import { cx } from '../lib/util';
 /**
  * The app's one button system (the details page look):
  * - primary: white fill, dark text. The single main action on a surface (Watch now, Play, Next).
- * - secondary: outline only. Every other action (bookmark, share, close, previous, server).
+ * - secondary: a plain soft fill. Every other action (bookmark, share, close, previous, server).
  * - ghost: no fill or outline until hovered. Dense toolbars and inline icons (player controls).
  * Sizes: md = 40px (toolbars, dialogs, rows), lg = 48px (page actions).
  * `icon` makes it a circle for icon-only buttons.
@@ -19,7 +19,7 @@ const BASE =
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-black hover:bg-accent-hover',
-  secondary: 'text-white ring-[1.5px] ring-white/35 ring-inset hover:bg-white/10 hover:ring-white/60',
+  secondary: 'bg-white/10 text-white hover:bg-white/[0.16]',
   ghost: 'text-white/75 hover:bg-white/10 hover:text-white',
 };
 

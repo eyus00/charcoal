@@ -150,8 +150,12 @@ video::cue {
     filter: blur(4px);
   }
 }
-/* Enter motion for toasts, menus and dialogs. */
+/*
+ * Enter motion for toasts, menus and dialogs. Fill "backwards" (not "both"), so the blur filter
+ * is gone once the animation ends: a leftover filter keeps the element on its own layer, which
+ * renders text and icons slightly soft in some browsers.
+ */
 .toast-in {
-  animation: toast-in 0.3s ease-out both;
+  animation: toast-in 0.3s ease-out backwards;
 }
 
