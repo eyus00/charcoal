@@ -58,7 +58,7 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
   );
 }
 
-export function ErrorBox({ onRetry, message = 'Something went wrong loading this.' }: { onRetry?: () => void; message?: string }) {
+export function ErrorBox({ onRetry, message = 'Couldn’t load these titles. Check your connection and try again.' }: { onRetry?: () => void; message?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-muted">{message}</p>

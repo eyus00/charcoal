@@ -65,11 +65,11 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
     <div className={cx('group relative', className)}>
       <Link to={href} className="block" {...usePrefetch(t, item.id)}>
         <div className="relative overflow-hidden rounded-t-2xl">
-          <Img path={item.poster_path} kind="poster" sizes={sizes} alt={title} className="aspect-[2/3]" />
+          <Img path={item.poster_path} kind="poster" sizes={sizes} alt="" className="aspect-[2/3]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
         </div>
         <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
-          <div className="truncate text-[15px] font-medium text-white/95">{title}</div>
+          <div className="truncate text-[15px] font-medium text-white/95" title={title}>{title}</div>
           <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" extra={<TypeIcon type={t} />} />
         </div>
       </Link>

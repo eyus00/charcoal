@@ -6,10 +6,16 @@
   --color-raised: #1f242e;
   --color-line: #2a303b;
   --color-muted: #98a0ad;
-  --color-faint: #636b78;
+  --color-faint: #87909d; /* 4.8:1 on raised, 5.9:1 on bg */
   --color-accent: #f4f5f7;
   --color-accent-hover: #ffffff;
   --color-star: #f5c518;
+  /* Status colours (text and dots), each passing on surface / raised. */
+  --color-danger: #ff6467;
+  --color-danger-solid: #e7000b;
+  --color-danger-solid-hover: #c10007;
+  --color-success: #00d492;
+  --color-warning: #ff8904;
   /* Watchlist statuses: shades of the charcoal palette's blue. */
   --color-watching: #5aa2ff;
   --color-planned: #9cc4f5;
@@ -25,9 +31,14 @@
     :root {
       --hero-step: 70px;
     }
+    html {
+      scroll-padding-top: 92px;
+    }
   }
   html {
     color-scheme: dark;
+    /* Anchor jumps land below the sticky search bar. */
+    scroll-padding-top: 76px;
     -webkit-tap-highlight-color: transparent;
   }
   body {
@@ -90,7 +101,7 @@
   *::before,
   *::after {
     animation: none !important;
-    transition: none !important;
+    transition-property: opacity, color, background-color, border-color !important;
     scroll-behavior: auto !important;
   }
 }
@@ -106,11 +117,13 @@ video::cue {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(12px);
+    filter: blur(4px);
   }
 }
+/* Enter motion for toasts, menus and dialogs. */
 .toast-in {
-  animation: toast-in 0.22s ease-out;
+  animation: toast-in 0.3s ease-out both;
 }
 
 /*

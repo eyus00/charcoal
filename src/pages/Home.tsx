@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Film, Play, Star, Tv } from 'lucide-react';
+import { Film, Pause, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
@@ -47,6 +47,8 @@ function Hero() {
   const items = useMemo(() => cleanList(data?.results ?? []).filter((m) => m.backdrop_path).slice(0, 8), [data]);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // The user's own pause (button); hover and keyboard focus pause it temporarily.
+  const [stopped, setStopped] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const frameRef = useRef<HTMLElement>(null);
@@ -57,7 +59,7 @@ function Hero() {
   useKeys({ ArrowLeft: () => go(-1), ArrowRight: () => go(1) }, items.length > 1);
 
   useEffect(() => {
-    if (items.length < 2 || paused || dragging || REDUCED_MOTION) return;
+    if (items.length < 2 || paused || stopped || dragging || REDUCED_MOTION) return;
     const t = setTimeout(() => !document.hidden && setIndex((i) => (i + 1) % items.length), 9000);
     return () => clearTimeout(t);
   }, [items.length, paused, dragging, index]);
@@ -121,6 +123,8 @@ function Hero() {
       className={cx(frame, 'cursor-pointer touch-pan-y select-none')}
       onPointerEnter={(e) => e.pointerType === 'mouse' && setPaused(true)}
       onPointerLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setPaused(false)}
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}
@@ -132,7 +136,7 @@ function Hero() {
         return (
           <div
             key={typeOf(m) + m.id}
-            aria-hidden={o !== 0}
+            inert={o !== 0}
             className="absolute inset-0 will-change-transform"
             style={{
               transform: `translateX(calc(${o * 100}% + ${dragX}px))`,
@@ -146,9 +150,19 @@ function Hero() {
 
       <div className="absolute inset-x-0 bottom-5 z-20 flex items-end justify-between gap-4 px-4 md:bottom-7 md:px-8 lg:px-10">
         <div className="flex items-center gap-0.5 pb-1">
+          {!REDUCED_MOTION && (
+            <button
+              onClick={() => setStopped((v) => !v)}
+              aria-label={stopped ? 'Play slideshow' : 'Pause slideshow'}
+              title={stopped ? 'Play slideshow' : 'Pause slideshow'}
+              className="mr-1.5 grid size-7 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              {stopped ? <Play className="ml-px size-3.5 fill-current" strokeWidth={0} /> : <Pause className="size-3.5 fill-current" strokeWidth={0} />}
+            </button>
+          )}
           {items.map((m, i) => (
             <button key={m.id} onClick={() => setIndex(i)} aria-label={`Show ${titleOf(m)}`} aria-current={i === index} className="grid h-6 place-items-center px-0.5">
-              <span className={cx('block h-1.5 rounded-full transition-all duration-500', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
+              <span className={cx('block h-1.5 rounded-full transition-[width,background-color] duration-500', i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/40')} />
             </button>
           ))}
           <Kbd className="ml-3">← →</Kbd>
@@ -193,9 +207,10 @@ function Hero() {
 }
 
 /** Text rises in when its slide becomes active. */
-const RISE = 'transition-[transform,opacity] duration-700 ease-out';
-const SHOWN = 'translate-y-0 opacity-100';
-const HIDDEN = 'translate-y-4 opacity-0 delay-0!';
+// Tailwind 4 translate utilities set the `translate` property, so that is what transitions.
+const RISE = 'transition-[translate,opacity,filter] duration-500 ease-out';
+const SHOWN = 'translate-y-0 opacity-100 blur-none';
+const HIDDEN = 'translate-y-3 opacity-0 blur-[4px] delay-0!';
 
 function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
   const type = typeOf(item);
@@ -221,9 +236,9 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
         <div className="max-w-2xl">
           <span className={cx(RISE, shown ? SHOWN : HIDDEN, 'inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85 backdrop-blur-sm')}>
             <TypeIcon className="size-3.5" />
-            {type === 'movie' ? 'Movie' : 'Series'}
+            {type === 'movie' ? 'Movie' : 'TV show'}
           </span>
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75 delay-75')}>
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-3 flex flex-wrap items-center gap-x-2 text-sm text-white/75')}>
             {[genres.join(', '), yearOf(item)].filter(Boolean).map((t, k) => (
               <span key={k} className="contents">
                 {k > 0 && <span className="text-white/40">·</span>}
@@ -240,12 +255,12 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
               </>
             )}
           </p>
-          <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-150')}>
-            <span className="mt-3 line-clamp-2 text-4xl leading-[0.95] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</span>
+          <h2 className={cx(RISE, shown ? SHOWN : HIDDEN, 'delay-100')}>
+            <span className="mt-3 line-clamp-2 text-4xl leading-[1.1] font-light tracking-tight uppercase md:text-6xl xl:text-7xl">{title}</span>
           </h2>
-          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-4 line-clamp-2 max-w-lg text-[15px] text-white/70 delay-200')}>{item.overview}</p>
+          <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-4 line-clamp-2 max-w-lg text-[15px] text-pretty text-white/70 delay-200')}>{item.overview}</p>
           <div className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-6 flex items-center gap-3 delay-300')}>
-            <Link to={`/watch/${type}/${item.id}`} tabIndex={active ? 0 : -1} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
+            <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
             </Link>
             <BookmarkMenu
@@ -287,7 +302,7 @@ function Browse() {
     <section>
       <h2 className="mb-4 text-lg font-semibold tracking-tight md:text-xl">Popular picks</h2>
       <div className="mb-5 flex items-center gap-3">
-        <div className="no-scrollbar scroll-row -mx-1 flex min-w-0 flex-1 gap-2.5 overflow-x-auto px-1" role="tablist" aria-label="Categories">
+        <div className="no-scrollbar scroll-row -ml-1 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-10 pl-1 [mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]" role="group" aria-label="Categories">
           {CATEGORIES.map((c) => (
             <Pill key={c} on={c === cat} onClick={() => choose(c)}>
               {c === 'trending' ? 'Trending' : GENRES.find((g) => g.slug === c)!.name}

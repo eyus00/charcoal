@@ -37,7 +37,7 @@ export default function RouteError() {
         <span className="grid size-14 place-items-center rounded-2xl bg-surface text-muted">
           <AlertTriangle className="size-6" />
         </span>
-        <h1 className="mt-5 text-xl font-semibold">{chunk ? 'Charcoal was updated' : 'Something went wrong'}</h1>
+        <h1 className="mt-5 text-xl font-semibold">{chunk ? 'Charcoal was updated' : 'This page couldn’t load'}</h1>
         <p className="mt-2 text-sm text-muted">
           {chunk ? 'Reload to get the latest version.' : 'This page hit an unexpected error. Reloading usually fixes it.'}
         </p>

@@ -27,3 +27,5 @@ export function addRecent(q: string) {
 
 export const removeRecent = (q: string) => save(getRecent().filter((x) => x !== q));
 export const clearRecent = () => save([]);
+/** Put a previous list back (Undo). */
+export const restoreRecent = (list: string[]) => save(list.slice(0, MAX));

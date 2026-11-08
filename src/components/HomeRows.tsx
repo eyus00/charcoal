@@ -50,8 +50,8 @@ function LazyRow({
 function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
     <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3')}>
-      <div className="line-clamp-1 text-[15px] leading-5 font-medium">{titleOf(item)}</div>
-      <p className="mt-1.5 line-clamp-4 text-[13px] leading-[18px] text-muted">{item.overview}</p>
+      <div className="line-clamp-1 text-[15px] leading-[1.3] font-medium" title={titleOf(item)}>{titleOf(item)}</div>
+      <p className="mt-1.5 line-clamp-4 text-[13px] leading-[1.4] text-muted">{item.overview}</p>
       <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
     </div>
   );
@@ -72,7 +72,7 @@ const listSkeleton = (n: number, extra = '') =>
 // background so the part over the image reads like a cut-out.
 const RANK_STYLE = {
   WebkitTextStroke: '2px rgb(255 255 255 / 0.85)',
-  color: 'rgb(13 16 22 / 0.55)',
+  color: 'color-mix(in oklab, var(--color-bg) 55%, transparent)',
   fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
   textShadow: '0 4px 24px rgb(0 0 0 / 0.5)',
 } as const;
@@ -81,7 +81,7 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
     // Extra right margin leaves room for the number to leak past the card's edge.
-    <div className="relative mr-3 shrink-0 snap-start md:mr-4" role="listitem" aria-label={`Number ${rank}`}>
+    <div className="relative mr-3 shrink-0 snap-start md:mr-4">
       <EpisodeTile
         to={`/${t}/${item.id}`}
         type={t}
@@ -215,7 +215,7 @@ export function AiringThisWeek() {
 
 function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
-    <Link to={`/${type}/${item.id}`} {...usePrefetch(type, item.id)} className={LIST_CARD} role="listitem">
+    <Link to={`/${type}/${item.id}`} {...usePrefetch(type, item.id)} className={LIST_CARD}>
       <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className={LIST_POSTER} />
       <CardText item={item} type={type} />
     </Link>

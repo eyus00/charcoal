@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Keyboard, X } from 'lucide-react';
 import { actions, getState } from '../lib/store';
 import { isTypingTarget, keyState } from '../lib/util';
+import Modal from './Modal';
 
 export const GO: Record<string, { to: string; label: string }> = {
   h: { to: '/', label: 'Home' },
@@ -74,8 +75,9 @@ export default function Hotkeys({ openSearch }: { openSearch?: () => void }) {
 
   if (!help) return null;
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4" onClick={() => setHelp(false)}>
-      <div role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" className="max-h-[85dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-surface p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <Modal label="Keyboard shortcuts" onClose={() => setHelp(false)}>
+    <div className="fixed inset-0 grid place-items-center bg-black/70 p-4" onClick={() => setHelp(false)}>
+      <div className="toast-in max-h-[85dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-3xl border border-transparent bg-surface p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center gap-3">
           <Keyboard className="size-5 text-muted" />
           <h2 className="flex-1 text-lg font-semibold">Keyboard shortcuts</h2>
@@ -83,7 +85,7 @@ export default function Hotkeys({ openSearch }: { openSearch?: () => void }) {
             <X className="size-4" />
           </button>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {SECTIONS.map((s) => (
             <section key={s.title}>
               <h3 className="mb-2 text-sm text-muted">{s.title}</h3>
@@ -106,5 +108,6 @@ export default function Hotkeys({ openSearch }: { openSearch?: () => void }) {
         </div>
       </div>
     </div>
+    </Modal>
   );
 }

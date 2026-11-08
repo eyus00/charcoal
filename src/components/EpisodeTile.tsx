@@ -44,7 +44,7 @@ interface Props {
 /** Outlined landscape card: still image with corner chips, two text lines, type icon bottom-right. */
 export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, children }: Props) {
   return (
-    <div className={cx('group relative', width, className)} role="listitem">
+    <div className={cx('group relative', width, className)}>
       <Link to={to} title={title} className="block" {...linkProps}>
         <div className="relative overflow-hidden rounded-t-2xl">
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
@@ -66,7 +66,7 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           )}
         </div>
         <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
-          <div className="truncate text-[15px] font-medium text-white/95">{primary}</div>
+          <div className="truncate text-[15px] font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{primary}</div>
           <div className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted">
             <span className="min-w-0 truncate">{secondary}</span>
             <TypeIcon type={type} />

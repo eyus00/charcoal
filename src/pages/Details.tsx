@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Play, RotateCcw, Share2, Star, X } from 'lucide-react';
@@ -7,6 +6,7 @@ import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
+import Modal from '../components/Modal';
 import MediaCard from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import { epLabel } from '../lib/episodes';
@@ -60,7 +60,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
   const trailers = trailersOf(d);
   const [trailer, setTrailer] = useState<Video | null>(null);
   const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 20);
-  const length = type === 'movie' ? formatRuntime(d.runtime) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons > 1 ? 's' : ''}` : '';
+  const length = type === 'movie' ? formatRuntime(d.runtime) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
 
   // Episode selector open state lives in the URL (?episodes=<season>), so Back closes it.
   const episodesParam = params.get('episodes');
@@ -102,7 +102,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             {/* Wider screens: it hangs off the info card's bottom-right corner. */}
             {type === 'tv' && <NextEpisodeCard d={d} className="absolute bottom-0 left-full z-10 hidden -translate-x-24 translate-y-1/2 md:flex" />}
-            <h1 className="text-3xl leading-tight font-semibold tracking-tight md:text-4xl">{title}</h1>
+            <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
               {[yearOf(d), d.vote_average > 0 ? 'rating' : '', length].filter(Boolean).map((x, i) => (
@@ -163,7 +163,7 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
       />
       <Scroller label="Trailers and videos" scrollRef={ref}>
         {videos.map((v) => (
-          <button key={v.key} onClick={() => onPlay(v)} className="group w-64 shrink-0 snap-start text-left sm:w-80" role="listitem">
+          <button key={v.key} onClick={() => onPlay(v)} title={v.name} className="group w-64 shrink-0 snap-start text-left sm:w-80">
             <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface">
               <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
               <span className="absolute inset-0 grid place-items-center">
@@ -172,7 +172,7 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
                 </span>
               </span>
             </div>
-            <div className="mt-2.5 truncate text-[15px] font-medium">{v.name}</div>
+            <div className="mt-2.5 line-clamp-2 text-[15px] font-medium text-pretty">{v.name}</div>
             <div className="text-[13px] text-muted">{v.type}</div>
           </button>
         ))}
@@ -182,31 +182,25 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
 }
 
 function TrailerModal({ video, onClose }: { video: Video; onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
   return (
-    <div role="dialog" aria-modal="true" aria-label={video.name} className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-4" onClick={onClose}>
-      <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-        <button autoFocus onClick={onClose} aria-label="Close trailer" className="absolute -top-12 right-0 grid size-10 place-items-center rounded-full bg-white/10 hover:bg-white/20">
-          <X className="size-5" />
-        </button>
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1&rel=0`}
-          title={video.name}
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowFullScreen
-          className="aspect-video w-full rounded-3xl bg-black"
-        />
+    <Modal label={video.name} onClose={onClose}>
+      <div className="fixed inset-0 grid place-items-center bg-black/85 p-4" onClick={onClose}>
+        {/* Width is capped by the height too, so the close button stays on screen in landscape and at high zoom. */}
+        <div className="flex w-full max-w-[min(64rem,calc((100dvh-6rem)*16/9))] flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
+          <button onClick={onClose} aria-label="Close trailer" className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/20">
+            <X className="size-5" />
+          </button>
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1&rel=0`}
+            title={video.name}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            className="aspect-video w-full rounded-3xl bg-black"
+          />
+          <p className="w-full truncate text-sm text-white/70">{video.name}</p>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -266,7 +260,7 @@ function ShareButton({ title }: { title: string }) {
       await navigator.clipboard.writeText(url);
       toast('Link copied');
     } catch {
-      toast('Couldn’t copy the link');
+      toast('Couldn’t copy the link. Copy it from the address bar.');
     }
   };
   return (
@@ -275,7 +269,7 @@ function ShareButton({ title }: { title: string }) {
       onClick={share}
       aria-label="Share"
       title="Share"
-      className="grid size-12 place-items-center rounded-full text-white ring-2 ring-white/70 transition hover:bg-white/15 active:scale-95"
+      className="grid size-12 place-items-center rounded-full text-white ring-2 ring-white/70 transition hover:bg-white/15 active:scale-[0.96]"
     >
       <Share2 className="size-[18px]" />
     </button>
@@ -321,25 +315,12 @@ function Overview({ text, title }: { text: string; title: string }) {
 
 /** The full description in a small popup (sheet on phones). */
 function OverviewDialog({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
-  // Portal: the info card's backdrop blur would otherwise trap this fixed overlay inside the card.
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 md:p-8" onClick={onClose}>
+  return (
+    <Modal label={`About ${title}`} onClose={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 p-4 md:p-8" onClick={onClose}>
       {/* Same look as the episode list (header, round close button, divider); a centred popup everywhere. */}
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`About ${title}`}
-        className="toast-in flex max-h-[80dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl"
+        className="toast-in flex max-h-[80dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-transparent bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
@@ -347,20 +328,20 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
             <h2 className="truncate text-lg font-semibold md:text-xl">Overview</h2>
             <p className="truncate text-sm text-muted">{title}</p>
           </div>
-          <button autoFocus onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
+          <button onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
             <X className="size-5" />
           </button>
         </div>
-        <div className="overflow-y-auto border-t border-line px-5 py-5 md:px-7 md:pb-7">
+        <div className="overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7 md:pb-7">
           <p className="text-[15px] leading-relaxed text-white/80">{text}</p>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
+    </Modal>
   );
 }
 
-const PRIMARY = 'flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90 active:scale-95';
+const PRIMARY = 'flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-[15px] font-medium text-black transition hover:bg-white/90 active:scale-[0.96]';
 const SECONDARY = 'flex h-12 items-center gap-2 rounded-full px-5 text-[15px] ring-1 ring-white/40 transition hover:bg-white/10 hover:ring-white/70';
 
 function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisodes: () => void }) {

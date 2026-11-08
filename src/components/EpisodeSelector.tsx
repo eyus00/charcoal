@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Play, X } from 'lucide-react';
 import Img from './Img';
+import Modal from './Modal';
 import { Chip } from './EpisodeTile';
 import Kbd from './Kbd';
 import { CARD_INFO } from './MediaCard';
@@ -53,7 +54,6 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   // Keys: Esc closes, ←/→ switch season, P plays the resume / first episode.
   const keys = useRef<(e: KeyboardEvent) => void>(() => {});
   keys.current = (e) => {
-    if (e.key === 'Escape') return onClose();
     if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e)) return;
     const at = seasons.findIndex((x) => x.season_number === season);
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -67,16 +67,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
       navigate(href(cta.s, cta.e), { replace });
     }
   };
-  // lock page scroll while open
+  // Season and play keys (Modal handles Escape, focus and scroll lock).
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => keys.current(e);
     window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   // bring the relevant episode into view once the season has loaded
@@ -89,7 +84,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   // keep the selected season's tab visible (long-running shows have dozens)
   const tabs = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    tabs.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    tabs.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [season]);
 
   const pick = (n: number) => {
@@ -101,12 +96,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   const cta = resume?.season !== undefined ? { s: resume.season, e: resume.episode!, label: resume.isNext ? 'Play' : 'Resume' } : { s: first, e: 1, label: 'Play' };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
+    <Modal label={`${titleOf(show)} episodes`} onClose={onClose}>
+    <div className="fixed inset-0 flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${titleOf(show)} episodes`}
-        className="flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl md:h-[84dvh] md:max-w-5xl md:rounded-3xl"
+        className="toast-in flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-transparent bg-surface shadow-2xl md:h-[84dvh] md:max-w-5xl md:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
@@ -119,12 +112,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           </button>
         </div>
 
-        <div ref={tabs} className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="tablist" aria-label="Seasons">
+        <div ref={tabs} className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="group" aria-label="Seasons">
           {seasons.map((s) => (
             <button
               key={s.season_number}
-              role="tab"
-              aria-selected={s.season_number === season}
+              aria-pressed={s.season_number === season}
               onClick={() => pick(s.season_number)}
               onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
               className={cx(
@@ -137,9 +129,9 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           ))}
         </div>
 
-        <div ref={list} className="flex-1 overflow-y-auto border-t border-line px-5 py-5 md:px-7">
+        <div ref={list} className="flex-1 overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7">
           {isPending ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }, (_, i) => (
                 <div key={i}>
                   <Bone className="aspect-video rounded-b-none rounded-t-2xl" />
@@ -155,7 +147,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
           ) : !data.episodes.length ? (
             <p className="py-16 text-center text-muted">No episodes listed yet.</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data.episodes.map((ep) => {
                 const h = progress.get(ep.episode_number);
                 const pct = percent(h);
@@ -200,13 +192,13 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         </span>
                       )}
                     </div>
-                    <div className={cx(CARD_INFO, 'h-[112px] px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
+                    <div className={cx(CARD_INFO, 'h-full min-h-[112px] px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                        <h3 className="truncate text-[15px] font-medium text-white/95">{ep.name}</h3>
+                        <h3 className="line-clamp-2 min-w-0 text-[15px] font-medium text-balance text-white/95">{ep.name}</h3>
                       </div>
                       {!upcoming && ep.air_date && <div className="text-[13px] text-faint">{formatDate(ep.air_date)}</div>}
-                      {ep.overview && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[18px] text-muted">{ep.overview}</p>}
+                      {ep.overview && <p className="mt-1.5 text-[13px] leading-[1.4] text-pretty text-muted">{ep.overview}</p>}
                     </div>
                   </>
                 );
@@ -246,5 +238,6 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
         </div>
       </div>
     </div>
+    </Modal>
   );
 }

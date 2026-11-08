@@ -1,12 +1,12 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cx } from '../lib/util';
+import { cx, scrollBehavior } from '../lib/util';
 
 /** Horizontal scroller with native scrolling + snap. Arrows live in the header (see RowArrows). */
 export function Scroller({ children, label, scrollRef }: { children: ReactNode; label: string; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div ref={scrollRef} role="list" aria-label={label} className="no-scrollbar scroll-row -mx-1 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1">
+    <div ref={scrollRef} role="group" aria-label={label} className="no-scrollbar scroll-row -mx-1 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-1">
       {children}
     </div>
   );
@@ -14,7 +14,7 @@ export function Scroller({ children, label, scrollRef }: { children: ReactNode; 
 
 export function useRowScroll() {
   const ref = useRef<HTMLDivElement>(null);
-  const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
+  const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: scrollBehavior() });
   return { ref, scroll };
 }
 

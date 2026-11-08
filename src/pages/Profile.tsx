@@ -9,11 +9,14 @@ import { EMBEDS } from '../lib/servers';
 import { checkProxy, normalizeProxy } from '../lib/proxy';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
-import { cx, useTitle } from '../lib/util';
+import { cx, scrollBehavior, useTitle } from '../lib/util';
 
 /** Fixed container card for each profile section (matches the settings cards). */
 /** Fixed-width columns: cards stay the same size as everywhere else instead of stretching. */
 const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,190px)] sm:gap-4 lg:grid-cols-[repeat(auto-fill,216px)]';
+
+/** "1 history entry" / "3 history entries". */
+const plural = (n: number, one: string, other: string) => `${n} ${new Intl.PluralRules('en').select(n) === 'one' ? one : other}`;
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 
@@ -45,7 +48,7 @@ export default function Profile() {
     if (!hash || hash === '#profile') return;
     const el = document.querySelector(hash);
     if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     el.classList.add('highlight');
     const t = setTimeout(() => el.classList.remove('highlight'), 1000);
     return () => clearTimeout(t);
@@ -53,7 +56,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-8 pb-10 md:space-y-10">
-      <section id="profile" className="scroll-mt-10 space-y-3">
+      <section id="profile" className="scroll-mt-4 space-y-3">
         <div className="flex items-center gap-4 rounded-3xl bg-surface p-5">
           <div className="grid size-14 place-items-center rounded-2xl bg-raised text-accent">
             <UserCircle className="size-7" />
@@ -73,12 +76,11 @@ export default function Profile() {
         </div>
       </section>
 
-      <div className="flex rounded-full bg-surface p-1 sm:inline-flex" role="tablist" aria-label="Profile sections">
+      <div className="flex rounded-full bg-surface p-1 sm:inline-flex" role="group" aria-label="Profile sections">
         {(['library', 'settings'] as const).map((t) => (
           <button
             key={t}
-            role="tab"
-            aria-selected={tab === t}
+            aria-pressed={tab === t}
             onClick={() => setTab(t)}
             className={cx('h-10 flex-1 rounded-full px-6 text-sm transition sm:flex-none', tab === t ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
           >
@@ -89,7 +91,7 @@ export default function Profile() {
 
       {tab === 'library' ? (
         <>
-          <div id="history" className={cx(PANEL, 'scroll-mt-10')}>
+          <div id="history" className={cx(PANEL, 'scroll-mt-4')}>
             {titles.length ? (
               <ContinueWatching items={titles} title="Watch history" />
             ) : (
@@ -99,12 +101,12 @@ export default function Profile() {
               </>
             )}
           </div>
-          <div id="watchlist" className={cx(PANEL, 'scroll-mt-10')}>
+          <div id="watchlist" className={cx(PANEL, 'scroll-mt-4')}>
             <Watchlist />
           </div>
         </>
       ) : (
-        <div id="settings" className="scroll-mt-10">
+        <div id="settings" className="scroll-mt-4">
           <SettingsSection />
         </div>
       )}
@@ -116,10 +118,10 @@ export default function Profile() {
 
 const FILTERS: { id: string; label: string; status?: WatchStatus; type?: 'movie' | 'tv' }[] = [
   { id: 'watching', label: 'Watching', status: 'watching' },
-  { id: 'planned', label: 'To Watch', status: 'planned' },
+  { id: 'planned', label: 'To watch', status: 'planned' },
   { id: 'completed', label: 'Watched', status: 'completed' },
   { id: 'movie', label: 'Movies', type: 'movie' },
-  { id: 'tv', label: 'TV Shows', type: 'tv' },
+  { id: 'tv', label: 'TV shows', type: 'tv' },
 ];
 
 function Watchlist() {
@@ -140,12 +142,12 @@ function Watchlist() {
 
   return (
     <section>
-      <SectionHeader title="Watchlist" action={<span className="text-sm text-muted">{watchlist.length} item{watchlist.length === 1 ? '' : 's'}</span>} />
+      <SectionHeader title="Watchlist" action={<span className="text-sm text-muted">{plural(watchlist.length, 'item', 'items')}</span>} />
       {!watchlist.length ? (
         <EmptyCard icon={Bookmark} title="Your watchlist is empty" body="Use the bookmark button on any movie or show to save it here." />
       ) : (
         <>
-          <div className="no-scrollbar scroll-row -mx-1 mb-6 flex gap-2.5 overflow-x-auto px-1">
+          <div className="mb-6 flex flex-wrap gap-2.5">
             {FILTERS.map((f) => (
               <Pill key={f.id} on={active.has(f.id)} onClick={() => toggle(f.id)} className="flex items-center gap-2">
                 {f.status && <StatusDot status={f.status} />}
@@ -199,7 +201,6 @@ function SettingsSection() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [proxy, setProxy] = useState(settings.proxyUrl);
   const [proxyState, setProxyState] = useState<{ ok: boolean; text: string } | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
 
   const saveProxy = async () => {
     const url = normalizeProxy(proxy);
@@ -212,7 +213,7 @@ function SettingsSection() {
     setProxyState({ ok: true, text: 'Checking…' });
     const r = await checkProxy(url);
     if (r.ok) actions.updateSettings({ proxyUrl: url });
-    setProxyState(r.ok ? { ok: true, text: 'Saved. The proxy responded and will be used for Jelly streams.' } : { ok: false, text: `Not saved: ${r.error}` });
+    setProxyState(r.ok ? { ok: true, text: 'Saved. The proxy responded and will be used for Jelly streams.' } : { ok: false, text: `Not saved: ${r.error}.` });
   };
 
   const download = () => {
@@ -227,14 +228,15 @@ function SettingsSection() {
   const card = 'rounded-3xl bg-surface p-5 md:p-6';
   return (
     <section>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className={cx(card, 'space-y-5')}>
           <h3 className="font-medium">Playback</h3>
           <Row label="Default server" hint="Jelly switches to an embedded player automatically if it finds nothing.">
             <select
               value={settings.server}
               onChange={(e) => actions.updateSettings({ server: e.target.value })}
-              className="h-11 rounded-xl bg-raised px-3 text-sm outline-none"
+              aria-label="Default server"
+              className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
             >
               <option value="jelly">Jelly (direct)</option>
               {EMBEDS.map((e) => (
@@ -244,7 +246,7 @@ function SettingsSection() {
               ))}
             </select>
           </Row>
-          <Toggle label="Autoplay next episode" hint="Jelly player" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
+          <Toggle label="Autoplay next episode" hint="Only in the Jelly player" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle label="Block pop-ups in embeds" hint="Some servers refuse to play when on" on={settings.blockPopups} onChange={(v) => actions.updateSettings({ blockPopups: v })} />
         </div>
 
@@ -268,12 +270,14 @@ function SettingsSection() {
               autoComplete="off"
               spellCheck={false}
               aria-label="Stream proxy URL"
-              className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-sm outline-none placeholder:text-faint focus:ring-1 focus:ring-white/20"
+              className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
             />
             <button className="h-11 rounded-xl bg-accent px-5 text-sm font-medium text-black hover:bg-accent-hover">Save</button>
           </form>
-          {proxyState && <p className={cx('text-sm', proxyState.ok ? 'text-emerald-400' : 'text-red-400')}>{proxyState.text}</p>}
-          {settings.proxyUrl && !proxyState && <p className="text-sm text-emerald-400">Using {settings.proxyUrl}</p>}
+          {/* Always mounted, so screen readers announce the result. */}
+          <p role="status" className={cx('text-sm empty:hidden', proxyState?.ok === false ? 'text-danger' : 'text-success')}>
+            {proxyState?.text ?? (settings.proxyUrl ? `Using ${settings.proxyUrl}` : '')}
+          </p>
         </div>
 
         <div className={cx(card, 'space-y-3 md:col-span-2')}>
@@ -286,27 +290,18 @@ function SettingsSection() {
             <button onClick={() => file.current?.click()} className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm hover:bg-line">
               <Upload className="size-4" /> Import
             </button>
-            {historyCount > 0 &&
-              (confirmClear ? (
-                <span className="flex items-center gap-2 text-sm">
-                  Clear all history?
-                  <button onClick={() => {
-                    const before = getState().history;
-                    actions.clearHistory();
-                    setConfirmClear(false);
-                    toast('Watch history cleared', { label: 'Undo', run: () => actions.restore({ history: before }) });
-                  }} className="h-11 rounded-xl bg-red-500/80 px-4 hover:bg-red-500">
-                    Clear
-                  </button>
-                  <button onClick={() => setConfirmClear(false)} className="h-11 rounded-xl bg-raised px-4">
-                    Cancel
-                  </button>
-                </span>
-              ) : (
-                <button onClick={() => setConfirmClear(true)} className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm text-red-300 hover:bg-red-500/15">
-                  <Trash2 className="size-4" /> Clear history
-                </button>
-              ))}
+            {historyCount > 0 && (
+              <button
+                onClick={() => {
+                  const before = getState().history;
+                  actions.clearHistory();
+                  toast('Watch history cleared', { label: 'Undo', run: () => actions.restore({ history: before }) });
+                }}
+                className="flex h-11 items-center gap-2 rounded-xl bg-raised px-4 text-sm text-danger hover:bg-danger/15"
+              >
+                <Trash2 className="size-4" strokeWidth={1.5} /> Clear history
+              </button>
+            )}
             <input
               ref={file}
               type="file"
@@ -318,14 +313,16 @@ function SettingsSection() {
                 if (!f) return;
                 try {
                   const r = actions.importData(await f.text());
-                  setMsg({ ok: true, text: `Imported ${r.history} history entries and ${r.watchlist} watchlist items.` });
+                  setMsg({ ok: true, text: `Imported ${plural(r.history, 'history entry', 'history entries')} and ${plural(r.watchlist, 'watchlist item', 'watchlist items')}.` });
                 } catch {
-                  setMsg({ ok: false, text: 'That file isn’t a Charcoal backup.' });
+                  setMsg({ ok: false, text: 'That file isn’t a Charcoal backup. Choose a .json file made with Export.' });
                 }
               }}
             />
           </div>
-          {msg && <p className={cx('text-sm', msg.ok ? 'text-emerald-400' : 'text-red-400')}>{msg.text}</p>}
+          <p role="status" className={cx('text-sm empty:hidden', msg?.ok === false ? 'text-danger' : 'text-success')}>
+            {msg?.text ?? ''}
+          </p>
         </div>
       </div>
     </section>
@@ -365,7 +362,7 @@ function EmptyCard({ icon: Icon, title, body }: { icon?: typeof Film; title: str
     <div className="flex flex-col items-center gap-2 rounded-2xl bg-raised/50 px-6 py-12 text-center">
       {Icon && <Icon className="mb-1 size-7 text-faint" />}
       <p className="font-medium">{title}</p>
-      {body && <p className="max-w-sm text-sm text-muted">{body}</p>}
+      {body && <p className="max-w-sm text-sm text-pretty text-muted">{body}</p>}
       {Icon && (
         <Link to="/discover" className="mt-3 h-11 rounded-full bg-white px-5 text-sm leading-[2.75rem] font-medium text-black hover:bg-white/90">
           Browse titles

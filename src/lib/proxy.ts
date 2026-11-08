@@ -21,9 +21,9 @@ export function normalizeProxy(input: string): string {
 export async function checkProxy(base: string): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout?.(8000) });
-    if (!res.ok) return { ok: false, error: `it answered ${res.status}` };
+    if (!res.ok) return { ok: false, error: `the proxy answered with error ${res.status}. Check that the Worker is deployed and the URL is right` };
     const body = await res.json().catch(() => null);
-    return body?.service === 'charcoal-proxy' ? { ok: true } : { ok: false, error: 'that URL isn’t a Charcoal stream proxy' };
+    return body?.service === 'charcoal-proxy' ? { ok: true } : { ok: false, error: 'that URL isn’t a Charcoal stream proxy. Paste the URL of your deployed Worker' };
   } catch {
     return { ok: false, error: 'couldn’t reach it (check the URL, and that the Worker is deployed)' };
   }
