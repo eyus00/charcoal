@@ -6,6 +6,7 @@ import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
+import { DetailsSkeleton } from '../components/Skeletons';
 import Modal from '../components/Modal';
 import MediaCard from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
@@ -26,7 +27,7 @@ export default function Details({ type }: { type: MediaType }) {
 
   if (!valid || (error instanceof HttpError && error.status === 404)) return <NotFound />;
   if (error) return <ErrorBox onRetry={() => refetch()} />;
-  if (isPending) return <div className={cx(BLEED, 'skeleton h-[92svh] md:h-[86svh]')} />;
+  if (isPending) return <DetailsSkeleton className={cx(BLEED, 'min-h-[92svh] md:min-h-[86svh]')} />;
   return <DetailsView key={type + id} d={data} type={type} />;
 }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, ChevronDown, Keyboard, SkipBack, SkipForward, X } from 'lucide-react';
+import { Check, ChevronDown, Keyboard, SkipBack, SkipForward, X } from 'lucide-react';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -219,11 +219,9 @@ function nextLabel(n: { season: number; episode: number }, eps?: { season_number
 
 // ---------- header ----------
 
-/** Soft grouped box, like the sidebar's groups; readable over video and over the page. */
+
 /** Text links underline on hover (the app-wide convention for links that are text). */
 const TEXT_LINK = 'underline-offset-4 decoration-white/40 hover:underline';
-
-const BOX = 'flex shrink-0 items-center gap-0.5 rounded-2xl bg-black/30 p-1 ring-1 ring-white/10 backdrop-blur-xl';
 
 function Header({
   title,
@@ -243,87 +241,87 @@ function Header({
   serverMenu: React.ReactNode;
 }) {
   return (
-    // Back on the left, the title box centred, server + shortcuts on the right.
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-3 md:px-5">
-      <div className={cx(BOX, 'justify-self-start')}>
-        <HeaderButton label="Back to details" keys="Esc" to={detailsUrl}>
-          <ArrowLeft className="size-[18px]" />
+    // Close on the left, the title centred, server + shortcuts on the right. No boxes: plain round
+    // controls like the details page.
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-4 md:px-5">
+      <div className="justify-self-start">
+        <HeaderButton label="Close player" keys="Esc" to={detailsUrl} solid>
+          <X className="size-5" />
         </HeaderButton>
       </div>
       <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} prev={prev} next={next} onEpisodes={onEpisodes} />
-      <div className="flex shrink-0 items-center gap-2 justify-self-end md:gap-3">
+      <div className="flex shrink-0 items-center gap-1 justify-self-end md:gap-3">
         {serverMenu}
-        <div className={cx(BOX, 'hidden lg:flex')}>
-          <button
-            type="button"
-            onClick={() => hotkeysCtl.help()}
-            aria-label="Keyboard shortcuts (?)"
-            title="Keyboard shortcuts"
-            className="flex h-10 items-center gap-2 rounded-xl px-3 text-faint transition hover:bg-white/10 hover:text-white"
-          >
-            <Keyboard className="size-[18px]" strokeWidth={1.5} />
-            <Kbd>?</Kbd>
-          </button>
-        </div>
+        {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
+        <button
+          type="button"
+          onClick={() => hotkeysCtl.help()}
+          aria-label="Keyboard shortcuts (?)"
+          title="Keyboard shortcuts"
+          className="hidden h-10 items-center gap-2 rounded-xl px-2 text-faint transition hover:text-white lg:flex"
+        >
+          <Keyboard className="size-[18px]" strokeWidth={1.5} />
+          <Kbd>?</Kbd>
+        </button>
       </div>
     </div>
   );
 }
 
 /**
- * The centred title box. For TV the whole box is one big "Episodes" button (a full-size button
- * underneath everything); previous, next and the title sit on top of it, so hovering one of them
- * hands the hover to that control and the box stops highlighting.
+ * The centred title. For TV the whole area is one "Episodes" button (a full-size button
+ * underneath); previous, the title link and next sit on top, so pointing at one of them hands
+ * the hover to it.
  */
 function TitleBox({ title, subtitle, detailsUrl, prev, next, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; prev?: () => void; next?: () => void; onEpisodes?: () => void }) {
+  const text = (
+    <div className="pointer-events-none relative min-w-0 flex-1 px-3 py-1 text-center leading-tight md:px-4">
+      <Link
+        to={detailsUrl}
+        title={`${title}: details`}
+        className={cx(TEXT_LINK, 'pointer-events-auto inline-block max-w-full truncate align-top text-sm font-semibold md:text-base')}
+      >
+        {title}
+      </Link>
+      {subtitle && (
+        <div className="mt-0.5 flex items-center justify-center gap-2 text-xs text-white/65 md:text-caption">
+          <span className="truncate">{subtitle}</span>
+          {onEpisodes && <Kbd className="shrink-0">E</Kbd>}
+        </div>
+      )}
+    </div>
+  );
+  if (!onEpisodes) return <div className="flex min-w-0 justify-self-center">{text}</div>;
   return (
-    <div className={cx(BOX, 'relative min-w-0 justify-self-center md:w-[min(30rem,100%)]')}>
-      {onEpisodes && (
+    <div className="relative flex min-w-0 items-center gap-1 justify-self-center md:w-[min(28rem,100%)]">
+      <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
+        <SkipBack className="size-[18px]" />
+      </HeaderButton>
+      <div className="relative flex min-w-0 flex-1">
         <button
           type="button"
           onClick={onEpisodes}
           aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`}
           className="absolute inset-0 rounded-2xl transition-colors hover:bg-white/[0.07] focus-visible:bg-white/[0.07]"
         />
-      )}
-      {onEpisodes && (
-        <div className="relative">
-          <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
-            <SkipBack className="size-[18px]" />
-          </HeaderButton>
-        </div>
-      )}
-      <div className="pointer-events-none relative min-w-0 flex-1 px-2 text-center leading-tight md:px-3">
-        <Link
-          to={detailsUrl}
-          title={`${title}: details`}
-          className={cx(TEXT_LINK, 'pointer-events-auto inline-block max-w-full truncate align-top text-sm font-semibold md:text-base')}
-        >
-          {title}
-        </Link>
-        {subtitle && (
-          <div className="flex items-center justify-center gap-2 text-xs text-white/65 md:text-caption">
-            <span className="truncate">{subtitle}</span>
-            {onEpisodes && <Kbd className="shrink-0">E</Kbd>}
-          </div>
-        )}
+        {text}
       </div>
-      {onEpisodes && (
-        <div className="relative">
-          <HeaderButton label="Next episode" keys="Shift N" onClick={next} disabled={!next}>
-            <SkipForward className="size-[18px]" />
-          </HeaderButton>
-        </div>
-      )}
+      <HeaderButton label="Next episode" keys="Shift N" onClick={next} disabled={!next}>
+        <SkipForward className="size-[18px]" />
+      </HeaderButton>
     </div>
   );
 }
 
 /** Icon button with a hover label (and its key) shown below it. */
-function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right' }) {
+function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide, solid }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right'; solid?: boolean }) {
   // Buttons near the left edge open their label to the right, so it stays on screen.
   const side = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'left-0' : 'right-0';
-  const cls = 'group relative grid size-10 shrink-0 place-items-center rounded-xl transition hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent';
+  // `solid`: the app's round close button (filled); otherwise a plain round icon button.
+  const cls = cx(
+    'group relative grid size-10 shrink-0 place-items-center rounded-full transition disabled:opacity-30 disabled:hover:bg-transparent',
+    solid ? 'bg-raised hover:bg-line' : 'hover:bg-white/10',
+  );
   const tip = (
     <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
       {label}
@@ -367,21 +365,19 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
   };
   return (
     <div ref={ref} className="relative shrink-0">
-      <div className={BOX}>
-        <button
+      <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={`Server: ${name} (S)`}
-          className={cx('flex h-10 items-center gap-2 rounded-xl px-3 text-sm transition', open ? 'bg-white text-black' : 'hover:bg-white/10')}
+          className={cx('flex h-10 items-center gap-2 rounded-full px-3 text-sm ring-1 transition sm:px-4', open ? 'bg-white text-black ring-white' : 'ring-white/15 hover:bg-white/10')}
         >
           {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
           <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
           <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
           <Kbd light={open}>S</Kbd>
         </button>
-      </div>
       {open && (
         <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
           <div className="px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Direct</div>

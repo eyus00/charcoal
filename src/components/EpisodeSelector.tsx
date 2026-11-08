@@ -233,6 +233,21 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 <Kbd>→</Kbd> Season
               </span>
             )}
+            {current && prev && (
+              <span className="flex items-center gap-1.5">
+                <Kbd>Shift P</Kbd> Previous
+              </span>
+            )}
+            {current && next && (
+              <span className="flex items-center gap-1.5">
+                <Kbd>Shift N</Kbd> Next
+              </span>
+            )}
+            {!current && (
+              <span className="flex items-center gap-1.5">
+                <Kbd>P</Kbd> {cta.label}
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <Kbd>Esc</Kbd> Close
             </span>
@@ -243,11 +258,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               <button
                 onClick={() => prev?.()}
                 disabled={!prev}
-                className="flex h-12 items-center gap-2 rounded-full px-5 text-body-sm ring-1 ring-white/25 transition hover:bg-white/10 enabled:active:scale-[0.96] disabled:opacity-30"
+                className="flex h-12 items-center gap-2.5 rounded-full px-6 text-body-sm font-medium ring-1 ring-white/25 ring-inset transition hover:bg-white/10 enabled:active:scale-[0.96] disabled:opacity-30"
               >
-                <SkipBack className="size-4" strokeWidth={1.5} />
-                <span className="hidden sm:inline">Previous</span>
-                <Kbd>Shift P</Kbd>
+                <SkipBack className="size-4 fill-current" />
+                Previous
               </button>
               <button
                 onClick={() => next?.()}
@@ -255,8 +269,8 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90 enabled:active:scale-[0.96] disabled:opacity-30"
               >
                 <SkipForward className="size-4 fill-current" />
-                Next episode
-                <Kbd light>Shift N</Kbd>
+                Next
+
               </button>
             </div>
           )}
@@ -264,7 +278,6 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className="ml-auto flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90">
               <Play className="size-4 fill-current" strokeWidth={0} />
               {cta.label} {epLabel(cta.s, cta.e)}
-              <Kbd light>P</Kbd>
             </Link>
           )}
         </div>

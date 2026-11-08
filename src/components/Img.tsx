@@ -16,7 +16,8 @@ interface Props {
 
 /**
  * Responsive TMDB image. The wrapper owns the box (give it an aspect ratio or
- * size), so nothing shifts while loading; the image fades in over a placeholder.
+ * size), so nothing shifts while loading. The box shimmers until the image has fully
+ * loaded, then the image fades in whole (never a half-drawn picture).
  */
 export default function Img({ path, kind, sizes, alt, className, imgClassName, priority }: Props) {
   const [loaded, setLoaded] = useState(false);
@@ -24,7 +25,7 @@ export default function Img({ path, kind, sizes, alt, className, imgClassName, p
   const src = imageUrl(path, kind, kind === 'backdrop' ? 780 : kind === 'poster' ? 342 : undefined);
 
   return (
-    <div className={cx('relative overflow-hidden bg-surface', className)}>
+    <div className={cx('relative overflow-hidden', src && !failed && !loaded ? 'skeleton' : 'bg-surface', className)}>
       {src && !failed ? (
         <img
           src={src}
@@ -39,8 +40,8 @@ export default function Img({ path, kind, sizes, alt, className, imgClassName, p
           onError={() => setFailed(true)}
           className={cx(
             'absolute inset-0 size-full object-cover transition-opacity duration-300',
-            loaded ? 'opacity-100' : 'opacity-0',
-            imgClassName,
+            // Extra classes (e.g. dimming) only apply once loaded, so nothing shows half-loaded.
+            loaded ? cx('opacity-100', imgClassName) : 'opacity-0',
           )}
         />
       ) : (
