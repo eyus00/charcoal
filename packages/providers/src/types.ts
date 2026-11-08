@@ -17,8 +17,10 @@ export interface Stream {
   /** e.g. "1080", "720", "auto" */
   quality: string;
   headers: Record<string, string>;
-  /** Audio language name, when the source says. */
+  /** Audio language name, when the source says ("English", "Hindi", "Original"). */
   language?: string;
+  /** ISO 639-1 code of that language, when known ("en", "hi"). */
+  languageCode?: string;
 }
 
 export interface Caption {

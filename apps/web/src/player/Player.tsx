@@ -25,7 +25,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { qualityLabel, type JellyResult, type JellySubtitle } from '../lib/servers';
+import { languageName, qualityLabel, type JellyResult, type JellySubtitle } from '../lib/servers';
 import { actions, getState, useStore } from '../lib/store';
 import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segments';
 import type { MediaType } from '../lib/tmdb';
@@ -318,7 +318,12 @@ export default function Player({ data, media, title, subtitle, overview, poster,
         });
         h.on(HlsCtor.Events.AUDIO_TRACKS_UPDATED, () => {
           setAudioTracks(h.audioTracks.map((t, i) => ({ id: i, name: t.name || t.lang || `Track ${i + 1}` })));
-          setAudioTrack(h.audioTrack);
+          // Several audio languages in one stream (e.g. VixSrc): switch to the preferred one.
+          const pref = getState().settings.audioLang;
+          const want = languageName(pref).toLowerCase();
+          const i = h.audioTracks.findIndex((t) => t.lang?.toLowerCase().startsWith(pref) || t.name?.toLowerCase().startsWith(want));
+          if (i >= 0 && i !== h.audioTrack) h.audioTrack = i;
+          setAudioTrack(i >= 0 ? i : h.audioTrack);
         });
         h.on(HlsCtor.Events.AUDIO_TRACK_SWITCHED, (_e, d) => setAudioTrack(d.id));
         h.on(HlsCtor.Events.ERROR, (_e, d) => {
@@ -1062,7 +1067,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                     <>
                       {levels.length > 1 && <NavItem label="Quality" value={qualityNow} onClick={() => setView('quality')} />}
                       {audioTracks.length > 1 && <NavItem label="Audio" value={audioTracks.find((t) => t.id === audioTrack)?.name} onClick={() => setView('audio')} />}
-                      <NavItem label="Source" value={`${qualityLabel(source.quality)} · ${source.provider.name}`} onClick={() => setView('source')} />
+                      <NavItem label="Source" value={`${qualityLabel(source.quality)} · ${source.provider.name}${source.audioTracks?.[0]?.label ? ` · ${source.audioTracks[0].label}` : ''}`} onClick={() => setView('source')} />
                       <NavItem label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
                       <Divider />
                       <SwitchItem label="Fill screen" hint="Crop to remove black bars" on={fill} onChange={setFill} />
@@ -1137,6 +1142,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                         >
                           <span className="min-w-0 flex-1">
                             {qualityLabel(s.quality)} · {s.provider.name}
+                            {s.audioTracks?.[0]?.label && <span className="text-muted"> · {s.audioTracks[0].label}</span>}
                             {failed.current.has(i) && failReason.current.get(i) && (
                               <span className="block truncate text-xs text-faint" title={failReason.current.get(i)}>
                                 {failReason.current.get(i)}

@@ -61,7 +61,7 @@ function adapt(p: Provider): BaseProvider {
                     url: this.createProxyUrl(s.url, s.headers),
                     type: s.type,
                     quality: s.quality,
-                    audioTracks: [{ language: (s.language ?? 'und').slice(0, 3).toLowerCase(), label: s.language ?? 'Original' }],
+                    audioTracks: [{ language: s.languageCode ?? 'und', label: s.language ?? 'Original' }],
                     provider: { id: p.id, name: p.name },
                 }));
                 const subtitles: Subtitle[] = r.captions.map((c) => ({

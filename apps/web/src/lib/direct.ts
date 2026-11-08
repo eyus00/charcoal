@@ -37,7 +37,7 @@ export async function fetchViaExtension(t: Target, d: Details, signal: AbortSign
         quality: s.quality,
         headers: s.headers,
         provider: { id: o.provider.id, name: o.provider.name },
-        audioTracks: s.language ? [{ language: s.language.slice(0, 3).toLowerCase(), label: s.language }] : undefined,
+        audioTracks: s.language ? [{ language: s.languageCode ?? 'und', label: s.language }] : undefined,
       });
     }
     for (const c of o.result!.captions) if (!subtitles.some((x) => x.url === c.url)) subtitles.push({ url: c.url, label: c.label, format: c.format, headers: c.headers });

@@ -156,11 +156,33 @@ export function qualityLabel(q: string): string {
 
 const RANK: Record<string, number> = { Auto: 0, '1080p': 1, '4K': 2, '1440p': 3, '720p': 4, '480p': 5, '360p': 6, SD: 7 };
 
-/** Adaptive/1080p HLS first; MKV last (most browsers can't play it). */
+/** Display name of a language code ("en" → "English"). */
+export const languageName = (code: string) => {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+};
+
+/** 0 = in the preferred language, 1 = original / unknown, 2 = another language (a dub). */
+export function languageRank(audio: { language: string; label: string }[] | undefined, pref: string): number {
+  const a = audio?.[0];
+  if (!a || /^(und|original)$/i.test(a.language) || /^(original|unknown)$/i.test(a.label)) return 1;
+  const code = a.language.toLowerCase().slice(0, 2);
+  if (code === pref || a.label.toLowerCase() === languageName(pref).toLowerCase()) return 0;
+  return 2;
+}
+
+/** Sources in the preferred audio language first, then adaptive/1080p HLS first; MKV last (most
+ *  browsers can't play it). */
 export function sortSources(list: JellySource[]): JellySource[] {
   const typeRank = (t: string) => (t === 'hls' ? 0 : t === 'mp4' ? 1 : 2);
+  const pref = getState().settings.audioLang;
   return [...list].sort(
     (a, b) =>
+      (typeRank(a.type) === 2 ? 1 : 0) - (typeRank(b.type) === 2 ? 1 : 0) ||
+      languageRank(a.audioTracks, pref) - languageRank(b.audioTracks, pref) ||
       typeRank(a.type) - typeRank(b.type) ||
       (RANK[qualityLabel(a.quality)] ?? 8) - (RANK[qualityLabel(b.quality)] ?? 8),
   );
