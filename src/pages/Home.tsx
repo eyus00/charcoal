@@ -7,6 +7,7 @@ import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
 import Kbd from '../components/Kbd';
+import { btn } from '../components/Button';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_ITEM, ROW_SIZES, RowArrows, Scroller, useRowScroll } from '../components/Row';
 import { HeroSkeleton, RowSkeleton } from '../components/Skeletons';
@@ -260,7 +261,7 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
           </h2>
           <p className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-4 line-clamp-2 max-w-lg text-body-sm text-pretty text-white/70 delay-200')}>{item.overview}</p>
           <div className={cx(RISE, shown ? SHOWN : HIDDEN, 'mt-6 flex items-center gap-3 delay-300')}>
-            <Link to={`/watch/${type}/${item.id}`} className="flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90">
+            <Link to={`/watch/${type}/${item.id}`} className={btn({ variant: 'primary', size: 'lg' })}>
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
             </Link>
             <BookmarkMenu

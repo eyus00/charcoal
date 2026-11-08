@@ -8,6 +8,7 @@ import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
 import Modal from '../components/Modal';
+import { btn } from '../components/Button';
 import MediaCard from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import { epLabel } from '../lib/episodes';
@@ -188,7 +189,7 @@ function TrailerModal({ video, onClose }: { video: Video; onClose: () => void })
       <div className="fixed inset-0 grid place-items-center bg-black/85 p-4" onClick={onClose}>
         {/* Width is capped by the height too, so the close button stays on screen in landscape and at high zoom. */}
         <div className="flex w-full max-w-[min(64rem,calc((100dvh-6rem)*16/9))] flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
-          <button onClick={onClose} aria-label="Close trailer" className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/20">
+          <button onClick={onClose} aria-label="Close trailer" className={btn({ icon: true })}>
             <X className="size-5" />
           </button>
           <iframe
@@ -270,7 +271,7 @@ function ShareButton({ title }: { title: string }) {
       onClick={share}
       aria-label="Share"
       title="Share"
-      className="grid size-12 place-items-center rounded-full text-white ring-2 ring-white/70 transition hover:bg-white/15 active:scale-[0.96]"
+      className={btn({ size: 'lg', icon: true })}
     >
       <Share2 className="size-[18px]" />
     </button>
@@ -370,7 +371,7 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
             <h2 className="truncate text-lg font-semibold md:text-xl">Overview</h2>
             <p className="truncate text-sm text-muted">{title}</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
+          <button onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
             <X className="size-5" />
           </button>
         </div>
@@ -383,8 +384,8 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
   );
 }
 
-const PRIMARY = 'flex h-12 items-center gap-2.5 rounded-full bg-white px-6 text-body-sm font-medium text-black transition hover:bg-white/90 active:scale-[0.96]';
-const SECONDARY = 'flex h-12 items-center gap-2 rounded-full px-5 text-body-sm ring-1 ring-white/40 transition hover:bg-white/10 hover:ring-white/70';
+const PRIMARY = btn({ variant: 'primary', size: 'lg' });
+const SECONDARY = btn({ size: 'lg' });
 
 function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisodes: () => void }) {
   const history = useStore((s) => s.history);

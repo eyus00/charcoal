@@ -12,6 +12,7 @@ import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
 import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
 import { hotkeysCtl } from '../components/Hotkeys';
 import Kbd from '../components/Kbd';
+import { btn } from '../components/Button';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player from '../player/Player';
 
@@ -319,10 +320,8 @@ function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide, s
   // Buttons near the left edge open their label to the right, so it stays on screen.
   const side = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'left-0' : 'right-0';
   // `solid`: the app's round close button (filled); otherwise a plain round icon button.
-  const cls = cx(
-    'group relative grid size-10 shrink-0 place-items-center rounded-full transition disabled:opacity-30 disabled:hover:bg-transparent',
-    solid ? 'bg-raised hover:bg-line' : quiet ? 'text-white/60 hover:bg-white/[0.06] hover:text-white' : 'hover:bg-white/10',
-  );
+  // `solid` (the close button) is a secondary button; the rest are ghost buttons.
+  const cls = cx(btn({ variant: solid ? 'secondary' : 'ghost', icon: true }), 'group relative', quiet && 'text-white/60');
   const tip = (
     <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
       {label}
@@ -372,7 +371,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={`Server: ${name} (S)`}
-          className={cx('flex h-10 items-center gap-2 rounded-full px-3 text-sm ring-1 transition sm:px-4', open ? 'bg-white text-black ring-white' : 'ring-white/15 hover:bg-white/10')}
+          className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'max-sm:px-3')}
         >
           {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
           <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
@@ -444,7 +443,7 @@ function JellyLoading({ backdrop, onSkip }: { backdrop?: string | null; onSkip: 
           </p>
         </div>
         {secs >= 8 && (
-          <button onClick={onSkip} className="h-10 rounded-full bg-white/10 px-5 text-sm hover:bg-white/20">
+          <button onClick={onSkip} className={btn()}>
             Use an embedded player instead
           </button>
         )}
@@ -474,11 +473,11 @@ function Message({ title, body, back, retry }: { title: string; body: string; ba
         <p className="text-muted">{body}</p>
         <div className="flex justify-center gap-2 pt-2">
           {retry && (
-            <button onClick={retry} className="h-11 rounded-full px-5 text-sm ring-1 ring-white/20 hover:bg-white/10">
+            <button onClick={retry} className={btn()}>
               Try again
             </button>
           )}
-          <Link to={back} className="h-11 rounded-full bg-white px-5 text-sm leading-[2.75rem] font-medium text-black hover:bg-white/90">
+          <Link to={back} className={btn({ variant: 'primary' })}>
             {back === '/' ? 'Go home' : 'Back to details'}
           </Link>
         </div>

@@ -4,6 +4,7 @@ import { Star } from 'lucide-react';
 import { RATINGS, YEAR_PRESETS, genresFor, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
 import { Pill, RowArrows, useRowScroll } from './Row';
+import { btn } from './Button';
 
 /** Filters read from / written to the URL (replace, so Back leaves the page instead of undoing filters). */
 export function useUrlFilters(): (patch: Partial<Filters>) => void {
@@ -129,10 +130,10 @@ export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }
         <Sections f={f} set={set} withType compact />
       </div>
       <div className="mt-5 flex gap-2.5">
-        <button type="button" onClick={onClear} className="h-11 flex-1 rounded-full bg-raised text-sm hover:bg-line">
+        <button type="button" onClick={onClear} className={cx(btn(), 'flex-1')}>
           Clear
         </button>
-        <button type="button" onClick={onApply} className="h-11 flex-[2] rounded-full bg-accent text-sm font-medium text-black hover:bg-accent-hover">
+        <button type="button" onClick={onApply} className={cx(btn({ variant: 'primary' }), 'flex-[2]')}>
           Search
         </button>
       </div>

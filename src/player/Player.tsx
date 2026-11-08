@@ -20,6 +20,7 @@ import {
 import { qualityLabel, type JellyResponse, type JellySubtitle } from '../lib/servers';
 import { actions, getState } from '../lib/store';
 import { cx, formatClock } from '../lib/util';
+import { btn } from '../components/Button';
 
 interface Props {
   data: JellyResponse;
@@ -508,11 +509,11 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                   setExhausted(false);
                   setSourceIdx(0);
                 }}
-                className="h-11 rounded-full px-5 text-sm ring-1 ring-white/25 hover:bg-white/10"
+                className={btn()}
               >
                 Retry
               </button>
-              <button onClick={onExhausted} className="h-11 rounded-full bg-white px-5 text-sm font-medium text-black hover:bg-white/90">
+              <button onClick={onExhausted} className={btn({ variant: 'primary' })}>
                 Use another server
               </button>
             </div>
@@ -525,10 +526,10 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
           <div className="text-xs text-muted tabular-nums">Up next in {countdown}s</div>
           <div className="mt-1 line-clamp-2 text-sm font-medium">{next.label}</div>
           <div className="mt-3 flex gap-2">
-            <button onClick={() => next.go()} className="h-10 flex-1 rounded-full bg-white text-sm font-medium text-black hover:bg-white/90">
+            <button onClick={() => next.go()} className={cx(btn({ variant: 'primary' }), 'flex-1')}>
               Play now
             </button>
-            <button onClick={() => setCountdown(null)} className="h-10 rounded-full px-4 text-sm ring-1 ring-white/20 hover:bg-white/10">
+            <button onClick={() => setCountdown(null)} className={btn()}>
               Cancel
             </button>
           </div>
@@ -715,7 +716,7 @@ function IconButton({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={cx('grid size-10 place-items-center rounded-full transition-colors hover:bg-white/15', active ? 'bg-white/15 text-white' : 'text-white', className)}
+      className={cx(btn({ variant: 'ghost', icon: true }), 'text-white', active && 'bg-white/15', className)}
     >
       {children}
     </button>

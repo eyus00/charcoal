@@ -8,6 +8,7 @@ import { genresFor, hasActiveFilters, matchesFilters, parseFilters, writeFilters
 import { cleanList } from '../lib/tmdb';
 import { cx, useTitle } from '../lib/util';
 import { Empty } from '../components/PageHeader';
+import { btn } from '../components/Button';
 
 const TYPES: { key: Filters['type']; label: string; title: string }[] = [
   { key: 'all', label: 'All', title: 'Discover' },
@@ -75,7 +76,7 @@ export default function Discover() {
           <button
             onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })}
             aria-label="Clear filters"
-            className="ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm whitespace-nowrap text-muted ring-1 ring-white/10 transition hover:bg-surface hover:text-white lg:ml-0"
+            className={cx(btn(), 'ml-auto lg:ml-0')}
           >
             <X className="size-4" strokeWidth={1.5} /> Clear
           </button>

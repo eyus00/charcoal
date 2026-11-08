@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, isRouteErrorResponse, useRouteError } from 'react-router';
 import { AlertTriangle, Home, RotateCw } from 'lucide-react';
 import NotFound from './NotFound';
+import { btn } from '../components/Button';
 
 const RELOAD_KEY = 'charcoal:chunk-reload';
 
@@ -44,11 +45,11 @@ export default function RouteError() {
         <div className="mt-6 flex gap-2.5">
           <button
             onClick={() => window.location.reload()}
-            className="flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-black transition hover:bg-white/90"
+            className={btn({ variant: 'primary' })}
           >
             <RotateCw className="size-4" /> Reload
           </button>
-          <Link to="/" reloadDocument className="flex h-11 items-center gap-2 rounded-full px-5 text-sm ring-1 ring-white/20 transition hover:bg-white/10">
+          <Link to="/" reloadDocument className={btn()}>
             <Home className="size-4" /> Home
           </Link>
         </div>
