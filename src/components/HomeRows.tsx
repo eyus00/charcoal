@@ -64,21 +64,24 @@ const LIST_INFO = 'rounded-r-2xl border border-l-0 border-white/[0.08] transitio
 const listSkeleton = (n: number, extra = '') =>
   Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);
 
-// ---------- Top 10: outlined rank number behind a landscape card ----------
+// ---------- Top 10: landscape card with an outlined rank number on its bottom-right ----------
 
 
 // Outlined digits need a font without overlapping contours: variable system fonts (SF on iPhones)
-// draw stray lines inside the strokes, static Helvetica / Arial don't.
-const RANK_STYLE = { WebkitTextStroke: '2px rgb(255 255 255 / 0.3)', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" } as const;
+// draw stray lines inside the strokes, static Helvetica / Arial don't. The fill matches the page
+// background so the part over the image reads like a cut-out.
+const RANK_STYLE = {
+  WebkitTextStroke: '2px rgb(255 255 255 / 0.85)',
+  color: 'rgb(13 16 22 / 0.55)',
+  fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  textShadow: '0 4px 24px rgb(0 0 0 / 0.5)',
+} as const;
 
 function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
-    <div className="flex shrink-0 snap-start items-end" role="listitem" aria-label={`Number ${rank}`}>
-      {/* The number sits behind the card's left edge, bottom-aligned with the image. */}
-      <span aria-hidden className="relative z-0 mb-[62px] -mr-2.5 text-[112px] leading-[0.74] font-bold tracking-tighter text-transparent select-none md:-mr-3 md:text-[150px]" style={RANK_STYLE}>
-        {rank}
-      </span>
+    // Extra right margin leaves room for the number to leak past the card's edge.
+    <div className="relative mr-7 shrink-0 snap-start md:mr-9" role="listitem" aria-label={`Number ${rank}`}>
       <EpisodeTile
         to={`/${t}/${item.id}`}
         type={t}
@@ -86,11 +89,18 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
         linkProps={usePrefetch(t, item.id)}
         image={{ path: item.backdrop_path, kind: 'backdrop' }}
         playable={false}
-        className="z-10"
         width="w-[248px] sm:w-[288px] lg:w-[312px]"
         primary={titleOf(item)}
         secondary={<Meta year={yearOf(item)} rating={item.vote_average} />}
       />
+      {/* Bottom-right of the image, overlapping it and the card's edge. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-7 bottom-9 z-20 text-[96px] leading-[0.74] font-bold tracking-tighter select-none md:-right-9 md:text-[120px]"
+        style={RANK_STYLE}
+      >
+        {rank}
+      </span>
     </div>
   );
 }
@@ -101,7 +111,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={Array.from({ length: 4 }, (_, i) => <Bone key={i} className="ml-16 aspect-[16/12] w-[248px] shrink-0 rounded-2xl sm:w-[288px] lg:w-[312px]" />)}
+      skeleton={Array.from({ length: 4 }, (_, i) => <Bone key={i} className="mr-7 aspect-[16/12] w-[248px] shrink-0 rounded-2xl sm:w-[288px] md:mr-9 lg:w-[312px]" />)}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );
