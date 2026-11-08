@@ -275,16 +275,18 @@ export async function proxyRequest(t: Target): Promise<ProxyResult> {
         }
     }
 
-    // A web page where media was expected: almost always a block or captcha page.
+    // A web page where media was expected: almost always a block or captcha page. Judged by the
+    // bytes, not the label: some hosts label real (often encrypted, so unrecognisable) segments
+    // text/html.
     const sniffed = sniff(first);
-    if (status < 400 && !sniffed && (upstreamType.includes('text/html') || looksLikeHtml(first))) {
+    if (status < 400 && !sniffed && looksLikeHtml(first)) {
         reader.cancel().catch(() => {});
         return textResult(403, 'The host answered with a web page instead of media (probably blocked)', `${status}-html`);
     }
 
     // Everything else streams through, with the first chunk put back in front.
     const misleading = !upstreamType || /^(image\/|text\/html|text\/plain|application\/octet-stream|binary\/)/.test(upstreamType);
-    const contentType = sniffed && misleading ? sniffed : upstreamType || sniffed || 'application/octet-stream';
+    const contentType = sniffed && misleading ? sniffed : misleading && upstreamType.startsWith('text/html') ? 'application/octet-stream' : upstreamType || sniffed || 'application/octet-stream';
     const out: Record<string, string> = {
         ...common,
         'Cache-Control': status < 400 ? 'public, max-age=3600' : 'no-store',

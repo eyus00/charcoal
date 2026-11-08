@@ -2,11 +2,12 @@ export * from './types.js';
 export { nativeFetcher, getJson } from './fetch.js';
 import { castle } from './providers/castle.js';
 import { vidapi } from './providers/vidapi.js';
+import { vixsrc } from './providers/vixsrc.js';
 import { NotFoundError, type Media, type Provider, type ScrapeContext, type ScrapeResult } from './types.js';
 
 /** Every provider, best first. */
-export const providers: Provider[] = [castle, vidapi].sort((a, b) => b.rank - a.rank);
-export { castle, vidapi };
+export const providers: Provider[] = [castle, vixsrc, vidapi].sort((a, b) => b.rank - a.rank);
+export { castle, vidapi, vixsrc };
 
 export interface ProviderOutcome {
   provider: Pick<Provider, 'id' | 'name'>;

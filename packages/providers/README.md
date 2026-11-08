@@ -42,4 +42,5 @@ npm run try --workspace packages/providers -- tv 1396 "Breaking Bad" "" 2 3
 | Provider | From a server | From a home connection |
 |---|---|---|
 | Castle | plays | plays |
-| VidApi | finds streams, video blocked | expected to play |
+| VixSrc | API refuses servers | plays (tested from a home server) |
+| VidApi | finds streams, video blocked | video blocked too (Cloudflare) |
