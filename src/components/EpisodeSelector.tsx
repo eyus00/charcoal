@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Play, X } from 'lucide-react';
+import { Check, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import Img from './Img';
 import Modal from './Modal';
 import { Chip } from './EpisodeTile';
@@ -25,6 +25,9 @@ interface Props {
   replace?: boolean;
   /** Called when an episode is chosen (e.g. close the player's selector). */
   onPick?: () => void;
+  /** Player: jump to the previous / next episode from inside the list. */
+  prev?: (() => void) | null;
+  next?: (() => void) | null;
 }
 
 /**
@@ -32,7 +35,7 @@ interface Props {
  * season, prefetches a season when its tab is hovered, and scrolls the current
  * or resume episode into view.
  */
-export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick }: Props) {
+export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick, prev, next }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const history = useStore((s) => s.history);
@@ -61,6 +64,12 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
       if (!nextSeason) return;
       e.preventDefault();
       pick(nextSeason.season_number);
+    } else if (current && e.key === 'P' && prev) {
+      e.preventDefault();
+      prev();
+    } else if (current && (e.key === 'n' || e.key === 'N') && next) {
+      e.preventDefault();
+      next();
     } else if ((e.key === 'p' || e.key === 'P') && !current) {
       e.preventDefault();
       onPick?.();
@@ -107,6 +116,29 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             <h2 className="truncate text-lg font-semibold md:text-xl">Episodes</h2>
             <p className="truncate text-sm text-muted">{titleOf(show)}</p>
           </div>
+          {current && (prev || next) && (
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                onClick={() => prev?.()}
+                disabled={!prev}
+                aria-label="Previous episode (Shift P)"
+                title="Previous episode (Shift P)"
+                className="grid size-10 place-items-center rounded-full bg-raised transition hover:bg-line disabled:opacity-30 disabled:hover:bg-raised"
+              >
+                <SkipBack className="size-[18px]" />
+              </button>
+              <button
+                onClick={() => next?.()}
+                disabled={!next}
+                aria-label="Next episode (N)"
+                title="Next episode (N)"
+                className="grid size-10 place-items-center rounded-full bg-raised transition hover:bg-line disabled:opacity-30 disabled:hover:bg-raised"
+              >
+                <SkipForward className="size-[18px]" />
+              </button>
+              <span aria-hidden className="mx-1 h-6 w-px bg-line" />
+            </div>
+          )}
           <button onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
             <X className="size-5" />
           </button>
@@ -192,7 +224,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         </span>
                       )}
                     </div>
-                    <div className={cx(CARD_INFO, 'h-full min-h-[112px] px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
+                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 px-3.5 pt-2.5 pb-3', isCurrent && 'border-white/30')}>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
                         <h3 className="line-clamp-2 min-w-0 text-body-sm font-medium text-balance text-white/95">{ep.name}</h3>
@@ -203,11 +235,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                   </>
                 );
                 return upcoming ? (
-                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className="cursor-not-allowed">
+                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className="flex cursor-not-allowed flex-col">
                     {body}
                   </div>
                 ) : (
-                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className="group block rounded-2xl" aria-current={isCurrent || undefined}>
+                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className="group flex flex-col rounded-2xl" aria-current={isCurrent || undefined}>
                     {body}
                   </Link>
                 );
@@ -222,6 +254,16 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               <span className="flex items-center gap-1.5">
                 <Kbd>←</Kbd>
                 <Kbd>→</Kbd> Season
+              </span>
+            )}
+            {current && prev && (
+              <span className="flex items-center gap-1.5">
+                <Kbd>Shift P</Kbd> Previous
+              </span>
+            )}
+            {current && next && (
+              <span className="flex items-center gap-1.5">
+                <Kbd>N</Kbd> Next
               </span>
             )}
             <span className="flex items-center gap-1.5">

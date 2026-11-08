@@ -341,8 +341,10 @@ function Overview({ text, title }: { text: string; title: string }) {
           ) : (
             <>
               {shown}
-              <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="Read the full overview" className="font-medium text-white hover:underline">
-                <span className="text-white/60">…</span> more
+              <span aria-hidden className="text-white/60">… </span>
+              {/* Text link convention: underline on hover, only the word itself. */}
+              <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="Read the full overview" className="font-medium text-white decoration-white/40 underline-offset-4 hover:underline">
+                more
               </button>
             </>
           )}
