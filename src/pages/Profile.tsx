@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Bookmark, Download, Film, Trash2, Upload, UserCircle, X } from 'lucide-react';
-import { STATUS_ICON, StatusTag } from '../components/BookmarkMenu';
+import { STATUS_ICON, STATUS_TONE, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
@@ -148,7 +148,7 @@ function Watchlist() {
           <div className="no-scrollbar scroll-row -mx-1 mb-6 flex gap-2.5 overflow-x-auto px-1">
             {FILTERS.map((f) => (
               <Pill key={f.id} on={active.has(f.id)} onClick={() => toggle(f.id)} className="flex items-center gap-2">
-                {f.status && (() => { const I = STATUS_ICON[f.status]; return <I className="size-4" />; })()}
+                {f.status && (() => { const I = STATUS_ICON[f.status]; return <I className={cx('size-4', !active.has(f.id) && STATUS_TONE[f.status].text)} />; })()}
                 {f.label}
               </Pill>
             ))}

@@ -51,6 +51,8 @@ function Hero() {
   const [dragging, setDragging] = useState(false);
   const frameRef = useRef<HTMLElement>(null);
   const drag = useRef<{ x: number; y: number; id: number; axis?: 'x' | 'y'; lastX: number; lastT: number; v: number } | null>(null);
+  // A tap on a preview card is a click, but a swipe that starts on one moves the hero too.
+  const swiped = useRef(false);
   const go = (d: number) => setIndex((i) => (i + d + items.length) % items.length);
   useKeys({ ArrowLeft: () => go(-1), ArrowRight: () => go(1) }, items.length > 1);
 
@@ -74,7 +76,8 @@ function Hero() {
 
   // Drag: the track follows the finger; release snaps to the neighbour (distance or flick) or back.
   const onDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('a,button')) return;
+    if ((e.target as HTMLElement).closest('a,button:not([data-swipe])')) return;
+    swiped.current = false;
     drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId, lastX: e.clientX, lastT: performance.now(), v: 0 };
   };
   const onMove = (e: React.PointerEvent) => {
@@ -105,8 +108,9 @@ function Hero() {
     setDragging(false);
     setDragX(0);
     if (d.axis === 'x') {
+      swiped.current = true;
       if (Math.abs(dx) > width * 0.18 || Math.abs(d.v) > 0.45) go(dx < 0 ? 1 : -1);
-    } else if (!d.axis) navigate(`/${typeOf(item)}/${item.id}`);
+    } else if (!d.axis && !(e.target as HTMLElement).closest('[data-swipe]')) navigate(`/${typeOf(item)}/${item.id}`);
   };
 
   return (
@@ -159,7 +163,13 @@ function Hero() {
                 key={m.id}
                 tabIndex={visible ? 0 : -1}
                 aria-hidden={!visible}
-                onClick={() => (o === 0 ? navigate(`/${typeOf(m)}/${m.id}`) : go(o))}
+                data-swipe
+                draggable={false}
+                onClick={() => {
+                  if (swiped.current) return void (swiped.current = false);
+                  if (o === 0) navigate(`/${typeOf(m)}/${m.id}`);
+                  else go(o);
+                }}
                 aria-label={o === 0 ? `Open ${titleOf(m)}` : `${o < 0 ? 'Previous' : 'Next'}: ${titleOf(m)}`}
                 className={cx(
                   'absolute bottom-1 left-1/2 h-[84px] w-14 overflow-hidden rounded-xl bg-surface transition-[transform,opacity,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,0.8,0.2,1)] md:h-24 md:w-16',

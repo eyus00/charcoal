@@ -10,6 +10,10 @@
   --color-accent: #f4f5f7;
   --color-accent-hover: #ffffff;
   --color-star: #f5c518;
+  /* Watchlist statuses: shades of the charcoal palette's blue. */
+  --color-watching: #5aa2ff;
+  --color-planned: #9cc4f5;
+  --color-completed: #6f93c9;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 

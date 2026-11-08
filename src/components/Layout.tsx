@@ -38,7 +38,7 @@ function Shell() {
     <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[248px]' : 'lg:pl-[88px]')}>
       <ScrollRestoration />
       <Rail />
-      <div className="min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
+      <div className="relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
         <TopBar hideLogo={sidebarOpen} />
         <main>
           <Suspense fallback={<PageSkeleton />}>
@@ -81,7 +81,7 @@ const DISCOVER: RailGroup = {
   ],
 };
 const PROFILE: RailGroup = {
-  to: '/profile#profile', label: 'Profile', icon: User, id: 'profile', keys: 'G P',
+  to: '/profile', label: 'Profile', icon: User, id: 'profile', keys: 'G P',
   children: [
     { to: '/profile#history', label: 'History', icon: History, id: 'profile#history', keys: 'G Y' },
     { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark, id: 'profile#watchlist', keys: 'G W' },
@@ -300,25 +300,25 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const count = activeFilterCount(draft);
 
   return (
+    <>
+    {/* The wordmark sits at the top of the page and scrolls away with it. */}
+    <Link
+      to="/"
+      className={cx(
+        'absolute top-0 left-4 z-30 flex h-[76px] items-center gap-2 text-xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
+        hideLogo && 'lg:hidden',
+        open && 'max-md:hidden',
+      )}
+      aria-label="Charcoal home"
+    >
+      <LogoMark className="size-8" />
+      Charcoal
+    </Link>
     <header
-      // Sticky on every screen size. No bar behind it: the logo and the search field float as
-      // separate pills, styled like the sidebar's group boxes. The header itself ignores clicks so
-      // the page between them stays usable. On phones an open search takes the logo's place.
+      // Only the search field floats and sticks (as a pill, no bar behind it). The header itself
+      // ignores clicks so the page around the pill stays usable.
       className="pointer-events-none sticky top-0 z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4"
     >
-      <Link
-        to="/"
-        className={cx(
-          'pointer-events-auto flex h-12 shrink-0 items-center gap-2.5 rounded-full pr-5 pl-2 text-lg font-semibold tracking-tight ring-1 backdrop-blur-xl transition',
-          FLOAT,
-          hideLogo && 'lg:hidden',
-          open && 'max-md:hidden',
-        )}
-        aria-label="Charcoal home"
-      >
-        <LogoMark className="size-8" />
-        Charcoal
-      </Link>
       <form
         ref={form}
         role="search"
@@ -419,7 +419,6 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
                   }}
                   className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-sm"
                 >
-                  <History className="size-4 shrink-0 text-faint" />
                   <span className="truncate">{r}</span>
                 </button>
                 <button
@@ -448,6 +447,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
         )}
       </form>
     </header>
+    </>
   );
 }
 
@@ -478,7 +478,7 @@ function BottomBar() {
         </button>
       </div>
       {item('/discover?type=tv', Tv, 'TV', section === 'tv')}
-      {item('/profile#profile', User, 'Profile', section.startsWith('profile'))}
+      {item('/profile', User, 'Profile', section.startsWith('profile'))}
     </nav>
   );
 }

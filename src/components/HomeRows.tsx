@@ -3,9 +3,9 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import EpisodeTile, { Chip, TileSkeleton } from './EpisodeTile';
-import { Meta, TypeIcon, usePrefetch } from './MediaCard';
+import MediaCard, { Meta, TypeIcon, usePrefetch } from './MediaCard';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
-import { Bone } from './Skeletons';
+import { Bone, CardSkeleton } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type Details, type EpisodeRef, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx, formatDate, formatRuntime, isFuture, useInView } from '../lib/util';
 
@@ -64,29 +64,23 @@ const LIST_INFO = 'rounded-r-2xl border border-l-0 border-white/[0.08] transitio
 const listSkeleton = (n: number, extra = '') =>
   Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);
 
-// ---------- Top 10: big outlined rank number + poster ----------
+// ---------- Top 10: big outlined rank number + a regular card ----------
 
 const OUTLINE = { WebkitTextStroke: '2px rgb(255 255 255 / 0.28)' } as const;
 
 function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
-  const t = typeOf(item);
   return (
-    <Link to={`/${t}/${item.id}`} {...usePrefetch(t, item.id)} className="group flex shrink-0 snap-start items-end" role="listitem" aria-label={`${rank}. ${titleOf(item)}`}>
+    <div className="flex shrink-0 snap-start items-end" role="listitem" aria-label={`Number ${rank}`}>
       <span
         aria-hidden
-        className="-mr-4 text-[110px] leading-[0.8] font-black tracking-tighter text-transparent select-none md:text-[140px] lg:-mr-5 lg:text-[170px]"
+        className="-mr-4 mb-[58px] text-[110px] leading-[0.8] font-black tracking-tighter text-transparent select-none md:text-[140px] lg:-mr-5 lg:text-[170px]"
         style={OUTLINE}
       >
         {rank}
       </span>
-      <Img
-        path={item.poster_path}
-        kind="poster"
-        sizes="(min-width: 1024px) 180px, (min-width: 768px) 150px, 118px"
-        alt=""
-        className="aspect-[2/3] w-[118px] rounded-2xl shadow-xl ring-1 shadow-black/40 ring-white/[0.08] transition group-hover:ring-white/25 md:w-[150px] lg:w-[180px]"
-      />
-    </Link>
+      {/* Same card as everywhere else (poster + title, year · rating, type), a size up on desktop. */}
+      <MediaCard item={item} sizes="(min-width: 1024px) 180px, (min-width: 768px) 160px, 140px" className="relative w-[140px] md:w-[160px] lg:w-[180px]" />
+    </div>
   );
 }
 
@@ -96,7 +90,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={Array.from({ length: 6 }, (_, i) => <Bone key={i} className="ml-14 aspect-[2/3] w-[118px] shrink-0 rounded-2xl md:w-[150px] lg:w-[180px]" />)}
+      skeleton={Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} className="ml-14 w-[140px] shrink-0 md:w-[160px] lg:w-[180px]" />)}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );
