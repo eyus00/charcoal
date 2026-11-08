@@ -6,6 +6,7 @@ import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
 import { jellyProxyService } from './proxy.js';
 import { BenchedError, checkBench, record, report } from './health.js';
+import { sharedProviders } from './shared.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -161,6 +162,8 @@ async function main() {
 
     const registry = server.getRegistry();
     await registry.discoverProviders(path.join(__dirname, './providers/'));
+    // Providers shared with the website (packages/providers).
+    for (const p of sharedProviders()) registry.register(p);
 
     for (const provider of registry.getProviders()) {
         const getMovie = provider.getMovieSources.bind(provider);

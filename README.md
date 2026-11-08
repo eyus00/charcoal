@@ -6,7 +6,8 @@ A movie & TV streaming frontend and the server that finds its streams, in one re
 apps/
   web/        Charcoal, the website (React, Vite)                    → Vercel
   server/     Jelly, finds sources and relays video (Node, OMSS)     → Railway, Docker, your own machine
-packages/     Code shared by the apps (coming: providers, proxy)
+packages/
+  providers/  Source scrapers shared by the server and the website
 ```
 
 ## Develop
