@@ -81,7 +81,7 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
     // Extra right margin leaves room for the number to leak past the card's edge.
-    <div className="relative mr-7 shrink-0 snap-start md:mr-9" role="listitem" aria-label={`Number ${rank}`}>
+    <div className="relative mr-3 shrink-0 snap-start md:mr-4" role="listitem" aria-label={`Number ${rank}`}>
       <EpisodeTile
         to={`/${t}/${item.id}`}
         type={t}
@@ -96,7 +96,7 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
       {/* Bottom-right of the image, overlapping it and the card's edge. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-7 bottom-9 z-20 text-[96px] leading-[0.74] font-bold tracking-tighter select-none md:-right-9 md:text-[120px]"
+        className="pointer-events-none absolute -right-3 bottom-12 z-20 text-[96px] leading-[0.74] font-bold tracking-tighter select-none md:-right-4 md:text-[120px]"
         style={RANK_STYLE}
       >
         {rank}
@@ -111,7 +111,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={Array.from({ length: 4 }, (_, i) => <Bone key={i} className="mr-7 aspect-[16/12] w-[248px] shrink-0 rounded-2xl sm:w-[288px] md:mr-9 lg:w-[312px]" />)}
+      skeleton={Array.from({ length: 4 }, (_, i) => <Bone key={i} className="mr-3 aspect-[16/12] w-[248px] shrink-0 rounded-2xl sm:w-[288px] md:mr-4 lg:w-[312px]" />)}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );
