@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Bookmark, Check } from 'lucide-react';
 import { actions, getState, useStore, type WatchStatus } from '../lib/store';
 import { toast } from './Toast';
 import type { MediaType } from '../lib/tmdb';
-import { cx, useDismiss, useKeys } from '../lib/util';
+import { cx, useKeys } from '../lib/util';
 
 export const STATUS_LABEL: Record<WatchStatus, string> = {
   watching: 'Watching',
@@ -49,25 +50,48 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
   const watchlist = useStore((s) => s.watchlist);
   const current = watchlist.find((w) => w.id === item.id && w.mediaType === item.mediaType);
   const [open, setOpen] = useState(false);
-  // Where the menu opens: above or below, and which edge it lines up with, so it stays in view.
-  const [place, setPlace] = useState<{ up: boolean; alignRight: boolean }>({ up: true, alignRight: false });
+  // The menu renders in a portal with fixed coordinates, so no parent can clip it or stack above
+  // it (the hero clips its overflow and its preview cards sit on top). It opens on the side with
+  // room, lined up with the button's left or right edge.
+  const [pos, setPos] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const place = () => {
+    const r = ref.current!.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const topLimit = vw >= 768 ? 92 : 76; // the sticky search bar
+    const bottomLimit = vw >= 1024 ? 0 : 80; // the phone bottom bar
+    const above = r.top - topLimit;
+    const below = vh - bottomLimit - r.bottom;
+    const up = above >= MENU_H + 12 || above > below;
+    const left = Math.max(12, Math.min(r.left, vw - MENU_W - 12));
+    setPos(up ? { left, bottom: vh - r.top + 10 } : { left, top: r.bottom + 10 });
+  };
   const toggle = () => {
-    if (!open && ref.current) {
-      const r = ref.current.getBoundingClientRect();
-      const topLimit = window.innerWidth >= 768 ? 92 : 76; // the sticky search bar
-      const bottomLimit = window.innerWidth >= 1024 ? 0 : 72; // the phone bottom bar
-      const above = r.top - topLimit;
-      const below = window.innerHeight - bottomLimit - r.bottom;
-      setPlace({
-        up: above >= MENU_H + 12 || above > below,
-        alignRight: r.left + MENU_W > window.innerWidth - 12,
-      });
-    }
+    if (!open) place();
     setOpen((o) => !o);
   };
-  const close = useCallback(() => setOpen(false), []);
-  useDismiss(open, close, ref);
+  // Close on outside press, Escape, scroll or resize (the menu is pinned to where the button was).
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!ref.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const shut = () => setOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', shut, { passive: true, capture: true });
+    window.addEventListener('resize', shut);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', shut, { capture: true });
+      window.removeEventListener('resize', shut);
+    };
+  }, [open]);
 
   const remove = () => {
     const before = getState().watchlist;
@@ -106,15 +130,15 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
         <Bookmark className={current ? 'size-4 fill-current' : 'size-[18px]'} />
         {variant === 'full' && (current ? STATUS_LABEL[current.status] : 'Watchlist')}
       </button>
-      {open && (
+      {open &&
+        createPortal(
         <div
+          ref={menuRef}
           role="menu"
           aria-label="Watchlist status"
-          className={cx(
-            'absolute z-50 w-48 space-y-0.5 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5',
-            place.up ? 'bottom-full mb-3' : 'top-full mt-3',
-            place.alignRight ? 'right-0' : 'left-0',
-          )}
+          style={{ position: 'fixed', ...pos }}
+          className="z-[120] w-48 space-y-0.5 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
+          onClick={(e) => e.stopPropagation()}
         >
           {STATUSES.map((s) => {
             const on = current?.status === s;
@@ -136,8 +160,9 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
               </button>
             );
           })}
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </div>
   );
 }

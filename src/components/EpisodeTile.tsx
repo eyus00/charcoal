@@ -30,6 +30,8 @@ interface Props {
   /** 0–100: thin progress bar along the image's bottom edge. */
   progress?: number;
   playable?: boolean;
+  /** Darken the image's bottom-left corner (for a large label there, e.g. a rank). */
+  shade?: boolean;
   title?: string;
   className?: string;
   linkProps?: Record<string, unknown>;
@@ -38,12 +40,13 @@ interface Props {
 }
 
 /** Outlined landscape card: still image with corner chips, two text lines, type icon bottom-right. */
-export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, title, className, linkProps, children }: Props) {
+export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, linkProps, children }: Props) {
   return (
     <div className={cx('group relative', TILE, className)} role="listitem">
       <Link to={to} title={title} className="block" {...linkProps}>
         <div className="relative overflow-hidden rounded-t-2xl">
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
+          {shade && <span className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/10 to-transparent" />}
           {playable && (
             <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
               <span className="grid size-11 place-items-center rounded-full bg-white text-black">
