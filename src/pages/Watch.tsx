@@ -269,58 +269,59 @@ function Header({
 }
 
 /**
- * The centred title. For TV the whole area is one "Episodes" button (a full-size button
- * underneath); previous, the title link and next sit on top, so pointing at one of them hands
- * the hover to it.
+ * The centred title hub. Fixed width from tablet up, so nothing grows or shifts with the episode
+ * name (long names truncate; the full name is in the tooltip and the episode list). For TV the
+ * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
 function TitleBox({ title, subtitle, detailsUrl, prev, next, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; prev?: () => void; next?: () => void; onEpisodes?: () => void }) {
-  const text = (
-    <div className="pointer-events-none relative min-w-0 flex-1 px-3 py-1 text-center leading-tight md:px-4">
-      <Link
-        to={detailsUrl}
-        title={`${title}: details`}
-        className={cx(TEXT_LINK, 'pointer-events-auto inline-block max-w-full truncate align-top text-sm font-semibold md:text-base')}
-      >
-        {title}
-      </Link>
-      {subtitle && (
-        <div className="mt-0.5 flex items-center justify-center gap-2 text-xs text-white/65 md:text-caption">
-          <span className="truncate">{subtitle}</span>
-          {onEpisodes && <Kbd className="shrink-0">E</Kbd>}
-        </div>
-      )}
-    </div>
+  const titleLink = (
+    <Link
+      to={detailsUrl}
+      title={`${title}: details`}
+      className={cx(TEXT_LINK, 'pointer-events-auto inline-block max-w-full truncate align-top text-sm font-medium text-white md:text-body-sm')}
+    >
+      {title}
+    </Link>
   );
-  if (!onEpisodes) return <div className="flex min-w-0 justify-self-center">{text}</div>;
+  if (!onEpisodes) return <div className="min-w-0 justify-self-center px-3 text-center">{titleLink}</div>;
   return (
-    <div className="relative flex min-w-0 items-center gap-1 justify-self-center md:w-[min(28rem,100%)]">
-      <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
-        <SkipBack className="size-[18px]" />
+    <div className="flex w-full min-w-0 items-center justify-self-center md:w-[26rem]">
+      <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left" quiet>
+        <SkipBack className="size-4" />
       </HeaderButton>
-      <div className="relative flex min-w-0 flex-1">
+      <div className="group/hub relative min-w-0 flex-1">
         <button
           type="button"
           onClick={onEpisodes}
           aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`}
-          className="absolute inset-0 rounded-2xl transition-colors hover:bg-white/[0.07] focus-visible:bg-white/[0.07]"
+          title={subtitle}
+          className="absolute inset-0 rounded-xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
         />
-        {text}
+        <div className="pointer-events-none relative px-3 py-1.5 text-center leading-snug">
+          {titleLink}
+          {subtitle && <div className="truncate text-caption text-white/55">{subtitle}</div>}
+        </div>
+        {/* Key cue appears on hover, like the other controls' labels. */}
+        <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
+          Episodes
+          <Kbd>E</Kbd>
+        </span>
       </div>
-      <HeaderButton label="Next episode" keys="Shift N" onClick={next} disabled={!next}>
-        <SkipForward className="size-[18px]" />
+      <HeaderButton label="Next episode" keys="Shift N" onClick={next} disabled={!next} quiet>
+        <SkipForward className="size-4" />
       </HeaderButton>
     </div>
   );
 }
 
 /** Icon button with a hover label (and its key) shown below it. */
-function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide, solid }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right'; solid?: boolean }) {
+function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide, solid, quiet }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right'; solid?: boolean; quiet?: boolean }) {
   // Buttons near the left edge open their label to the right, so it stays on screen.
   const side = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'left-0' : 'right-0';
   // `solid`: the app's round close button (filled); otherwise a plain round icon button.
   const cls = cx(
     'group relative grid size-10 shrink-0 place-items-center rounded-full transition disabled:opacity-30 disabled:hover:bg-transparent',
-    solid ? 'bg-raised hover:bg-line' : 'hover:bg-white/10',
+    solid ? 'bg-raised hover:bg-line' : quiet ? 'text-white/60 hover:bg-white/[0.06] hover:text-white' : 'hover:bg-white/10',
   );
   const tip = (
     <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
