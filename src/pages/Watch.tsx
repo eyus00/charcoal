@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, ChevronDown, Keyboard, ListVideo, SkipBack, SkipForward, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Keyboard, SkipBack, SkipForward, X } from 'lucide-react';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -195,7 +195,15 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       )}
 
       {drawer && type === 'tv' && d && (
-        <EpisodeSelector show={d} current={{ season: season!, episode: episode! }} onClose={closeDrawer} onPick={closeDrawer} replace />
+        <EpisodeSelector
+          show={d}
+          current={{ season: season!, episode: episode! }}
+          onClose={closeDrawer}
+          onPick={closeDrawer}
+          replace
+          prev={prev ? () => (closeDrawer(), go(prev.season, prev.episode)) : null}
+          next={next ? () => (closeDrawer(), go(next.season, next.episode)) : null}
+        />
       )}
     </div>
   );
@@ -209,6 +217,9 @@ function nextLabel(n: { season: number; episode: number }, eps?: { season_number
 // ---------- header ----------
 
 /** Soft grouped box, like the sidebar's groups; readable over video and over the page. */
+/** Text links underline on hover (the app-wide convention for links that are text). */
+const TEXT_LINK = 'underline-offset-4 decoration-white/40 hover:underline';
+
 const BOX = 'flex shrink-0 items-center gap-0.5 rounded-2xl bg-black/30 p-1 ring-1 ring-white/10 backdrop-blur-xl';
 
 function Header({
@@ -230,48 +241,69 @@ function Header({
 }) {
   return (
     <div className="flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
+      {/* Back stands on its own. */}
       <div className={BOX}>
         <HeaderButton label="Back to details" to={detailsUrl}>
           <ArrowLeft className="size-[18px]" />
         </HeaderButton>
       </div>
-      <Link to={detailsUrl} className="min-w-0 flex-1 leading-tight">
-        <div className="line-clamp-2 text-sm leading-tight font-semibold md:line-clamp-1 md:text-base">{title}</div>
-        {subtitle && <div className="truncate text-xs text-white/65 md:text-caption">{subtitle}</div>}
-      </Link>
-      {onEpisodes && (
-        <div className={BOX}>
-          {/* Phones: previous / next live in the episode list, so the title keeps its room. */}
-          <div className="hidden items-center gap-0.5 sm:flex">
-            <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev}>
-              <SkipBack className="size-[18px]" />
-            </HeaderButton>
-            <HeaderButton label="Next episode" keys="N" onClick={next} disabled={!next}>
-              <SkipForward className="size-[18px]" />
-            </HeaderButton>
-            <span aria-hidden className="mx-0.5 h-5 w-px bg-white/10" />
-          </div>
-          <button type="button" onClick={onEpisodes} className="flex h-10 items-center gap-2 rounded-xl px-2.5 text-sm transition hover:bg-white/10 md:px-3" aria-label="Episodes">
-            <ListVideo className="size-[18px]" strokeWidth={1.5} />
-            <span className="hidden md:inline">Episodes</span>
-            <Kbd>E</Kbd>
+      {/*
+        Then one box: previous, the title (links to details) with the episode line, next. For TV,
+        pressing anywhere else on the box opens the episode list; the episode line is also a real
+        button so keyboards and screen readers can reach it.
+      */}
+      <div
+        className={cx(BOX.replace('shrink-0', ''), 'min-w-0 flex-1 md:flex-initial', onEpisodes && 'cursor-pointer')}
+        onClick={(e) => onEpisodes && !(e.target as HTMLElement).closest('a,button') && onEpisodes()}
+      >
+        {onEpisodes && (
+          <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
+            <SkipBack className="size-[18px]" />
+          </HeaderButton>
+        )}
+        <div className={cx('min-w-0 flex-1 leading-tight md:max-w-md', onEpisodes ? 'px-2' : 'px-3')}>
+          <Link to={detailsUrl} title={`${title}: details`} className={cx(TEXT_LINK, 'line-clamp-1 text-sm font-semibold md:text-base')}>
+            {title}
+          </Link>
+          {onEpisodes ? (
+            <button type="button" onClick={onEpisodes} aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`} className="flex max-w-full items-center gap-1.5 text-left text-xs text-white/65 transition-colors hover:text-white md:text-caption">
+              <span className="truncate">{subtitle}</span>
+              <ChevronDown className="size-3.5 shrink-0" strokeWidth={1.5} />
+              <Kbd className="ml-0.5">E</Kbd>
+            </button>
+          ) : (
+            subtitle && <div className="truncate text-xs text-white/65 md:text-caption">{subtitle}</div>
+          )}
+        </div>
+        {onEpisodes && (
+          <HeaderButton label="Next episode" keys="N" onClick={next} disabled={!next}>
+            <SkipForward className="size-[18px]" />
+          </HeaderButton>
+        )}
+      </div>
+      <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
+        {serverMenu}
+        <div className={cx(BOX, 'hidden lg:flex')}>
+          <button
+            type="button"
+            onClick={() => hotkeysCtl.help()}
+            aria-label="Keyboard shortcuts (?)"
+            title="Keyboard shortcuts"
+            className="flex h-10 items-center gap-2 rounded-xl px-3 text-faint transition hover:bg-white/10 hover:text-white"
+          >
+            <Keyboard className="size-[18px]" strokeWidth={1.5} />
+            <Kbd>?</Kbd>
           </button>
         </div>
-      )}
-      {serverMenu}
-      <div className={cx(BOX, 'hidden lg:flex')}>
-        <HeaderButton label="Keyboard shortcuts" keys="?" onClick={() => hotkeysCtl.help()}>
-          <Keyboard className="size-[18px]" />
-        </HeaderButton>
       </div>
     </div>
   );
 }
 
 /** Icon button with a hover label (and its key) shown below it. */
-function HeaderButton({ label, keys, onClick, to, disabled, children }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode }) {
-  // The back button sits at the left edge, so its label opens to the right.
-  const side = to ? 'left-0' : 'right-0';
+function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right' }) {
+  // Buttons near the left edge open their label to the right, so it stays on screen.
+  const side = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'left-0' : 'right-0';
   const cls = 'group relative grid size-10 shrink-0 place-items-center rounded-xl transition hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent';
   const tip = (
     <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
