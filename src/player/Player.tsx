@@ -4,11 +4,17 @@ import {
   AlertTriangle,
   Captions,
   Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+  FileUp,
   Maximize,
   Minimize,
+  Minus,
   Pause,
   PictureInPicture2,
   Play,
+  Plus,
   RotateCcw,
   RotateCw,
   Settings,
@@ -18,14 +24,20 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { qualityLabel, type JellyResponse, type JellySubtitle } from '../lib/servers';
-import { actions, getState } from '../lib/store';
+import { actions, getState, useStore } from '../lib/store';
+import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segments';
+import type { MediaType } from '../lib/tmdb';
 import { cx, formatClock } from '../lib/util';
 import { btn } from '../components/Button';
+import { activeCues, CaptionOverlay, CueText, parseCaptions, SubtitleStyleControls, type Cue } from './captions';
 
 interface Props {
   data: JellyResponse;
+  /** What is playing (for skip segments). */
+  media: { type: MediaType; id: number; season?: number; episode?: number };
   title: string;
   subtitle?: string;
+  overview?: string;
   poster?: string;
   resumeAt: number;
   header: ReactNode;
@@ -36,6 +48,10 @@ interface Props {
 }
 
 const STARTUP_TIMEOUT_MS = 15_000;
+const REPORT_EVERY_MS = 10_000;
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const HOLD_MS = 450;
+const PAUSE_OVERLAY_MS = 5000;
 
 /** Real upstream host of a (proxied) source URL, so one blocked host can rule out its siblings. */
 function upstreamHost(url: string): string {
@@ -48,18 +64,25 @@ function upstreamHost(url: string): string {
     return url;
   }
 }
-const REPORT_EVERY_MS = 10_000;
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+/** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
+type Track = { label: string; url?: string; text?: string };
 
 type Menu = null | 'captions' | 'settings';
+type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, title, subtitle, poster, resumeAt, header, next, onProgress, onExhausted }: Props) {
+export default function Player({ data, media, title, subtitle, overview, poster, resumeAt, header, next, onProgress, onExhausted }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
-  const settings = getState().settings;
+  const settings = useStore((s) => s.settings);
 
-  const [sourceIdx, setSourceIdx] = useState(0);
+  // Start with the provider that last played, if it's in this response.
+  const [sourceIdx, setSourceIdx] = useState(() => {
+    const last = getState().settings.lastProvider;
+    const i = last ? data.sources.findIndex((s) => s.provider.id === last && s.type !== 'mkv') : -1;
+    return Math.max(0, i);
+  });
   const failed = useRef(new Set<number>());
   const seekOnLoad = useRef(resumeAt);
   const [exhausted, setExhausted] = useState(false);
@@ -75,10 +98,21 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
   const [rate, setRate] = useState(settings.playbackRate);
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([]);
   const [level, setLevel] = useState(-1);
+  const [audioTracks, setAudioTracks] = useState<{ id: number; name: string }[]>([]);
+  const [audioTrack, setAudioTrack] = useState(-1);
   const [fullscreen, setFullscreen] = useState(false);
-  const [menu, setMenu] = useState<Menu>(null);
+  const [fill, setFill] = useState(false);
+  const [menu, setMenuState] = useState<Menu>(null);
+  const [view, setView] = useState<View>('main');
   const [controls, setControls] = useState(true);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [held, setHeld] = useState(false);
+  const [pausedIdle, setPausedIdle] = useState(false);
+
+  const setMenu = useCallback((m: Menu) => {
+    setMenuState(m);
+    setView('main');
+  }, []);
 
   const source = data.sources[sourceIdx];
 
@@ -91,38 +125,78 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
   }, []);
 
   // ---------- subtitles ----------
-  const subtitles = useMemo(() => sortSubtitles(data.subtitles), [data.subtitles]);
+  const [localTracks, setLocalTracks] = useState<Track[]>([]);
+  const tracks = useMemo<Track[]>(() => [...localTracks, ...sortSubtitles(data.subtitles)], [localTracks, data.subtitles]);
   const [subIdx, setSubIdx] = useState<number>(() => {
     const want = settings.subtitleLabel;
-    return want ? subtitles.findIndex((s) => s.label === want) : -1;
+    return want ? sortSubtitles(data.subtitles).findIndex((s) => s.label === want) : -1;
   });
-  const [subUrl, setSubUrl] = useState<string | null>(null);
-  const lastSub = useRef(subIdx >= 0 ? subIdx : subtitles.findIndex((s) => /english|^en/i.test(s.label)));
+  const [cues, setCues] = useState<Cue[]>([]);
+  const [delay, setDelay] = useState(0); // + shows subtitles later
+  const lastSub = useRef(subIdx >= 0 ? subIdx : tracks.findIndex((s) => /english|^en/i.test(s.label)));
+  const subLabel = subIdx >= 0 ? tracks[subIdx]?.label : undefined;
 
   useEffect(() => {
-    if (subIdx < 0 || !subtitles[subIdx]) return setSubUrl(null);
-    let revoked = false;
-    let url: string | null = null;
-    fetch(subtitles[subIdx].url)
+    const t = subIdx >= 0 ? tracks[subIdx] : undefined;
+    if (!t) return setCues([]);
+    if (t.text !== undefined) return setCues(parseCaptions(t.text));
+    let stale = false;
+    fetch(t.url!)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
-      .then((text) => {
-        if (revoked) return;
-        url = URL.createObjectURL(new Blob([toVtt(text)], { type: 'text/vtt' }));
-        setSubUrl(url);
-      })
-      .catch(() => !revoked && flash('Couldn’t load those subtitles. Pick another track or turn them off.'));
+      .then((text) => !stale && setCues(parseCaptions(text)))
+      .catch(() => {
+        if (stale) return;
+        setCues([]);
+        flash('Couldn’t load those subtitles. Pick another track or turn them off.');
+      });
     return () => {
-      revoked = true;
-      if (url) URL.revokeObjectURL(url);
+      stale = true;
     };
-  }, [subIdx, subtitles, flash]);
+  }, [subIdx, tracks, flash]);
 
-  const chooseSub = (i: number) => {
-    setSubIdx(i);
-    if (i >= 0) lastSub.current = i;
-    actions.updateSettings({ subtitleLabel: i >= 0 ? subtitles[i].label : null });
-    setMenu(null);
-  };
+  const chooseSub = useCallback(
+    (i: number, label?: string) => {
+      setSubIdx(i);
+      if (i >= 0) lastSub.current = i;
+      actions.updateSettings({ subtitleLabel: i >= 0 ? (label ?? tracks[i]?.label ?? null) : null });
+    },
+    [tracks],
+  );
+
+  // A .srt / .vtt file from the picker or dropped on the player.
+  const fileInput = useRef<HTMLInputElement>(null);
+  const loadFile = useCallback(
+    async (file: File) => {
+      if (!/\.(srt|vtt)$/i.test(file.name)) return flash('Use an .srt or .vtt subtitle file');
+      const text = await file.text();
+      if (!parseCaptions(text).length) return flash('That file has no subtitles in it');
+      const label = file.name.replace(/\.(srt|vtt)$/i, '');
+      setLocalTracks((l) => [{ label, text }, ...l.filter((x) => x.label !== label)]);
+      // The new file goes first in the list.
+      setSubIdx(0);
+      lastSub.current = 0;
+      setDelay(0);
+      flash(`Subtitles: ${label}`);
+    },
+    [flash],
+  );
+  // Indexes shift when a file is added in front; keep the same track selected.
+  const prevLocal = useRef(localTracks.length);
+  useEffect(() => {
+    const added = localTracks.length - prevLocal.current;
+    prevLocal.current = localTracks.length;
+    if (added > 0) setSubIdx((i) => (i > 0 ? i + added : i));
+  }, [localTracks.length]);
+
+  // iOS fullscreen is the native player, which can't show our overlay: give it a real track.
+  const nativeVtt = useMemo(() => (cues.length ? URL.createObjectURL(new Blob([toVtt(cues, delay)], { type: 'text/vtt' })) : null), [cues, delay]);
+  useEffect(() => () => void (nativeVtt && URL.revokeObjectURL(nativeVtt)), [nativeVtt]);
+
+  // ---------- skip segments ----------
+  const segments = useSegments(media.type, media.id, media.season, media.episode);
+  const segment = duration ? segmentAt(segments, time, duration) : undefined;
+  const skipped = useRef(new Set<number>()); // auto-skipped segment starts
+  const creditsOffered = useRef(false);
 
   // ---------- source loading & fallback ----------
   const fail = useCallback(
@@ -157,11 +231,18 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     setBuffering(true);
     setLevels([]);
     setLevel(-1);
+    setAudioTracks([]);
+    setAudioTrack(-1);
     const startAt = seekOnLoad.current;
 
     const startup = window.setTimeout(() => !cancelled && v.readyState < 3 && fail('startup timeout'), STARTUP_TIMEOUT_MS);
     const clearStartup = () => window.clearTimeout(startup);
-    v.addEventListener('playing', clearStartup, { once: true });
+    // Remember the provider that actually played, so it's tried first next time.
+    const onPlaying = () => {
+      clearStartup();
+      if (getState().settings.lastProvider !== source.provider.id) actions.updateSettings({ lastProvider: source.provider.id });
+    };
+    v.addEventListener('playing', onPlaying, { once: true });
     v.addEventListener('canplay', clearStartup, { once: true });
 
     const play = () => v.play().catch(() => setPlaying(false)); // autoplay may be blocked; show the play button
@@ -185,6 +266,11 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
           );
           play();
         });
+        h.on(HlsCtor.Events.AUDIO_TRACKS_UPDATED, () => {
+          setAudioTracks(h.audioTracks.map((t, i) => ({ id: i, name: t.name || t.lang || `Track ${i + 1}` })));
+          setAudioTrack(h.audioTrack);
+        });
+        h.on(HlsCtor.Events.AUDIO_TRACK_SWITCHED, (_e, d) => setAudioTrack(d.id));
         h.on(HlsCtor.Events.ERROR, (_e, d) => {
           const status = (d.response as { code?: number } | undefined)?.code ?? 0;
           // Don't sit through hls.js retries on a refusal: 401/403/404/410 won't fix themselves.
@@ -221,6 +307,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     return () => {
       cancelled = true;
       clearStartup();
+      v.removeEventListener('playing', onPlaying);
       hls.current?.destroy();
       hls.current = null;
       v.removeAttribute('src');
@@ -228,14 +315,14 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     };
   }, [source, fail]);
 
-  // Apply persisted volume/speed.
+  // Apply persisted volume/speed (hold-to-speed overrides the speed while held).
   useEffect(() => {
     const v = video.current;
     if (!v) return;
     v.volume = volume;
     v.muted = muted;
-    v.playbackRate = rate;
-  }, [volume, muted, rate, sourceIdx]);
+    v.playbackRate = held ? 2 : rate;
+  }, [volume, muted, rate, held, sourceIdx]);
 
   // ---------- progress reporting ----------
   const lastReport = useRef(0);
@@ -265,12 +352,22 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
 
   // ---------- controls visibility ----------
   const hideTimer = useRef<number>(undefined);
+  const [pokes, setPokes] = useState(0);
   const poke = useCallback(() => {
     setControls(true);
+    setPausedIdle(false);
+    setPokes((n) => n + 1);
     window.clearTimeout(hideTimer.current);
     hideTimer.current = window.setTimeout(() => setControls(false), 3000);
   }, []);
-  const showControls = controls || !playing || menu !== null || exhausted || countdown !== null;
+  // Paused and left alone: fade the controls and show what's playing (like a TV's pause screen).
+  const idleEligible = !playing && !buffering && !exhausted && countdown === null && menu === null && settings.pauseOverlay;
+  useEffect(() => {
+    if (!idleEligible) return setPausedIdle(false);
+    const t = window.setTimeout(() => setPausedIdle(true), PAUSE_OVERLAY_MS);
+    return () => window.clearTimeout(t);
+  }, [idleEligible, pokes]);
+  const showControls = !pausedIdle && (controls || !playing || menu !== null || exhausted || countdown !== null);
 
   // ---------- actions ----------
   const toggle = useCallback(() => {
@@ -279,30 +376,36 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     if (v.paused) v.play().catch(() => {});
     else v.pause();
   }, []);
+  const seekTo = useCallback((t: number) => {
+    const v = video.current;
+    if (!v || !v.duration) return;
+    v.currentTime = Math.max(0, Math.min(v.duration - 0.5, t));
+  }, []);
   const seekBy = useCallback(
     (s: number) => {
       const v = video.current;
       if (!v || !v.duration) return;
-      v.currentTime = Math.max(0, Math.min(v.duration - 0.5, v.currentTime + s));
+      seekTo(v.currentTime + s);
       flash(`${s > 0 ? '+' : ''}${s}s`);
       poke();
     },
-    [flash, poke],
+    [flash, poke, seekTo],
   );
-  const setVol = useCallback(
-    (vol: number) => {
-      const val = Math.max(0, Math.min(1, vol));
-      setVolume(val);
-      setMuted(val === 0);
-      actions.updateSettings({ volume: val, muted: val === 0 });
-    },
-    [],
-  );
+  const setVol = useCallback((vol: number) => {
+    const val = Math.max(0, Math.min(1, vol));
+    setVolume(val);
+    setMuted(val === 0);
+    actions.updateSettings({ volume: val, muted: val === 0 });
+  }, []);
   const toggleMute = useCallback(() => {
     setMuted((m) => {
       actions.updateSettings({ muted: !m });
       return !m;
     });
+  }, []);
+  const changeRate = useCallback((sp: number) => {
+    setRate(sp);
+    actions.updateSettings({ playbackRate: sp });
   }, []);
   const toggleFullscreen = useCallback(() => {
     const el = wrap.current;
@@ -321,18 +424,52 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     else v.requestPictureInPicture?.().catch(() => {});
   }, []);
   const toggleCaptions = useCallback(() => {
-    if (!subtitles.length) return;
-    const i = subIdx >= 0 ? -1 : Math.max(0, lastSub.current);
-    setSubIdx(i);
-    actions.updateSettings({ subtitleLabel: i >= 0 ? subtitles[i].label : null });
-    flash(i >= 0 ? `Subtitles: ${subtitles[i].label}` : 'Subtitles off');
-  }, [subIdx, subtitles, flash]);
+    if (!tracks.length) return;
+    const i = subIdx >= 0 ? -1 : Math.max(0, Math.min(tracks.length - 1, lastSub.current));
+    chooseSub(i);
+    flash(i >= 0 ? `Subtitles: ${tracks[i].label}` : 'Subtitles off');
+  }, [subIdx, tracks, flash, chooseSub]);
+  const nudgeDelay = useCallback(
+    (by: number) =>
+      setDelay((d) => {
+        const v = Math.round((d + by) * 10) / 10;
+        flash(v === 0 ? 'Subtitle timing reset' : `Subtitles ${Math.abs(v)}s ${v > 0 ? 'later' : 'earlier'}`);
+        return v;
+      }),
+    [flash],
+  );
+  const skipSegment = useCallback(
+    (s: Segment) => {
+      if (s.end === null) return;
+      seekTo(s.end);
+      poke();
+    },
+    [seekTo, poke],
+  );
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onFs);
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
+
+  // ---------- segments: auto-skip and the credits hand-off ----------
+  useEffect(() => {
+    if (!segment) return;
+    if (segment.type === 'credits') {
+      // Credits rolling with an episode to go to: start the "Up next" countdown now.
+      if (next && settings.creditsNext && settings.autoplayNext && !creditsOffered.current && playing) {
+        creditsOffered.current = true;
+        setCountdown(10);
+      }
+      return;
+    }
+    if (settings.autoSkip && segment.end !== null && !skipped.current.has(segment.start) && playing) {
+      skipped.current.add(segment.start);
+      seekTo(segment.end);
+      flash(`Skipped ${segment.type}`);
+    }
+  }, [segment, next, settings.creditsNext, settings.autoplayNext, settings.autoSkip, playing, seekTo, flash]);
 
   // ---------- keyboard ----------
   useEffect(() => {
@@ -346,8 +483,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       const speed = (dir: 1 | -1) => {
         const i = SPEEDS.indexOf(rate);
         const sp = SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, (i < 0 ? SPEEDS.indexOf(1) : i) + dir))];
-        setRate(sp);
-        actions.updateSettings({ playbackRate: sp });
+        changeRate(sp);
         flash(`Speed ${sp}×`);
       };
       const map: Record<string, () => void> = {
@@ -367,6 +503,9 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
         i: togglePip,
         '<': () => speed(-1),
         '>': () => speed(1),
+        // Subtitle timing, as in mpv: Z earlier, X later.
+        z: () => cues.length && nudgeDelay(-0.5),
+        x: () => cues.length && nudgeDelay(0.5),
         N: () => next?.go(),
         ...Object.fromEntries([...'0123456789'].map((d) => [d, () => jumpTo(Number(d) / 10)])),
       };
@@ -386,7 +525,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, togglePip, next, poke, flash, menu, rate]);
+  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, togglePip, next, poke, flash, menu, rate, changeRate, cues.length, nudgeDelay, setMenu]);
 
   // ---------- media session (lock screen / hardware keys) ----------
   useEffect(() => {
@@ -415,9 +554,28 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     return () => clearTimeout(t);
   }, [countdown, next]);
 
-  // ---------- pointer handling (tap vs click, double-tap seek) ----------
+  // ---------- pointer handling (tap vs click, double-tap seek, hold for 2×) ----------
   const lastTap = useRef(0);
+  const holdTimer = useRef<number>(undefined);
+  const holding = useRef(false);
+  const endHold = () => {
+    window.clearTimeout(holdTimer.current);
+    if (!holding.current) return false;
+    holding.current = false;
+    setHeld(false);
+    return true;
+  };
+  const onSurfaceDown = (e: React.PointerEvent) => {
+    if (menu || !settings.holdToSpeed || e.button !== 0) return;
+    window.clearTimeout(holdTimer.current);
+    holdTimer.current = window.setTimeout(() => {
+      if (video.current?.paused) return;
+      holding.current = true;
+      setHeld(true);
+    }, HOLD_MS);
+  };
   const onSurfaceUp = (e: React.PointerEvent) => {
+    if (endHold()) return; // releasing a hold isn't a click
     if (menu) return setMenu(null);
     if (e.pointerType === 'mouse') return toggle();
     const now = Date.now();
@@ -435,7 +593,27 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     } else poke();
   };
 
+  // ---------- drag & drop subtitles ----------
+  const [dragging, setDragging] = useState(false);
+  const dropProps = {
+    onDragOver: (e: React.DragEvent) => {
+      if (![...e.dataTransfer.types].includes('Files')) return;
+      e.preventDefault();
+      setDragging(true);
+    },
+    onDragLeave: (e: React.DragEvent) => !e.currentTarget.contains(e.relatedTarget as Node) && setDragging(false),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      const f = e.dataTransfer.files[0];
+      if (f) loadFile(f);
+    },
+  };
+
   const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const skippable = segment && segment.end !== null && !(segment.type === 'credits' && next);
+  const creditsNextBtn = segment?.type === 'credits' && next && countdown === null;
+  const qualityNow = level === -1 ? 'Auto' : `${levels.find((l) => l.index === level)?.height ?? ''}p`;
 
   return (
     <div
@@ -444,14 +622,16 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       onPointerMove={(e) => e.pointerType === 'mouse' && poke()}
       // Tabbing to a control brings the (auto-hidden) controls back.
       onFocusCapture={poke}
+      {...dropProps}
     >
       <video
         ref={video}
-        className="size-full object-contain"
+        className={cx('size-full', fill ? 'object-cover' : 'object-contain')}
         playsInline
         onPlay={() => setPlaying(true)}
         onPause={() => {
           setPlaying(false);
+          endHold();
           report(true);
         }}
         onWaiting={() => setBuffering(true)}
@@ -471,16 +651,28 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
         }}
         onEnded={() => {
           report(true, true);
-          if (next && getState().settings.autoplayNext) setCountdown(8);
+          if (next && settings.autoplayNext && countdown === null) setCountdown(8);
         }}
         onError={(e) => !hls.current && e.currentTarget.getAttribute('src') && e.currentTarget.error && fail('media error')}
         onDoubleClick={toggleFullscreen}
       >
-        {subUrl && <track key={subUrl} kind="subtitles" src={subUrl} label={subtitles[subIdx]?.label} default />}
+        {nativeVtt && <track key={nativeVtt} kind="subtitles" src={nativeVtt} label={subLabel} />}
       </video>
+      {/* Native (iOS) fullscreen can't show our caption overlay, so the track takes over there. */}
+      <NativeFullscreenTracks video={video} />
+
+      <CaptionOverlay cues={cues} time={time - delay} raised={showControls} style={settings} />
 
       {/* tap/click surface */}
-      <div className="absolute inset-0" onPointerUp={onSurfaceUp} onDoubleClick={toggleFullscreen} />
+      <div
+        className="absolute inset-0"
+        onPointerDown={onSurfaceDown}
+        onPointerUp={onSurfaceUp}
+        onPointerCancel={endHold}
+        onPointerLeave={endHold}
+        onContextMenu={(e) => held && e.preventDefault()}
+        onDoubleClick={toggleFullscreen}
+      />
 
       {/* centre states */}
       {buffering && !exhausted && (
@@ -488,14 +680,45 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
           <div className="size-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
         </div>
       )}
-      {!playing && !buffering && !exhausted && countdown === null && (
+      {!playing && !buffering && !exhausted && countdown === null && !pausedIdle && (
         <button onClick={toggle} aria-label="Play" className="absolute inset-0 m-auto grid size-20 place-items-center rounded-full bg-black/50 backdrop-blur-sm transition hover:bg-black/70">
           <Play className="ml-1 size-9 fill-white text-white" />
         </button>
       )}
-      {notice && (
+      {held && (
+        <div className="pointer-events-none absolute top-20 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/75 px-4 py-2 text-sm font-medium backdrop-blur-sm">
+          2× <ChevronsRight className="size-4" />
+        </div>
+      )}
+      {notice && !held && (
         <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">{notice}</div>
       )}
+      {dragging && (
+        <div className="pointer-events-none absolute inset-4 z-40 grid place-items-center rounded-3xl border-2 border-dashed border-white/40 bg-black/70 text-center">
+          <div>
+            <FileUp className="mx-auto size-8" />
+            <p className="mt-2 font-medium">Drop a subtitle file</p>
+            <p className="text-sm text-muted">.srt or .vtt</p>
+          </div>
+        </div>
+      )}
+
+      {/* Paused for a while: what's playing, like a TV's pause screen. */}
+      <div
+        aria-hidden={!pausedIdle}
+        className={cx(
+          'pointer-events-none absolute inset-0 flex items-center bg-gradient-to-r from-black/85 via-black/45 to-transparent px-6 transition-opacity duration-500 md:px-16',
+          pausedIdle ? 'opacity-100' : 'opacity-0',
+        )}
+      >
+        <div className="max-w-xl">
+          <p className="text-sm text-muted">You’re watching</p>
+          <h2 className="mt-1 text-3xl font-semibold text-balance md:text-5xl">{title}</h2>
+          {subtitle && <p className="mt-2 text-lg text-white/85">{subtitle}</p>}
+          {overview && <p className="mt-4 line-clamp-4 text-body-sm leading-relaxed text-white/75 md:text-base">{overview}</p>}
+          <p className="mt-6 text-sm text-muted">Paused · {formatClock(time)} of {formatClock(duration)}</p>
+        </div>
+      </div>
 
       {exhausted && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center">
@@ -518,6 +741,22 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Skip intro / recap / credits, and "Next episode" when the credits start. Shown even
+          while the controls are hidden, like on streaming services. */}
+      {(skippable || creditsNextBtn) && !exhausted && (
+        <div className={cx('absolute right-4 z-20 transition-[bottom] duration-200 md:right-8', showControls ? 'bottom-28' : 'bottom-8')}>
+          {creditsNextBtn ? (
+            <button onClick={() => next!.go()} className={btn({ variant: 'primary', size: 'lg' })}>
+              <SkipForward className="size-4 fill-current" /> Next episode
+            </button>
+          ) : (
+            <button onClick={() => skipSegment(segment!)} className={cx(btn({ size: 'lg' }), 'bg-black/60! backdrop-blur-md hover:bg-black/80!')}>
+              {SEGMENT_LABEL[segment!.type]} <ChevronsRight className="size-4" />
+            </button>
+          )}
         </div>
       )}
 
@@ -553,7 +792,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
           showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <SeekBar time={time} duration={duration} buffered={buffered} onSeek={(t) => video.current && (video.current.currentTime = t)} />
+        <SeekBar time={time} duration={duration} buffered={buffered} segments={segments} onSeek={seekTo} />
         <div className="mt-1 flex items-center gap-1 md:gap-2">
           <IconButton label={playing ? 'Pause (K)' : 'Play (K)'} onClick={toggle}>
             {playing ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
@@ -588,39 +827,106 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                 <SkipForward className="size-5" />
               </IconButton>
             )}
-            {subtitles.length > 0 && (
-              <div className="relative">
-                <IconButton label="Subtitles (C)" active={subIdx >= 0} onClick={() => setMenu(menu === 'captions' ? null : 'captions')}>
-                  <Captions className="size-5" />
-                </IconButton>
-                {menu === 'captions' && (
-                  <Popover>
-                    <MenuItem selected={subIdx < 0} onClick={() => chooseSub(-1)}>
-                      Off
-                    </MenuItem>
-                    {subtitles.map((s, i) => (
-                      <MenuItem key={s.url} selected={subIdx === i} onClick={() => chooseSub(i)}>
-                        {s.label}
-                      </MenuItem>
-                    ))}
-                  </Popover>
-                )}
-              </div>
-            )}
+
+            {/* Subtitles: tracks, own file, timing, look, transcript */}
             <div className="relative">
-              <IconButton label="Settings (quality, source, speed)" active={menu === 'settings'} onClick={() => setMenu(menu === 'settings' ? null : 'settings')}>
+              <IconButton label="Subtitles (C)" active={subIdx >= 0 || menu === 'captions'} expanded={menu === 'captions'} onClick={() => setMenu(menu === 'captions' ? null : 'captions')}>
+                <Captions className="size-5" />
+              </IconButton>
+              {menu === 'captions' && (
+                <Popover wide={view === 'transcript'}>
+                  {view === 'main' && (
+                    <>
+                      <MenuItem selected={subIdx < 0} onClick={() => (chooseSub(-1), setMenu(null))}>
+                        Off
+                      </MenuItem>
+                      {tracks.map((s, i) => (
+                        <MenuItem key={(s.url ?? 'file') + s.label + i} selected={subIdx === i} onClick={() => (chooseSub(i), setMenu(null))}>
+                          <span className="flex-1 truncate">{s.label}</span>
+                          {s.text !== undefined && <span className="text-micro tracking-wider text-faint uppercase">file</span>}
+                        </MenuItem>
+                      ))}
+                      <Divider />
+                      <MenuItem onClick={() => fileInput.current?.click()}>
+                        <FileUp className="size-4 shrink-0 text-muted" />
+                        <span className="flex-1">Load a file…</span>
+                      </MenuItem>
+                      {subIdx >= 0 && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 text-sm">
+                          <span className="flex-1">
+                            Timing
+                            <span className="block text-xs text-muted tabular-nums">
+                              {delay === 0 ? 'In sync' : `${Math.abs(delay)}s ${delay > 0 ? 'later' : 'earlier'}`} · Z / X
+                            </span>
+                          </span>
+                          <StepButton label="Earlier (Z)" onClick={() => nudgeDelay(-0.5)}>
+                            <Minus className="size-4" />
+                          </StepButton>
+                          <StepButton label="Later (X)" onClick={() => nudgeDelay(0.5)}>
+                            <Plus className="size-4" />
+                          </StepButton>
+                        </div>
+                      )}
+                      <NavItem label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
+                      {cues.length > 0 && <NavItem label="Transcript" onClick={() => setView('transcript')} />}
+                    </>
+                  )}
+                  {view === 'style' && (
+                    <>
+                      <BackHeader onBack={() => setView('main')}>Subtitle style</BackHeader>
+                      <SubtitleStyleControls />
+                    </>
+                  )}
+                  {view === 'transcript' && (
+                    <>
+                      <BackHeader onBack={() => setView('main')}>Transcript</BackHeader>
+                      <Transcript cues={cues} time={time - delay} onSeek={(t) => seekTo(t + delay)} />
+                    </>
+                  )}
+                </Popover>
+              )}
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".srt,.vtt,text/vtt,application/x-subrip"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  setMenu(null);
+                  if (f) loadFile(f);
+                }}
+              />
+            </div>
+
+            {/* Settings: quality, audio, source, speed, toggles */}
+            <div className="relative">
+              <IconButton label="Settings (quality, source, speed)" active={menu === 'settings'} expanded={menu === 'settings'} onClick={() => setMenu(menu === 'settings' ? null : 'settings')}>
                 <Settings className="size-5" />
               </IconButton>
               {menu === 'settings' && (
                 <Popover>
-                  {levels.length > 1 && (
+                  {view === 'main' && (
                     <>
-                      <MenuLabel>Quality</MenuLabel>
+                      {levels.length > 1 && <NavItem label="Quality" value={qualityNow} onClick={() => setView('quality')} />}
+                      {audioTracks.length > 1 && <NavItem label="Audio" value={audioTracks.find((t) => t.id === audioTrack)?.name} onClick={() => setView('audio')} />}
+                      <NavItem label="Source" value={`${qualityLabel(source.quality)} · ${source.provider.name}`} onClick={() => setView('source')} />
+                      <NavItem label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
+                      <Divider />
+                      <SwitchItem label="Fill screen" hint="Crop to remove black bars" on={fill} onChange={setFill} />
+                      <SwitchItem label="Skip intros automatically" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
+                      <SwitchItem label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
+                    </>
+                  )}
+                  {view === 'quality' && (
+                    <>
+                      <BackHeader onBack={() => setView('main')}>Quality</BackHeader>
                       <MenuItem
                         selected={level === -1}
                         onClick={() => {
                           if (hls.current) hls.current.currentLevel = -1;
                           setLevel(-1);
+                          setMenu(null);
                         }}
                       >
                         Auto
@@ -632,51 +938,78 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                           onClick={() => {
                             if (hls.current) hls.current.currentLevel = l.index;
                             setLevel(l.index);
+                            setMenu(null);
                           }}
                         >
-                          {l.height}p
+                          <span className="flex-1">{l.height}p</span>
+                          {l.height >= 2160 ? <Badge>4K</Badge> : l.height >= 720 ? <Badge>HD</Badge> : null}
                         </MenuItem>
                       ))}
                     </>
                   )}
-                  <MenuLabel>Source</MenuLabel>
-                  {data.sources.map((s, i) => (
-                    <MenuItem
-                      key={s.url}
-                      selected={sourceIdx === i}
-                      onClick={() => {
-                        if (i === sourceIdx) return;
-                        const v = video.current;
-                        if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
-                        failed.current.delete(i);
-                        setSourceIdx(i);
-                        setMenu(null);
-                      }}
-                    >
-                      <span className="flex-1">
-                        {qualityLabel(s.quality)} · {s.provider.name}
-                      </span>
-                      <span className={cx('text-micro tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
-                        {failed.current.has(i) ? 'failed' : s.type}
-                      </span>
-                    </MenuItem>
-                  ))}
-                  <MenuLabel>Speed</MenuLabel>
-                  <div className="flex flex-wrap gap-1 px-2 pb-1">
-                    {SPEEDS.map((sp) => (
-                      <button
-                        key={sp}
-                        onClick={() => {
-                          setRate(sp);
-                          actions.updateSettings({ playbackRate: sp });
-                        }}
-                        aria-pressed={rate === sp}
-                        className={cx('h-8 rounded-full px-3 text-xs', rate === sp ? 'bg-white font-medium text-black' : 'bg-white/10 hover:bg-white/20')}
-                      >
-                        {sp}×
-                      </button>
-                    ))}
-                  </div>
+                  {view === 'audio' && (
+                    <>
+                      <BackHeader onBack={() => setView('main')}>Audio</BackHeader>
+                      {audioTracks.map((t) => (
+                        <MenuItem
+                          key={t.id}
+                          selected={audioTrack === t.id}
+                          onClick={() => {
+                            if (hls.current) hls.current.audioTrack = t.id;
+                            setMenu(null);
+                          }}
+                        >
+                          {t.name}
+                        </MenuItem>
+                      ))}
+                    </>
+                  )}
+                  {view === 'source' && (
+                    <>
+                      <BackHeader onBack={() => setView('main')}>Source</BackHeader>
+                      {data.sources.map((s, i) => (
+                        <MenuItem
+                          key={s.url}
+                          selected={sourceIdx === i}
+                          onClick={() => {
+                            if (i === sourceIdx) return setMenu(null);
+                            const v = video.current;
+                            if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
+                            failed.current.delete(i);
+                            setSourceIdx(i);
+                            setMenu(null);
+                          }}
+                        >
+                          <span className="flex-1">
+                            {qualityLabel(s.quality)} · {s.provider.name}
+                          </span>
+                          <span className={cx('text-micro tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
+                            {failed.current.has(i) ? 'failed' : s.type}
+                          </span>
+                        </MenuItem>
+                      ))}
+                    </>
+                  )}
+                  {view === 'speed' && (
+                    <>
+                      <BackHeader onBack={() => setView('main')}>Speed</BackHeader>
+                      {SPEEDS.map((sp) => (
+                        <MenuItem
+                          key={sp}
+                          selected={rate === sp}
+                          onClick={() => {
+                            changeRate(sp);
+                            setMenu(null);
+                          }}
+                        >
+                          {sp === 1 ? 'Normal' : `${sp}×`}
+                        </MenuItem>
+                      ))}
+                      <p className="px-3 pt-1 pb-2 text-xs text-muted">
+                        {settings.holdToSpeed ? 'Tip: press and hold the video for 2×. ' : ''}&lt; and &gt; change speed.
+                      </p>
+                    </>
+                  )}
                 </Popover>
               )}
             </div>
@@ -697,24 +1030,85 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
 
 // ---------- pieces ----------
 
+/** Shows the native caption track only while iOS's own fullscreen player is up. */
+function NativeFullscreenTracks({ video }: { video: React.RefObject<HTMLVideoElement | null> }) {
+  useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+    const set = (mode: TextTrackMode) => () => {
+      for (const t of Array.from(v.textTracks)) t.mode = mode;
+    };
+    const on = set('showing');
+    const off = set('hidden');
+    off();
+    v.addEventListener('webkitbeginfullscreen', on);
+    v.addEventListener('webkitendfullscreen', off);
+    v.textTracks.addEventListener?.('addtrack', off);
+    return () => {
+      v.removeEventListener('webkitbeginfullscreen', on);
+      v.removeEventListener('webkitendfullscreen', off);
+      v.textTracks.removeEventListener?.('addtrack', off);
+    };
+  }, [video]);
+  return null;
+}
+
+/** Every cue as a list; the current one is highlighted and kept in view. Click to jump. */
+function Transcript({ cues, time, onSeek }: { cues: Cue[]; time: number; onSeek: (t: number) => void }) {
+  const list = useRef<HTMLDivElement>(null);
+  const now = activeCues(cues, time)[0];
+  const at = now ? cues.indexOf(now) : -1;
+  const [follow, setFollow] = useState(true);
+  useEffect(() => {
+    if (!follow || at < 0) return;
+    const el = list.current?.querySelector<HTMLElement>(`[data-i="${at}"]`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [at, follow]);
+  return (
+    <div ref={list} className="max-h-[46vh] overflow-y-auto overscroll-contain pb-1" onWheel={() => setFollow(false)} onTouchMove={() => setFollow(false)}>
+      {cues.map((c, i) => (
+        <button
+          key={i}
+          data-i={i}
+          onClick={() => {
+            onSeek(c.start);
+            setFollow(true);
+          }}
+          className={cx('flex w-full gap-3 rounded-xl px-3 py-2 text-left text-sm transition', i === at ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/[0.06] hover:text-white')}
+        >
+          <span className="w-12 shrink-0 pt-px text-xs text-faint tabular-nums">{formatClock(c.start)}</span>
+          <span className="min-w-0">
+            <CueText text={c.text} />
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function IconButton({
   label,
   onClick,
   children,
   active,
   className,
+  expanded,
 }: {
   label: string;
   onClick: () => void;
   children: ReactNode;
   active?: boolean;
   className?: string;
+  /** For menu buttons: whether the menu is open (also tells the page's Esc to leave it alone). */
+  expanded?: boolean;
 }) {
   return (
     <button
       type="button"
       title={label}
       aria-label={label}
+      aria-haspopup={expanded === undefined ? undefined : 'menu'}
+      aria-expanded={expanded}
       onClick={onClick}
       className={cx(btn({ variant: 'ghost', icon: true }), 'text-white', active && 'bg-white/15', className)}
     >
@@ -723,24 +1117,84 @@ function IconButton({
   );
 }
 
-const Popover = ({ children }: { children: ReactNode }) => (
-  <div className="toast-in absolute right-0 bottom-12 z-30 max-h-[60vh] w-64 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md">
+const StepButton = ({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) => (
+  <button type="button" title={label} aria-label={label} onClick={onClick} className="grid size-8 place-items-center rounded-full bg-white/10 hover:bg-white/20">
+    {children}
+  </button>
+);
+
+const Popover = ({ children, wide }: { children: ReactNode; wide?: boolean }) => (
+  <div
+    className={cx(
+      'toast-in absolute right-0 bottom-12 z-30 max-h-[64vh] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
+      wide ? 'w-[min(24rem,calc(100vw-1.5rem))]' : 'w-72',
+    )}
+  >
     {children}
   </div>
 );
-const MenuLabel = ({ children }: { children: ReactNode }) => (
-  <div className="px-3 pt-2.5 pb-1 text-micro font-medium tracking-wider text-faint uppercase">{children}</div>
+const Divider = () => <div className="mx-3 my-1.5 h-px bg-white/[0.08]" />;
+const Badge = ({ children }: { children: ReactNode }) => (
+  <span className="rounded bg-white/10 px-1.5 py-px text-micro font-semibold tracking-wider text-white/80">{children}</span>
 );
-function MenuItem({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+
+function BackHeader({ onBack, children }: { onBack: () => void; children: ReactNode }) {
   return (
-    <button onClick={onClick} aria-pressed={selected} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10">
-      <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
+    <button onClick={onBack} className="mb-1 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-medium hover:bg-white/10">
+      <ChevronLeft className="size-4" />
       {children}
     </button>
   );
 }
 
-function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration: number; buffered: number; onSeek: (t: number) => void }) {
+function NavItem({ label, value, onClick }: { label: string; value?: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/10">
+      <span className="flex-1">{label}</span>
+      {value && <span className="max-w-[55%] truncate text-muted">{value}</span>}
+      <ChevronRight className="size-4 shrink-0 text-muted" />
+    </button>
+  );
+}
+
+function SwitchItem({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/10">
+      <span className="flex-1">
+        {label}
+        {hint && <span className="block text-xs text-muted">{hint}</span>}
+      </span>
+      <span className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-white/15')}>
+        <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', on ? 'translate-x-4 bg-black' : 'bg-white')} />
+      </span>
+    </button>
+  );
+}
+
+function MenuItem({ selected, onClick, children }: { selected?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button onClick={onClick} aria-pressed={selected} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10">
+      {selected !== undefined && <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />}
+      {children}
+    </button>
+  );
+}
+
+const SEGMENT_NAME: Record<Segment['type'], string> = { intro: 'Intro', recap: 'Recap', credits: 'Credits', preview: 'Preview' };
+
+function SeekBar({
+  time,
+  duration,
+  buffered,
+  segments,
+  onSeek,
+}: {
+  time: number;
+  duration: number;
+  buffered: number;
+  segments: Segment[];
+  onSeek: (t: number) => void;
+}) {
   const bar = useRef<HTMLDivElement>(null);
   const [scrub, setScrub] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -750,6 +1204,7 @@ function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration:
   };
   const shown = scrub ?? (duration ? time / duration : 0);
   const tip = scrub ?? hover;
+  const tipSegment = tip !== null && duration ? segmentAt(segments, tip * duration, duration) : undefined;
   return (
     <div
       ref={bar}
@@ -788,6 +1243,15 @@ function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration:
     >
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/25 transition-[height] group-hover/seek:h-1.5">
         <div className="absolute inset-y-0 left-0 bg-white/35" style={{ width: `${duration ? Math.min(100, (buffered / duration) * 100) : 0}%` }} />
+        {/* Intro / recap / credits ranges */}
+        {duration > 0 &&
+          segments.map((s) => (
+            <div
+              key={s.type + s.start}
+              className="absolute inset-y-0 bg-planned/70"
+              style={{ left: `${(s.start / duration) * 100}%`, width: `${(((s.end ?? duration) - s.start) / duration) * 100}%` }}
+            />
+          ))}
         <div className="absolute inset-y-0 left-0 bg-white" style={{ width: `${shown * 100}%` }} />
       </div>
       <div
@@ -795,8 +1259,9 @@ function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration:
         style={{ left: `${shown * 100}%`, opacity: scrub !== null ? 1 : undefined }}
       />
       {tip !== null && duration > 0 && (
-        <div className="pointer-events-none absolute bottom-6 -translate-x-1/2 rounded-full bg-black/85 px-2.5 py-0.5 text-xs tabular-nums" style={{ left: `${tip * 100}%` }}>
+        <div className="pointer-events-none absolute bottom-6 -translate-x-1/2 rounded-full bg-black/85 px-2.5 py-0.5 text-xs whitespace-nowrap tabular-nums" style={{ left: `${tip * 100}%` }}>
           {formatClock(tip * duration)}
+          {tipSegment && <span className="text-planned"> · {SEGMENT_NAME[tipSegment.type]}</span>}
         </div>
       )}
     </div>
@@ -805,16 +1270,22 @@ function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration:
 
 // ---------- subtitle helpers ----------
 
-function sortSubtitles(list: JellySubtitle[]) {
+function sortSubtitles(list: JellySubtitle[]): Track[] {
   const seen = new Set<string>();
   return list
     .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url))
-    .sort((a, b) => Number(/english/i.test(b.label)) - Number(/english/i.test(a.label)) || a.label.localeCompare(b.label));
+    .sort((a, b) => Number(/english/i.test(b.label)) - Number(/english/i.test(a.label)) || a.label.localeCompare(b.label))
+    .map((s) => ({ label: s.label, url: s.url }));
 }
 
-/** <track> only understands WebVTT; convert SRT on the fly. */
-function toVtt(text: string) {
-  const t = text.replace(/^﻿/, '').replace(/\r/g, '');
-  if (t.trimStart().startsWith('WEBVTT')) return t;
-  return 'WEBVTT\n\n' + t.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+/** Cues back to WebVTT (for the native fullscreen player), shifted by the timing offset. */
+function toVtt(cues: Cue[], delay: number) {
+  const ts = (t: number) => {
+    const v = Math.max(0, t);
+    const h = Math.floor(v / 3600);
+    const m = Math.floor((v % 3600) / 60);
+    const s = (v % 60).toFixed(3).padStart(6, '0');
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s}`;
+  };
+  return 'WEBVTT\n\n' + cues.map((c) => `${ts(c.start + delay)} --> ${ts(c.end + delay)}\n${c.text}`).join('\n\n');
 }

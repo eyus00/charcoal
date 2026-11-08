@@ -33,7 +33,7 @@ const SECTIONS: { title: string; keys: [string[], string][] }[] = [
     keys: [
       [['Space'], 'Play / pause'], [['K'], 'Play / pause'], [['J', 'L'], 'Back / forward 10s'], [['←', '→'], 'Back / forward 5s'],
       [['↑', '↓'], 'Volume'], [['0–9'], 'Jump to 0–90%'], [['<', '>'], 'Slower / faster'], [['F'], 'Fullscreen'], [['M'], 'Mute'],
-      [['C'], 'Subtitles'], [['I'], 'Picture in picture'], [['Shift', 'N'], 'Next episode'], [['Shift', 'P'], 'Previous episode'],
+      [['C'], 'Subtitles'], [['Z', 'X'], 'Subtitles earlier / later'], [['I'], 'Picture in picture'], [['Shift', 'N'], 'Next episode'], [['Shift', 'P'], 'Previous episode'],
       [['E'], 'Episodes'], [['S'], 'Servers'], [['Esc'], 'Back to the title page'],
     ],
   },

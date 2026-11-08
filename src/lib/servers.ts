@@ -1,6 +1,6 @@
 import type { MediaType } from './tmdb';
 
-const JELLY = (import.meta.env.VITE_JELLY_URL || 'https://jelly.up.railway.app').replace(/\/+$/, '');
+export const JELLY = (import.meta.env.VITE_JELLY_URL || 'https://jelly.up.railway.app').replace(/\/+$/, '');
 
 // ---------- Jelly (our scraper backend, OMSS API) ----------
 
@@ -72,6 +72,26 @@ function sortSources(list: JellySource[]): JellySource[] {
       typeRank(a.type) - typeRank(b.type) ||
       (RANK[qualityLabel(a.quality)] ?? 8) - (RANK[qualityLabel(b.quality)] ?? 8),
   );
+}
+
+export interface ProviderHealth {
+  id: string;
+  name: string;
+  status: 'ok' | 'failing' | 'benched' | 'unknown';
+  success: number;
+  empty: number;
+  failure: number;
+  benchedForSeconds: number;
+  averageMs: number;
+  lastError?: string;
+}
+
+/** Jelly's provider health table (GET /v1/providers/health); null if Jelly is older or down. */
+export async function fetchProviderHealth(signal?: AbortSignal): Promise<ProviderHealth[] | null> {
+  const res = await fetch(`${JELLY}/v1/providers/health`, { signal });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => null);
+  return Array.isArray(body?.providers) ? body.providers : null;
 }
 
 // ---------- embed servers (third-party iframe players) ----------

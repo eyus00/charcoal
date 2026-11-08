@@ -185,8 +185,10 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         <Player
           key={settings.proxyUrl}
           data={streams}
+          media={target}
           title={title}
           subtitle={subtitle}
+          overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
           header={header}
