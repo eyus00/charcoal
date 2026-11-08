@@ -62,8 +62,6 @@ function useSection() {
   const [params] = useSearchParams();
   if (pathname === '/') return 'home';
   if (pathname === '/discover') return params.get('type') === 'movie' ? 'movies' : params.get('type') === 'tv' ? 'tv' : 'discover';
-  if (pathname.startsWith('/movie/')) return 'movies';
-  if (pathname.startsWith('/tv/')) return 'tv';
   if (pathname === '/profile') return hash && hash !== '#profile' ? `profile${hash}` : 'profile';
   return '';
 }

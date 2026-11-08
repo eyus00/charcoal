@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronDown, Keyboard, SkipBack, SkipForward, X } from 'lucide-react';
 import EpisodeSelector from '../components/EpisodeSelector';
@@ -75,6 +75,11 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   const ep = seasonData?.episodes.find((e) => e.episode_number === episode);
   const { prev, next } = useMemo(() => (type === 'tv' ? neighbors(d, season!, episode!) : { prev: null, next: null }), [type, d, season, episode]);
   const detailsUrl = `/${type}/${id}${type === 'tv' ? `?season=${season}` : ''}`;
+  // Close / Esc return to wherever the player was opened from (home, the hero, a row, the title
+  // page). Episode changes replace the history entry, so one step back always leaves the player.
+  // Opened directly (a link or a refresh), there is nothing to go back to, so use the title page.
+  const location = useLocation();
+  const leave = useCallback(() => (location.key !== 'default' ? navigate(-1) : navigate(detailsUrl)), [location.key, navigate, detailsUrl]);
   const go = useCallback(
     (s: number, e: number) => navigate(`/watch/tv/${id}?season=${s}&episode=${e}`, { replace: true }),
     [id, navigate],
@@ -138,7 +143,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   useKeys({
     // Esc: back to the title page, unless a menu is open (it closes that) or the video is
     // fullscreen (the browser exits fullscreen).
-    Escape: () => !document.fullscreenElement && !document.querySelector('[aria-expanded="true"]') && navigate(detailsUrl),
+    Escape: () => !document.fullscreenElement && !document.querySelector('[aria-expanded="true"]') && leave(),
     ...(type === 'tv' ? { e: () => setDrawer(true) } : {}),
     ...(prev ? { P: () => go(prev.season, prev.episode) } : {}),
     // The Jelly player already handles Shift N; embeds can't, so the page does.
@@ -151,6 +156,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       title={title}
       subtitle={subtitle}
       detailsUrl={detailsUrl}
+      onClose={leave}
       prev={prev ? () => go(prev.season, prev.episode) : undefined}
       next={next ? () => go(next.season, next.episode) : undefined}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
@@ -232,10 +238,12 @@ function Header({
   next,
   onEpisodes,
   serverMenu,
+  onClose,
 }: {
   title: string;
   subtitle?: string;
   detailsUrl: string;
+  onClose: () => void;
   prev?: () => void;
   next?: () => void;
   onEpisodes?: () => void;
@@ -246,7 +254,7 @@ function Header({
     // controls like the details page.
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-4 md:px-5">
       <div className="justify-self-start">
-        <HeaderButton label="Close player" keys="Esc" to={detailsUrl} solid>
+        <HeaderButton label="Close player" keys="Esc" onClick={onClose} tipSide="left" solid>
           <X className="size-5" />
         </HeaderButton>
       </div>
