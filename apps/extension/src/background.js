@@ -146,6 +146,9 @@ async function allowStream({ host, headers }, sender) {
   streamRules.set(tabId, perTab);
   const old = perTab.get(domain);
   const id = takeId();
+  // Video requests keep the browser's own User-Agent: replacing it only makes the request look
+  // less like the real browser it is. Only the Referer / Origin the host expects are set.
+  const set = ruleHeaders(cleanHeaders(headers)).filter((h) => h.header !== 'user-agent');
   await dnr.updateSessionRules({
     removeRuleIds: old ? [old] : [],
     addRules: [
@@ -154,7 +157,7 @@ async function allowStream({ host, headers }, sender) {
         priority: 1,
         action: {
           type: 'modifyHeaders',
-          ...(ruleHeaders(cleanHeaders(headers)).length ? { requestHeaders: ruleHeaders(cleanHeaders(headers)) } : {}),
+          ...(set.length ? { requestHeaders: set } : {}),
           // Let Charcoal's page read the response (hls.js loads playlists and segments with XHR).
           responseHeaders: [
             { header: 'access-control-allow-origin', operation: 'set', value: origin },

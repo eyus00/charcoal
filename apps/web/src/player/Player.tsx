@@ -224,13 +224,20 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   const creditsOffered = useRef(false);
 
   // ---------- source loading & fallback ----------
+  /** Why each failed source failed, in words (shown in the Source menu). */
+  const failReason = useRef(new Map<number, string>());
   const fail = useCallback(
     (why: string, blockedHost = false) => {
       failed.current.add(sourceIdx);
+      failReason.current.set(sourceIdx, describeFailure(why));
       // A 4xx from the video host (e.g. Cloudflare blocking the proxy) will hit every source on that host.
       if (blockedHost) {
         const host = upstreamHost(data.sources[sourceIdx].url);
-        data.sources.forEach((s, i) => upstreamHost(s.url) === host && failed.current.add(i));
+        data.sources.forEach((s, i) => {
+          if (upstreamHost(s.url) !== host || i === sourceIdx) return;
+          failed.current.add(i);
+          failReason.current.set(i, `Same host as a refused source (${host})`);
+        });
       }
       const v = video.current;
       if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
@@ -1128,8 +1135,13 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                             setMenu(null);
                           }}
                         >
-                          <span className="flex-1">
+                          <span className="min-w-0 flex-1">
                             {qualityLabel(s.quality)} · {s.provider.name}
+                            {failed.current.has(i) && failReason.current.get(i) && (
+                              <span className="block truncate text-xs text-faint" title={failReason.current.get(i)}>
+                                {failReason.current.get(i)}
+                              </span>
+                            )}
                           </span>
                           <span className={cx('text-micro tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
                             {failed.current.has(i) ? 'failed' : s.type}
@@ -1444,6 +1456,18 @@ function SeekBar({
       )}
     </div>
   );
+}
+
+/** hls.js / player failure codes in plain words. */
+function describeFailure(why: string): string {
+  const status = why.match(/\b(\d{3})\b/)?.[1];
+  if (status === '403' || status === '401') return `The video host refused it (${status})`;
+  if (status === '404' || status === '410') return `The video is gone (${status})`;
+  if (/manifest/i.test(why)) return 'Couldn’t load the playlist';
+  if (/frag/i.test(why)) return 'Couldn’t load the video pieces';
+  if (/startup timeout/.test(why)) return 'Took too long to start';
+  if (/media error|bufferAppend|codec/i.test(why)) return 'This browser can’t play its format';
+  return why;
 }
 
 // ---------- subtitle helpers ----------

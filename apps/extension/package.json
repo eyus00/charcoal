@@ -1,6 +1,6 @@
 {
   "name": "@charcoal/extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Charcoal Helper browser extension (Chrome, Edge, Brave, Firefox)",
   "type": "module",
