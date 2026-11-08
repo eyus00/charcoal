@@ -78,8 +78,8 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
   );
 }
 
-export const TileSkeleton = () => (
-  <div className={TILE}>
+export const TileSkeleton = ({ className }: { className?: string }) => (
+  <div className={className ?? TILE}>
     <Bone className="aspect-video w-full rounded-b-none rounded-t-2xl" />
     <div className="rounded-b-2xl border border-t-0 border-white/[0.08] p-3">
       <Bone className="h-3.5 w-3/4" />

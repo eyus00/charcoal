@@ -111,7 +111,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={Array.from({ length: 4 }, (_, i) => <Bone key={i} className="mr-3 aspect-[16/12] w-[248px] shrink-0 rounded-2xl sm:w-[288px] md:mr-4 lg:w-[312px]" />)}
+      skeleton={Array.from({ length: 4 }, (_, i) => <TileSkeleton key={i} className="mr-3 w-[248px] shrink-0 sm:w-[288px] md:mr-4 lg:w-[312px]" />)}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );

@@ -47,14 +47,46 @@ export function PageSkeleton() {
   );
 }
 
-export function EpisodeSkeleton() {
+
+/** Home hero while trending loads: the same layout as a slide, in placeholders. */
+export function HeroSkeleton({ className }: { className?: string }) {
   return (
-    <div className="flex gap-4 p-2">
-      <Bone className="aspect-video w-36 shrink-0 rounded-md sm:w-44" />
-      <div className="flex-1 space-y-2 py-1">
-        <Bone className="h-4 w-3/5" />
-        <Bone className="h-3 w-1/4" />
-        <Bone className="h-3 w-full" />
+    <div className={cx('skeleton', className)}>
+      <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-transparent" />
+      <div className="absolute inset-x-0 bottom-32 px-4 md:bottom-36 md:px-8 lg:px-10">
+        <Bone className="h-6 w-20 rounded-full!" />
+        <Bone className="mt-3 h-4 w-52" />
+        <Bone className="mt-4 h-12 w-3/4 max-w-xl bg-raised md:h-16" />
+        <Bone className="mt-4 h-4 w-full max-w-lg" />
+        <Bone className="mt-2 h-4 w-2/3 max-w-sm" />
+        <div className="mt-6 flex gap-3">
+          <Bone className="h-12 w-36 rounded-full!" />
+          <Bone className="size-12 rounded-full!" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Title page while details load: the info card's shape over the art area. */
+export function DetailsSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cx('skeleton relative flex items-end', className)}>
+      <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/30 to-transparent" />
+      <div className="relative w-full px-4 pb-6 md:px-8 md:pb-10 lg:px-10">
+        <div className="max-w-xl rounded-3xl bg-black/25 p-5 ring-1 ring-white/10 md:p-7">
+          <Bone className="h-9 w-2/3" />
+          <Bone className="mt-3 h-4 w-40" />
+          <Bone className="mt-2.5 h-4 w-48" />
+          <Bone className="mt-5 h-4 w-full" />
+          <Bone className="mt-2.5 h-4 w-full" />
+          <Bone className="mt-2.5 h-4 w-3/4" />
+          <div className="mt-6 flex gap-2.5">
+            <Bone className="h-12 w-40 rounded-full!" />
+            <Bone className="size-12 rounded-full!" />
+            <Bone className="size-12 rounded-full!" />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import Img from '../components/Img';
 import Kbd from '../components/Kbd';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_ITEM, ROW_SIZES, RowArrows, Scroller, useRowScroll } from '../components/Row';
-import { RowSkeleton } from '../components/Skeletons';
+import { HeroSkeleton, RowSkeleton } from '../components/Skeletons';
 import { EMPTY_FILTERS, GENRES, genreName } from '../lib/filters';
 import { imageUrl } from '../lib/images';
 import { continueWatching, useStore } from '../lib/store';
@@ -66,7 +66,7 @@ function Hero() {
 
   if (isError) return null;
   const frame = cx(BLEED, 'relative h-[78svh] min-h-[520px] max-h-[820px] overflow-hidden');
-  if (!items.length) return <div className={cx(frame, 'skeleton')} />;
+  if (!items.length) return <HeroSkeleton className={frame} />;
 
   const n = items.length;
   const item = items[index];
