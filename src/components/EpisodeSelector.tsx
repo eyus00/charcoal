@@ -38,6 +38,14 @@ interface Props {
  * season, prefetches a season when its tab is hovered, and scrolls the current
  * or resume episode into view.
  */
+/** Blurred stand-in synopses, varied in length so the cards don't look identical. */
+const FILLER = [
+  'The story for this episode has not been shared yet.',
+  'Details about this episode will be added closer to its air date, once the network shares them.',
+  'A new chapter is on the way. More soon.',
+  'Plot details for this one are still under wraps, check back after the next episode airs for more on what happens.',
+];
+
 /** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
 const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
 
@@ -188,12 +196,9 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       {ep.still_path ? (
                         <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
                       ) : (
-                        // No still yet (usually upcoming): the show's backdrop, blurred, with a short note.
-                        <div className="relative aspect-video overflow-hidden bg-white/[0.04]">
-                          {show.backdrop_path && (
-                            <Img path={show.backdrop_path} kind="backdrop" sizes="300px" alt="" className="absolute! inset-0 scale-110 opacity-40 blur-lg" />
-                          )}
-                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Not out yet' : 'No image'}</span>
+                        // No still yet (usually upcoming): a calm placeholder; the tag says when it airs.
+                        <div className="grid aspect-video place-items-center bg-white/[0.04]">
+                          <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
                         </div>
                       )}
                       {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
@@ -243,9 +248,9 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
                         <div className="relative mt-1.5">
                           <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
-                            The story for this episode hasn't been shared yet, check back closer to the air date.
+                            {FILLER[ep.episode_number % FILLER.length]}
                           </p>
-                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Synopsis coming soon' : 'No synopsis'}</span>
+                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Coming soon' : 'No synopsis'}</span>
                         </div>
                       )}
                     </div>
