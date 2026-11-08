@@ -313,21 +313,27 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
   }, [onClose]);
   // Portal: the info card's backdrop blur would otherwise trap this fixed overlay inside the card.
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
+      {/* Same shell as the episode list: sheet on phones, dialog on desktop, round close button. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`About ${title}`}
-        className="toast-in max-h-[75dvh] w-full overflow-y-auto rounded-t-3xl bg-raised p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl ring-1 ring-white/10 sm:max-w-lg sm:rounded-3xl"
+        className="toast-in flex max-h-[80dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl md:max-w-xl md:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button autoFocus onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 grid size-9 shrink-0 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
-            <X className="size-4" />
+        <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-lg font-semibold md:text-xl">Overview</h2>
+            <p className="truncate text-sm text-muted">{title}</p>
+          </div>
+          <button autoFocus onClick={onClose} aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-raised hover:bg-line">
+            <X className="size-5" />
           </button>
         </div>
-        <p className="text-[15px] leading-relaxed text-white/80">{text}</p>
+        <div className="overflow-y-auto border-t border-line px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-7 md:pb-7">
+          <p className="text-[15px] leading-relaxed text-white/80">{text}</p>
+        </div>
       </div>
     </div>,
     document.body,
