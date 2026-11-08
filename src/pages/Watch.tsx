@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Keyboard, ListVideo, Server, ShieldCheck, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Keyboard, ListVideo, SkipBack, SkipForward, X } from 'lucide-react';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -11,6 +11,7 @@ import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
 import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
 import { hotkeysCtl } from '../components/Hotkeys';
+import Kbd from '../components/Kbd';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player from '../player/Player';
 
@@ -206,6 +207,9 @@ function nextLabel(n: { season: number; episode: number }, eps?: { season_number
 
 // ---------- header ----------
 
+/** Soft grouped box, like the sidebar's groups; readable over video and over the page. */
+const BOX = 'flex shrink-0 items-center gap-0.5 rounded-2xl bg-black/30 p-1 ring-1 ring-white/10 backdrop-blur-xl';
+
 function Header({
   title,
   subtitle,
@@ -224,49 +228,73 @@ function Header({
   serverMenu: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:px-4">
-      <Link to={detailsUrl} aria-label="Back to details" className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-white/15">
-        <ArrowLeft className="size-5" />
-      </Link>
+    <div className="flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
+      <div className={BOX}>
+        <HeaderButton label="Back to details" to={detailsUrl}>
+          <ArrowLeft className="size-[18px]" />
+        </HeaderButton>
+      </div>
       <Link to={detailsUrl} className="min-w-0 flex-1 leading-tight">
         <div className="truncate text-sm font-semibold md:text-base">{title}</div>
-        {subtitle && <div className="truncate text-xs text-white/65">{subtitle}</div>}
+        {subtitle && <div className="truncate text-xs text-white/65 md:text-[13px]">{subtitle}</div>}
       </Link>
       {onEpisodes && (
-        <>
-          <HeaderButton label="Previous episode (Shift+P)" onClick={prev} disabled={!prev}>
-            <ChevronLeft className="size-5" />
-          </HeaderButton>
-          <HeaderButton label="Next episode (N)" onClick={next} disabled={!next}>
-            <ChevronRight className="size-5" />
-          </HeaderButton>
-          <HeaderButton label="Episodes (E)" onClick={onEpisodes}>
-            <ListVideo className="size-5" />
-          </HeaderButton>
-        </>
+        <div className={BOX}>
+          {/* Phones: previous / next live in the episode list, so the title keeps its room. */}
+          <div className="hidden items-center gap-0.5 sm:flex">
+            <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev}>
+              <SkipBack className="size-[18px]" />
+            </HeaderButton>
+            <HeaderButton label="Next episode" keys="N" onClick={next} disabled={!next}>
+              <SkipForward className="size-[18px]" />
+            </HeaderButton>
+            <span aria-hidden className="mx-0.5 h-5 w-px bg-white/10" />
+          </div>
+          <button type="button" onClick={onEpisodes} className="flex h-10 items-center gap-2 rounded-xl px-2.5 text-sm transition hover:bg-white/10 md:px-3" aria-label="Episodes">
+            <ListVideo className="size-[18px]" />
+            <span className="hidden md:inline">Episodes</span>
+            <Kbd>E</Kbd>
+          </button>
+        </div>
       )}
       {serverMenu}
-      <HeaderButton label="Keyboard shortcuts (?)" onClick={() => hotkeysCtl.help()} className="hidden lg:grid">
-        <Keyboard className="size-[18px]" />
-      </HeaderButton>
+      <div className={cx(BOX, 'hidden lg:flex')}>
+        <HeaderButton label="Keyboard shortcuts" keys="?" onClick={() => hotkeysCtl.help()}>
+          <Keyboard className="size-[18px]" />
+        </HeaderButton>
+      </div>
     </div>
   );
 }
 
-function HeaderButton({ label, onClick, disabled, children, className }: { label: string; onClick?: () => void; disabled?: boolean; children: React.ReactNode; className?: string }) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={cx('grid size-10 shrink-0 place-items-center rounded-full hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-transparent', className)}
-    >
+/** Icon button with a hover label (and its key) shown below it. */
+function HeaderButton({ label, keys, onClick, to, disabled, children }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode }) {
+  const cls = 'group relative grid size-10 shrink-0 place-items-center rounded-xl transition hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent';
+  const tip = (
+    <span className="pointer-events-none absolute top-full right-0 z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+      {label}
+      {keys && <Kbd>{keys}</Kbd>}
+    </span>
+  );
+  return to ? (
+    <Link to={to} aria-label={label} className={cls}>
       {children}
+      {tip}
+    </Link>
+  ) : (
+    <button type="button" aria-label={keys ? `${label} (${keys})` : label} onClick={onClick} disabled={disabled} className={cls}>
+      {children}
+      {tip}
     </button>
   );
 }
+
+const DOT: Record<'idle' | 'loading' | 'ok' | 'failed', string> = {
+  idle: 'bg-white/40',
+  loading: 'animate-pulse bg-amber-300',
+  ok: 'bg-emerald-400',
+  failed: 'bg-red-400',
+};
 
 function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: (id: string) => void; jellyState: 'idle' | 'loading' | 'ok' | 'failed' }) {
   const [open, setOpen] = useState(false);
@@ -282,36 +310,42 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
   };
   return (
     <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title="Servers (S)"
-        className="flex h-10 items-center gap-2 rounded-full px-3 text-sm hover:bg-white/15"
-      >
-        <Server className="size-4" />
-        <span className="hidden sm:inline">{name}</span>
-      </button>
+      <div className={BOX}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Server: ${name} (S)`}
+          className={cx('flex h-10 items-center gap-2 rounded-xl px-3 text-sm transition', open ? 'bg-white text-black' : 'hover:bg-white/10')}
+        >
+          <span className={cx('size-2 shrink-0 rounded-full', current === 'jelly' ? DOT[jellyState] : 'bg-watching')} />
+          <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
+          <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
+          <Kbd light={open}>S</Kbd>
+        </button>
+      </div>
       {open && (
-        <div role="menu" className="absolute right-0 z-40 mt-1 max-h-[75vh] w-72 overflow-y-auto rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 ring-white/5">
+        <div role="menu" className="absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
           <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">Direct</div>
-          <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" note={jellyState === 'failed' ? 'No sources for this title' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
+          <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" dot={DOT[jellyState]} note={jellyState === 'failed' ? 'No sources for this title' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
           <div className="px-3 pt-3 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">Embedded players</div>
           {EMBEDS.map((e) => (
-            <ServerItem key={e.id} selected={current === e.id} onClick={() => pick(e.id)} name={e.name} note={e.tracksProgress ? 'Saves progress' : 'Progress not saved'} />
+            <ServerItem key={e.id} selected={current === e.id} onClick={() => pick(e.id)} name={e.name} dot="bg-watching" note={e.tracksProgress ? 'Saves progress' : 'Progress not saved'} />
           ))}
-          <div className="my-1 h-px bg-line" />
+          <div className="my-1.5 h-px bg-white/[0.06]" />
           <button
             role="menuitemcheckbox"
             aria-checked={blockPopups}
             onClick={() => actions.updateSettings({ blockPopups: !blockPopups })}
-            className="flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/[0.06]"
           >
-            <ShieldCheck className={cx('mt-0.5 size-4 shrink-0', blockPopups ? 'text-emerald-400' : 'text-faint')} />
-            <span>
+            <span className="min-w-0 flex-1">
               Block pop-ups in embeds
-              <span className="block text-xs text-muted">{blockPopups ? 'On — turn off if a server refuses to play' : 'Off'}</span>
+              <span className="block text-xs text-muted">Turn off if a server refuses to play</span>
+            </span>
+            <span className={cx('relative h-6 w-10 shrink-0 rounded-full transition', blockPopups ? 'bg-white' : 'bg-white/15')}>
+              <span className={cx('absolute top-1 size-4 rounded-full transition-all', blockPopups ? 'left-5 bg-black' : 'left-1 bg-white/70')} />
             </span>
           </button>
         </div>
@@ -320,14 +354,20 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
   );
 }
 
-function ServerItem({ selected, onClick, name, note, warn }: { selected: boolean; onClick: () => void; name: string; note: string; warn?: boolean }) {
+function ServerItem({ selected, onClick, name, note, warn, dot }: { selected: boolean; onClick: () => void; name: string; note: string; warn?: boolean; dot: string }) {
   return (
-    <button role="menuitemradio" aria-checked={selected} onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-white/10">
-      <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
-      <span className="min-w-0">
-        <span className="block text-sm">{name}</span>
-        <span className={cx('block text-xs', warn ? 'text-amber-300' : 'text-muted')}>{note}</span>
+    <button
+      role="menuitemradio"
+      aria-checked={selected}
+      onClick={onClick}
+      className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition', selected ? 'bg-white text-black' : 'hover:bg-white/[0.06]')}
+    >
+      <span className={cx('size-2 shrink-0 rounded-full', dot)} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{name}</span>
+        <span className={cx('block text-xs', selected ? 'text-black/60' : warn ? 'text-amber-300' : 'text-muted')}>{note}</span>
       </span>
+      {selected && <Check className="size-4 shrink-0" />}
     </button>
   );
 }

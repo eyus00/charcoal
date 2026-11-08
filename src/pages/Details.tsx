@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
@@ -284,16 +284,36 @@ function ShareButton({ title }: { title: string }) {
 
 function Overview({ text, title }: { text: string; title: string }) {
   const [open, setOpen] = useState(false);
+  const [cut, setCut] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+  // Only offer "More" when the text really is cut off (re-checked when the width changes).
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => {
+      const btn = el.querySelector<HTMLElement>('.clamp-more-btn');
+      if (btn) btn.style.display = 'none';
+      setCut(el.scrollHeight > el.clientHeight + 1);
+      if (btn) btn.style.display = '';
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text]);
   if (!text) return null;
-  const long = text.length > 220;
   return (
     <>
-      <p className={cx('mt-4 text-[15px] leading-relaxed text-white/80', long && 'line-clamp-3 md:line-clamp-4')}>{text}</p>
-      {long && (
-        <button onClick={() => setOpen(true)} className="mt-1 text-sm font-medium text-white/60 hover:text-white" aria-haspopup="dialog">
-          More
-        </button>
-      )}
+      <div className="mt-4 flex">
+        <p ref={ref} className="clamp-more max-h-[4.5rem] text-[15px] leading-6 text-white/80 md:max-h-24">
+          {cut && (
+            <button onClick={() => setOpen(true)} aria-haspopup="dialog" className="clamp-more-btn ml-1 font-medium text-white hover:underline">
+              <span className="text-white/50">… </span>More
+            </button>
+          )}
+          {text}
+        </p>
+      </div>
       {open && <OverviewDialog title={title} text={text} onClose={() => setOpen(false)} />}
     </>
   );
@@ -313,13 +333,13 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
   }, [onClose]);
   // Portal: the info card's backdrop blur would otherwise trap this fixed overlay inside the card.
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
-      {/* Same shell as the episode list: sheet on phones, dialog on desktop, round close button. */}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 md:p-8" onClick={onClose}>
+      {/* Same look as the episode list (header, round close button, divider); a centred popup everywhere. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`About ${title}`}
-        className="toast-in flex max-h-[80dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl md:max-w-xl md:rounded-3xl"
+        className="toast-in flex max-h-[80dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
@@ -331,7 +351,7 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
             <X className="size-5" />
           </button>
         </div>
-        <div className="overflow-y-auto border-t border-line px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-7 md:pb-7">
+        <div className="overflow-y-auto border-t border-line px-5 py-5 md:px-7 md:pb-7">
           <p className="text-[15px] leading-relaxed text-white/80">{text}</p>
         </div>
       </div>
