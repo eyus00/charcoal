@@ -11,11 +11,11 @@ export const STATUS_LABEL: Record<WatchStatus, string> = {
   planned: 'To watch',
   completed: 'Watched',
 };
-/** Each status gets its own shade of blue (text / tinted background / ring). */
-export const STATUS_TONE: Record<WatchStatus, { text: string; bg: string; ring: string }> = {
-  watching: { text: 'text-watching', bg: 'bg-watching', ring: 'ring-watching/40' },
-  planned: { text: 'text-planned', bg: 'bg-planned', ring: 'ring-planned/40' },
-  completed: { text: 'text-completed', bg: 'bg-completed', ring: 'ring-completed/40' },
+/** Each status gets its own shade of blue (as a dot). */
+export const STATUS_BG: Record<WatchStatus, string> = {
+  watching: 'bg-watching',
+  planned: 'bg-planned',
+  completed: 'bg-completed',
 };
 const STATUSES = Object.keys(STATUS_LABEL) as WatchStatus[];
 const MENU_W = 192;
@@ -23,7 +23,7 @@ const MENU_H = 156;
 
 /** The status's colour as a small dot (used instead of icons everywhere). */
 export function StatusDot({ status, className }: { status: WatchStatus; className?: string }) {
-  return <span aria-hidden className={cx('size-2 shrink-0 rounded-full', STATUS_TONE[status].bg, className)} />;
+  return <span aria-hidden className={cx('size-2 shrink-0 rounded-full', STATUS_BG[status], className)} />;
 }
 
 /** Small status tag (dot + label) used on watchlist cards. */
@@ -68,9 +68,32 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
     const left = Math.max(12, Math.min(r.left, vw - MENU_W - 12));
     setPos(up ? { left, bottom: vh - r.top + 10 } : { left, top: r.bottom + 10 });
   };
+  const trigger = () => ref.current?.querySelector<HTMLButtonElement>('button');
   const toggle = () => {
-    if (!open) place();
+    if (!open) {
+      place();
+      // Move focus into the menu (the selected status, else the first) once it has rendered.
+      requestAnimationFrame(() => menuRef.current?.querySelector<HTMLElement>('[aria-checked="true"],button')?.focus());
+    }
     setOpen((o) => !o);
+  };
+  // Arrow keys move between options, Home / End jump, Tab leaves (and closes).
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    const items = [...(menuRef.current?.querySelectorAll<HTMLElement>('button') ?? [])];
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    const go = (i: number) => {
+      e.preventDefault();
+      items[(i + items.length) % items.length]?.focus();
+    };
+    if (e.key === 'ArrowDown') go(at + 1);
+    else if (e.key === 'ArrowUp') go(at - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(items.length - 1);
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      setOpen(false);
+      trigger()?.focus();
+    }
   };
   // Close on outside press, Escape, scroll or resize (the menu is pinned to where the button was).
   useEffect(() => {
@@ -79,8 +102,13 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
       const t = e.target as Node;
       if (!ref.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    const shut = () => setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      trigger()?.focus();
+    };
+    // Scrolling closes it, except scrolls caused by moving focus inside the menu.
+    const shut = () => !menuRef.current?.contains(document.activeElement) && setOpen(false);
     document.addEventListener('pointerdown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('scroll', shut, { passive: true, capture: true });
@@ -100,13 +128,14 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
   };
   const save = (status: WatchStatus) => {
     actions.setBookmark({ ...item, status });
-    toast(`${current ? 'Moved to' : 'Added to'} ${STATUS_LABEL[status]}`);
+    toast(`Marked “${item.title}” as ${STATUS_LABEL[status].toLowerCase()}`);
   };
   // Picking the current status again removes the title from the watchlist.
   const choose = (status: WatchStatus) => {
     if (current?.status === status) remove();
     else save(status);
     setOpen(false);
+    trigger()?.focus({ preventScroll: true });
   };
   // "b": quick add as "To watch", or remove if already saved.
   useKeys({ b: () => (current ? remove() : save('planned')) }, !!hotkey);
@@ -121,10 +150,10 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
         aria-label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'}
         title={(current ? STATUS_LABEL[current.status] : 'Add to watchlist') + (hotkey ? ' (B)' : '')}
         className={cx(
-          'flex items-center justify-center gap-2 transition active:scale-95',
+          'flex items-center justify-center gap-2 transition-[scale,background-color,color,box-shadow] duration-150 ease-out enabled:active:scale-[0.96]',
           variant === 'round'
             ? cx('size-12 rounded-full', current ? 'bg-white text-black' : 'text-white ring-2 ring-white/70 hover:bg-white/15')
-            : cx('h-12 rounded-full px-5 text-[15px] font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
+            : cx('h-12 rounded-full px-5 text-body-sm font-medium', current ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'),
         )}
       >
         <Bookmark className={current ? 'size-4 fill-current' : 'size-[18px]'} />
@@ -137,8 +166,9 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
           role="menu"
           aria-label="Watchlist status"
           style={{ position: 'fixed', ...pos }}
-          className="z-[120] w-48 space-y-0.5 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
+          className="toast-in z-[120] w-48 space-y-0.5 rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={onMenuKey}
         >
           {STATUSES.map((s) => {
             const on = current?.status === s;
@@ -147,7 +177,7 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
                 key={s}
                 role="menuitemcheckbox"
                 aria-checked={on}
-                title={on ? 'Tap again to remove from watchlist' : undefined}
+                title={on ? 'Select again to remove from watchlist' : undefined}
                 onClick={() => choose(s)}
                 className={cx(
                   'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition',

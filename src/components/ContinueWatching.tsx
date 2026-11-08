@@ -4,6 +4,7 @@ import EpisodeTile, { Chip } from './EpisodeTile';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { toast } from './Toast';
 import { actions, getState, percent, watchUrl, type HistoryItem } from '../lib/store';
+import { epLabel } from '../lib/episodes';
 import { q, type Episode } from '../lib/tmdb';
 import { formatRuntime } from '../lib/util';
 
@@ -49,7 +50,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
         tv ? (
           <>
             <span className="text-muted">
-              {s === 0 ? 'Special' : `S${s}`} · E{e}
+              {epLabel(s, e)}
             </span>
             {name ? <> &nbsp;{name}</> : null}
           </>
@@ -57,7 +58,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           h.title
         )
       }
-      secondary={tv ? h.title : left ? `${formatRuntime(left)} left` : h.isCompleted ? 'Finished' : 'Movie'}
+      secondary={tv ? h.title : left ? `${formatRuntime(left)} left` : h.isCompleted ? 'Watched' : 'Movie'}
     >
       <button
         onClick={() => {
@@ -65,8 +66,8 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           actions.removeHistory(h.mediaType, h.id);
           toast(`Removed “${h.title}” from your history`, { label: 'Undo', run: () => actions.restore({ history: before }) });
         }}
-        aria-label={`Remove ${h.title} from continue watching`}
-        title="Remove"
+        aria-label={`Remove ${h.title} from watch history`}
+        title="Remove from history"
         className="absolute top-3.5 right-3.5 grid size-7 place-items-center rounded-full bg-black/60 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
         <X className="size-3.5" />
@@ -76,14 +77,14 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
 }
 
 /** Horizontal row (home on small screens, profile page). */
-export default function ContinueWatching({ items, title = 'Continue Watching', className }: { items: HistoryItem[]; title?: string; className?: string }) {
+export default function ContinueWatching({ items, title = 'Continue watching', className, bleed = true }: { items: HistoryItem[]; title?: string; className?: string; bleed?: boolean }) {
   const eps = useEpisodes(items);
   const { ref, scroll } = useRowScroll();
   if (!items.length) return null;
   return (
     <section className={className}>
       <SectionHeader title={title} action={<RowArrows onScroll={scroll} />} />
-      <Scroller label={title} scrollRef={ref}>
+      <Scroller label={title} scrollRef={ref} bleed={bleed}>
         {items.map((h, i) => (
           <ContinueCard key={h.mediaType + h.id} h={h} ep={eps[i]} />
         ))}

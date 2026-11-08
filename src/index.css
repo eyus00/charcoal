@@ -6,18 +6,39 @@
   --color-raised: #1f242e;
   --color-line: #2a303b;
   --color-muted: #98a0ad;
-  --color-faint: #636b78;
+  --color-faint: #87909d; /* 4.8:1 on raised, 5.9:1 on bg */
   --color-accent: #f4f5f7;
   --color-accent-hover: #ffffff;
   --color-star: #f5c518;
+  /* Status colours (text and dots), each passing on surface / raised. */
+  --color-danger: #ff6467;
+  --color-danger-solid: #e7000b;
+  --color-danger-solid-hover: #c10007;
+  --color-success: #00d492;
+  --color-warning: #ff8904;
   /* Watchlist statuses: shades of the charcoal palette's blue. */
   --color-watching: #5aa2ff;
   --color-planned: #9cc4f5;
   --color-completed: #6f93c9;
+  /* Named type sizes in rem, so they follow the browser's font-size setting. */
+  --text-body-sm: 0.9375rem; /* 15px: card and list titles, body copy in cards */
+  --text-body-sm--line-height: 1.45;
+  --text-caption: 0.8125rem; /* 13px: card details, dates, secondary lines */
+  --text-caption--line-height: 1.4;
+  --text-micro: 0.6875rem; /* 11px: tiny labels, key chips, nav labels */
+  --text-micro--line-height: 1.35;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @layer base {
+  /*
+   * Icon lines keep the same on-screen weight at any icon size (lucide scales strokes with the
+   * icon, so small icons drew thin lines and big ones thick). 2px by default, for icons beside
+   * medium / semibold text; icons beside regular text pass strokeWidth={1.5}.
+   */
+  svg.lucide :where(path, line, polyline, polygon, circle, rect, ellipse) {
+    vector-effect: non-scaling-stroke;
+  }
   :root {
     --hero-step: 60px;
   }
@@ -25,9 +46,14 @@
     :root {
       --hero-step: 70px;
     }
+    html {
+      scroll-padding-top: 92px;
+    }
   }
   html {
     color-scheme: dark;
+    /* Anchor jumps land below the sticky search bar. */
+    scroll-padding-top: 76px;
     -webkit-tap-highlight-color: transparent;
   }
   body {
@@ -90,7 +116,7 @@
   *::before,
   *::after {
     animation: none !important;
-    transition: none !important;
+    transition-property: opacity, color, background-color, border-color !important;
     scroll-behavior: auto !important;
   }
 }
@@ -106,28 +132,12 @@ video::cue {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(12px);
+    filter: blur(4px);
   }
 }
+/* Enter motion for toasts, menus and dialogs. */
 .toast-in {
-  animation: toast-in 0.22s ease-out;
+  animation: toast-in 0.3s ease-out both;
 }
 
-/*
- * Clamped text with an inline "… More" at the end of the last visible line.
- * The wrapper is a flex row so the text's percentage height resolves; a float as tall as the
- * box minus one line pushes the floated button down to the last line's end.
- */
-.clamp-more {
-  overflow: hidden;
-}
-.clamp-more::before {
-  content: '';
-  float: right;
-  height: 100%;
-  margin-bottom: -1.5rem; /* one line (leading-6) */
-}
-.clamp-more > .clamp-more-btn {
-  float: right;
-  clear: both;
-}

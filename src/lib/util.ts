@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
+/** Smooth scrolling unless the user asked for reduced motion (JS scroll calls ignore the CSS override). */
+export const scrollBehavior = (): ScrollBehavior =>
+  typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
 export function formatRuntime(min?: number | null) {
@@ -109,7 +113,7 @@ export function useKeys(map: Record<string, () => void>, enabled = true) {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e) || document.querySelector('[role=dialog]')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e) || document.querySelector('dialog[open],[role=dialog]')) return;
       if (Date.now() - keyState.gAt < 1200) return;
       const fn = ref.current[e.key];
       if (fn) {

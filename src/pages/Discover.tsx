@@ -12,7 +12,7 @@ import { Empty } from '../components/PageHeader';
 const TYPES: { key: Filters['type']; label: string; title: string }[] = [
   { key: 'all', label: 'All', title: 'Discover' },
   { key: 'movie', label: 'Movies', title: 'Movies' },
-  { key: 'tv', label: 'TV Shows', title: 'TV Shows' },
+  { key: 'tv', label: 'TV shows', title: 'TV shows' },
 ];
 
 /** Search + browse in one place: everything, or only movies / only TV. */
@@ -53,18 +53,17 @@ export default function Discover() {
     <div className="pb-10">
       {query && (
         <div className="mb-5">
-          <p className="text-sm text-muted">Results for{filters.type !== 'all' ? ` in ${kind.label}` : ''}</p>
+          <p className="text-sm text-muted">{filters.type !== 'all' ? `${kind.label} matching` : 'Results for'}</p>
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-3xl">“{query}”</h1>
         </div>
       )}
       {/* Type switch + quick filters: two rows on phones, one row on desktop. */}
       <div className="mb-7 flex flex-wrap items-center gap-3 lg:flex-nowrap lg:gap-4">
-        <div className="inline-flex shrink-0 rounded-full bg-surface p-1" role="radiogroup" aria-label="Show">
+        <div className="inline-flex shrink-0 rounded-full bg-surface p-1" role="group" aria-label="Show">
           {TYPES.map((t) => (
             <button
               key={t.key}
-              role="radio"
-              aria-checked={filters.type === t.key}
+              aria-pressed={filters.type === t.key}
               onClick={() => setType(t.key)}
               className={cx('h-10 rounded-full px-5 text-sm transition', filters.type === t.key ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
             >
@@ -75,9 +74,10 @@ export default function Discover() {
         {hasActiveFilters(filters) && (
           <button
             onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })}
+            aria-label="Clear filters"
             className="ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm whitespace-nowrap text-muted ring-1 ring-white/10 transition hover:bg-surface hover:text-white lg:ml-0"
           >
-            <X className="size-4" /> Clear
+            <X className="size-4" strokeWidth={1.5} /> Clear
           </button>
         )}
         <FilterBar filters={filters} set={set} className="order-last basis-full lg:order-none lg:basis-auto lg:flex-1" />

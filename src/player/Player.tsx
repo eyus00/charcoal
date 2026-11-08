@@ -109,7 +109,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
         url = URL.createObjectURL(new Blob([toVtt(text)], { type: 'text/vtt' }));
         setSubUrl(url);
       })
-      .catch(() => !revoked && flash('Couldn’t load those subtitles'));
+      .catch(() => !revoked && flash('Couldn’t load those subtitles. Pick another track or turn them off.'));
     return () => {
       revoked = true;
       if (url) URL.revokeObjectURL(url);
@@ -338,7 +338,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
-      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('[aria-modal="true"]')) return;
+      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
       const map: Record<string, () => void> = {
         ' ': toggle,
         k: toggle,
@@ -419,6 +419,8 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       ref={wrap}
       className={cx('relative size-full overflow-hidden bg-black select-none', !showControls && 'cursor-none')}
       onPointerMove={(e) => e.pointerType === 'mouse' && poke()}
+      // Tabbing to a control brings the (auto-hidden) controls back.
+      onFocusCapture={poke}
     >
       <video
         ref={video}
@@ -475,7 +477,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       {exhausted && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center">
           <div className="max-w-sm space-y-4">
-            <AlertTriangle className="mx-auto size-10 text-amber-400" />
+            <AlertTriangle className="mx-auto size-10 text-warning" />
             <p className="font-medium">None of Jelly’s sources would play.</p>
             <div className="flex justify-center gap-2">
               <button
@@ -497,8 +499,8 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       )}
 
       {countdown !== null && next && (
-        <div className="absolute right-4 bottom-28 z-20 w-72 rounded-2xl bg-raised/95 p-4 shadow-2xl ring-1 ring-white/10 backdrop-blur-md md:right-8">
-          <div className="text-xs text-muted">Up next in {countdown}s</div>
+        <div className="absolute right-4 bottom-28 z-20 w-72 rounded-2xl border border-transparent bg-raised/95 p-4 shadow-2xl ring-1 ring-white/10 backdrop-blur-md md:right-8">
+          <div className="text-xs text-muted tabular-nums">Up next in {countdown}s</div>
           <div className="mt-1 line-clamp-2 text-sm font-medium">{next.label}</div>
           <div className="mt-3 flex gap-2">
             <button onClick={() => next.go()} className="h-10 flex-1 rounded-full bg-white text-sm font-medium text-black hover:bg-white/90">
@@ -514,7 +516,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       {/* top bar */}
       <div
         className={cx(
-          'absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent pb-10 transition-opacity duration-200',
+          'absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent pb-10 transition-opacity duration-200 focus-within:pointer-events-auto focus-within:opacity-100',
           showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
@@ -524,14 +526,14 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       {/* bottom controls */}
       <div
         className={cx(
-          'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-opacity duration-200 md:px-6',
+          'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-opacity duration-200 focus-within:pointer-events-auto focus-within:opacity-100 md:px-6',
           showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
         <SeekBar time={time} duration={duration} buffered={buffered} onSeek={(t) => video.current && (video.current.currentTime = t)} />
         <div className="mt-1 flex items-center gap-1 md:gap-2">
           <IconButton label={playing ? 'Pause (k)' : 'Play (k)'} onClick={toggle}>
-            {playing ? <Pause className="size-6 fill-current" /> : <Play className="size-6 fill-current" />}
+            {playing ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
           </IconButton>
           <IconButton label="Back 10 seconds (←)" onClick={() => seekBy(-10)}>
             <RotateCcw className="size-5" />
@@ -540,7 +542,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
             <RotateCw className="size-5" />
           </IconButton>
           <div className="group/vol hidden items-center sm:flex">
-            <IconButton label="Mute (m)" onClick={toggleMute}>
+            <IconButton label={muted || volume === 0 ? 'Unmute (m)' : 'Mute (m)'} onClick={toggleMute}>
               <VolumeIcon className="size-5" />
             </IconButton>
             <input
@@ -551,11 +553,11 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
               value={muted ? 0 : volume}
               onChange={(e) => setVol(Number(e.target.value))}
               aria-label="Volume"
-              className="w-0 accent-white opacity-0 transition-all group-hover/vol:w-20 group-hover/vol:opacity-100 focus:w-20 focus:opacity-100"
+              className="w-0 accent-white opacity-0 transition-[width,opacity] group-hover/vol:w-20 group-hover/vol:opacity-100 focus:w-20 focus:opacity-100"
             />
           </div>
           <span className="ml-1 text-xs text-white/85 tabular-nums md:text-sm">
-            {formatClock(time)} <span className="text-white/45">/ {formatClock(duration)}</span>
+            {formatClock(time)} <span className="text-white/60">/ {formatClock(duration)}</span>
           </span>
           <div className="ml-auto flex items-center gap-1 md:gap-2">
             {next && (
@@ -631,7 +633,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                       <span className="flex-1">
                         {qualityLabel(s.quality)} · {s.provider.name}
                       </span>
-                      <span className={cx('text-[10px] uppercase', failed.current.has(i) ? 'text-red-300' : 'text-faint')}>
+                      <span className={cx('text-micro tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
                         {failed.current.has(i) ? 'failed' : s.type}
                       </span>
                     </MenuItem>
@@ -645,6 +647,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                           setRate(sp);
                           actions.updateSettings({ playbackRate: sp });
                         }}
+                        aria-pressed={rate === sp}
                         className={cx('h-8 rounded-full px-3 text-xs', rate === sp ? 'bg-white font-medium text-black' : 'bg-white/10 hover:bg-white/20')}
                       >
                         {sp}×
@@ -659,7 +662,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
                 <PictureInPicture2 className="size-5" />
               </IconButton>
             )}
-            <IconButton label="Fullscreen (f)" onClick={toggleFullscreen}>
+            <IconButton label={fullscreen ? 'Exit fullscreen (f)' : 'Fullscreen (f)'} onClick={toggleFullscreen}>
               {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </IconButton>
           </div>
@@ -698,16 +701,16 @@ function IconButton({
 }
 
 const Popover = ({ children }: { children: ReactNode }) => (
-  <div className="absolute right-0 bottom-12 z-30 max-h-[60vh] w-64 overflow-y-auto rounded-2xl bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md">
+  <div className="toast-in absolute right-0 bottom-12 z-30 max-h-[60vh] w-64 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md">
     {children}
   </div>
 );
 const MenuLabel = ({ children }: { children: ReactNode }) => (
-  <div className="px-3 pt-2.5 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">{children}</div>
+  <div className="px-3 pt-2.5 pb-1 text-micro font-medium tracking-wider text-faint uppercase">{children}</div>
 );
 function MenuItem({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10">
+    <button onClick={onClick} aria-pressed={selected} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10">
       <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
       {children}
     </button>
@@ -733,7 +736,15 @@ function SeekBar({ time, duration, buffered, onSeek }: { time: number; duration:
       aria-valuemax={Math.round(duration)}
       aria-valuenow={Math.round(time)}
       aria-valuetext={formatClock(time)}
-      tabIndex={-1}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        // Own the arrows here so the player's ±10s shortcut doesn't also fire.
+        const to = e.key === 'ArrowLeft' ? time - 5 : e.key === 'ArrowRight' ? time + 5 : e.key === 'Home' ? 0 : e.key === 'End' ? duration : null;
+        if (to === null || !duration) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onSeek(Math.max(0, Math.min(duration, to)));
+      }}
       className="group/seek relative flex h-5 cursor-pointer touch-none items-center"
       onPointerDown={(e) => {
         if (!duration) return;

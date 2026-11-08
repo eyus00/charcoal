@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { Star } from 'lucide-react';
 import { RATINGS, YEAR_PRESETS, genresFor, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
-import { Pill } from './Row';
+import { Pill, RowArrows, useRowScroll } from './Row';
 
 /** Filters read from / written to the URL (replace, so Back leaves the page instead of undoing filters). */
 export function useUrlFilters(): (patch: Partial<Filters>) => void {
@@ -25,9 +25,11 @@ const toggleGenre = (f: Filters, slug: string): Partial<Filters> => ({
 // ---------- page filter bar: Filters button + quick pills ----------
 
 export function FilterBar({ filters: f, set, className }: { filters: Filters; set: Set; className?: string }) {
+  // Desktop has no swipe, so the overflowing pills get the same arrows as the card rows.
+  const { ref, scroll } = useRowScroll();
   return (
     <div className={cx('flex min-w-0 items-center gap-2.5', className)}>
-      <div className="no-scrollbar scroll-row -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0 md:[mask-image:linear-gradient(to_right,black_94%,transparent)]">
+      <div ref={ref} className="no-scrollbar scroll-row -mr-4 flex min-w-0 flex-1 gap-2.5 overflow-x-auto pr-4 md:mr-0 md:pr-0 md:[mask-image:linear-gradient(to_right,black_94%,transparent)]">
         {[7, 8].map((r) => (
           <Pill key={r} on={f.rating === r} onClick={() => set({ rating: f.rating === r ? 0 : r })} className="flex items-center gap-1.5">
             <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
@@ -45,6 +47,7 @@ export function FilterBar({ filters: f, set, className }: { filters: Filters; se
           </Pill>
         ))}
       </div>
+      <RowArrows onScroll={scroll} />
     </div>
   );
 }
@@ -81,7 +84,7 @@ function Sections({ f, set, withType, compact }: { f: Filters; set: Set; withTyp
         <Section title="Type">
           {(['all', 'movie', 'tv'] as const).map((t) => (
             <Chip key={t} on={f.type === t} onClick={() => set({ type: t })}>
-              {t === 'all' ? 'All' : t === 'movie' ? 'Movies' : 'TV Shows'}
+              {t === 'all' ? 'All' : t === 'movie' ? 'Movies' : 'TV shows'}
             </Chip>
           ))}
         </Section>
@@ -119,10 +122,10 @@ function Sections({ f, set, withType, compact }: { f: Filters; set: Set; withTyp
 export function QuickFilterMenu({ filters: f, set, onClear, onApply, placement }: { filters: Filters; set: Set; onClear: () => void; onApply: () => void; placement: 'below' | 'above' }) {
   return (
     <div
-      className={cx('absolute inset-x-0 z-[70] rounded-3xl bg-surface p-5 shadow-2xl shadow-black/50 ring-1 ring-line md:inset-x-auto md:right-0 md:w-[380px]', placement === 'below' ? 'top-full mt-2 md:mt-3' : 'bottom-full mb-3')}
+      className={cx('toast-in absolute inset-x-0 z-[70] rounded-3xl border border-transparent bg-surface p-5 shadow-2xl shadow-black/50 ring-1 ring-line md:inset-x-auto md:right-0 md:w-[380px]', placement === 'below' ? 'top-full mt-2 md:mt-3' : 'bottom-full mb-3')}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="max-h-[50dvh] space-y-5 overflow-y-auto pr-1">
+      <div className="max-h-[50dvh] space-y-5 overflow-y-auto overscroll-contain pr-1">
         <Sections f={f} set={set} withType compact />
       </div>
       <div className="mt-5 flex gap-2.5">

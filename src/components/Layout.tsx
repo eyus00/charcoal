@@ -2,15 +2,15 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { ArrowUp, Bookmark, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
-import { addRecent, clearRecent, getRecent, removeRecent } from '../lib/recent';
+import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
 import { actions, useStore } from '../lib/store';
-import { cx } from '../lib/util';
+import { cx, scrollBehavior } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 import { LogoMark } from './Logo';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
-import { OfflineNotice, Toaster } from './Toast';
+import { OfflineNotice, Toaster, toast } from './Toast';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -77,7 +77,7 @@ const DISCOVER: RailGroup = {
   to: '/discover', label: 'Discover', icon: Compass, id: 'discover', keys: 'G D',
   children: [
     { to: '/discover?type=movie', label: 'Movies', icon: Film, id: 'movies', keys: 'G M' },
-    { to: '/discover?type=tv', label: 'TV Shows', icon: Tv, id: 'tv', keys: 'G T' },
+    { to: '/discover?type=tv', label: 'TV shows', icon: Tv, id: 'tv', keys: 'G T' },
   ],
 };
 const PROFILE: RailGroup = {
@@ -92,7 +92,7 @@ const PROFILE: RailGroup = {
 /** Hover label for the collapsed rail. */
 function Tip({ label, keys }: { label: string; keys?: string }) {
   return (
-    <span className="pointer-events-none absolute left-full z-50 ml-4 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+    <span className="pointer-events-none absolute left-full z-50 ml-4 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-sm whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100">
       {label}
       {keys && <Kbd>{keys}</Kbd>}
     </span>
@@ -133,7 +133,7 @@ function RailLink({ item, active, open, size, within }: { item: RailItem; active
 function RailGroupBox({ group, section, open }: { group: RailGroup; section: string; open: boolean }) {
   const childActive = group.children.some((c) => c.id === section);
   return (
-    <div role="group" aria-label={group.label} className="flex flex-col gap-0.5 rounded-[20px] bg-white/[0.03] p-1 ring-1 ring-white/[0.06]">
+    <div role="group" aria-label={group.label} className="flex flex-col gap-0.5 rounded-2xl bg-white/[0.03] p-1 ring-1 ring-white/[0.06]">
       <RailLink item={group} size="sm" open={open} active={section === group.id} within={childActive} />
       <span aria-hidden className="mx-2.5 my-0.5 h-px bg-white/[0.06]" />
       {group.children.map((c) => (
@@ -184,7 +184,7 @@ function Rail() {
           aria-label="Keyboard shortcuts"
           className={cx('group relative flex h-10 items-center gap-2 rounded-xl text-faint transition hover:text-white', open ? 'px-[14px]' : 'justify-center')}
         >
-          <Keyboard className="size-[18px] shrink-0" />
+          <Keyboard className="size-[18px] shrink-0" strokeWidth={1.5} />
           {open && <span className="text-sm">Shortcuts</span>}
           <Kbd className={open ? 'ml-auto' : ''}>?</Kbd>
           {!open && <Tip label="Keyboard shortcuts" />}
@@ -322,6 +322,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
       <form
         ref={form}
         role="search"
+        // The recent-searches list stays while focus moves inside the form (so Tab reaches it).
+        onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setFocused(false)}
         className={cx(
           'pointer-events-auto',
           open
@@ -333,7 +335,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
           submit();
         }}
       >
-        <div className={cx('group/search pointer-events-auto flex h-12 items-center gap-1.5 rounded-full pr-1.5 pl-4 ring-1 backdrop-blur-xl transition focus-within:ring-white/25', FLOAT)}>
+        <div className={cx('group/search pointer-events-auto flex h-12 items-center gap-1.5 rounded-full pr-1.5 pl-4 ring-1 backdrop-blur-xl transition has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent', FLOAT)}>
           <Search className="size-[18px] shrink-0 text-muted" />
           <input
             ref={(el) => {
@@ -351,7 +353,6 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               setRecent(getRecent());
             }}
             onBlur={() => {
-              setFocused(false);
               // Live results never press Enter: remember the query once the user is done typing.
               if (onDiscover) addRecent(text);
             }}
@@ -389,7 +390,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
         </div>
         {focused && !text && !menu && recent.length > 0 && (
           <div
-            className="absolute inset-x-0 top-full z-50 mt-2 rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
+            className="toast-in absolute inset-x-0 top-full z-50 mt-2 rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
             // Keep focus in the input while picking.
             onPointerDown={(e) => e.preventDefault()}
           >
@@ -398,12 +399,14 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               <button
                 type="button"
                 onClick={() => {
+                  const before = getRecent();
                   clearRecent();
                   setRecent([]);
+                  toast('Recent searches cleared', { label: 'Undo', run: () => restoreRecent(before) });
                 }}
                 className="rounded-full px-2 py-0.5 hover:bg-white/10 hover:text-white"
               >
-                Clear
+                Clear all
               </button>
             </div>
             {recent.map((r) => (
@@ -456,7 +459,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 function BottomBar() {
   const section = useSection();
   const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} className={cx('flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] transition-colors', active ? 'text-white' : 'text-faint')}>
+    <Link to={to} className={cx('flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-micro transition-colors', active ? 'text-white' : 'text-faint')}>
       <Icon className="size-[22px]" />
       {label}
     </Link>
@@ -498,10 +501,11 @@ function ScrollTop() {
     <>
       <div ref={sentinel} aria-hidden className="pointer-events-none absolute top-[150vh] h-px w-px" />
       <button
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onClick={() => window.scrollTo({ top: 0, behavior: scrollBehavior() })}
+        inert={!show}
         aria-label="Scroll to top"
         className={cx(
-          'fixed right-4 bottom-24 z-30 grid size-11 place-items-center rounded-full bg-raised text-white shadow-lg transition-all hover:bg-line lg:right-8 lg:bottom-8',
+          'fixed right-4 bottom-24 z-30 grid size-11 place-items-center rounded-full border border-transparent bg-raised text-white shadow-lg transition-[translate,opacity,background-color] duration-150 ease-out hover:bg-line lg:right-8 lg:bottom-8',
           show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-16 opacity-0',
         )}
       >

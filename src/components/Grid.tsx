@@ -50,7 +50,7 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className="h-12 rounded-full bg-surface px-6 text-[15px] text-white/85 transition hover:bg-raised disabled:opacity-50"
+        className="h-12 rounded-full bg-surface px-6 text-body-sm text-white/85 transition hover:bg-raised disabled:opacity-50"
       >
         {busy ? 'Loading…' : 'Load more'}
       </button>
@@ -58,7 +58,7 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
   );
 }
 
-export function ErrorBox({ onRetry, message = 'Something went wrong loading this.' }: { onRetry?: () => void; message?: string }) {
+export function ErrorBox({ onRetry, message = 'Couldn’t load these titles. Check your connection and try again.' }: { onRetry?: () => void; message?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-muted">{message}</p>

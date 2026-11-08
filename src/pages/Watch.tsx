@@ -101,7 +101,8 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   // Jelly found nothing → fall back to the first embed (without changing the saved preference).
   useEffect(() => {
     if (server === 'jelly' && jelly.isError) {
-      setFallbackNote(`Jelly: ${jelly.error.message}. Switched to ${EMBEDS[0].name}.`);
+      console.warn('Jelly:', jelly.error.message);
+      setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
       setServer(EMBEDS[0].id);
     }
   }, [server, jelly.isError, jelly.error]);
@@ -235,8 +236,8 @@ function Header({
         </HeaderButton>
       </div>
       <Link to={detailsUrl} className="min-w-0 flex-1 leading-tight">
-        <div className="truncate text-sm font-semibold md:text-base">{title}</div>
-        {subtitle && <div className="truncate text-xs text-white/65 md:text-[13px]">{subtitle}</div>}
+        <div className="line-clamp-2 text-sm leading-tight font-semibold md:line-clamp-1 md:text-base">{title}</div>
+        {subtitle && <div className="truncate text-xs text-white/65 md:text-caption">{subtitle}</div>}
       </Link>
       {onEpisodes && (
         <div className={BOX}>
@@ -251,7 +252,7 @@ function Header({
             <span aria-hidden className="mx-0.5 h-5 w-px bg-white/10" />
           </div>
           <button type="button" onClick={onEpisodes} className="flex h-10 items-center gap-2 rounded-xl px-2.5 text-sm transition hover:bg-white/10 md:px-3" aria-label="Episodes">
-            <ListVideo className="size-[18px]" />
+            <ListVideo className="size-[18px]" strokeWidth={1.5} />
             <span className="hidden md:inline">Episodes</span>
             <Kbd>E</Kbd>
           </button>
@@ -269,9 +270,11 @@ function Header({
 
 /** Icon button with a hover label (and its key) shown below it. */
 function HeaderButton({ label, keys, onClick, to, disabled, children }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode }) {
+  // The back button sits at the left edge, so its label opens to the right.
+  const side = to ? 'left-0' : 'right-0';
   const cls = 'group relative grid size-10 shrink-0 place-items-center rounded-xl transition hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent';
   const tip = (
-    <span className="pointer-events-none absolute top-full right-0 z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+    <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
       {label}
       {keys && <Kbd>{keys}</Kbd>}
     </span>
@@ -291,15 +294,18 @@ function HeaderButton({ label, keys, onClick, to, disabled, children }: { label:
 
 const DOT: Record<'idle' | 'loading' | 'ok' | 'failed', string> = {
   idle: 'bg-white/40',
-  loading: 'animate-pulse bg-amber-300',
-  ok: 'bg-emerald-400',
-  failed: 'bg-red-400',
+  loading: 'animate-pulse bg-warning',
+  ok: 'bg-success',
+  failed: 'bg-danger',
 };
 
 function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: (id: string) => void; jellyState: 'idle' | 'loading' | 'ok' | 'failed' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => {
+    setOpen(false);
+    ref.current?.querySelector('button')?.focus({ preventScroll: true });
+  }, []);
   useDismiss(open, close, ref);
   const blockPopups = useStore((s) => s.settings.blockPopups);
   const name = current === 'jelly' ? 'Jelly' : (embedById(current)?.name ?? 'Server');
@@ -319,24 +325,23 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
           aria-label={`Server: ${name} (S)`}
           className={cx('flex h-10 items-center gap-2 rounded-xl px-3 text-sm transition', open ? 'bg-white text-black' : 'hover:bg-white/10')}
         >
-          <span className={cx('size-2 shrink-0 rounded-full', current === 'jelly' ? DOT[jellyState] : 'bg-watching')} />
+          {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
           <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
           <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
           <Kbd light={open}>S</Kbd>
         </button>
       </div>
       {open && (
-        <div role="menu" className="absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto rounded-2xl bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
-          <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">Direct</div>
-          <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" dot={DOT[jellyState]} note={jellyState === 'failed' ? 'No sources for this title' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
-          <div className="px-3 pt-3 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">Embedded players</div>
+        <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
+          <div className="px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Direct</div>
+          <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" dot={DOT[jellyState]} note={jellyState === 'failed' ? 'No sources for this title' : jellyState === 'loading' ? 'Checking sources…' : jellyState === 'ok' ? 'Sources found · ad-free · subtitles' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
+          <div className="px-3 pt-3 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Embedded players</div>
           {EMBEDS.map((e) => (
-            <ServerItem key={e.id} selected={current === e.id} onClick={() => pick(e.id)} name={e.name} dot="bg-watching" note={e.tracksProgress ? 'Saves progress' : 'Progress not saved'} />
+            <ServerItem key={e.id} selected={current === e.id} onClick={() => pick(e.id)} name={e.name} note={e.tracksProgress ? 'Saves progress' : 'Progress not saved'} />
           ))}
           <div className="my-1.5 h-px bg-white/[0.06]" />
           <button
-            role="menuitemcheckbox"
-            aria-checked={blockPopups}
+            aria-pressed={blockPopups}
             onClick={() => actions.updateSettings({ blockPopups: !blockPopups })}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/[0.06]"
           >
@@ -344,8 +349,8 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
               Block pop-ups in embeds
               <span className="block text-xs text-muted">Turn off if a server refuses to play</span>
             </span>
-            <span className={cx('relative h-6 w-10 shrink-0 rounded-full transition', blockPopups ? 'bg-white' : 'bg-white/15')}>
-              <span className={cx('absolute top-1 size-4 rounded-full transition-all', blockPopups ? 'left-5 bg-black' : 'left-1 bg-white/70')} />
+            <span aria-hidden className={cx('relative h-6 w-11 shrink-0 rounded-full transition-colors', blockPopups ? 'bg-white' : 'bg-white/15')}>
+              <span className={cx('absolute top-0.5 left-0.5 size-5 rounded-full transition-transform', blockPopups ? 'translate-x-5 bg-black' : 'bg-white')} />
             </span>
           </button>
         </div>
@@ -354,18 +359,17 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
   );
 }
 
-function ServerItem({ selected, onClick, name, note, warn, dot }: { selected: boolean; onClick: () => void; name: string; note: string; warn?: boolean; dot: string }) {
+function ServerItem({ selected, onClick, name, note, warn, dot }: { selected: boolean; onClick: () => void; name: string; note: string; warn?: boolean; dot?: string }) {
   return (
     <button
-      role="menuitemradio"
-      aria-checked={selected}
+      aria-pressed={selected}
       onClick={onClick}
       className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition', selected ? 'bg-white text-black' : 'hover:bg-white/[0.06]')}
     >
-      <span className={cx('size-2 shrink-0 rounded-full', dot)} />
+      {dot && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', dot)} />}
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium">{name}</span>
-        <span className={cx('block text-xs', selected ? 'text-black/60' : warn ? 'text-amber-300' : 'text-muted')}>{note}</span>
+        <span className={cx('block text-xs', selected ? 'text-black/60' : warn ? 'text-warning' : 'text-muted')}>{note}</span>
       </span>
       {selected && <Check className="size-4 shrink-0" />}
     </button>
@@ -427,7 +431,7 @@ function Message({ title, body, back, retry }: { title: string; body: string; ba
             </button>
           )}
           <Link to={back} className="h-11 rounded-full bg-white px-5 text-sm leading-[2.75rem] font-medium text-black hover:bg-white/90">
-            Go back
+            {back === '/' ? 'Go home' : 'Back to details'}
           </Link>
         </div>
       </div>
