@@ -3,9 +3,9 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import EpisodeTile, { Chip, TileSkeleton } from './EpisodeTile';
-import MediaCard, { Meta, TypeIcon, usePrefetch } from './MediaCard';
+import { Meta, TypeIcon, usePrefetch } from './MediaCard';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
-import { Bone, CardSkeleton } from './Skeletons';
+import { Bone } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type Details, type EpisodeRef, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx, formatDate, formatRuntime, isFuture, useInView } from '../lib/util';
 
@@ -64,23 +64,28 @@ const LIST_INFO = 'rounded-r-2xl border border-l-0 border-white/[0.08] transitio
 const listSkeleton = (n: number, extra = '') =>
   Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);
 
-// ---------- Top 10: big outlined rank number + a regular card ----------
+// ---------- Top 10: landscape banner cards with the rank on the image ----------
 
-const OUTLINE = { WebkitTextStroke: '2px rgb(255 255 255 / 0.28)' } as const;
 
 function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
+  const t = typeOf(item);
   return (
-    <div className="flex shrink-0 snap-start items-end" role="listitem" aria-label={`Number ${rank}`}>
-      <span
-        aria-hidden
-        className="-mr-4 mb-[58px] text-[110px] leading-[0.8] font-black tracking-tighter text-transparent select-none md:text-[140px] lg:-mr-5 lg:text-[170px]"
-        style={OUTLINE}
-      >
-        {rank}
-      </span>
-      {/* Same card as everywhere else (poster + title, year · rating, type), a size up on desktop. */}
-      <MediaCard item={item} sizes="(min-width: 1024px) 180px, (min-width: 768px) 160px, 140px" className="relative w-[140px] md:w-[160px] lg:w-[180px]" />
-    </div>
+    <EpisodeTile
+      to={`/${t}/${item.id}`}
+      type={t}
+      title={`${rank}. ${titleOf(item)}`}
+      linkProps={usePrefetch(t, item.id)}
+      image={{ path: item.backdrop_path, kind: 'backdrop' }}
+      playable={false}
+      shade
+      bottomLeft={
+        <span aria-hidden className="block text-[64px] leading-[0.75] font-black tracking-tighter text-white drop-shadow-[0_2px_10px_rgb(0_0_0/0.6)]">
+          {rank}
+        </span>
+      }
+      primary={titleOf(item)}
+      secondary={<Meta year={yearOf(item)} rating={item.vote_average} />}
+    />
   );
 }
 
@@ -90,7 +95,7 @@ export function Top10() {
       title="Top 10 today"
       query={q.trending('all', 'day')}
       limit={10}
-      skeleton={Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} className="ml-14 w-[140px] shrink-0 md:w-[160px] lg:w-[180px]" />)}
+      skeleton={Array.from({ length: 4 }, (_, i) => <TileSkeleton key={i} />)}
       render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );

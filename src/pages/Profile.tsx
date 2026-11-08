@@ -13,7 +13,7 @@ import { cx, useTitle } from '../lib/util';
 
 /** Fixed container card for each profile section (matches the settings cards). */
 /** Fixed-width columns: cards stay the same size as everywhere else instead of stretching. */
-const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,170px)] sm:gap-4 lg:grid-cols-[repeat(auto-fill,190px)]';
+const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,190px)] sm:gap-4 lg:grid-cols-[repeat(auto-fill,216px)]';
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 
@@ -165,7 +165,7 @@ function Watchlist() {
                   item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
                   badge={<StatusTag status={w.status} />}
                   overlay={
-                    <div className="absolute top-3.5 right-3.5 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+                    <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
                       <button
                         onClick={() => {
                           const before = getState().watchlist;
@@ -174,9 +174,9 @@ function Watchlist() {
                         }}
                         aria-label={`Remove ${w.title} from watchlist`}
                         title="Remove"
-                        className="grid size-8 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
+                        className="grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
                       >
-                        <X className="size-4" />
+                        <X className="size-3.5" />
                       </button>
                     </div>
                   }

@@ -21,7 +21,7 @@ export function RowSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div className="flex gap-4 overflow-hidden">
       {Array.from({ length: count }, (_, i) => (
-        <CardSkeleton key={i} className="w-[140px] shrink-0 sm:w-[170px] lg:w-[190px]" />
+        <CardSkeleton key={i} className="w-[156px] shrink-0 sm:w-[190px] lg:w-[216px]" />
       ))}
     </div>
   );
