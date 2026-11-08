@@ -13,7 +13,7 @@ import { cx, useTitle } from '../lib/util';
 
 /** Fixed container card for each profile section (matches the settings cards). */
 /** Fixed-width columns: cards stay the same size as everywhere else instead of stretching. */
-const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,170px)] sm:gap-4 lg:grid-cols-[repeat(auto-fill,190px)]';
+const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,190px)] sm:gap-4 lg:grid-cols-[repeat(auto-fill,216px)]';
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 

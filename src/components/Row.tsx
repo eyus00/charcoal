@@ -72,5 +72,5 @@ export function Pill({ on, onClick, children, className }: { on?: boolean; onCli
   );
 }
 
-export const ROW_ITEM = 'w-[140px] shrink-0 snap-start sm:w-[170px] lg:w-[190px]';
-export const ROW_SIZES = '(min-width: 1024px) 190px, (min-width: 640px) 170px, 140px';
+export const ROW_ITEM = 'w-[156px] shrink-0 snap-start sm:w-[190px] lg:w-[216px]';
+export const ROW_SIZES = '(min-width: 1024px) 216px, (min-width: 640px) 190px, 156px';

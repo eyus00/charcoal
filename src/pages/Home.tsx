@@ -305,7 +305,7 @@ function Browse() {
           ))}
           <Link
             to={cat === 'trending' ? '/discover' : `/discover?genres=${cat}`}
-            className="grid w-[140px] shrink-0 snap-start place-items-center self-start aspect-[2/3] rounded-2xl bg-surface text-[15px] text-muted transition hover:bg-raised hover:text-white sm:w-[170px] lg:w-[190px]"
+            className="grid w-[156px] shrink-0 snap-start place-items-center self-start aspect-[2/3] rounded-2xl bg-surface text-[15px] text-muted transition hover:bg-raised hover:text-white sm:w-[190px] lg:w-[216px]"
           >
             See all
           </Link>

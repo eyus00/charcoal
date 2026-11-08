@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Play, RotateCcw, Share2, Star, X } from 'lucide-react';
@@ -118,7 +119,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
                 </span>
               ))}
             </div>
-            <Overview text={d.overview} />
+            <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={openEpisodes} />
               <BookmarkMenu variant="round" hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
@@ -281,19 +282,55 @@ function ShareButton({ title }: { title: string }) {
   );
 }
 
-function Overview({ text }: { text: string }) {
+function Overview({ text, title }: { text: string; title: string }) {
   const [open, setOpen] = useState(false);
   if (!text) return null;
   const long = text.length > 220;
   return (
-    <p className={cx('mt-4 text-[15px] leading-relaxed text-white/80', !open && long && 'line-clamp-3 md:line-clamp-4')}>
-      {text}{' '}
+    <>
+      <p className={cx('mt-4 text-[15px] leading-relaxed text-white/80', long && 'line-clamp-3 md:line-clamp-4')}>{text}</p>
       {long && (
-        <button onClick={() => setOpen((o) => !o)} className="text-white/50 hover:text-white">
-          {open ? 'less' : 'more'}
+        <button onClick={() => setOpen(true)} className="mt-1 text-sm font-medium text-white/60 hover:text-white" aria-haspopup="dialog">
+          More
         </button>
       )}
-    </p>
+      {open && <OverviewDialog title={title} text={text} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+/** The full description in a small popup (sheet on phones). */
+function OverviewDialog({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+  // Portal: the info card's backdrop blur would otherwise trap this fixed overlay inside the card.
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`About ${title}`}
+        className="toast-in max-h-[75dvh] w-full overflow-y-auto rounded-t-3xl bg-raised p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl ring-1 ring-white/10 sm:max-w-lg sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button autoFocus onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 grid size-9 shrink-0 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
+            <X className="size-4" />
+          </button>
+        </div>
+        <p className="text-[15px] leading-relaxed text-white/80">{text}</p>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
