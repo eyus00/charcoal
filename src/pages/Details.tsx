@@ -105,11 +105,9 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
         <div className="absolute inset-0 hidden bg-gradient-to-r from-bg/80 via-bg/20 to-transparent md:block" />
 
         <div className="relative w-full px-4 pb-6 md:px-8 md:pb-10 lg:px-10">
-          {/* Phones: the next-episode card sits above the info card. */}
-          {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="mb-3 md:hidden" />}
+          {/* The next-episode card sits above the info card. */}
+          {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="mb-3" />}
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
-            {/* Wider screens: it hangs off the info card's bottom-right corner. */}
-            {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="absolute bottom-0 left-full z-10 hidden -translate-x-24 translate-y-1/2 md:flex" />}
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">

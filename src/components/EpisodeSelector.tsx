@@ -76,7 +76,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     } else if (current && e.key === 'N' && next) {
       e.preventDefault();
       next();
-    } else if ((e.key === 'p' || e.key === 'P') && !current) {
+    } else if ((e.key === 'p' || e.key === 'P') && !current && !selUnaired) {
       e.preventDefault();
       onPick?.();
       navigate(href(cta.s, cta.e), { replace });
@@ -117,14 +117,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   const selEp = sel && sel.season === season ? data?.episodes.find((x) => x.episode_number === sel.episode) : undefined;
   const selUnaired = !!selEp && isFuture(selEp.air_date);
   const resumeCta = resume?.season !== undefined ? { s: resume.season, e: resume.episode!, label: resume.isNext ? 'Play' : 'Resume' } : null;
-  const latest = show.last_episode_to_air;
   const cta =
     sel && !selUnaired
       ? { s: sel.season, e: sel.episode, label: resumeCta && resumeCta.s === sel.season && resumeCta.e === sel.episode ? resumeCta.label : 'Play' }
-      : // The selected episode isn't out yet: offer what can be watched now.
-        sel && selUnaired
-        ? (resumeCta ?? (latest ? { s: latest.season_number, e: latest.episode_number, label: 'Play latest' } : { s: first, e: 1, label: 'Play' }))
-        : (resumeCta ?? { s: first, e: 1, label: 'Play' });
+      : (resumeCta ?? { s: first, e: 1, label: 'Play' });
 
   return (
     <Modal label={`${titleOf(show)} episodes`} onClose={onClose}>
@@ -301,7 +297,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 <Kbd>Shift N</Kbd> Next
               </span>
             )}
-            {!current && (
+            {!current && !selUnaired && (
               <span className="flex items-center gap-1.5">
                 <Kbd>P</Kbd> {cta.label}
               </span>
@@ -332,12 +328,19 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               </button>
             </div>
           )}
-          {!current && (
-            <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
-              <Play className="size-4 fill-current" strokeWidth={0} />
-              {cta.label} {epLabel(cta.s, cta.e)}
-            </Link>
-          )}
+          {!current &&
+            (selUnaired && sel ? (
+              // The selected episode isn't out yet: nothing to play, just say when it will be.
+              <span className={cx(btn({ size: 'lg' }), 'pointer-events-none ml-auto cursor-default text-white/70')}>
+                <CalendarClock className="size-4" strokeWidth={1.5} />
+                {epLabel(sel.season, sel.episode)} · {airsLabel(selEp?.air_date).replace(/^Airs /, 'Out ')}
+              </span>
+            ) : (
+              <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
+                <Play className="size-4 fill-current" strokeWidth={0} />
+                {cta.label} {epLabel(cta.s, cta.e)}
+              </Link>
+            ))}
         </div>
       </div>
     </div>
