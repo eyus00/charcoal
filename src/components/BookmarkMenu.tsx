@@ -17,9 +17,9 @@ export const STATUS_ICON: Record<WatchStatus, LucideIcon> = {
 };
 /** Each status gets its own shade of blue (text / tinted background / ring). */
 export const STATUS_TONE: Record<WatchStatus, { text: string; bg: string; ring: string }> = {
-  watching: { text: 'text-watching', bg: 'bg-watching/15', ring: 'ring-watching/40' },
-  planned: { text: 'text-planned', bg: 'bg-planned/15', ring: 'ring-planned/40' },
-  completed: { text: 'text-completed', bg: 'bg-completed/15', ring: 'ring-completed/40' },
+  watching: { text: 'text-watching', bg: 'bg-watching', ring: 'ring-watching/40' },
+  planned: { text: 'text-planned', bg: 'bg-planned', ring: 'ring-planned/40' },
+  completed: { text: 'text-completed', bg: 'bg-completed', ring: 'ring-completed/40' },
 };
 const STATUSES = Object.keys(STATUS_LABEL) as WatchStatus[];
 const MENU_W = 192;
@@ -118,7 +118,6 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
           )}
         >
           {STATUSES.map((s) => {
-            const SIcon = STATUS_ICON[s];
             const tone = STATUS_TONE[s];
             const on = current?.status === s;
             return (
@@ -129,13 +128,13 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
                 title={on ? 'Tap again to remove from watchlist' : undefined}
                 onClick={() => choose(s)}
                 className={cx(
-                  'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition',
-                  on ? cx(tone.bg, 'text-white ring-1 ring-inset', tone.ring) : 'text-white/85 hover:bg-white/[0.06] hover:text-white',
+                  'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition',
+                  on ? 'bg-white font-medium text-black' : 'text-white/85 hover:bg-white/[0.06] hover:text-white',
                 )}
               >
-                <SIcon className={cx('size-4 shrink-0', tone.text)} />
+                <span className={cx('size-2 shrink-0 rounded-full', tone.bg)} />
                 <span className="flex-1">{STATUS_LABEL[s]}</span>
-                {on && <Check className={cx('size-4', tone.text)} />}
+                {on && <Check className="size-4" />}
               </button>
             );
           })}
