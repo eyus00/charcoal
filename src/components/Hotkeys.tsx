@@ -27,8 +27,16 @@ const SECTIONS: { title: string; keys: [string[], string][] }[] = [
   { title: 'Go to', keys: Object.entries(GO).map(([k, v]) => [['g', k], v.label]) },
   { title: 'Home', keys: [[['←', '→'], 'Previous / next featured title']] },
   { title: 'Title page', keys: [[['p'], 'Play / resume (episodes for TV)'], [['b'], 'Add to / remove from watchlist'], [['t'], 'Play trailer']] },
-  { title: 'Player', keys: [[['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 10s'], [['↑', '↓'], 'Volume'], [['f'], 'Fullscreen'], [['m'], 'Mute'], [['c'], 'Subtitles'], [['i'], 'Picture in picture'], [['n'], 'Next episode'], [['Shift', 'P'], 'Previous episode'], [['e'], 'Episodes'], [['s'], 'Servers']] },
-  { title: 'Episodes list', keys: [[['←', '→'], 'Previous / next season'], [['p'], 'Play / resume'], [['Esc'], 'Close']] },
+  {
+    title: 'Player',
+    keys: [
+      [['Space'], 'Play / pause'], [['K'], 'Play / pause'], [['J', 'L'], 'Back / forward 10s'], [['←', '→'], 'Back / forward 5s'],
+      [['↑', '↓'], 'Volume'], [['0–9'], 'Jump to 0–90%'], [['<', '>'], 'Slower / faster'], [['F'], 'Fullscreen'], [['M'], 'Mute'],
+      [['C'], 'Subtitles'], [['I'], 'Picture in picture'], [['Shift', 'N'], 'Next episode'], [['Shift', 'P'], 'Previous episode'],
+      [['E'], 'Episodes'], [['S'], 'Servers'], [['Esc'], 'Back to the title page'],
+    ],
+  },
+  { title: 'Episodes list', keys: [[['←', '→'], 'Previous / next season'], [['P'], 'Play / resume'], [['Shift', 'N'], 'Next episode (player)'], [['Shift', 'P'], 'Previous episode (player)'], [['Esc'], 'Close']] },
 ];
 
 /** Global desktop shortcuts: ⌘K / Ctrl+K and "/" search, "g" + letter navigation, "?" help. */

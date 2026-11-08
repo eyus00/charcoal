@@ -339,23 +339,45 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       const el = e.target as HTMLElement;
       // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
       if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
+      // YouTube-style keys, the de facto standard for web video.
+      const v = video.current;
+      const jumpTo = (frac: number) => v && v.duration && ((v.currentTime = v.duration * frac), flash(`${Math.round(frac * 100)}%`));
+      const speed = (dir: 1 | -1) => {
+        const i = SPEEDS.indexOf(rate);
+        const sp = SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, (i < 0 ? SPEEDS.indexOf(1) : i) + dir))];
+        setRate(sp);
+        actions.updateSettings({ playbackRate: sp });
+        flash(`Speed ${sp}×`);
+      };
       const map: Record<string, () => void> = {
         ' ': toggle,
         k: toggle,
-        ArrowLeft: () => seekBy(-10),
+        ArrowLeft: () => seekBy(-5),
+        ArrowRight: () => seekBy(5),
         j: () => seekBy(-10),
-        ArrowRight: () => seekBy(10),
         l: () => seekBy(10),
+        Home: () => jumpTo(0),
+        End: () => jumpTo(0.999),
         ArrowUp: () => (setVol(volume + 0.1), flash(`Volume ${Math.round(Math.min(1, volume + 0.1) * 100)}%`)),
         ArrowDown: () => (setVol(volume - 0.1), flash(`Volume ${Math.round(Math.max(0, volume - 0.1) * 100)}%`)),
         m: toggleMute,
         f: toggleFullscreen,
         c: toggleCaptions,
         i: togglePip,
-        n: () => next?.go(),
-        Escape: () => setMenu(null),
+        '<': () => speed(-1),
+        '>': () => speed(1),
+        N: () => next?.go(),
+        ...Object.fromEntries([...'0123456789'].map((d) => [d, () => jumpTo(Number(d) / 10)])),
       };
-      const fn = map[e.key] ?? map[e.key.toLowerCase()];
+      // Esc closes an open player menu first; otherwise the page handles it (back to details).
+      if (e.key === 'Escape') {
+        if (menu) {
+          e.stopImmediatePropagation();
+          setMenu(null);
+        }
+        return;
+      }
+      const fn = map[e.key] ?? (e.key.length === 1 && !e.shiftKey ? map[e.key.toLowerCase()] : undefined);
       if (!fn || (e.key === ' ' && el.tagName === 'BUTTON')) return;
       e.preventDefault();
       fn();
@@ -363,7 +385,7 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, togglePip, next, poke, flash]);
+  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, togglePip, next, poke, flash, menu, rate]);
 
   // ---------- media session (lock screen / hardware keys) ----------
   useEffect(() => {
@@ -532,17 +554,17 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
       >
         <SeekBar time={time} duration={duration} buffered={buffered} onSeek={(t) => video.current && (video.current.currentTime = t)} />
         <div className="mt-1 flex items-center gap-1 md:gap-2">
-          <IconButton label={playing ? 'Pause (k)' : 'Play (k)'} onClick={toggle}>
+          <IconButton label={playing ? 'Pause (K)' : 'Play (K)'} onClick={toggle}>
             {playing ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
           </IconButton>
-          <IconButton label="Back 10 seconds (←)" onClick={() => seekBy(-10)}>
+          <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
             <RotateCcw className="size-5" />
           </IconButton>
-          <IconButton label="Forward 10 seconds (→)" onClick={() => seekBy(10)}>
+          <IconButton label="Forward 10 seconds (L)" onClick={() => seekBy(10)}>
             <RotateCw className="size-5" />
           </IconButton>
           <div className="group/vol hidden items-center sm:flex">
-            <IconButton label={muted || volume === 0 ? 'Unmute (m)' : 'Mute (m)'} onClick={toggleMute}>
+            <IconButton label={muted || volume === 0 ? 'Unmute (M)' : 'Mute (M)'} onClick={toggleMute}>
               <VolumeIcon className="size-5" />
             </IconButton>
             <input
@@ -561,13 +583,13 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
           </span>
           <div className="ml-auto flex items-center gap-1 md:gap-2">
             {next && (
-              <IconButton label={`Next: ${next.label} (n)`} onClick={next.go}>
+              <IconButton label={`Next: ${next.label} (Shift N)`} onClick={next.go}>
                 <SkipForward className="size-5" />
               </IconButton>
             )}
             {subtitles.length > 0 && (
               <div className="relative">
-                <IconButton label="Subtitles (c)" active={subIdx >= 0} onClick={() => setMenu(menu === 'captions' ? null : 'captions')}>
+                <IconButton label="Subtitles (C)" active={subIdx >= 0} onClick={() => setMenu(menu === 'captions' ? null : 'captions')}>
                   <Captions className="size-5" />
                 </IconButton>
                 {menu === 'captions' && (
@@ -658,11 +680,11 @@ export default function Player({ data, title, subtitle, poster, resumeAt, header
               )}
             </div>
             {'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && (
-              <IconButton label="Picture in picture (i)" onClick={togglePip} className="hidden sm:grid">
+              <IconButton label="Picture in picture (I)" onClick={togglePip} className="hidden sm:grid">
                 <PictureInPicture2 className="size-5" />
               </IconButton>
             )}
-            <IconButton label={fullscreen ? 'Exit fullscreen (f)' : 'Fullscreen (f)'} onClick={toggleFullscreen}>
+            <IconButton label={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'} onClick={toggleFullscreen}>
               {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </IconButton>
           </div>

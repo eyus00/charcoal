@@ -135,10 +135,13 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   // Page shortcuts (the Jelly player adds its own: space, arrows, f, m, c, n, i).
   useKeys({
+    // Esc: back to the title page, unless a menu is open (it closes that) or the video is
+    // fullscreen (the browser exits fullscreen).
+    Escape: () => !document.fullscreenElement && !document.querySelector('[aria-expanded="true"]') && navigate(detailsUrl),
     ...(type === 'tv' ? { e: () => setDrawer(true) } : {}),
     ...(prev ? { P: () => go(prev.season, prev.episode) } : {}),
-    // The Jelly player already handles "n"; embeds can't, so the page does.
-    ...(next && embed ? { n: () => go(next.season, next.episode), N: () => go(next.season, next.episode) } : {}),
+    // The Jelly player already handles Shift N; embeds can't, so the page does.
+    ...(next && embed ? { N: () => go(next.season, next.episode) } : {}),
   });
   const subtitle = type === 'tv' ? `${epLabel(season, episode)}${ep?.name ? ` · ${ep.name}` : ''}` : undefined;
 
@@ -240,48 +243,15 @@ function Header({
   serverMenu: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      {/* Back stands on its own. */}
-      <div className={BOX}>
-        <HeaderButton label="Back to details" to={detailsUrl}>
+    // Back on the left, the title box centred, server + shortcuts on the right.
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-3 md:px-5">
+      <div className={cx(BOX, 'justify-self-start')}>
+        <HeaderButton label="Back to details" keys="Esc" to={detailsUrl}>
           <ArrowLeft className="size-[18px]" />
         </HeaderButton>
       </div>
-      {/*
-        Then one box: previous, the title (links to details) with the episode line, next. For TV,
-        pressing anywhere else on the box opens the episode list; the episode line is also a real
-        button so keyboards and screen readers can reach it.
-      */}
-      <div
-        className={cx(BOX.replace('shrink-0', ''), 'min-w-0 flex-1 md:flex-initial', onEpisodes && 'cursor-pointer')}
-        onClick={(e) => onEpisodes && !(e.target as HTMLElement).closest('a,button') && onEpisodes()}
-      >
-        {onEpisodes && (
-          <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
-            <SkipBack className="size-[18px]" />
-          </HeaderButton>
-        )}
-        <div className={cx('min-w-0 flex-1 leading-tight md:max-w-md', onEpisodes ? 'px-2' : 'px-3')}>
-          <Link to={detailsUrl} title={`${title}: details`} className={cx(TEXT_LINK, 'line-clamp-1 text-sm font-semibold md:text-base')}>
-            {title}
-          </Link>
-          {onEpisodes ? (
-            <button type="button" onClick={onEpisodes} aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`} className="flex max-w-full items-center gap-1.5 text-left text-xs text-white/65 transition-colors hover:text-white md:text-caption">
-              <span className="truncate">{subtitle}</span>
-              <ChevronDown className="size-3.5 shrink-0" strokeWidth={1.5} />
-              <Kbd className="ml-0.5">E</Kbd>
-            </button>
-          ) : (
-            subtitle && <div className="truncate text-xs text-white/65 md:text-caption">{subtitle}</div>
-          )}
-        </div>
-        {onEpisodes && (
-          <HeaderButton label="Next episode" keys="N" onClick={next} disabled={!next}>
-            <SkipForward className="size-[18px]" />
-          </HeaderButton>
-        )}
-      </div>
-      <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
+      <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} prev={prev} next={next} onEpisodes={onEpisodes} />
+      <div className="flex shrink-0 items-center gap-2 justify-self-end md:gap-3">
         {serverMenu}
         <div className={cx(BOX, 'hidden lg:flex')}>
           <button
@@ -296,6 +266,55 @@ function Header({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The centred title box. For TV the whole box is one big "Episodes" button (a full-size button
+ * underneath everything); previous, next and the title sit on top of it, so hovering one of them
+ * hands the hover to that control and the box stops highlighting.
+ */
+function TitleBox({ title, subtitle, detailsUrl, prev, next, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; prev?: () => void; next?: () => void; onEpisodes?: () => void }) {
+  return (
+    <div className={cx(BOX, 'relative min-w-0 justify-self-center md:w-[min(30rem,100%)]')}>
+      {onEpisodes && (
+        <button
+          type="button"
+          onClick={onEpisodes}
+          aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`}
+          className="absolute inset-0 rounded-2xl transition-colors hover:bg-white/[0.07] focus-visible:bg-white/[0.07]"
+        />
+      )}
+      {onEpisodes && (
+        <div className="relative">
+          <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left">
+            <SkipBack className="size-[18px]" />
+          </HeaderButton>
+        </div>
+      )}
+      <div className="pointer-events-none relative min-w-0 flex-1 px-2 text-center leading-tight md:px-3">
+        <Link
+          to={detailsUrl}
+          title={`${title}: details`}
+          className={cx(TEXT_LINK, 'pointer-events-auto inline-block max-w-full truncate align-top text-sm font-semibold md:text-base')}
+        >
+          {title}
+        </Link>
+        {subtitle && (
+          <div className="flex items-center justify-center gap-2 text-xs text-white/65 md:text-caption">
+            <span className="truncate">{subtitle}</span>
+            {onEpisodes && <Kbd className="shrink-0">E</Kbd>}
+          </div>
+        )}
+      </div>
+      {onEpisodes && (
+        <div className="relative">
+          <HeaderButton label="Next episode" keys="Shift N" onClick={next} disabled={!next}>
+            <SkipForward className="size-[18px]" />
+          </HeaderButton>
+        </div>
+      )}
     </div>
   );
 }
