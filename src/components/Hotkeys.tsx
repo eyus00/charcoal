@@ -9,7 +9,7 @@ export const GO: Record<string, { to: string; label: string }> = {
   m: { to: '/discover?type=movie', label: 'Movies' },
   t: { to: '/discover?type=tv', label: 'TV shows' },
   d: { to: '/discover', label: 'Discover' },
-  p: { to: '/profile#profile', label: 'Profile' },
+  p: { to: '/profile', label: 'Profile' },
   w: { to: '/profile#watchlist', label: 'Watchlist' },
   s: { to: '/profile#settings', label: 'Settings' },
   y: { to: '/profile#history', label: 'History' },
