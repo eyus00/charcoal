@@ -958,39 +958,31 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
         </div>
       )}
 
-      {/* Paused for a while: what's playing, as a card in the details page's style. */}
+      {/* Paused for a while: what's playing, written over the picture like a TV's pause screen. */}
       <div
         aria-hidden={!pausedIdle}
         className={cx(
-          'pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-black/30 to-black/10 p-4 transition-opacity duration-500 sm:items-center md:p-12',
+          'pointer-events-none absolute inset-0 flex items-end bg-gradient-to-r from-black/85 via-black/50 to-transparent px-6 pb-16 transition-opacity duration-700 sm:items-center sm:pb-0 md:px-16',
           pausedIdle ? 'opacity-100' : 'opacity-0',
         )}
       >
-        <div
-          className={cx(
-            'flex w-full max-w-xl gap-4 rounded-3xl bg-surface/75 p-4 ring-1 ring-white/[0.08] shadow-2xl shadow-black/40 backdrop-blur-xl transition duration-500 md:gap-5 md:p-5',
-            pausedIdle ? 'translate-y-0' : 'translate-y-3',
-          )}
-        >
-          {poster && <img src={poster} alt="" className="hidden aspect-[2/3] w-28 shrink-0 self-start rounded-2xl object-cover sm:block md:w-32" />}
-          <div className="min-w-0 flex-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-black">
-              <Pause className="size-3 fill-current" strokeWidth={0} /> Paused
-            </span>
-            <h2 className="mt-2 line-clamp-2 text-xl leading-tight font-semibold text-balance md:text-2xl">{title}</h2>
-            {subtitle && <p className="mt-0.5 truncate text-body-sm text-white/80">{subtitle}</p>}
-            {meta && <p className="mt-1 text-caption text-muted">{meta}</p>}
-            {overview && <p className="mt-2.5 line-clamp-3 text-caption leading-relaxed text-white/70">{overview}</p>}
-            <div className="mt-3.5">
-              <div className="h-1 overflow-hidden rounded-full bg-white/15">
-                <div className="h-full rounded-full bg-white" style={{ width: `${duration ? Math.min(100, (now / duration) * 100) : 0}%` }} />
+        <div className={cx('max-w-xl transition-transform duration-700', pausedIdle ? 'translate-y-0' : 'translate-y-2')}>
+          <p className="flex items-center gap-2 text-sm text-white/60">
+            <Pause className="size-3.5 fill-current" strokeWidth={0} />
+            Paused
+          </p>
+          <h2 className="mt-2 text-3xl leading-tight font-semibold text-balance md:text-5xl">{title}</h2>
+          {subtitle && <p className="mt-2 text-lg text-white/85">{subtitle}</p>}
+          {meta && <p className="mt-2 text-sm text-white/60">{meta}</p>}
+          {overview && <p className="mt-4 line-clamp-3 text-body-sm leading-relaxed text-white/75 md:text-base">{overview}</p>}
+          {duration > 0 && (
+            <div className="mt-6 flex items-center gap-3 text-sm text-white/60 tabular-nums">
+              <div className="h-1 w-40 overflow-hidden rounded-full bg-white/20">
+                <div className="h-full rounded-full bg-white" style={{ width: `${Math.min(100, (now / duration) * 100)}%` }} />
               </div>
-              <div className="mt-1.5 flex justify-between text-micro text-muted tabular-nums">
-                <span>{formatClock(now)}</span>
-                <span>{duration ? `${Math.max(0, Math.round((duration - now) / 60))} min left` : ''}</span>
-              </div>
+              {Math.max(0, Math.round((duration - now) / 60))} min left
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -1075,10 +1067,8 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
         )}
       >
         <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />
-        <div className="mt-1 flex items-center gap-1 md:gap-2">
-          <IconButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={toggle} tipAlign="start">
-            {isPlaying ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
-          </IconButton>
+        <div className="mt-2 flex items-center gap-1 md:gap-1.5">
+          <PlayButton playing={isPlaying} onClick={toggle} />
           <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
             <RotateCcw className="size-5" />
           </IconButton>
@@ -1100,10 +1090,10 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
               className="w-0 accent-white opacity-0 transition-[width,opacity] group-hover/vol:w-20 group-hover/vol:opacity-100 focus:w-20 focus:opacity-100"
             />
           </div>
-          <span className="ml-1 text-xs text-white/85 tabular-nums md:text-sm">
-            {formatClock(now)} <span className="text-white/60">/ {formatClock(dur)}</span>
+          <span className="ml-2 text-xs text-white/85 tabular-nums md:text-sm">
+            {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
           </span>
-          <div className="ml-auto flex items-center gap-1 md:gap-2">
+          <div className="ml-auto flex items-center gap-1 md:gap-1.5">
             {next && (
               <IconButton label={`Next: ${next.label} (Shift N)`} onClick={next.go}>
                 <SkipForward className="size-5" />
@@ -1495,6 +1485,22 @@ function IconButton({
     >
       {children}
       <Tip label={text} keys={keys} align={tipAlign} hidden={expanded} />
+    </button>
+  );
+}
+
+/** The bar's main button: a white circle, like our primary buttons. */
+function PlayButton({ playing, onClick }: { playing: boolean; onClick: () => void }) {
+  const label = playing ? 'Pause' : 'Play';
+  return (
+    <button
+      type="button"
+      aria-label={`${label} (K)`}
+      onClick={onClick}
+      className="group/tip relative mr-1 grid size-10 shrink-0 place-items-center rounded-full bg-white text-black transition hover:bg-white/85 active:scale-95"
+    >
+      {playing ? <Pause className="size-4 fill-current" strokeWidth={0} /> : <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />}
+      <Tip label={label} keys="K" align="start" />
     </button>
   );
 }

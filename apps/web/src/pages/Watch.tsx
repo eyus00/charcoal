@@ -337,7 +337,7 @@ function Header({
   serverMenu: React.ReactNode;
 }) {
   return (
-    // Close on the left, the title centred, server + shortcuts on the right. No boxes: plain round
+    // Close on the left, the title centred, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-4 md:px-5">
       <div className="justify-self-start">
@@ -347,7 +347,6 @@ function Header({
       </div>
       <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} prev={prev} next={next} onEpisodes={onEpisodes} />
       <div className="flex shrink-0 items-center gap-1 justify-self-end md:gap-3">
-        {serverMenu}
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
           type="button"
@@ -355,10 +354,11 @@ function Header({
           aria-label="Keyboard shortcuts (?)"
           className="group/tip relative hidden h-10 items-center gap-2 rounded-xl px-2 text-faint transition hover:text-white lg:flex"
         >
-          <Tip label="Keyboard shortcuts" side="bottom" align="end" />
+          <Tip label="Keyboard shortcuts" side="bottom" />
           <Keyboard className="size-[18px]" strokeWidth={1.5} />
           <Kbd>?</Kbd>
         </button>
+        {serverMenu}
       </div>
     </div>
   );
