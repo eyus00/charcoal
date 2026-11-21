@@ -1,7 +1,6 @@
 export * from './types.js';
 export { nativeFetcher, getJson } from './fetch.js';
 import { castle } from './providers/castle.js';
-import { vidapi } from './providers/vidapi.js';
 import { vixsrc } from './providers/vixsrc.js';
 import { febbox } from './providers/febbox.js';
 export { checkFebboxToken } from './providers/febbox.js';
@@ -9,8 +8,8 @@ export { loadFallbackProviders, primesrc } from './streamviva.js';
 import { NotFoundError, type Media, type Provider, type ScrapeContext, type ScrapeResult } from './types.js';
 
 /** Every provider, best first. */
-export const providers: Provider[] = [febbox, castle, vixsrc, vidapi].sort((a, b) => b.rank - a.rank);
-export { castle, febbox, vidapi, vixsrc };
+export const providers: Provider[] = [febbox, castle, vixsrc].sort((a, b) => b.rank - a.rank);
+export { castle, febbox, vixsrc };
 
 export interface ProviderOutcome {
   provider: Pick<Provider, 'id' | 'name'>;

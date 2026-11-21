@@ -33,6 +33,8 @@ export interface ProviderReport {
   name: string;
   ok: boolean;
   reason?: string;
+  /** Shown folded under one row with this name (e.g. the StreamViva fallback sources). */
+  group?: string;
 }
 
 export interface Target { type: MediaType; id: number; season?: number; episode?: number }
