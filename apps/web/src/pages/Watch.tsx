@@ -7,7 +7,7 @@ import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '
 import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
 import { detectExtension } from '../lib/extension';
-import { fetchViaExtension } from '../lib/direct';
+import { fetchFallbackViaExtension, fetchViaExtension } from '../lib/direct';
 import { EMBEDS, embedById, fetchJelly, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
@@ -100,7 +100,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       // Charcoal Helper installed: find and play from this browser; the server is the fallback.
       if (settings.useExtension && d && (await detectExtension())?.hasPermission) {
         try {
-          return await fetchViaExtension(target, d, signal);
+          return await fetchViaExtension(target, d, signal, ep?.id);
         } catch (e) {
           if (signal.aborted) throw e;
           console.warn('[helper]', (e as Error).message, '- asking the server');
@@ -114,7 +114,41 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     gcTime: 1000 * 60 * 30,
   });
 
-  const streams = jelly.data;
+  // The fallback (StreamViva's sources, PrimeSrc) through Charcoal Helper: starts once our own
+  // answer is in, so it never delays playback; its sources are added to the end of the list.
+  const helper = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(), staleTime: 60_000, enabled: settings.useExtension });
+  const fallbackOn = server === 'jelly' && settings.useExtension && !!helper.data?.hasPermission && !!d;
+  // Starts when our answer is in, or after a few seconds at most (so a title only the fallback has
+  // doesn't wait for every slower step first).
+  const [fallbackGo, setFallbackGo] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setFallbackGo(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+  const fallback = useQuery({
+    queryKey: ['fallback', type, id, season, episode],
+    queryFn: ({ signal }) => fetchFallbackViaExtension(target, d!, signal, ep?.id),
+    enabled: fallbackOn && (fallbackGo || jelly.isSuccess || jelly.isError),
+    retry: false,
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 30,
+  });
+  const fallbackPending = fallbackOn && !fallback.isSuccess && !fallback.isError;
+
+  const streams = useMemo(() => {
+    const extra = fallback.data;
+    if (!jelly.data) {
+      return extra?.sources.length ? { responseId: 'fallback', expiresAt: '', via: 'extension' as const, ...extra } : undefined;
+    }
+    if (!extra) return jelly.data;
+    return {
+      ...jelly.data,
+      // Appended, never re-sorted: the player's source indexes must stay put.
+      sources: [...jelly.data.sources, ...extra.sources.filter((s) => !jelly.data.sources.some((j) => j.url === s.url))],
+      subtitles: [...jelly.data.subtitles, ...extra.subtitles.filter((s) => !jelly.data.subtitles.some((j) => j.url === s.url))],
+      report: [...(jelly.data.report ?? []), ...extra.report],
+    };
+  }, [jelly.data, fallback.data]);
   // Their own server didn't work, so the hosted one answered: say so once.
   const ownError = jelly.data?.ownError;
   useEffect(() => {
@@ -123,12 +157,13 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   // Jelly found nothing → fall back to the first embed (without changing the saved preference).
   useEffect(() => {
-    if (server === 'jelly' && jelly.isError) {
+    // Nothing anywhere (and the fallback, if running, found nothing either): use an embed server.
+    if (server === 'jelly' && jelly.isError && !fallbackPending && !fallback.data?.sources.length) {
       console.warn('Jelly:', jelly.error.message);
       setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
       setServer(EMBEDS[0].id);
     }
-  }, [server, jelly.isError, jelly.error]);
+  }, [server, jelly.isError, jelly.error, fallbackPending, fallback.data]);
 
   const record = useCallback(
     (watched: number, duration: number, ended?: boolean) => {
@@ -211,6 +246,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           header={header}
           next={next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null}
           onProgress={record}
+          searching={fallbackPending}
           onExhausted={() => {
             setFallbackNote(`Jelly’s sources wouldn’t play. Switched to ${EMBEDS[0].name}.`);
             setServer(EMBEDS[0].id);

@@ -49,6 +49,8 @@ interface Props {
   onProgress: (watched: number, duration: number, ended?: boolean) => void;
   /** Every source failed: let the page offer embed servers. */
   onExhausted: () => void;
+  /** More sources may still arrive (the fallback is searching); they're appended to data.sources. */
+  searching?: boolean;
 }
 
 const STARTUP_TIMEOUT_MS = 15_000;
@@ -75,7 +77,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, overview, poster, resumeAt, header, next, onProgress, onExhausted }: Props) {
+export default function Player({ data, media, title, subtitle, overview, poster, resumeAt, header, next, onProgress, onExhausted, searching }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -222,6 +224,20 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   const segment = dur ? segmentAt(segments, now, dur) : undefined;
   const skipped = useRef(new Set<number>()); // auto-skipped segment starts
   const creditsOffered = useRef(false);
+
+  // More sources arrived (the fallback finished): if everything so far failed, carry on with them.
+  const sourceCount = data.sources.length;
+  const prevCount = useRef(sourceCount);
+  useEffect(() => {
+    const grew = sourceCount > prevCount.current;
+    prevCount.current = sourceCount;
+    if (!grew || !exhausted) return;
+    const i = data.sources.findIndex((_, k) => !failed.current.has(k));
+    if (i < 0) return;
+    setExhausted(false);
+    setSourceIdx(i);
+    flash('Found more sources');
+  }, [sourceCount, exhausted, data.sources, flash]);
 
   // ---------- source loading & fallback ----------
   /** Why each failed source failed, in words (shown in the Source menu). */
@@ -880,8 +896,12 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       {exhausted && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center">
           <div className="max-w-sm space-y-4">
-            <AlertTriangle className="mx-auto size-10 text-warning" />
-            <p className="font-medium">None of Jelly’s sources would play.</p>
+            {searching ? (
+              <div className="mx-auto size-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+            ) : (
+              <AlertTriangle className="mx-auto size-10 text-warning" />
+            )}
+            <p className="font-medium">{searching ? 'None of these played. Looking for more sources…' : 'None of the sources would play.'}</p>
             <div className="flex justify-center gap-2">
               <button
                 onClick={() => {

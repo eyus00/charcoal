@@ -1,0 +1,1130 @@
+{
+  "fsonline": {
+    "name": "FSOnline",
+    "rank": 140,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "fsonline-doodstream",
+          "ok": false,
+          "why": "embed: Couldn't find a stream: No streams found"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "fsonline-doodstream",
+          "ok": false,
+          "why": "embed: Couldn't find a stream: No streams found"
+        }
+      ]
+    }
+  },
+  "dopebox": {
+    "name": "Dopebox",
+    "rank": 197,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "cuevana3": {
+    "name": "Cuevana3",
+    "rank": 80,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No valid streams found"
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "streamwish-latino",
+          "ok": false,
+          "why": "embed: fetch failed"
+        }
+      ]
+    }
+  },
+  "ridomovies": {
+    "name": "RidoMovies",
+    "rank": 203,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No search results found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No search results found"
+    }
+  },
+  "hdrezka": {
+    "name": "HDRezka",
+    "rank": 105,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed",
+      "ip-locked"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No translator id found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No translator id found"
+    }
+  },
+  "warezcdn": {
+    "name": "WarezCDN",
+    "rank": 115,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "n/a"
+    }
+  },
+  "insertunit": {
+    "name": "Insertunit",
+    "rank": 12,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed",
+      "ip-locked"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Fetch request to https://isut.streamflix.one/api/source/27205 timed out after 15000ms"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Fetch request to https://isut.streamflix.one/api/source/1396/2/3 timed out after 15000ms"
+    }
+  },
+  "soapertv": {
+    "name": "SoaperTV",
+    "rank": 130,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Content not found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Content not found"
+    }
+  },
+  "autoembed": {
+    "name": "Autoembed",
+    "rank": 110,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "myanime": {
+    "name": "MyAnime",
+    "rank": 113,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "AniList id not found"
+    }
+  },
+  "tugaflix": {
+    "name": "Tugaflix",
+    "rank": 169,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "ee3": {
+    "name": "EE3",
+    "rank": 188,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "Auth failed with status: 500: \"Internal Server Error\\n\\nThe server encountered an internal error and was unable to compl"
+    },
+    "show": {
+      "result": "n/a"
+    }
+  },
+  "fsharetv": {
+    "name": "FshareTV",
+    "rank": 201,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "File ID not found"
+    },
+    "show": {
+      "result": "n/a"
+    }
+  },
+  "vidsrcsh": {
+    "name": "VidSrc",
+    "rank": 500,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: vidsrc.sh returned no data"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: vidsrc.sh returned no data"
+    }
+  },
+  "zoechip": {
+    "name": "ZoeChip",
+    "rank": 172,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No content found for movie"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No content found for episode"
+    }
+  },
+  "mp4hydra": {
+    "name": "Mp4Hydra",
+    "rank": 4,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No watchable item found"
+    }
+  },
+  "embedsu": {
+    "name": "embed.su",
+    "rank": 165,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "slidemovies": {
+    "name": "SlideMovies",
+    "rank": 135,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Stream URL not found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Stream URL not found"
+    }
+  },
+  "vidapi-click": {
+    "name": "vidapi.click",
+    "rank": 89,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Failed to fetch video source"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Failed to fetch video source"
+    }
+  },
+  "coitus": {
+    "name": "Autoembed+",
+    "rank": 91,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "streambox": {
+    "name": "StreamBox",
+    "rank": 119,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'find')"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'find')"
+    }
+  },
+  "nunflix": {
+    "name": "NFlix",
+    "rank": 155,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    }
+  },
+  "8stream": {
+    "name": "8stream",
+    "rank": 111,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Failed to fetch media info"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Failed to fetch media info"
+    }
+  },
+  "wecima": {
+    "name": "Wecima (Arabic)",
+    "rank": 3,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "animeflv": {
+    "name": "AnimeFLV",
+    "rank": 90,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Fetch request to https://www3.animeflv.net/browse?q=Inception timed out after 15000ms"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Fetch request to https://www3.animeflv.net/browse?q=Breaking%20Bad timed out after 15000ms"
+    }
+  },
+  "animekai": {
+    "name": "AnimeKai 🔥",
+    "rank": 180,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "n/a"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "fedapi": {
+    "name": "FED API (4K) 🔥",
+    "rank": 300,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Requires a user token!"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Requires a user token!"
+    }
+  },
+  "fedapidb": {
+    "name": "FED DB 🔥",
+    "rank": 299,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Requires a user token!"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Requires a user token!"
+    }
+  },
+  "pirxcy": {
+    "name": "Pirxcy",
+    "rank": 290,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No results found in search"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No results found in search"
+    }
+  },
+  "vidsrcvip": {
+    "name": "VidSrc.vip",
+    "rank": 150,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "rgshows": {
+    "name": "RGShows",
+    "rank": 176,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    }
+  },
+  "vidify": {
+    "name": "Vidify 🔥",
+    "rank": 204,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No streams found"
+    }
+  },
+  "zunime": {
+    "name": "Zunime",
+    "rank": 114,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "n/a"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "AniList id not found"
+    }
+  },
+  "vidnest": {
+    "name": "Vidnest",
+    "rank": 117,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "vidnest-hollymoviehd",
+          "ok": false,
+          "why": "embed: Fetch request to https://second.vidnest.fun/hollymoviehd/movie/27205 timed out after 15000ms"
+        },
+        {
+          "via": "vidnest-allmovies",
+          "ok": false,
+          "why": "embed: Fetch request to https://second.vidnest.fun/allmovies/movie/27205 timed out after 15000ms"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "vidnest-hollymoviehd",
+          "ok": false,
+          "why": "embed: Fetch request to https://second.vidnest.fun/hollymoviehd/tv/1396/2/3 timed out after 15000ms"
+        },
+        {
+          "via": "vidnest-allmovies",
+          "ok": false,
+          "why": "embed: Fetch request to https://second.vidnest.fun/allmovies/tv/1396/2/3 timed out after 15000ms"
+        }
+      ]
+    }
+  },
+  "animetsu": {
+    "name": "Animetsu",
+    "rank": 112,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "n/a"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "AniList id not found"
+    }
+  },
+  "lookmovie": {
+    "name": "LookMovie",
+    "rank": 171,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed",
+      "ip-locked"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No playable streams found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Cannot read properties of undefined (reading 'auto')"
+    }
+  },
+  "turbovidSource": {
+    "name": "TurboVid",
+    "rank": 120,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "turbovid",
+          "ok": false,
+          "why": "embed: fetch failed"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "turbovid",
+          "ok": false,
+          "why": "embed: fetch failed"
+        }
+      ]
+    }
+  },
+  "pelisplushd": {
+    "name": "PelisPlusHD",
+    "rank": 75,
+    "disabledUpstream": false,
+    "flags": [
+      "ip-locked"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No vidhide embed found in PelisPlusHD"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No vidhide embed found in PelisPlusHD"
+    }
+  },
+  "primewire": {
+    "name": "PrimeWire 🔥",
+    "rank": 206,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "movies4f": {
+    "name": "M4F",
+    "rank": 166,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "debrid": {
+    "name": "Debrid",
+    "rank": 450,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Debrid API token is required"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: Debrid API token is required"
+    }
+  },
+  "cinehdplus": {
+    "name": "CineHDPlus (Latino)",
+    "rank": 7,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "n/a"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "fullhdfilmizle": {
+    "name": "FullHDFilmizle (Turkish)",
+    "rank": 6,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "n/a"
+    }
+  },
+  "vidlink": {
+    "name": "VidLink 🔥",
+    "rank": 310,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No playable streams found"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No playable streams found"
+    }
+  },
+  "vidrock": {
+    "name": "Granite",
+    "rank": 170,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No valid sources found from Vidrock API"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "Couldn't find a stream: No sources found from Vidrock API: Invalid JSON response"
+    }
+  },
+  "watchanimeworld": {
+    "name": "WatchAnimeWorld",
+    "rank": 116,
+    "disabledUpstream": false,
+    "flags": [],
+    "movie": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    },
+    "show": {
+      "result": "source-fail",
+      "why": "fetch failed"
+    }
+  },
+  "vidsrc-embed": {
+    "name": "VidSrc Embed",
+    "rank": 305,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "videasy-embed": {
+    "name": "Videasy",
+    "rank": 302,
+    "disabledUpstream": false,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidking-embed": {
+    "name": "VidKing",
+    "rank": 295,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidlink-iframe": {
+    "name": "VidLink Player",
+    "rank": 292,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidcore-embed": {
+    "name": "VidCore",
+    "rank": 285,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "2embed-embed": {
+    "name": "2Embed",
+    "rank": 280,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "embedsu-embed": {
+    "name": "EmbedSu Player",
+    "rank": 275,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidapi-embed": {
+    "name": "VidApi",
+    "rank": 270,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidsrccc-embed": {
+    "name": "VidSrc.cc",
+    "rank": 265,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidsrcru-embed": {
+    "name": "VidSrc.ru",
+    "rank": 260,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "super-embed": {
+    "name": "SuperEmbed",
+    "rank": 255,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  },
+  "vidnest-embed": {
+    "name": "VidNest Player",
+    "rank": 250,
+    "disabledUpstream": true,
+    "flags": [
+      "cors-allowed"
+    ],
+    "movie": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    },
+    "show": {
+      "result": "stream-dead",
+      "okVia": [],
+      "tries": [
+        {
+          "via": "direct",
+          "ok": false,
+          "why": "no qualities"
+        }
+      ]
+    }
+  }
+}

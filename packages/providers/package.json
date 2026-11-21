@@ -10,5 +10,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "try": "tsx scripts/try.ts"
+  },
+  "dependencies": {
+    "@charcoal/streamviva": "*"
   }
 }

@@ -68,6 +68,8 @@ export interface Details extends MediaItem {
   images?: { logos: ImageAsset[] };
   release_dates?: { results: { iso_3166_1: string; release_dates: { certification: string }[] }[] };
   content_ratings?: { results: { iso_3166_1: string; rating: string }[] };
+  imdb_id?: string | null;
+  external_ids?: { imdb_id?: string | null };
 }
 
 export interface Episode {
@@ -136,6 +138,7 @@ export const q = {
             'recommendations',
             'similar',
             'images',
+            'external_ids',
             type === 'movie' ? 'release_dates' : 'content_ratings',
           ].join(','),
           include_image_language: 'en,null',
