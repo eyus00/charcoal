@@ -9,8 +9,8 @@ export const Bone = ({ className }: { className?: string }) => <div className={c
 export function CardSkeleton({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <Bone className="aspect-[2/3] w-full rounded-b-none rounded-t-2xl" />
-      <div className="rounded-b-2xl border border-t-0 border-white/[0.08] px-3 pt-3 pb-3">
+      <Bone className="aspect-[2/3] w-full rounded-2xl" />
+      <div className="pt-3">
         <Bone className="h-3.5 w-3/4" />
         <Bone className="mt-2 h-3 w-1/3" />
       </div>
