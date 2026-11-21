@@ -9,6 +9,8 @@ import {
   FastForward,
   Gauge,
   Layers,
+  Palette,
+  ScrollText,
   Info,
   Cast,
   Check,
@@ -147,7 +149,27 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
   const [pausedIdle, setPausedIdle] = useState(false);
 
   /** The source whose details are shown in the Source menu (its ⓘ button). */
-  const [infoOpen, setInfoOpen] = useState<string | null>(null);
+  // The ⓘ card of one source: which one, and where it sits (next to the menu, not inside it).
+  const [info, setInfo] = useState<{ url: string; style: React.CSSProperties } | null>(null);
+  const settingsBox = useRef<HTMLDivElement>(null);
+  useEffect(() => setInfo(null), [menu, view]);
+  const openInfo = (url: string, btnEl: HTMLElement) => {
+    if (info?.url === url) return setInfo(null);
+    const box = settingsBox.current?.getBoundingClientRect();
+    const pop = btnEl.closest('[data-popover]')?.getBoundingClientRect();
+    const root = wrap.current?.getBoundingClientRect();
+    const r = btnEl.getBoundingClientRect();
+    if (!box || !pop || !root) return;
+    const W = 240;
+    const lowerHalf = r.top + r.height / 2 > root.top + root.height / 2;
+    const vertical = lowerHalf ? { bottom: box.bottom - r.bottom } : { top: r.top - box.top };
+    // Beside the menu when there's room, else just above the row.
+    const style: React.CSSProperties =
+      pop.left - root.left >= W + 16
+        ? { width: W, right: box.right - pop.left + 8, ...vertical }
+        : { width: Math.min(W, pop.width - 12), right: box.right - r.right, bottom: box.bottom - r.top + 4 };
+    setInfo({ url, style });
+  };
   const setMenu = useCallback((m: Menu) => {
     setMenuState(m);
     setView('main');
@@ -1131,8 +1153,8 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                           </StepButton>
                         </div>
                       )}
-                      <NavItem label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
-                      {cues.length > 0 && <NavItem label="Transcript" onClick={() => setView('transcript')} />}
+                      <NavItem icon={Palette} label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
+                      {cues.length > 0 && <NavItem icon={ScrollText} label="Transcript" onClick={() => setView('transcript')} />}
                       </div>
                     </>
                   )}
@@ -1165,34 +1187,30 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
             </div>
 
             {/* Settings: quality, audio, source, speed, toggles */}
-            <div className="relative">
+            <div ref={settingsBox} className="relative">
               <IconButton label="Settings (quality, source, speed)" active={menu === 'settings'} expanded={menu === 'settings'} onClick={() => setMenu(menu === 'settings' ? null : 'settings')}>
                 <Settings className="size-5" />
               </IconButton>
               {menu === 'settings' && (
-                <Popover>
+                <Popover onScroll={() => info && setInfo(null)}>
                   {view === 'main' && (
                     <>
-                      <div className="grid grid-cols-2 gap-1.5 p-0.5">
-                        <Tile icon={Layers} label="Source" value={source.provider.name} onClick={() => setView('source')} />
-                        <Tile
-                          icon={Gauge}
-                          label="Quality"
-                          value={levels.length > 1 ? qualityNow : qualityLabel(source.quality)}
-                          onClick={levels.length > 1 ? () => setView('quality') : undefined}
-                        />
-                        <Tile icon={FastForward} label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
-                        <Tile
-                          icon={AudioLines}
-                          label="Audio"
-                          value={audioTracks.find((t) => t.id === audioTrack)?.name ?? source.audioTracks?.[0]?.label ?? 'Original'}
-                          onClick={audioTracks.length > 1 ? () => setView('audio') : undefined}
-                        />
-                      </div>
-                      <div className="mt-1.5 grid grid-cols-3 gap-1.5 p-0.5">
-                        <ToggleTile icon={Expand} label="Fill screen" on={fill} onChange={setFill} />
-                        <ToggleTile icon={ChevronsRight} label="Skip intros" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
-                        <ToggleTile icon={SkipForward} label="Autoplay" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
+                      <NavItem
+                        icon={Layers}
+                        label="Source"
+                        value={`${source.quality === 'original' ? 'Original' : qualityLabel(source.quality)} · ${source.provider.name}`}
+                        onClick={() => setView('source')}
+                      />
+                      {levels.length > 1 && <NavItem icon={Gauge} label="Quality" value={qualityNow} onClick={() => setView('quality')} />}
+                      {audioTracks.length > 1 && (
+                        <NavItem icon={AudioLines} label="Audio" value={audioTracks.find((t) => t.id === audioTrack)?.name} onClick={() => setView('audio')} />
+                      )}
+                      <NavItem icon={FastForward} label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
+                      <Divider />
+                      <div className="flex gap-1">
+                        <ToggleIcon icon={Expand} label="Fill screen" on={fill} onChange={setFill} align="start" />
+                        <ToggleIcon icon={ChevronsRight} label="Skip intros" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
+                        <ToggleIcon icon={SkipForward} label="Autoplay next" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} align="end" />
                       </div>
                     </>
                   )}
@@ -1263,11 +1281,10 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                             <SourceRow
                               key={s.url}
                               source={s}
-                              infoOpen={infoOpen === s.url}
-                              onInfo={() => setInfoOpen((u) => (u === s.url ? null : s.url))}
+                              infoOpen={info?.url === s.url}
+                              onInfo={(el) => openInfo(s.url, el)}
                               selected={sourceIdx === i}
                               failed={failed.current.has(i)}
-                              reason={failReason.current.get(i)}
                               onClick={() => {
                                 if (i === sourceIdx) return setMenu(null);
                                 const v = video.current;
@@ -1287,7 +1304,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                             setMenu(null);
                           }}
                           disabled={refreshing}
-                          className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white/85 hover:bg-white/10 disabled:opacity-50"
+                          className="mt-1 flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/10 disabled:opacity-50"
                         >
                           <RotateCw className={cx('size-4 text-muted', refreshing && 'animate-spin')} />
                           <span className="flex-1">{refreshing ? 'Searching…' : 'Search again'}</span>
@@ -1351,6 +1368,12 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                   )}
                 </Popover>
               )}
+              {menu === 'settings' && view === 'source' && info && (() => {
+                const i = data.sources.findIndex((x) => x.url === info.url);
+                return i < 0 ? null : (
+                  <SourceInfo source={data.sources[i]} reason={failed.current.has(i) ? failReason.current.get(i) : undefined} style={info.style} />
+                );
+              })()}
             </div>
             {/* A TV can't add the headers direct (extension) streams need. */}
             {!direct && (cast.state === 'NOT_CONNECTED' || cast.state === 'CONNECTING' || casting) && (
@@ -1485,8 +1508,10 @@ const StepButton = ({ label, onClick, children }: { label: string; onClick: () =
   );
 };
 
-const Popover = ({ children, wide, split }: { children: ReactNode; wide?: boolean; split?: boolean }) => (
+const Popover = ({ children, wide, split, onScroll }: { children: ReactNode; wide?: boolean; split?: boolean; onScroll?: () => void }) => (
   <div
+    data-popover
+    onScroll={onScroll}
     className={cx(
       'toast-in absolute right-0 bottom-12 z-30 rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
       // split: a scrolling list on top, fixed controls below (the subtitles menu).
@@ -1517,16 +1542,14 @@ function levelLabel(pos: number, height: number, source: JellySource, count: num
 }
 const levelSize = (pos: number, source: JellySource, count: number) => (source.levels?.length === count ? formatSize(source.levels[pos]?.size) : '');
 
-/**
- * One source as a single tidy line: quality, a short tag (language, or the release type), size.
- * The ⓘ button shows everything else underneath: each quality and its size, the file details, and
- * why it failed.
- */
+const sourceLabel = (s: JellySource) => (s.quality === 'original' ? 'Original' : qualityLabel(s.quality));
+const sourceTag = (s: JellySource) => s.audioTracks?.[0]?.label ?? s.note?.split(' · ')[0];
+
+/** One source as a single line like every other menu row: ✓, quality, a short tag, size, and ⓘ. */
 function SourceRow({
   source: s,
   selected,
   failed,
-  reason,
   onClick,
   infoOpen,
   onInfo,
@@ -1534,47 +1557,71 @@ function SourceRow({
   source: JellySource;
   selected: boolean;
   failed: boolean;
-  reason?: string;
   onClick: () => void;
   infoOpen: boolean;
-  onInfo: () => void;
+  onInfo: (button: HTMLElement) => void;
 }) {
-  const levels = s.levels && s.levels.length > 1 ? s.levels : null;
-  const label = s.quality === 'original' ? 'Original' : qualityLabel(s.quality);
-  const tag = s.audioTracks?.[0]?.label ?? s.note?.split(' · ')[0];
-  const hasInfo = !!(levels || s.note || reason || s.quality === 'original');
+  const label = sourceLabel(s);
+  const tag = sourceTag(s);
   return (
-    <div className={cx('rounded-xl', selected && 'bg-white/[0.06]')}>
-      <div className="flex items-center">
-        <button onClick={onClick} aria-pressed={selected} className="flex min-w-0 flex-1 items-center gap-2 rounded-xl py-2 pr-1 pl-3 text-left text-sm hover:bg-white/10">
-          <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
-          <span className="shrink-0 font-medium">{label}</span>
-          {tag && <span className="min-w-0 truncate text-muted">{tag}</span>}
-          <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'text-faint')}>
-            {failed ? 'Failed' : formatSize(s.size)}
-          </span>
-        </button>
-        {hasInfo && (
-          <button
-            type="button"
-            onClick={onInfo}
-            aria-label={`Details: ${label}${tag ? ` ${tag}` : ''}`}
-            aria-expanded={infoOpen}
-            className={cx('grid size-8 shrink-0 place-items-center rounded-full transition hover:bg-white/10 hover:text-white', infoOpen ? 'text-white' : 'text-faint')}
-          >
-            <Info className="size-4" />
-          </button>
-        )}
-      </div>
-      {infoOpen && (
-        <div className="space-y-0.5 pr-3 pb-2 pl-9 text-xs leading-snug text-faint">
-          {levels && <p className="text-muted tabular-nums">{levels.map((l) => `${qualityLabel(l.quality)}${l.size ? ` ${formatSize(l.size)}` : ''}`).join(' · ')}</p>}
-          {s.note && <p>{s.note}</p>}
-          {s.quality === 'original' && <p>The untouched file, as released</p>}
-          <p className="uppercase">{s.type}</p>
-          {failed && reason && <p className="text-danger">{reason}</p>}
+    <div className="flex items-center rounded-xl transition-colors hover:bg-white/10">
+      <button onClick={onClick} aria-pressed={selected} className="flex h-10 min-w-0 flex-1 items-center gap-2.5 pr-1 pl-3 text-left text-sm">
+        <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
+        <span className="shrink-0">{label}</span>
+        {tag && <span className="min-w-0 truncate text-muted">{tag}</span>}
+        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'text-faint')}>{failed ? 'Failed' : formatSize(s.size)}</span>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => onInfo(e.currentTarget)}
+        aria-label={`About ${label}${tag ? ` ${tag}` : ''}`}
+        aria-expanded={infoOpen}
+        className={cx('mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-colors hover:text-white', infoOpen ? 'text-white' : 'text-faint')}
+      >
+        <Info className="size-4" />
+      </button>
+    </div>
+  );
+}
+
+/** The ⓘ card: a small floating panel beside the menu, styled like our tooltips. */
+function SourceInfo({ source: s, reason, style }: { source: JellySource; reason?: string; style: React.CSSProperties }) {
+  const levels = s.levels && s.levels.length > 1 ? s.levels : null;
+  const tag = sourceTag(s);
+  return (
+    <div
+      role="dialog"
+      aria-label="Source details"
+      style={style}
+      onPointerUp={(e) => e.stopPropagation()}
+      className="toast-in absolute z-40 rounded-xl bg-raised p-3 text-xs shadow-2xl ring-1 ring-white/10"
+    >
+      <p className="flex items-baseline gap-2 text-sm">
+        <span className="font-medium">{sourceLabel(s)}</span>
+        {tag && <span className="truncate text-muted">{tag}</span>}
+        <span className="ml-auto shrink-0 text-xs text-faint">{s.provider.name}</span>
+      </p>
+      {levels && (
+        <div className="mt-2 space-y-1">
+          {levels.map((l, k) => (
+            <p key={k} className="flex justify-between text-white/80 tabular-nums">
+              <span>{qualityLabel(l.quality)}</span>
+              <span className="text-faint">{formatSize(l.size)}</span>
+            </p>
+          ))}
         </div>
       )}
+      {(s.note || s.quality === 'original') && (
+        <p className="mt-2 leading-snug text-muted">
+          {s.note}
+          {s.quality === 'original' && <span className="block text-faint">The untouched file, as released</span>}
+        </p>
+      )}
+      <p className="mt-2 flex justify-between text-faint">
+        <span className="uppercase">{s.type}</span>
+        {!levels && s.size ? <span className="tabular-nums">{formatSize(s.size)}</span> : null}
+      </p>
+      {reason && <p className="mt-2 leading-snug text-danger">{describeFailure(reason)}</p>}
     </div>
   );
 }
@@ -1596,56 +1643,49 @@ const Badge = ({ children }: { children: ReactNode }) => (
 
 function BackHeader({ onBack, children }: { onBack: () => void; children: ReactNode }) {
   return (
-    <button onClick={onBack} className="mb-1 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm font-medium hover:bg-white/10">
+    <button onClick={onBack} className="mb-1 flex h-10 w-full items-center gap-2 rounded-xl px-2 text-left text-sm font-medium transition-colors hover:bg-white/10">
       <ChevronLeft className="size-4" />
       {children}
     </button>
   );
 }
 
-/** A settings card: icon, what it is, its current value. Without onClick it only shows the value. */
-function Tile({ icon: Icon, label, value, onClick }: { icon: typeof Settings; label: string; value?: string; onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      className="flex min-w-0 flex-col items-start gap-2 rounded-2xl bg-white/[0.06] p-3 text-left transition enabled:hover:bg-white/[0.11] disabled:cursor-default"
-    >
-      <span className="flex w-full items-center justify-between text-muted">
-        <Icon className="size-4" />
-        {onClick && <ChevronRight className="size-3.5" />}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-micro font-medium tracking-wider text-faint uppercase">{label}</span>
-        <span className="block truncate text-sm font-medium">{value}</span>
-      </span>
-    </button>
-  );
-}
-
-/** An on/off card: lights up (white) when on. */
-function ToggleTile({ icon: Icon, label, on, onChange }: { icon: typeof Settings; label: string; on: boolean; onChange: (v: boolean) => void }) {
+/** An icon-only switch for the bottom of the settings menu; its name shows as a tooltip. */
+function ToggleIcon({
+  icon: Icon,
+  label,
+  on,
+  onChange,
+  align = 'center',
+}: {
+  icon: typeof Settings;
+  label: string;
+  on: boolean;
+  onChange: (v: boolean) => void;
+  align?: 'start' | 'center' | 'end';
+}) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
+      aria-label={label}
       onClick={() => onChange(!on)}
       className={cx(
-        'flex flex-col items-center gap-1.5 rounded-2xl p-2.5 text-center text-xs font-medium transition',
-        on ? 'bg-white text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/[0.11]',
+        'group/tip relative grid h-10 flex-1 place-items-center rounded-xl transition-colors',
+        on ? 'bg-white text-black hover:bg-white/90' : 'text-white/60 hover:bg-white/10 hover:text-white',
       )}
     >
-      <Icon className="size-4" />
-      {label}
+      <Icon className="size-[18px]" />
+      <Tip label={`${label} · ${on ? 'On' : 'Off'}`} align={align} />
     </button>
   );
 }
 
-function NavItem({ label, value, onClick }: { label: string; value?: string; onClick: () => void }) {
+function NavItem({ icon: Icon, label, value, onClick }: { icon?: typeof Settings; label: string; value?: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/10">
+    <button onClick={onClick} className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/10">
+      {Icon && <Icon className="size-4 shrink-0 text-muted" />}
       <span className="flex-1">{label}</span>
       {value && <span className="max-w-[55%] truncate text-muted">{value}</span>}
       <ChevronRight className="size-4 shrink-0 text-muted" />
@@ -1655,7 +1695,7 @@ function NavItem({ label, value, onClick }: { label: string; value?: string; onC
 
 function MenuItem({ selected, onClick, children }: { selected?: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button onClick={onClick} aria-pressed={selected} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10">
+    <button onClick={onClick} aria-pressed={selected} className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-white/10">
       {selected !== undefined && <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />}
       {children}
     </button>
