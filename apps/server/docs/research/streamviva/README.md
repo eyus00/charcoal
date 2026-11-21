@@ -38,3 +38,16 @@ So from servers in data centres these are dead; they're built for viewers' own c
   (~190 KB gzipped) loads only when the fallback runs.
 - Server: registered as providers too (`STREAMVIVA=false` to leave out). On Railway they fail and
   provider health benches them; a server at home can use them.
+
+## From a home connection (viewer's Firefox, through Charcoal Helper), 2026-11-21
+
+| Title | Found by the fallback |
+|---|---|
+| Inception | LookMovie |
+| Cars | LookMovie, Cuevana3 (Spanish, via Streamwish) |
+| Dune | nothing |
+
+- PrimeSrc: "link behind a bot check" here too, so it's left out.
+- Unreachable or broken from home as well, so no longer run: vidsrc.sh (needs an API token), EE3
+  (500), embed.su, M4F, TurboVid (unreachable), 8stream (API gone).
+- The rest stay: they found nothing for these titles but answer normally.

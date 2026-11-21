@@ -159,7 +159,7 @@ export function qualityLabel(q: string): string {
   return n ? `${n}p` : 'SD';
 }
 
-const RANK: Record<string, number> = { Auto: 0, '1080p': 1, '4K': 2, '1440p': 3, Original: 4, '720p': 5, '480p': 6, '360p': 7, SD: 8 };
+const RANK: Record<string, number> = { '1080p': 0, '4K': 1, '1440p': 2, Auto: 3, Original: 4, '720p': 5, '480p': 6, '360p': 7, SD: 8 };
 
 /** Display name of a language code ("en" → "English"). */
 export const languageName = (code: string) => {
@@ -170,13 +170,14 @@ export const languageName = (code: string) => {
   }
 };
 
-/** 0 = in the preferred language, 1 = original / unknown, 2 = another language (a dub). */
+/** 0 = the preferred language, or original / unknown (most sources don't say); 1 = another
+ *  language (a dub), which goes last. Within 0, quality decides. */
 export function languageRank(audio: { language: string; label: string }[] | undefined, pref: string): number {
   const a = audio?.[0];
-  if (!a || /^(und|original)$/i.test(a.language) || /^(original|unknown)$/i.test(a.label)) return 1;
+  if (!a || /^(und|original)$/i.test(a.language) || /^(original|unknown)$/i.test(a.label)) return 0;
   const code = a.language.toLowerCase().slice(0, 2);
   if (code === pref || a.label.toLowerCase() === languageName(pref).toLowerCase()) return 0;
-  return 2;
+  return 1;
 }
 
 /** Sources in the preferred audio language first, then adaptive/1080p HLS first; MKV last (most

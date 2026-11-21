@@ -55,8 +55,17 @@ function isPublicUrl(raw) {
 
 // ---------- rules ----------
 
-let nextId = 1;
-const takeId = () => (nextId = (nextId % 1_000_000) + 1);
+// Random ids: session rules outlive this worker (the browser restarts it often), so a counter that
+// starts again at 1 would hand out ids that are still in use ("Duplicate rule ID").
+const used = new Set();
+const takeId = () => {
+  let id;
+  do id = 1 + Math.floor(Math.random() * 2_000_000_000);
+  while (used.has(id));
+  used.add(id);
+  return id;
+};
+const freeId = (id) => used.delete(id);
 
 /** Per tab: domain → rule id, for allowStream. */
 const streamRules = new Map();
@@ -141,6 +150,7 @@ async function request({ url, method = 'GET', headers, body }) {
   } finally {
     clearTimeout(timer);
     if (special.length) dnr.updateSessionRules({ removeRuleIds: [id] }).catch(() => {});
+    freeId(id);
   }
 }
 
@@ -176,6 +186,7 @@ async function allowStream({ host, headers }, sender) {
       },
     ],
   });
+  if (old) freeId(old);
   perTab.set(domain, id);
   return { domain };
 }
@@ -185,6 +196,7 @@ async function releaseStreams(_payload, sender) {
   const perTab = streamRules.get(tabId);
   if (!perTab) return {};
   await dnr.updateSessionRules({ removeRuleIds: [...perTab.values()] });
+  perTab.forEach(freeId);
   streamRules.delete(tabId);
   return {};
 }
