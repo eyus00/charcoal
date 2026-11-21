@@ -19,19 +19,25 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
-/** The text under a card's image: no box, just aligned with the image's left edge. */
-export const CARD_INFO = 'pt-2.5';
+/** The text under a card's image: no box, close under the image and aligned with its left edge. */
+export const CARD_INFO = 'pt-2';
 
-/** A card image that floats: rounded, lifts a little on hover. */
-export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-black/40';
+/** The whole card (image and text) lifts a little on hover, together. */
+export const CARD_LIFT = 'transition-transform duration-300 ease-out group-hover:-translate-y-1';
 
-/** Movie / TV mark, faint in the image's top-right corner like a watermark (hidden on hover). */
+/** A card image that floats: rounded, with a soft shadow on hover. */
+export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-black/40';
+
+/** A card title: brightens with the card on hover. */
+export const CARD_TITLE = 'truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white';
+
+/** Movie / TV mark, faint in the image's top-right corner like a watermark. */
 export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
   const Icon = type === 'tv' ? Tv : Film;
   return (
     <Icon
       strokeWidth={1.75}
-      className={cx('pointer-events-none absolute top-2.5 right-2.5 size-4 text-white/50 drop-shadow-[0_1px_3px_rgb(0_0_0/0.6)] transition-opacity group-hover:opacity-0', className)}
+      className={cx('pointer-events-none absolute top-2.5 right-2.5 size-4 text-white/50 drop-shadow-[0_1px_3px_rgb(0_0_0/0.6)]', className)}
       aria-label={type === 'tv' ? 'TV show' : 'Movie'}
     />
   );
@@ -72,14 +78,14 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
   const href = `/${t}/${item.id}`;
   return (
     <div className={cx('group relative', className)}>
-      <Link to={href} className="block" {...usePrefetch(t, item.id)}>
+      <Link to={href} className={cx('block', CARD_LIFT)} {...usePrefetch(t, item.id)}>
         <div className={CARD_IMAGE}>
           <Img path={item.poster_path} kind="poster" sizes={sizes} alt="" className="aspect-[2/3]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
           <TypeIcon type={t} />
         </div>
         <div className={CARD_INFO}>
-          <div className="truncate text-body-sm font-medium text-white/95" title={title}>{title}</div>
+          <div className={CARD_TITLE} title={title}>{title}</div>
           <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" />
         </div>
       </Link>

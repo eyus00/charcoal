@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, History, Keyboard, ShieldAlert, SkipBack, SkipForward, X } from 'lucide-react';
+import { ChevronDown, Keyboard, ShieldAlert, SkipBack, SkipForward, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
@@ -485,32 +485,28 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
               <span className="block font-semibold">Jelly</span>
               <span className={cx('block text-xs', jellyOn ? 'text-black/60' : jellyState === 'failed' ? 'text-warning' : 'text-muted')}>{jellyNote}</span>
             </span>
-            <span className={cx('rounded-full px-2 py-0.5 text-micro font-semibold tracking-wider uppercase', jellyOn ? 'bg-black/10' : 'bg-white/10 text-white/80')}>Best</span>
+            <span className={cx('rounded-full px-2 py-0.5 text-micro font-medium', jellyOn ? 'bg-black/10 text-black/70' : 'bg-white/10 text-white/80')}>Recommended</span>
           </button>
 
-          {/* Embeds: other sites' players, kept small. */}
-          <div className="flex items-baseline justify-between px-3 pt-3 pb-1.5 text-xs text-faint">
-            <span>Embedded players</span>
-            <span className="flex items-center gap-1">
-              <History className="size-3" /> saves progress
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            {EMBEDS.map((e) => (
+          {/* Embeds: other sites' players, a quiet list. */}
+          <div className="px-3 pt-3 pb-1 text-xs text-faint">Embedded players</div>
+          {EMBEDS.map((e) => {
+            const on = current === e.id;
+            return (
               <button
                 key={e.id}
-                aria-pressed={current === e.id}
+                aria-pressed={on}
                 onClick={() => pick(e.id)}
                 className={cx(
-                  'flex h-9 min-w-0 items-center gap-1.5 rounded-xl px-3 text-left text-sm transition-colors',
-                  current === e.id ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10 hover:text-white',
+                  'flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-colors',
+                  on ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10 hover:text-white',
                 )}
               >
-                <span className="truncate">{e.name}</span>
-                {e.tracksProgress && <History aria-label="Saves progress" className="size-3 shrink-0 opacity-60" />}
+                <span className="flex-1 truncate">{e.name}</span>
+                {e.tracksProgress && <span className={cx('text-xs', on ? 'text-black/50' : 'text-faint')}>Saves progress</span>}
               </button>
-            ))}
-          </div>
+            );
+          })}
           <div className="my-1.5 h-px bg-white/[0.06]" />
           <button
             aria-pressed={blockPopups}

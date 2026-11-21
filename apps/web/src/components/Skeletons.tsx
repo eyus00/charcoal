@@ -2,7 +2,7 @@ import { cx } from '../lib/util';
 import { ROW_BLEED } from './Row';
 
 export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1280px) 14vw, (min-width: 1024px) 17vw, (min-width: 640px) 30vw, 46vw';
-export const GRID = 'grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
+export const GRID = 'grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-9 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
 
 export const Bone = ({ className }: { className?: string }) => <div className={cx('skeleton rounded-md', className)} />;
 
@@ -10,7 +10,7 @@ export function CardSkeleton({ className }: { className?: string }) {
   return (
     <div className={className}>
       <Bone className="aspect-[2/3] w-full rounded-2xl" />
-      <div className="pt-3">
+      <div className="pt-2">
         <Bone className="h-3.5 w-3/4" />
         <Bone className="mt-2 h-3 w-1/3" />
       </div>
