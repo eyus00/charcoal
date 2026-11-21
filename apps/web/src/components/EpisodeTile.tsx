@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Play } from 'lucide-react';
 import Img from './Img';
-import { CARD_IMAGE, CARD_INFO, TypeIcon } from './MediaCard';
+import { CARD_IMAGE, CARD_INFO, CARD_LIFT, CARD_TITLE, TypeIcon } from './MediaCard';
 import { Bone } from './Skeletons';
 import type { ImageKind } from '../lib/images';
 import type { MediaType } from '../lib/tmdb';
@@ -57,7 +57,7 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
     <div className={cx('group relative', width, className)}>
       {/* The whole card is one link (stretched under the content), so a title can be a link too. */}
       <Link to={to} title={title} aria-label={title} className="absolute inset-0 z-0 rounded-2xl" {...linkProps} />
-      <div className="pointer-events-none relative [&_a]:pointer-events-auto">
+      <div className={cx('pointer-events-none relative [&_a]:pointer-events-auto', CARD_LIFT)}>
         <div className={CARD_IMAGE}>
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
           {shade && <span className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/10 to-transparent" />}
@@ -79,7 +79,7 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           )}
         </div>
         <div className={CARD_INFO}>
-          <div className="truncate text-body-sm font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{line('primary', primary)}</div>
+          <div className={CARD_TITLE} title={typeof primary === 'string' ? primary : undefined}>{line('primary', primary)}</div>
           <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
             <span className="min-w-0 truncate">{line('secondary', secondary)}</span>
           </div>

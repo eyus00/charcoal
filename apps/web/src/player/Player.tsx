@@ -9,7 +9,6 @@ import {
   Gauge,
   Layers,
   Palette,
-  ScrollText,
   Info,
   Cast,
   Check,
@@ -40,7 +39,7 @@ import { cx, formatClock } from '../lib/util';
 import { btn } from '../components/Button';
 import { useCast } from './cast';
 import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension';
-import { activeCues, CaptionOverlay, CueText, parseCaptions, SubtitleStyleControls, type Cue } from './captions';
+import { activeCues, CaptionOverlay, CueText, parseCaptions, subColorName, SubtitleStyleControls, type Cue } from './captions';
 import { splitKeys, Tip } from '../components/Tip';
 
 interface Props {
@@ -1138,10 +1137,18 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                           </StepButton>
                         </div>
                       )}
-                      <div className={cx('grid gap-1.5 pt-1', cues.length > 0 ? 'grid-cols-3' : 'grid-cols-2')}>
-                        <Card icon={Palette} label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
+                      {cues.length > 0 && (
+                        <button onClick={() => setView('transcript')} className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm transition-colors hover:bg-white/10">
+                          <span className="flex-1">
+                            Transcript
+                            <span className="block text-xs text-muted">Read along, jump to a line</span>
+                          </span>
+                          <ChevronRight className="size-4 shrink-0 text-muted" />
+                        </button>
+                      )}
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        <Card icon={Palette} label="Style" value={`${Math.round(settings.subSize * 100)}% · ${subColorName(settings.subColor)}`} onClick={() => setView('style')} />
                         <Card icon={FileUp} label="Load file" value="SRT, VTT" onClick={() => fileInput.current?.click()} />
-                        {cues.length > 0 && <Card icon={ScrollText} label="Transcript" value="Read" onClick={() => setView('transcript')} />}
                       </div>
                       </div>
                     </>
@@ -1187,7 +1194,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                         <Card
                           icon={Layers}
                           label="Source"
-                          value={`${source.quality === 'original' ? 'Original' : qualityLabel(source.quality)} · ${source.provider.name}`}
+                          value={`${source.provider.name} · ${source.quality === 'original' ? 'Original' : qualityLabel(source.quality)}`}
                           onClick={() => setView('source')}
                         />
                         <Card icon={Gauge} label="Quality" value={levels.length > 1 ? qualityNow : qualityLabel(source.quality)} onClick={levels.length > 1 ? () => setView('quality') : undefined} />
@@ -1582,7 +1589,7 @@ function SourceRow({
         onClick={(e) => onInfo(e.currentTarget)}
         aria-label={`About ${label}${tag ? ` ${tag}` : ''}`}
         aria-expanded={infoOpen}
-        className={cx('mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-opacity hover:opacity-100', infoOpen ? 'opacity-100' : 'opacity-50')}
+        className={cx('mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-opacity hover:opacity-70', infoOpen ? 'opacity-80' : 'opacity-25')}
       >
         <Info className="size-4" />
       </button>

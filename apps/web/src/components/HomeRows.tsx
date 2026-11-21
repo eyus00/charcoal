@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import EpisodeTile, { Chip, TileSkeleton } from './EpisodeTile';
-import { CARD_IMAGE, Meta, TypeIcon, usePrefetch } from './MediaCard';
+import { CARD_IMAGE, CARD_LIFT, Meta, TypeIcon, usePrefetch } from './MediaCard';
 import { ROW_BLEED, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { Bone } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type Details, type EpisodeRef, type MediaItem, type MediaType } from '../lib/tmdb';
@@ -50,7 +50,7 @@ function LazyRow({
 function CardText({ item }: { item: MediaItem }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col py-1 pl-4">
-      <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium" title={titleOf(item)}>{titleOf(item)}</div>
+      <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium text-white/90 transition-colors group-hover:text-white" title={titleOf(item)}>{titleOf(item)}</div>
       <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
       <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" />
     </div>
@@ -58,7 +58,7 @@ function CardText({ item }: { item: MediaItem }) {
 }
 
 // Poster on the left, text beside it (no box).
-const LIST_CARD = 'group flex w-[304px] shrink-0 snap-start sm:w-[336px]';
+const LIST_CARD = cx('group flex w-[304px] shrink-0 snap-start sm:w-[336px]', CARD_LIFT);
 const LIST_POSTER = cx(CARD_IMAGE, 'w-[104px] shrink-0');
 const listSkeleton = (n: number, extra = '') =>
   Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);

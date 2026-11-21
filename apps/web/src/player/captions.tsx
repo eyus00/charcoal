@@ -131,16 +131,19 @@ export function CaptionOverlay({ cues, time, raised, style }: { cues: Cue[]; tim
 }
 
 /** Size, colour, background and weight for subtitles, with a live sample. Also used in Settings. */
+export const SUB_COLORS = [
+  ['#ffffff', 'White'],
+  ['#ffe14d', 'Yellow'],
+  ['#7fe3ff', 'Cyan'],
+  ['#9dff9d', 'Green'],
+] as const;
+export const subColorName = (c: string) => SUB_COLORS.find(([v]) => v === c)?.[1] ?? 'Custom';
+
 export function SubtitleStyleControls({ preview = true }: { preview?: boolean }) {
   const s = useStore((st) => st.settings);
   const set = actions.updateSettings;
   const SIZES = [0.75, 1, 1.25, 1.5, 2];
-  const COLORS = [
-    ['#ffffff', 'White'],
-    ['#ffe14d', 'Yellow'],
-    ['#7fe3ff', 'Cyan'],
-    ['#9dff9d', 'Green'],
-  ] as const;
+  const COLORS = SUB_COLORS;
   const BGS = [
     [0, 'None'],
     [0.5, 'Light'],
