@@ -95,7 +95,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   }, [restart, type, id, season, episode]);
 
   const jelly = useQuery({
-    queryKey: ['jelly', settings.serverUrl, settings.useExtension, type, id, season, episode],
+    queryKey: ['jelly', settings.serverUrl, settings.useExtension, !!settings.febboxToken, type, id, season, episode],
     queryFn: async ({ signal }) => {
       // Charcoal Helper installed: find and play from this browser; the server is the fallback.
       if (settings.useExtension && d && (await detectExtension())?.hasPermission) {

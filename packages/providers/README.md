@@ -41,6 +41,7 @@ npm run try --workspace packages/providers -- tv 1396 "Breaking Bad" "" 2 3
 
 | Provider | From a server | From a home connection |
 |---|---|---|
+| Febbox (your own token) | not run on servers | original files up to 4K |
 | Castle | plays | plays |
 | VixSrc | API refuses servers | plays (tested from a home server) |
 | VidApi | finds streams, video blocked | video blocked too (Cloudflare) |

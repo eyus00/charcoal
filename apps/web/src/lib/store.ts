@@ -68,6 +68,9 @@ export interface Settings {
   /** Preferred audio language (ISO 639-1, e.g. "en"): sources in it go first, and streams with
    *  several audio tracks switch to it. */
   audioLang: string;
+  /** The viewer's own Febbox login token ("ui" cookie). Only ever sent to febbox.com, from this
+   *  browser through Charcoal Helper; never to any server of ours. */
+  febboxToken: string;
 }
 
 export interface State {
@@ -101,6 +104,7 @@ const defaultSettings: Settings = {
   subBg: 0.5,
   subBold: false,
   lastProvider: null,
+  febboxToken: '',
   audioLang: (typeof navigator !== 'undefined' && navigator.language?.slice(0, 2).toLowerCase()) || 'en',
 };
 

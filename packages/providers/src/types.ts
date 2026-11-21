@@ -21,6 +21,8 @@ export interface Stream {
   language?: string;
   /** ISO 639-1 code of that language, when known ("en", "hi"). */
   languageCode?: string;
+  /** Short description of the file, e.g. "BluRay · x265 10bit · 1.4 GB". */
+  note?: string;
 }
 
 export interface Caption {
@@ -58,9 +60,16 @@ export interface FetchResponse {
  */
 export type Fetcher = (url: string, options?: FetchOptions) => Promise<FetchResponse>;
 
+/** Per-viewer settings some providers need. They stay with the viewer (never sent to our server). */
+export interface ProviderSettings {
+  /** The viewer's own Febbox login ("ui" cookie value), for the Febbox provider. */
+  febboxToken?: string;
+}
+
 export interface ScrapeContext {
   fetch: Fetcher;
   signal?: AbortSignal;
+  settings?: ProviderSettings;
 }
 
 export interface Provider {
@@ -69,6 +78,8 @@ export interface Provider {
   /** Higher runs first when results are ordered. */
   rank: number;
   supports: ('movie' | 'tv')[];
+  /** A setting this provider can't work without; it's skipped when the setting is missing. */
+  requires?: keyof ProviderSettings;
   /** Resolves with streams, or throws (NotFoundError when the title simply isn't there). */
   scrape(media: Media, ctx: ScrapeContext): Promise<ScrapeResult>;
 }

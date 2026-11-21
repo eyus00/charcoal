@@ -3,11 +3,13 @@ export { nativeFetcher, getJson } from './fetch.js';
 import { castle } from './providers/castle.js';
 import { vidapi } from './providers/vidapi.js';
 import { vixsrc } from './providers/vixsrc.js';
+import { febbox } from './providers/febbox.js';
+export { checkFebboxToken } from './providers/febbox.js';
 import { NotFoundError, type Media, type Provider, type ScrapeContext, type ScrapeResult } from './types.js';
 
 /** Every provider, best first. */
-export const providers: Provider[] = [castle, vixsrc, vidapi].sort((a, b) => b.rank - a.rank);
-export { castle, vidapi, vixsrc };
+export const providers: Provider[] = [febbox, castle, vixsrc, vidapi].sort((a, b) => b.rank - a.rank);
+export { castle, febbox, vidapi, vixsrc };
 
 export interface ProviderOutcome {
   provider: Pick<Provider, 'id' | 'name'>;
@@ -27,7 +29,7 @@ export async function scrapeAll(
   ctx: ScrapeContext,
   { only, timeoutMs = 20_000, onResult }: { only?: string[]; timeoutMs?: number; onResult?: (o: ProviderOutcome) => void } = {},
 ): Promise<ProviderOutcome[]> {
-  const list = providers.filter((p) => p.supports.includes(media.type) && (!only || only.includes(p.id)));
+  const list = providers.filter((p) => p.supports.includes(media.type) && (!only || only.includes(p.id)) && (!p.requires || ctx.settings?.[p.requires]));
   return Promise.all(
     list.map(async (p) => {
       const started = Date.now();
