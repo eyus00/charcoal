@@ -148,7 +148,11 @@ export const febbox: Provider = {
     files = files.filter((f) => !f.is_dir && /\.(mp4|mkv|m4v)$/i.test(f.file_name)).slice(0, 4);
     if (!files.length) throw new NotFoundError('Febbox: no video file');
 
-    const streams = (await Promise.all(files.map((f) => qualities(fetch, f, shareKey, token, signal)))).flat();
+    const all = (await Promise.all(files.map((f) => qualities(fetch, f, shareKey, token, signal)))).flat();
+    // Browsers can't play MKV; and below 720p only matters when nothing better exists.
+    const playable = all.filter((st) => st.type !== 'mkv');
+    const big = playable.filter((st) => st.quality === 'original' || st.quality === 'auto' || Number(st.quality) >= 720);
+    const streams = big.length ? big : playable;
     if (!streams.length) throw new NotFoundError('Febbox: no playable links');
     return { streams, captions: [] };
   },
