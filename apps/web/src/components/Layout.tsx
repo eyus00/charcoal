@@ -12,6 +12,7 @@ import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
 import { btn } from './Button';
 import { OfflineNotice, Toaster, toast } from './Toast';
+import { Tip as HoverTip } from './Tip';
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -369,15 +370,15 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               type="button"
               onClick={() => setMenu((m) => !m)}
               aria-label={count ? `Quick filters (${count} active)` : 'Quick filters'}
-              title="Filters"
               aria-expanded={menu}
               className={cx(
-                'flex h-9 shrink-0 items-center gap-1.5 rounded-full transition',
+                'group/tip relative flex h-9 shrink-0 items-center gap-1.5 rounded-full transition',
                 count ? 'px-3' : 'w-9 justify-center',
                 menu ? 'bg-white text-black' : count ? 'bg-white/15 text-white hover:bg-white/20' : 'text-muted hover:bg-white/10 hover:text-white',
               )}
             >
               <SlidersHorizontal className="size-4" />
+              <HoverTip label="Quick filters" side="bottom" align="end" hidden={menu} />
               {count > 0 && <span className="text-xs font-medium tabular-nums">{count}</span>}
             </button>
           )}

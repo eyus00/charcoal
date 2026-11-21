@@ -8,6 +8,8 @@ export interface Media {
   year?: number;
   season?: number;
   episode?: number;
+  /** Running time in minutes, when known (to estimate bitrates from file sizes). */
+  runtime?: number;
   /** TMDB ids of the season / episode, when known (some fallback sources use them). */
   seasonTmdbId?: string;
   episodeTmdbId?: string;
@@ -26,6 +28,10 @@ export interface Stream {
   languageCode?: string;
   /** Short description of the file, e.g. "BluRay · x265 10bit · 1.4 GB". */
   note?: string;
+  /** Size in bytes (the whole file at this quality), when known. */
+  size?: number;
+  /** For an adaptive stream built from several qualities: each one and its size. */
+  levels?: { quality: string; size?: number }[];
 }
 
 export interface Caption {
@@ -67,6 +73,8 @@ export type Fetcher = (url: string, options?: FetchOptions) => Promise<FetchResp
 export interface ProviderSettings {
   /** The viewer's own Febbox login ("ui" cookie value), for the Febbox provider. */
   febboxToken?: string;
+  /** Highest Febbox quality to use (height, e.g. 1080), to save the account's monthly traffic. */
+  febboxMaxHeight?: number;
 }
 
 export interface ScrapeContext {

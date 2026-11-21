@@ -17,6 +17,7 @@ import Kbd from '../components/Kbd';
 import { btn } from '../components/Button';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player from '../player/Player';
+import { Tip } from '../components/Tip';
 
 export default function Watch() {
   const params = useParams();
@@ -95,7 +96,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   }, [restart, type, id, season, episode]);
 
   const jelly = useQuery({
-    queryKey: ['jelly', settings.serverUrl, settings.useExtension, !!settings.febboxToken, type, id, season, episode],
+    queryKey: ['jelly', settings.serverUrl, settings.useExtension, !!settings.febboxToken, settings.febboxMaxHeight, type, id, season, episode],
     queryFn: async ({ signal }) => {
       // Charcoal Helper installed: find and play from this browser; the server is the fallback.
       if (settings.useExtension && d && (await detectExtension())?.hasPermission) {
@@ -109,9 +110,15 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       return fetchJelly(target, signal);
     },
     enabled: server === 'jelly',
-    retry: false,
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 30,
+    // One quiet retry: a slow-to-wake extension or a network blip shouldn't end on an embed.
+    retry: 1,
+    retryDelay: 1500,
+    // Links carry expiring tokens: reuse a result only briefly.
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 5,
+    // Never search again behind the viewer's back (it would restart playback): only on request.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   // The fallback (StreamViva's sources, PrimeSrc) through Charcoal Helper: starts once our own
@@ -130,9 +137,18 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     queryFn: ({ signal }) => fetchFallbackViaExtension(target, d!, signal, ep?.id),
     enabled: fallbackOn && (fallbackGo || jelly.isSuccess || jelly.isError),
     retry: false,
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 5,
+    // Never search again behind the viewer's back (it would restart playback): only on request.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+  // Search again with fresh links (the player calls it once by itself before giving up).
+  const refreshSources = useCallback(() => {
+    jelly.refetch();
+    if (fallbackOn) fallback.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fallbackOn]);
   const fallbackPending = fallbackOn && !fallback.isSuccess && !fallback.isError;
 
   const streams = useMemo(() => {
@@ -247,6 +263,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           next={next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null}
           onProgress={record}
           searching={fallbackPending}
+          refreshing={jelly.isFetching}
+          generation={jelly.dataUpdatedAt}
+          onRefresh={refreshSources}
           onExhausted={() => {
             setFallbackNote(`Jelly’s sources wouldn’t play. Switched to ${EMBEDS[0].name}.`);
             setServer(EMBEDS[0].id);
@@ -321,9 +340,9 @@ function Header({
           type="button"
           onClick={() => hotkeysCtl.help()}
           aria-label="Keyboard shortcuts (?)"
-          title="Keyboard shortcuts"
-          className="hidden h-10 items-center gap-2 rounded-xl px-2 text-faint transition hover:text-white lg:flex"
+          className="group/tip relative hidden h-10 items-center gap-2 rounded-xl px-2 text-faint transition hover:text-white lg:flex"
         >
+          <Tip label="Keyboard shortcuts" side="bottom" align="end" />
           <Keyboard className="size-[18px]" strokeWidth={1.5} />
           <Kbd>?</Kbd>
         </button>
@@ -381,16 +400,11 @@ function TitleBox({ title, subtitle, detailsUrl, prev, next, onEpisodes }: { tit
 /** Icon button with a hover label (and its key) shown below it. */
 function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide, solid, quiet }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right'; solid?: boolean; quiet?: boolean }) {
   // Buttons near the left edge open their label to the right, so it stays on screen.
-  const side = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'left-0' : 'right-0';
+  const align = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'start' : 'end';
   // `solid`: the app's round close button (filled); otherwise a plain round icon button.
   // `solid` (the close button) is a secondary button; the rest are ghost buttons.
-  const cls = cx(btn({ variant: solid ? 'secondary' : 'ghost', icon: true }), 'group relative', quiet && 'text-white/60');
-  const tip = (
-    <span className={cx('pointer-events-none absolute top-full z-50 mt-2 flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover:opacity-100 group-focus-visible:opacity-100', side)}>
-      {label}
-      {keys && <Kbd>{keys}</Kbd>}
-    </span>
-  );
+  const cls = cx(btn({ variant: solid ? 'secondary' : 'ghost', icon: true }), 'group/tip relative', quiet && 'text-white/60');
+  const tip = <Tip label={label} keys={keys} side="bottom" align={align} />;
   return to ? (
     <Link to={to} aria-label={label} className={cls}>
       {children}
@@ -434,8 +448,9 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={`Server: ${name} (S)`}
-          className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'max-sm:px-3')}
+          className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'group/tip relative max-sm:px-3')}
         >
+          <Tip label="Choose a server" side="bottom" align="end" hidden={open} />
           {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
           <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
           <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />

@@ -42,9 +42,20 @@ export interface ExtensionInfo {
 }
 
 let detected: Promise<ExtensionInfo | null> | null = null;
-/** The installed extension, or null (not installed, or not on a Charcoal address it serves). */
+/**
+ * The installed extension, or null (not installed, or not on a Charcoal address it serves).
+ * Browsers put the extension's background to sleep and can be slow to wake it (Firefox especially),
+ * so it gets a second, longer try, and a "not found" is never remembered: the next call asks again.
+ */
 export function detectExtension(fresh = false): Promise<ExtensionInfo | null> {
-  if (!detected || fresh) detected = call<ExtensionInfo>('hello', {}, 800).catch(() => null);
+  if (!detected || fresh) {
+    detected = call<ExtensionInfo>('hello', {}, 1200)
+      .catch(() => call<ExtensionInfo>('hello', {}, 2500))
+      .catch(() => {
+        detected = null;
+        return null;
+      });
+  }
   return detected;
 }
 

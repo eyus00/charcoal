@@ -17,6 +17,7 @@ import { continueWatching, useStore } from '../lib/store';
 import { cleanList, q, titleOf, typeOf, yearOf, type MediaItem } from '../lib/tmdb';
 import { cx, useKeys, useTitle } from '../lib/util';
 import { useDiscover } from '../lib/browse';
+import { Tip } from '../components/Tip';
 
 export default function Home() {
   useTitle();
@@ -155,10 +156,10 @@ function Hero() {
             <button
               onClick={() => setStopped((v) => !v)}
               aria-label={stopped ? 'Play slideshow' : 'Pause slideshow'}
-              title={stopped ? 'Play slideshow' : 'Pause slideshow'}
-              className="mr-1.5 grid size-7 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              className="group/tip relative mr-1.5 grid size-7 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             >
               {stopped ? <Play className="ml-px size-3.5 fill-current" strokeWidth={0} /> : <Pause className="size-3.5 fill-current" strokeWidth={0} />}
+              <Tip label={stopped ? 'Play slideshow' : 'Pause slideshow'} />
             </button>
           )}
           {items.map((m, i) => (

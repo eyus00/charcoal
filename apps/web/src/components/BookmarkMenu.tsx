@@ -6,6 +6,7 @@ import { toast } from './Toast';
 import { btn } from './Button';
 import type { MediaType } from '../lib/tmdb';
 import { cx, useKeys } from '../lib/util';
+import { Tip } from './Tip';
 
 export const STATUS_LABEL: Record<WatchStatus, string> = {
   watching: 'Watching',
@@ -149,10 +150,10 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'}
-        title={(current ? STATUS_LABEL[current.status] : 'Add to watchlist') + (hotkey ? ' (B)' : '')}
         // Saved shows as primary (filled), not saved as secondary (outline).
-        className={btn({ variant: current ? 'primary' : 'secondary', size: 'lg', icon: variant === 'round' })}
+        className={cx(btn({ variant: current ? 'primary' : 'secondary', size: 'lg', icon: variant === 'round' }), 'group/tip relative')}
       >
+        <Tip label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'} keys={hotkey ? 'B' : undefined} hidden={open} />
         <Bookmark className={current ? 'size-4 fill-current' : 'size-[18px]'} />
         {variant === 'full' && (current ? STATUS_LABEL[current.status] : 'Watchlist')}
       </button>

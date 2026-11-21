@@ -71,6 +71,8 @@ export interface Settings {
   /** The viewer's own Febbox login token ("ui" cookie). Only ever sent to febbox.com, from this
    *  browser through Charcoal Helper; never to any server of ours. */
   febboxToken: string;
+  /** Highest Febbox quality (0 = as high as the connection and screen allow), to save traffic. */
+  febboxMaxHeight: number;
 }
 
 export interface State {
@@ -105,6 +107,7 @@ const defaultSettings: Settings = {
   subBold: false,
   lastProvider: null,
   febboxToken: '',
+  febboxMaxHeight: 0,
   audioLang: (typeof navigator !== 'undefined' && navigator.language?.slice(0, 2).toLowerCase()) || 'en',
 };
 

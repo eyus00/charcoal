@@ -14,6 +14,7 @@ import { actions, getState, historyByTitle, useStore, type WatchStatus } from '.
 import { toast } from '../components/Toast';
 import { btn } from '../components/Button';
 import { cx, scrollBehavior, useTitle } from '../lib/util';
+import { Tip } from '../components/Tip';
 
 /** Fixed container card for each profile section (matches the settings cards). */
 /** Fixed-width columns: cards stay the same size as everywhere else instead of stretching. */
@@ -182,10 +183,10 @@ function Watchlist() {
                           toast(`Removed “${w.title}” from your watchlist`, { label: 'Undo', run: () => actions.restore({ watchlist: before }) });
                         }}
                         aria-label={`Remove ${w.title} from watchlist`}
-                        title="Remove"
-                        className="grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
+                        className="group/tip relative grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
                       >
                         <X className="size-3.5" />
+                        <Tip label="Remove from watchlist" side="bottom" align="end" />
                       </button>
                     </div>
                   }
@@ -389,6 +390,7 @@ function SettingsSection() {
 /** The viewer's own Febbox token: up to 4K originals, found and played through Charcoal Helper. */
 function FebboxCard({ className }: { className: string }) {
   const saved = useStore((s) => s.settings.febboxToken);
+  const maxHeight = useStore((s) => s.settings.febboxMaxHeight);
   const [value, setValue] = useState(saved);
   const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
   const { data: helper } = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(true), staleTime: 0, retry: false });
@@ -451,9 +453,32 @@ function FebboxCard({ className }: { className: string }) {
       <p role="status" className={cx('text-sm empty:hidden', state?.ok === false ? 'text-danger' : 'text-success')}>
         {state?.text ?? (saved ? 'A token is saved.' : '')}
       </p>
+      <Row label="Highest quality" hint={FEBBOX_HOURS[maxHeight]}>
+        <select
+          value={maxHeight}
+          onChange={(e) => actions.updateSettings({ febboxMaxHeight: Number(e.target.value) })}
+          aria-label="Highest Febbox quality"
+          className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
+        >
+          <option value={0}>Best possible (up to 4K)</option>
+          <option value={1080}>1080p</option>
+          <option value={720}>720p (data saver)</option>
+        </select>
+      </Row>
+      <p className="text-xs text-muted">
+        The player picks the best quality your connection and screen can take, up to this. Febbox gives each account 100 GB of fast traffic a month; after that
+        it keeps playing, but may buffer more.
+      </p>
     </div>
   );
 }
+
+/** Roughly how far 100 GB goes at each cap (typical Febbox bitrates; each file differs). */
+const FEBBOX_HOURS: Record<number, string> = {
+  0: '100 GB ≈ 14 h at 4K, or 40 h at 1080p',
+  1080: '100 GB ≈ 40 hours (about 20 movies)',
+  720: '100 GB ≈ 80 hours',
+};
 
 /** Charcoal Helper: is it installed and allowed, and should Charcoal use it. */
 function HelperCard({ className }: { className: string }) {

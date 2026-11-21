@@ -18,6 +18,10 @@ export interface JellySource {
   headers?: Record<string, string>;
   /** Short file description (e.g. "BluRay · x265 · 1.4 GB"). */
   note?: string;
+  /** Size in bytes at this source's top quality, when known. */
+  size?: number;
+  /** Adaptive streams built from several qualities: each one and its size. */
+  levels?: { quality: string; size?: number }[];
 }
 export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string> }
 export interface JellyResponse {
@@ -159,7 +163,7 @@ export function qualityLabel(q: string): string {
   return n ? `${n}p` : 'SD';
 }
 
-const RANK: Record<string, number> = { '1080p': 0, '4K': 1, '1440p': 2, Auto: 3, Original: 4, '720p': 5, '480p': 6, '360p': 7, SD: 8 };
+const RANK: Record<string, number> = { '4K': 0, '1440p': 1, '1080p': 2, Auto: 3, '720p': 4, Original: 5, '480p': 6, '360p': 7, SD: 8 };
 
 /** Display name of a language code ("en" → "English"). */
 export const languageName = (code: string) => {
@@ -180,8 +184,9 @@ export function languageRank(audio: { language: string; label: string }[] | unde
   return 1;
 }
 
-/** Sources in the preferred audio language first, then adaptive/1080p HLS first; MKV last (most
- *  browsers can't play it). */
+/** Sources in the preferred (or original) language first, then by quality: 4K, 1440p, 1080p,
+ *  adaptive, 720p, original files…, bigger files first within a quality; MKV last (most browsers
+ *  can't play it). */
 export function sortSources(list: JellySource[]): JellySource[] {
   const typeRank = (t: string) => (t === 'hls' ? 0 : t === 'mp4' ? 1 : 2);
   const pref = getState().settings.audioLang;
@@ -190,7 +195,9 @@ export function sortSources(list: JellySource[]): JellySource[] {
       (typeRank(a.type) === 2 ? 1 : 0) - (typeRank(b.type) === 2 ? 1 : 0) ||
       languageRank(a.audioTracks, pref) - languageRank(b.audioTracks, pref) ||
       typeRank(a.type) - typeRank(b.type) ||
-      (RANK[qualityLabel(a.quality)] ?? 8) - (RANK[qualityLabel(b.quality)] ?? 8),
+      (RANK[qualityLabel(a.quality)] ?? 8) - (RANK[qualityLabel(b.quality)] ?? 8) ||
+      // Same quality: the bigger file has the higher bitrate.
+      (b.size ?? 0) - (a.size ?? 0),
   );
 }
 
@@ -290,3 +297,9 @@ export const EMBEDS: EmbedServer[] = [
 ];
 
 export const embedById = (id: string) => EMBEDS.find((e) => e.id === id);
+
+/** "6100000000" → "6.1 GB". */
+export function formatSize(bytes?: number): string {
+  if (!bytes) return '';
+  return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(bytes >= 1e10 ? 0 : 1)} GB` : `${Math.round(bytes / 1e6)} MB`;
+}
