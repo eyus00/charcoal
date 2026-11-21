@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, Keyboard, SkipBack, SkipForward, X } from 'lucide-react';
+import { ChevronDown, History, Keyboard, ShieldAlert, SkipBack, SkipForward, X } from 'lucide-react';
+import Modal from '../components/Modal';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -198,7 +199,11 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     [d, id, type, season, episode, ep?.name, next],
   );
 
-  const pickServer = (s: string) => {
+  // Switching from Jelly to an embed: first say what embeds are (once, unless turned off).
+  const [embedAsk, setEmbedAsk] = useState<string | null>(null);
+  const pickServer = (s: string, confirmed = false) => {
+    if (s !== 'jelly' && server === 'jelly' && !confirmed && !getState().settings.embedNoticeOff) return setEmbedAsk(s);
+    setEmbedAsk(null);
     if (s === 'jelly' && jelly.isError) jelly.refetch();
     setServer(s);
     setFallbackNote(null);
@@ -234,6 +239,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
+      {embedAsk && <EmbedNotice name={embedById(embedAsk)?.name ?? 'this server'} onCancel={() => setEmbedAsk(null)} onContinue={() => pickServer(embedAsk, true)} />}
       {embed ? (
         <>
           <div className="relative z-10 shrink-0 bg-bg">{header}</div>
@@ -447,6 +453,9 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
     onPick(id);
     setOpen(false);
   };
+  const jellyOn = current === 'jelly';
+  const jellyNote =
+    jellyState === 'failed' ? 'Nothing found for this title' : jellyState === 'loading' ? 'Finding sources…' : 'Ad-free · best quality';
   return (
     <div ref={ref} className="relative shrink-0">
       <button
@@ -465,24 +474,52 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
         </button>
       {open && (
         <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
-          <div className="px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Direct</div>
-          <ServerItem selected={current === 'jelly'} onClick={() => pick('jelly')} name="Jelly" dot={DOT[jellyState]} note={jellyState === 'failed' ? 'No sources for this title' : jellyState === 'loading' ? 'Checking sources…' : jellyState === 'ok' ? 'Sources found · ad-free · subtitles' : 'Ad-free · subtitles · quality picker'} warn={jellyState === 'failed'} />
-          <div className="px-3 pt-3 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Embedded players</div>
-          {EMBEDS.map((e) => (
-            <ServerItem key={e.id} selected={current === e.id} onClick={() => pick(e.id)} name={e.name} note={e.tracksProgress ? 'Saves progress' : 'Progress not saved'} />
-          ))}
+          {/* Jelly: our own player, the one to use. */}
+          <button
+            aria-pressed={jellyOn}
+            onClick={() => pick('jelly')}
+            className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors', jellyOn ? 'bg-white text-black' : 'bg-white/[0.06] hover:bg-white/10')}
+          >
+            <span aria-hidden className={cx('size-2.5 shrink-0 rounded-full', DOT[jellyState])} />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">Jelly</span>
+              <span className={cx('block text-xs', jellyOn ? 'text-black/60' : jellyState === 'failed' ? 'text-warning' : 'text-muted')}>{jellyNote}</span>
+            </span>
+            <span className={cx('rounded-full px-2 py-0.5 text-micro font-semibold tracking-wider uppercase', jellyOn ? 'bg-black/10' : 'bg-white/10 text-white/80')}>Best</span>
+          </button>
+
+          {/* Embeds: other sites' players, kept small. */}
+          <div className="flex items-baseline justify-between px-3 pt-3 pb-1.5 text-xs text-faint">
+            <span>Embedded players</span>
+            <span className="flex items-center gap-1">
+              <History className="size-3" /> saves progress
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {EMBEDS.map((e) => (
+              <button
+                key={e.id}
+                aria-pressed={current === e.id}
+                onClick={() => pick(e.id)}
+                className={cx(
+                  'flex h-9 min-w-0 items-center gap-1.5 rounded-xl px-3 text-left text-sm transition-colors',
+                  current === e.id ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10 hover:text-white',
+                )}
+              >
+                <span className="truncate">{e.name}</span>
+                {e.tracksProgress && <History aria-label="Saves progress" className="size-3 shrink-0 opacity-60" />}
+              </button>
+            ))}
+          </div>
           <div className="my-1.5 h-px bg-white/[0.06]" />
           <button
             aria-pressed={blockPopups}
             onClick={() => actions.updateSettings({ blockPopups: !blockPopups })}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/[0.06]"
+            className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-white/80 transition-colors hover:bg-white/10"
           >
-            <span className="min-w-0 flex-1">
-              Block pop-ups in embeds
-              <span className="block text-xs text-muted">Turn off if a server refuses to play</span>
-            </span>
-            <span aria-hidden className={cx('relative h-6 w-11 shrink-0 rounded-full transition-colors', blockPopups ? 'bg-white' : 'bg-white/15')}>
-              <span className={cx('absolute top-0.5 left-0.5 size-5 rounded-full transition-transform', blockPopups ? 'translate-x-5 bg-black' : 'bg-white')} />
+            <span className="min-w-0 flex-1">Block pop-ups in embeds</span>
+            <span aria-hidden className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', blockPopups ? 'bg-white' : 'bg-white/15')}>
+              <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', blockPopups ? 'translate-x-4 bg-black' : 'bg-white')} />
             </span>
           </button>
         </div>
@@ -491,20 +528,38 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
   );
 }
 
-function ServerItem({ selected, onClick, name, note, warn, dot }: { selected: boolean; onClick: () => void; name: string; note: string; warn?: boolean; dot?: string }) {
+/** Shown before leaving Jelly for an embed: those players are other sites', with their ads. */
+function EmbedNotice({ name, onCancel, onContinue }: { name: string; onCancel: () => void; onContinue: () => void }) {
+  const [dontAsk, setDontAsk] = useState(false);
+  const go = () => {
+    if (dontAsk) actions.updateSettings({ embedNoticeOff: true });
+    onContinue();
+  };
   return (
-    <button
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition', selected ? 'bg-white text-black' : 'hover:bg-white/[0.06]')}
-    >
-      {dot && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', dot)} />}
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{name}</span>
-        <span className={cx('block text-xs', selected ? 'text-black/60' : warn ? 'text-warning' : 'text-muted')}>{note}</span>
-      </span>
-      {selected && <Check className="size-4 shrink-0" />}
-    </button>
+    <Modal label="About embedded players" onClose={onCancel}>
+      <div className="fixed inset-0 grid place-items-center bg-black/70 p-4" onClick={onCancel}>
+        <div className="toast-in w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <ShieldAlert className="size-6 text-warning" />
+          <h2 className="mt-3 text-lg font-semibold">Switch to {name}?</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            Embedded players are run by other sites, not Charcoal. We can’t control their ads, pop-ups or redirects, and some don’t save
+            your progress. Jelly is ad-free.
+          </p>
+          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-white/80">
+            <input type="checkbox" checked={dontAsk} onChange={(e) => setDontAsk(e.target.checked)} className="size-4 accent-white" />
+            Don’t show this again
+          </label>
+          <div className="mt-5 flex justify-end gap-2">
+            <button onClick={onCancel} className={btn()}>
+              Stay on Jelly
+            </button>
+            <button onClick={go} autoFocus className={btn({ variant: 'primary' })}>
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

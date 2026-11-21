@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   AudioLines,
   Captions,
-  Expand,
   FastForward,
   Gauge,
   Layers,
@@ -1127,16 +1126,12 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                       {tracks.map((s, i) => (
                         <MenuItem key={(s.url ?? 'file') + s.label + i} selected={subIdx === i} onClick={() => (chooseSub(i), setMenu(null))}>
                           <span className="flex-1 truncate">{s.label}</span>
-                          {s.text !== undefined && <span className="text-micro tracking-wider text-faint uppercase">file</span>}
+                          {s.text !== undefined && <span className="text-micro tracking-wider uppercase opacity-50">file</span>}
                         </MenuItem>
                       ))}
                       </div>
                       {/* Always visible below the list. */}
                       <div className="mt-1 shrink-0 border-t border-white/[0.08] pt-1">
-                      <MenuItem onClick={() => fileInput.current?.click()}>
-                        <FileUp className="size-4 shrink-0 text-muted" />
-                        <span className="flex-1">Load a file…</span>
-                      </MenuItem>
                       {subIdx >= 0 && (
                         <div className="flex items-center gap-2 px-3 py-1.5 text-sm">
                           <span className="flex-1">
@@ -1153,8 +1148,11 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                           </StepButton>
                         </div>
                       )}
-                      <NavItem icon={Palette} label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
-                      {cues.length > 0 && <NavItem icon={ScrollText} label="Transcript" onClick={() => setView('transcript')} />}
+                      <div className={cx('grid gap-1.5 pt-1', cues.length > 0 ? 'grid-cols-3' : 'grid-cols-2')}>
+                        <Card icon={Palette} label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
+                        <Card icon={FileUp} label="Load file" value="SRT, VTT" onClick={() => fileInput.current?.click()} />
+                        {cues.length > 0 && <Card icon={ScrollText} label="Transcript" value="Read" onClick={() => setView('transcript')} />}
+                      </div>
                       </div>
                     </>
                   )}
@@ -1195,23 +1193,26 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                 <Popover onScroll={() => info && setInfo(null)}>
                   {view === 'main' && (
                     <>
-                      <NavItem
-                        icon={Layers}
-                        label="Source"
-                        value={`${source.quality === 'original' ? 'Original' : qualityLabel(source.quality)} · ${source.provider.name}`}
-                        onClick={() => setView('source')}
-                      />
-                      {levels.length > 1 && <NavItem icon={Gauge} label="Quality" value={qualityNow} onClick={() => setView('quality')} />}
-                      {audioTracks.length > 1 && (
-                        <NavItem icon={AudioLines} label="Audio" value={audioTracks.find((t) => t.id === audioTrack)?.name} onClick={() => setView('audio')} />
-                      )}
-                      <NavItem icon={FastForward} label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
-                      <Divider />
-                      <div className="flex gap-1">
-                        <ToggleIcon icon={Expand} label="Fill screen" on={fill} onChange={setFill} align="start" />
-                        <ToggleIcon icon={ChevronsRight} label="Skip intros" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
-                        <ToggleIcon icon={SkipForward} label="Autoplay next" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} align="end" />
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <Card
+                          icon={Layers}
+                          label="Source"
+                          value={`${source.quality === 'original' ? 'Original' : qualityLabel(source.quality)} · ${source.provider.name}`}
+                          onClick={() => setView('source')}
+                        />
+                        <Card icon={Gauge} label="Quality" value={levels.length > 1 ? qualityNow : qualityLabel(source.quality)} onClick={levels.length > 1 ? () => setView('quality') : undefined} />
+                        <Card
+                          icon={AudioLines}
+                          label="Audio"
+                          value={audioTracks.find((t) => t.id === audioTrack)?.name ?? source.audioTracks?.[0]?.label ?? 'Original'}
+                          onClick={audioTracks.length > 1 ? () => setView('audio') : undefined}
+                        />
+                        <Card icon={FastForward} label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
                       </div>
+                      <Divider />
+                      <SwitchItem label="Fill screen" hint="Crop to remove black bars" on={fill} onChange={setFill} />
+                      <SwitchItem label="Skip intros automatically" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
+                      <SwitchItem label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
                     </>
                   )}
                   {view === 'quality' && (
@@ -1239,7 +1240,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                         >
                           <span className="flex-1">
                             {levelLabel(pos, l.height, source, levels.length)}
-                            {levelSize(pos, source, levels.length) && <span className="ml-2 text-xs text-faint">{levelSize(pos, source, levels.length)}</span>}
+                            {levelSize(pos, source, levels.length) && <span className="ml-2 text-xs opacity-50">{levelSize(pos, source, levels.length)}</span>}
                           </span>
                           {l.height >= 2160 ? <Badge>4K</Badge> : l.height >= 720 ? <Badge>HD</Badge> : null}
                         </MenuItem>
@@ -1564,19 +1565,18 @@ function SourceRow({
   const label = sourceLabel(s);
   const tag = sourceTag(s);
   return (
-    <div className="flex items-center rounded-xl transition-colors hover:bg-white/10">
+    <div className={cx('flex items-center rounded-xl transition-colors', selected ? 'bg-white text-black' : 'hover:bg-white/10')}>
       <button onClick={onClick} aria-pressed={selected} className="flex h-10 min-w-0 flex-1 items-center gap-2.5 pr-1 pl-3 text-left text-sm">
-        <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
-        <span className="shrink-0">{label}</span>
-        {tag && <span className="min-w-0 truncate text-muted">{tag}</span>}
-        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'text-faint')}>{failed ? 'Failed' : formatSize(s.size)}</span>
+        <span className="shrink-0 font-medium">{label}</span>
+        {tag && <span className="min-w-0 truncate opacity-60">{tag}</span>}
+        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>{failed ? 'Failed' : formatSize(s.size)}</span>
       </button>
       <button
         type="button"
         onClick={(e) => onInfo(e.currentTarget)}
         aria-label={`About ${label}${tag ? ` ${tag}` : ''}`}
         aria-expanded={infoOpen}
-        className={cx('mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-colors hover:text-white', infoOpen ? 'text-white' : 'text-faint')}
+        className={cx('mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-opacity hover:opacity-100', infoOpen ? 'opacity-100' : 'opacity-50')}
       >
         <Info className="size-4" />
       </button>
@@ -1638,7 +1638,7 @@ const ReportRow = ({ name, reason, wrap }: { name: string; reason?: string; wrap
 };
 const Divider = () => <div className="mx-3 my-1.5 h-px bg-white/[0.08]" />;
 const Badge = ({ children }: { children: ReactNode }) => (
-  <span className="rounded bg-white/10 px-1.5 py-px text-micro font-semibold tracking-wider text-white/80">{children}</span>
+  <span className="rounded px-1.5 py-px text-micro font-semibold tracking-wider opacity-70 ring-1 ring-current">{children}</span>
 );
 
 function BackHeader({ onBack, children }: { onBack: () => void; children: ReactNode }) {
@@ -1650,54 +1650,50 @@ function BackHeader({ onBack, children }: { onBack: () => void; children: ReactN
   );
 }
 
-/** An icon-only switch for the bottom of the settings menu; its name shows as a tooltip. */
-function ToggleIcon({
-  icon: Icon,
-  label,
-  on,
-  onChange,
-  align = 'center',
-}: {
-  icon: typeof Settings;
-  label: string;
-  on: boolean;
-  onChange: (v: boolean) => void;
-  align?: 'start' | 'center' | 'end';
-}) {
+/** A card button: icon, what it is, its current value. Without onClick it only shows the value. */
+function Card({ icon: Icon, label, value, onClick }: { icon: typeof Settings; label: string; value?: string; onClick?: () => void }) {
   return (
     <button
       type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-      className={cx(
-        'group/tip relative grid h-10 flex-1 place-items-center rounded-xl transition-colors',
-        on ? 'bg-white text-black hover:bg-white/90' : 'text-white/60 hover:bg-white/10 hover:text-white',
-      )}
+      onClick={onClick}
+      disabled={!onClick}
+      className="flex min-w-0 flex-col gap-3 rounded-xl bg-white/[0.06] p-3 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
     >
-      <Icon className="size-[18px]" />
-      <Tip label={`${label} · ${on ? 'On' : 'Off'}`} align={align} />
+      <Icon className="size-4 text-muted" />
+      <span className="min-w-0">
+        <span className="block text-xs text-muted">{label}</span>
+        <span className="block truncate text-sm font-medium">{value}</span>
+      </span>
     </button>
   );
 }
 
-function NavItem({ icon: Icon, label, value, onClick }: { icon?: typeof Settings; label: string; value?: string; onClick: () => void }) {
+function SwitchItem({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button onClick={onClick} className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/10">
-      {Icon && <Icon className="size-4 shrink-0 text-muted" />}
-      <span className="flex-1">{label}</span>
-      {value && <span className="max-w-[55%] truncate text-muted">{value}</span>}
-      <ChevronRight className="size-4 shrink-0 text-muted" />
+    <button role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/10">
+      <span className="flex-1">
+        {label}
+        {hint && <span className="block text-xs text-muted">{hint}</span>}
+      </span>
+      <span className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-white/15')}>
+        <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', on ? 'translate-x-4 bg-black' : 'bg-white')} />
+      </span>
     </button>
   );
 }
 
 function MenuItem({ selected, onClick, children }: { selected?: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button onClick={onClick} aria-pressed={selected} className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-white/10">
-      {selected !== undefined && <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />}
+    <button
+      onClick={onClick}
+      aria-pressed={selected}
+      className={cx(
+        'flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors',
+        selected ? 'bg-white text-black' : 'hover:bg-white/10',
+      )}
+    >
       {children}
+      {selected && <Check className="ml-auto size-4 shrink-0" />}
     </button>
   );
 }

@@ -44,6 +44,8 @@ export interface Settings {
   subtitleLabel: string | null;
   /** Sandbox embed iframes so they can't open pop-ups (some servers refuse to play). */
   blockPopups: boolean;
+  /** Don't show the "embedded players aren't ours" notice again. */
+  embedNoticeOff: boolean;
   /** The viewer's own server (local or VPS); '' = Charcoal's hosted server. */
   serverUrl: string;
   /** Use the Charcoal Helper extension (when installed) to find and play sources from this browser. */
@@ -96,6 +98,7 @@ const defaultSettings: Settings = {
   playbackRate: 1,
   subtitleLabel: null,
   blockPopups: false,
+  embedNoticeOff: false,
   serverUrl: '',
   useExtension: true,
   sidebarOpen: false,
