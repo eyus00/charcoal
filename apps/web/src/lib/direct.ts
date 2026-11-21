@@ -64,25 +64,12 @@ let fallbackList: Promise<Provider[]> | null = null;
 /**
  * The fallback (StreamViva's sources and PrimeSrc), through the extension. StreamViva's engine is
  * only downloaded when this first runs. Runs after our own
- * providers; its sources are added to the end of the list. Failures are summed up in one report
- * line, since there are many of them.
+ * providers; its sources are added to the end of the list. Its report entries are grouped, so the
+ * Source menu can fold them into one row.
  */
 export async function fetchFallbackViaExtension(t: Target, d: Details, signal: AbortSignal, episodeTmdbId?: number) {
   fallbackList ??= loadFallbackProviders();
   const outcomes = await scrapeAll(mediaOf(t, d, episodeTmdbId), { fetch: extensionFetcher, signal }, { list: await fallbackList, timeoutMs: 30_000 });
   const { sources, subtitles, report } = collect(outcomes);
-  const failed = report.filter((r) => !r.ok);
-  const summary: ProviderReport[] = failed.length
-    ? [
-        {
-          name: 'StreamViva',
-          ok: false,
-          reason: `${failed.length} of ${report.length} fallback sources had nothing (${failed
-            .slice(0, 4)
-            .map((r) => r.name)
-            .join(', ')}${failed.length > 4 ? '…' : ''})`,
-        },
-      ]
-    : [];
-  return { sources: sortSources(sources), subtitles, report: [...report.filter((r) => r.ok), ...summary] };
+  return { sources: sortSources(sources), subtitles, report: report.map((r) => ({ ...r, group: 'StreamViva' })) };
 }

@@ -1181,13 +1181,31 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                           <Divider />
                           <p className="px-3 pt-1 pb-1 text-xs text-muted">No stream from</p>
                           {data.report
-                            .filter((r) => !r.ok)
+                            .filter((r) => !r.ok && !r.group)
                             .map((r) => (
-                              <div key={r.name} className="flex items-baseline gap-2 px-3 py-1 text-xs" title={r.reason}>
-                                <span className="shrink-0 text-white/80">{r.name}</span>
-                                <span className="min-w-0 truncate text-faint">{r.reason}</span>
-                              </div>
+                              <ReportRow key={r.name} name={r.name} reason={r.reason} />
                             ))}
+                          {[...new Set(data.report.filter((r) => r.group).map((r) => r.group!))].map((g) => {
+                            const all = data.report!.filter((r) => r.group === g);
+                            const failedOnes = all.filter((r) => !r.ok);
+                            if (!failedOnes.length) return null;
+                            return (
+                              <details key={g} className="group/rep px-3 py-1 text-xs">
+                                <summary className="flex cursor-pointer list-none items-baseline gap-2 marker:hidden">
+                                  <span className="shrink-0 text-white/80">{g}</span>
+                                  <span className="min-w-0 flex-1 truncate text-faint">
+                                    {failedOnes.length} of {all.length} had nothing
+                                  </span>
+                                  <ChevronRight className="size-3.5 shrink-0 self-center text-muted transition-transform group-open/rep:rotate-90" />
+                                </summary>
+                                <div className="mt-1 border-l border-white/10 pl-2">
+                                  {failedOnes.map((r) => (
+                                    <ReportRow key={r.name} name={r.name} reason={r.reason?.replace(new RegExp(`^${r.name}: `), '')} wrap />
+                                  ))}
+                                </div>
+                              </details>
+                            );
+                          })}
                         </>
                       )}
                     </>
@@ -1350,6 +1368,16 @@ const Popover = ({ children, wide }: { children: ReactNode; wide?: boolean }) =>
     {children}
   </div>
 );
+/** One provider that had no stream, and why (wraps when shown inside an expanded group). */
+const ReportRow = ({ name, reason, wrap }: { name: string; reason?: string; wrap?: boolean }) => {
+  const text = reason?.replace(/\\n|\s+/g, ' ').trim();
+  return (
+    <div className={cx('flex items-baseline gap-2 text-xs', wrap ? 'py-0.5' : 'px-3 py-1')} title={text}>
+      <span className="shrink-0 text-white/80">{name}</span>
+      <span className={cx('min-w-0 text-faint', wrap ? 'line-clamp-2 break-words' : 'truncate')}>{text}</span>
+    </div>
+  );
+};
 const Divider = () => <div className="mx-3 my-1.5 h-px bg-white/[0.08]" />;
 const Badge = ({ children }: { children: ReactNode }) => (
   <span className="rounded bg-white/10 px-1.5 py-px text-micro font-semibold tracking-wider text-white/80">{children}</span>
