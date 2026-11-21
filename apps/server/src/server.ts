@@ -125,7 +125,9 @@ async function main() {
         cache: {
             type: (process.env.CACHE_TYPE as 'memory' | 'redis') ?? 'memory',
             ttl: {
-                sources: 60 * 60,
+                // Stream links carry tokens that expire (VixSrc's within minutes); a long cache
+                // handed out dead links on replays.
+                sources: 3 * 60,
                 subtitles: 60 * 60 * 24
             },
             redis: {

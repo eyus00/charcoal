@@ -7,6 +7,7 @@ import { actions, getState, percent, watchUrl, type HistoryItem } from '../lib/s
 import { epLabel } from '../lib/episodes';
 import { q, type Episode } from '../lib/tmdb';
 import { formatRuntime } from '../lib/util';
+import { Tip } from './Tip';
 
 const mins = (sec: number) => Math.max(1, Math.round(sec / 60));
 
@@ -68,10 +69,10 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           toast(`Removed “${h.title}” from your history`, { label: 'Undo', run: () => actions.restore({ history: before }) });
         }}
         aria-label={`Remove ${h.title} from watch history`}
-        title="Remove from history"
-        className="absolute top-3.5 right-3.5 grid size-7 place-items-center rounded-full bg-black/60 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        className="group/tip absolute top-3.5 right-3.5 grid size-7 place-items-center rounded-full bg-black/60 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
         <X className="size-3.5" />
+        <Tip label="Remove from history" side="bottom" align="end" />
       </button>
     </EpisodeTile>
   );

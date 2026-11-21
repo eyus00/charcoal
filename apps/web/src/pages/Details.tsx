@@ -19,6 +19,7 @@ import { cx, formatClock, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { toast } from '../components/Toast';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
+import { Tip } from '../components/Tip';
 
 export default function Details({ type }: { type: MediaType }) {
   const id = Number(useParams().id);
@@ -281,10 +282,10 @@ function ShareButton({ title }: { title: string }) {
       type="button"
       onClick={share}
       aria-label="Share"
-      title="Share"
-      className={btn({ size: 'lg', icon: true })}
+      className={cx(btn({ size: 'lg', icon: true }), 'group/tip relative')}
     >
       <Share2 className="size-[18px]" />
+      <Tip label="Share" />
     </button>
   );
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cx, scrollBehavior } from '../lib/util';
 import { btn } from './Button';
+import { Tip } from './Tip';
 
 /**
  * Rows run edge to edge: they extend past the page padding to the screen edge, while the first
@@ -46,8 +47,9 @@ export function RowArrows({ onScroll }: { onScroll: (dir: 1 | -1) => void }) {
 
 export function SquareButton({ label, onClick, children, className }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={cx(btn({ icon: true }), className)}>
+    <button type="button" onClick={onClick} aria-label={label} className={cx(btn({ icon: true }), 'group/tip relative', className)}>
       {children}
+      <Tip label={label} align="end" />
     </button>
   );
 }

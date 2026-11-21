@@ -25,7 +25,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { languageName, qualityLabel, type JellyResult, type JellySubtitle } from '../lib/servers';
+import { formatSize, languageName, qualityLabel, type JellyResult, type JellySource, type JellySubtitle } from '../lib/servers';
 import { actions, getState, useStore } from '../lib/store';
 import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segments';
 import type { MediaType } from '../lib/tmdb';
@@ -34,6 +34,7 @@ import { btn } from '../components/Button';
 import { useCast } from './cast';
 import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension';
 import { activeCues, CaptionOverlay, CueText, parseCaptions, SubtitleStyleControls, type Cue } from './captions';
+import { splitKeys, Tip } from '../components/Tip';
 
 interface Props {
   data: Omit<JellyResult, 'via'> & { via?: JellyResult['via'] };
@@ -51,6 +52,12 @@ interface Props {
   onExhausted: () => void;
   /** More sources may still arrive (the fallback is searching); they're appended to data.sources. */
   searching?: boolean;
+  /** Search again with fresh links (links carry tokens that expire). */
+  onRefresh?: () => void;
+  /** A fresh search is running. */
+  refreshing?: boolean;
+  /** Changes when a fresh search's results arrive: start over with them. */
+  generation?: number;
 }
 
 const STARTUP_TIMEOUT_MS = 15_000;
@@ -77,7 +84,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, overview, poster, resumeAt, header, next, onProgress, onExhausted, searching }: Props) {
+export default function Player({ data, media, title, subtitle, overview, poster, resumeAt, header, next, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -239,6 +246,29 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     flash('Found more sources');
   }, [sourceCount, exhausted, data.sources, flash]);
 
+  // Every source failed: links may simply have expired, so search again once by itself before
+  // offering other servers.
+  const autoRefreshed = useRef(false);
+  useEffect(() => {
+    if (!exhausted || searching || refreshing || !onRefresh || autoRefreshed.current) return;
+    autoRefreshed.current = true;
+    onRefresh();
+  }, [exhausted, searching, refreshing, onRefresh]);
+  // Fresh results arrived: start over with them (keeping the position).
+  const firstGeneration = useRef(generation);
+  useEffect(() => {
+    if (generation === firstGeneration.current) return;
+    firstGeneration.current = generation;
+    // The video element is already reset by now; use the last position it reported.
+    if (pos.current.t > 5) seekOnLoad.current = pos.current.t;
+    failed.current.clear();
+    failReason.current.clear();
+    setExhausted(false);
+    setSourceIdx(0);
+    flash('Got fresh links');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generation]);
+
   // ---------- source loading & fallback ----------
   /** Why each failed source failed, in words (shown in the Source menu). */
   const failReason = useRef(new Map<number, string>());
@@ -311,6 +341,8 @@ export default function Player({ data, media, title, subtitle, overview, poster,
         const Base = HlsCtor.DefaultConfig.loader as unknown as new (config: unknown) => { load(context: { url: string }, config: unknown, callbacks: unknown): void };
         class HelperLoader extends Base {
           load(context: { url: string }, config: unknown, callbacks: unknown) {
+            // data: playlists (Febbox's adaptive list) are built here and need no host rule.
+            if (!/^https?:/.test(context.url)) return super.load(context, config, callbacks);
             allowStream(new URL(context.url).hostname, headers)
               .catch((e) => console.warn('[helper]', e.message))
               .finally(() => super.load(context, config, callbacks));
@@ -896,22 +928,26 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       {exhausted && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center">
           <div className="max-w-sm space-y-4">
-            {searching ? (
+            {searching || refreshing ? (
               <div className="mx-auto size-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
             ) : (
               <AlertTriangle className="mx-auto size-10 text-warning" />
             )}
-            <p className="font-medium">{searching ? 'None of these played. Looking for more sources…' : 'None of the sources would play.'}</p>
+            <p className="font-medium">
+              {refreshing ? 'Getting fresh links…' : searching ? 'None of these played. Looking for more sources…' : 'None of the sources would play.'}
+            </p>
             <div className="flex justify-center gap-2">
               <button
                 onClick={() => {
+                  if (onRefresh) return onRefresh();
                   failed.current.clear();
                   setExhausted(false);
                   setSourceIdx(0);
                 }}
+                disabled={refreshing}
                 className={btn()}
               >
-                Retry
+                Search again
               </button>
               <button onClick={onExhausted} className={btn({ variant: 'primary' })}>
                 Use another server
@@ -971,7 +1007,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       >
         <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />
         <div className="mt-1 flex items-center gap-1 md:gap-2">
-          <IconButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={toggle}>
+          <IconButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={toggle} tipAlign="start">
             {isPlaying ? <Pause className="size-6 fill-current" /> : <Play className="ml-0.5 size-6 fill-current" />}
           </IconButton>
           <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
@@ -1082,7 +1118,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                 <Settings className="size-5" />
               </IconButton>
               {menu === 'settings' && (
-                <Popover>
+                <Popover wide={view === 'source'}>
                   {view === 'main' && (
                     <>
                       {levels.length > 1 && <NavItem label="Quality" value={qualityNow} onClick={() => setView('quality')} />}
@@ -1108,7 +1144,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                       >
                         Auto
                       </MenuItem>
-                      {levels.map((l) => (
+                      {levels.map((l, pos) => (
                         <MenuItem
                           key={l.index}
                           selected={level === l.index}
@@ -1118,7 +1154,10 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                             setMenu(null);
                           }}
                         >
-                          <span className="flex-1">{l.height}p</span>
+                          <span className="flex-1">
+                            {levelLabel(pos, l.height, source, levels.length)}
+                            {levelSize(pos, source, levels.length) && <span className="ml-2 text-xs text-faint">{levelSize(pos, source, levels.length)}</span>}
+                          </span>
                           {l.height >= 2160 ? <Badge>4K</Badge> : l.height >= 720 ? <Badge>HD</Badge> : null}
                         </MenuItem>
                       ))}
@@ -1147,34 +1186,45 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                       <p className="px-3 pb-1.5 text-xs text-muted">
                         Found by {data.via === 'extension' ? 'this browser (Charcoal Helper)' : data.via === 'own' ? 'your server' : 'Charcoal’s server'}
                       </p>
-                      {data.sources.map((s, i) => (
-                        <MenuItem
-                          key={s.url}
-                          selected={sourceIdx === i}
+                      {groupSources(data.sources).map(({ name, items }) => (
+                        <div key={name} className="pb-1">
+                          <div className="flex items-baseline justify-between px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">
+                            <span>{name}</span>
+                            <span className="tabular-nums">{items.length}</span>
+                          </div>
+                          {items.map(({ s, i }) => (
+                            <SourceRow
+                              key={s.url}
+                              source={s}
+                              selected={sourceIdx === i}
+                              failed={failed.current.has(i)}
+                              reason={failReason.current.get(i)}
+                              onClick={() => {
+                                if (i === sourceIdx) return setMenu(null);
+                                const v = video.current;
+                                if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
+                                failed.current.delete(i);
+                                setSourceIdx(i);
+                                setMenu(null);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                      {onRefresh && (
+                        <button
                           onClick={() => {
-                            if (i === sourceIdx) return setMenu(null);
-                            const v = video.current;
-                            if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
-                            failed.current.delete(i);
-                            setSourceIdx(i);
+                            onRefresh();
                             setMenu(null);
                           }}
+                          disabled={refreshing}
+                          className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white/85 hover:bg-white/10 disabled:opacity-50"
                         >
-                          <span className="min-w-0 flex-1">
-                            {qualityLabel(s.quality)} · {s.provider.name}
-                            {s.audioTracks?.[0]?.label && <span className="text-muted"> · {s.audioTracks[0].label}</span>}
-                            {!failed.current.has(i) && s.note && <span className="block truncate text-xs text-faint">{s.note}</span>}
-                            {failed.current.has(i) && failReason.current.get(i) && (
-                              <span className="block truncate text-xs text-faint" title={failReason.current.get(i)}>
-                                {failReason.current.get(i)}
-                              </span>
-                            )}
-                          </span>
-                          <span className={cx('text-micro tracking-wider uppercase', failed.current.has(i) ? 'text-danger' : 'text-faint')}>
-                            {failed.current.has(i) ? 'failed' : s.type}
-                          </span>
-                        </MenuItem>
-                      ))}
+                          <RotateCw className={cx('size-4 text-muted', refreshing && 'animate-spin')} />
+                          <span className="flex-1">{refreshing ? 'Searching…' : 'Search again'}</span>
+                          <span className="text-xs text-faint">fresh links</span>
+                        </button>
+                      )}
                       {/* Every other provider, and why it had nothing: useful when a title won't play. */}
                       {data.report?.some((r) => !r.ok) && (
                         <>
@@ -1249,7 +1299,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                 <PictureInPicture2 className="size-5" />
               </IconButton>
             )}
-            <IconButton label={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'} onClick={toggleFullscreen}>
+            <IconButton label={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'} onClick={toggleFullscreen} tipAlign="end">
               {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </IconButton>
           </div>
@@ -1328,6 +1378,7 @@ function IconButton({
   active,
   className,
   expanded,
+  tipAlign,
 }: {
   label: string;
   onClick: () => void;
@@ -1336,27 +1387,34 @@ function IconButton({
   className?: string;
   /** For menu buttons: whether the menu is open (also tells the page's Esc to leave it alone). */
   expanded?: boolean;
+  /** Buttons at the ends of the bar line their tooltip up with that edge. */
+  tipAlign?: 'start' | 'center' | 'end';
 }) {
+  const [text, keys] = splitKeys(label);
   return (
     <button
       type="button"
-      title={label}
       aria-label={label}
       aria-haspopup={expanded === undefined ? undefined : 'menu'}
       aria-expanded={expanded}
       onClick={onClick}
-      className={cx(btn({ variant: 'ghost', icon: true }), 'text-white', active && 'bg-white/15', className)}
+      className={cx(btn({ variant: 'ghost', icon: true }), 'group/tip relative text-white', active && 'bg-white/15', className)}
     >
       {children}
+      <Tip label={text} keys={keys} align={tipAlign} hidden={expanded} />
     </button>
   );
 }
 
-const StepButton = ({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) => (
-  <button type="button" title={label} aria-label={label} onClick={onClick} className="grid size-8 place-items-center rounded-full bg-white/10 hover:bg-white/20">
-    {children}
-  </button>
-);
+const StepButton = ({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) => {
+  const [text, keys] = splitKeys(label);
+  return (
+    <button type="button" aria-label={label} onClick={onClick} className="group/tip relative grid size-8 place-items-center rounded-full bg-white/10 hover:bg-white/20">
+      {children}
+      <Tip label={text} keys={keys} align="end" />
+    </button>
+  );
+};
 
 const Popover = ({ children, wide }: { children: ReactNode; wide?: boolean }) => (
   <div
@@ -1368,6 +1426,57 @@ const Popover = ({ children, wide }: { children: ReactNode; wide?: boolean }) =>
     {children}
   </div>
 );
+/** Sources grouped by provider, in the list's (ranked) order of first appearance. */
+function groupSources(list: JellySource[]) {
+  const groups: { name: string; items: { s: JellySource; i: number }[] }[] = [];
+  list.forEach((s, i) => {
+    const g = groups.find((x) => x.name === s.provider.name) ?? groups[groups.push({ name: s.provider.name, items: [] }) - 1];
+    g.items.push({ s, i });
+  });
+  return groups;
+}
+
+/**
+ * "4K", "1080p" from a source's own level list, else the picture height. Both lists are sorted best
+ * first, so position matches (only trusted when they have the same length).
+ */
+function levelLabel(pos: number, height: number, source: JellySource, count: number) {
+  const q = source.levels?.length === count ? source.levels[pos]?.quality : undefined;
+  return q ? qualityLabel(q) : `${height}p`;
+}
+const levelSize = (pos: number, source: JellySource, count: number) => (source.levels?.length === count ? formatSize(source.levels[pos]?.size) : '');
+
+/** One source: quality (with every level of an adaptive one), language, full file details, size. */
+function SourceRow({ source: s, selected, failed, reason, onClick }: { source: JellySource; selected: boolean; failed: boolean; reason?: string; onClick: () => void }) {
+  const lang = s.audioTracks?.[0]?.label;
+  const levels = s.levels && s.levels.length > 1 ? s.levels : null;
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={selected}
+      className={cx('flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10', selected && 'bg-white/[0.06]')}
+    >
+      <Check className={cx('mt-0.5 size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-baseline gap-x-2">
+          <span className="font-medium">{levels ? `Up to ${qualityLabel(s.quality)}` : s.quality === 'original' ? 'Original file' : qualityLabel(s.quality)}</span>
+          {lang && <span className="text-muted">{lang}</span>}
+          {!levels && s.size ? <span className="text-xs text-faint tabular-nums">{formatSize(s.size)}</span> : null}
+        </span>
+        {levels && (
+          <span className="mt-0.5 block text-xs text-muted tabular-nums">
+            {levels.map((l) => `${qualityLabel(l.quality)}${l.size ? ` ${formatSize(l.size)}` : ''}`).join(' · ')}
+          </span>
+        )}
+        {s.note && <span className="mt-0.5 block text-xs leading-snug text-faint">{s.note}</span>}
+        {s.quality === 'original' && <span className="mt-0.5 block text-xs leading-snug text-faint">Untouched file: its audio may not play in a browser</span>}
+        {failed && reason && <span className="mt-0.5 block text-xs leading-snug text-danger">{reason}</span>}
+      </span>
+      <span className={cx('mt-0.5 text-micro tracking-wider uppercase', failed ? 'text-danger' : 'text-faint')}>{failed ? 'failed' : s.type}</span>
+    </button>
+  );
+}
+
 /** One provider that had no stream, and why (wraps when shown inside an expanded group). */
 const ReportRow = ({ name, reason, wrap }: { name: string; reason?: string; wrap?: boolean }) => {
   const text = reason?.replace(/\\n|\s+/g, ' ').trim();
@@ -1527,12 +1636,37 @@ function describeFailure(why: string): string {
 
 // ---------- subtitle helpers ----------
 
+/**
+ * A readable track name: "ar" → "Arabic", "pt-BR" → "Portuguese (BR)", "English - English [SDH]" →
+ * "English (SDH)", "French - French Canadian [SDH]" → "French Canadian (SDH)".
+ */
+export function subtitleName(raw: string): string {
+  let l = (raw || '').trim();
+  const parts = l.split(/\s+-\s+/);
+  if (parts.length === 2 && parts[1]) l = parts[1];
+  l = l.replace(/\[(SDH|CC|HI|forced)\]/gi, (_m, x: string) => `(${/forced/i.test(x) ? 'forced' : x.toUpperCase()})`);
+  const code = l.match(/^([a-z]{2,3})(?:[-_]([a-z]{2,4}))?(\s*\(.*\))?$/i);
+  if (code) {
+    const name = languageName(code[1].toLowerCase());
+    if (name.toLowerCase() !== code[1].toLowerCase()) l = `${name}${code[2] ? ` (${code[2].toUpperCase()})` : ''}${code[3] ?? ''}`;
+  }
+  return l || 'Unknown';
+}
+
+/** Tracks with readable names: the preferred language first, then A–Z; repeated names numbered. */
 function sortSubtitles(list: JellySubtitle[]): Track[] {
   const seen = new Set<string>();
-  return list
+  const pref = languageName(getState().settings.audioLang).toLowerCase();
+  const tracks = list
     .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url))
-    .sort((a, b) => Number(/english/i.test(b.label)) - Number(/english/i.test(a.label)) || a.label.localeCompare(b.label))
-    .map((s) => ({ label: s.label, url: s.url, format: s.format, headers: s.headers }));
+    .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers }))
+    .sort((a, b) => Number(b.label.toLowerCase().startsWith(pref)) - Number(a.label.toLowerCase().startsWith(pref)) || a.label.localeCompare(b.label));
+  const count = new Map<string, number>();
+  return tracks.map((t) => {
+    const n = (count.get(t.label) ?? 0) + 1;
+    count.set(t.label, n);
+    return n > 1 ? { ...t, label: `${t.label} ${n}` } : t;
+  });
 }
 
 /** Cues back to WebVTT (for the native fullscreen player), shifted by the timing offset. */

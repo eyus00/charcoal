@@ -19,7 +19,31 @@ function mediaOf(t: Target, d: Details, episodeTmdbId?: number): Media {
     season: t.season,
     episode: t.episode,
     episodeTmdbId: episodeTmdbId ? String(episodeTmdbId) : undefined,
+    runtime: d.runtime || d.episode_run_time?.[0] || undefined,
   };
+}
+
+/**
+ * "Auto" HLS streams hold several qualities; read the playlist (through the extension) to show the
+ * real top one, e.g. LookMovie's 1080p. Quick, and skipped on any error.
+ */
+async function probeQualities(sources: JellySource[]) {
+  await Promise.all(
+    sources
+      .filter((s) => s.type === 'hls' && /^(auto|unknown)$/i.test(s.quality) && /^https?:/.test(s.url))
+      .map(async (s) => {
+        try {
+          const r = await Promise.race([extensionFetcher(s.url, { headers: s.headers }), new Promise<never>((_, x) => setTimeout(() => x(new Error('slow')), 4000))]);
+          const heights = [...r.body.matchAll(/RESOLUTION=(\d+)x(\d+)/g)].map((m) => Math.max(Number(m[2]), Math.round((Number(m[1]) * 9) / 16)));
+          if (heights.length) {
+            const h = Math.max(...heights);
+            s.quality = String(h >= 2000 ? 2160 : h >= 1400 ? 1440 : h >= 1000 ? 1080 : h >= 700 ? 720 : h >= 460 ? 480 : 360);
+          }
+        } catch {
+          /* keep "auto" */
+        }
+      }),
+  );
 }
 
 /** Our providers' outcomes → sources, subtitles and a report. */
@@ -43,6 +67,8 @@ function collect(outcomes: ProviderOutcome[]) {
         quality: s.quality,
         headers: s.headers,
         note: s.note,
+        size: s.size,
+        levels: s.levels,
         provider: { id: o.provider.id, name: o.provider.name },
         audioTracks: s.language ? [{ language: s.languageCode ?? 'und', label: s.language }] : undefined,
       });
@@ -53,8 +79,9 @@ function collect(outcomes: ProviderOutcome[]) {
 }
 
 export async function fetchViaExtension(t: Target, d: Details, signal: AbortSignal, episodeTmdbId?: number): Promise<JellyResult> {
-  const outcomes = await scrapeAll(mediaOf(t, d, episodeTmdbId), { fetch: extensionFetcher, signal, settings: { febboxToken: getState().settings.febboxToken || undefined } });
+  const outcomes = await scrapeAll(mediaOf(t, d, episodeTmdbId), { fetch: extensionFetcher, signal, settings: { febboxToken: getState().settings.febboxToken || undefined, febboxMaxHeight: getState().settings.febboxMaxHeight || undefined } });
   const { sources, subtitles, report } = collect(outcomes);
+  await probeQualities(sources);
   if (!sources.length) throw new Error(`Charcoal Helper found no sources (${report.map((r) => `${r.name}: ${r.reason}`).join('; ')})`);
   return { responseId: 'helper', expiresAt: '', sources: sortSources(sources), subtitles, via: 'extension', report };
 }
@@ -71,5 +98,6 @@ export async function fetchFallbackViaExtension(t: Target, d: Details, signal: A
   fallbackList ??= loadFallbackProviders();
   const outcomes = await scrapeAll(mediaOf(t, d, episodeTmdbId), { fetch: extensionFetcher, signal }, { list: await fallbackList, timeoutMs: 30_000 });
   const { sources, subtitles, report } = collect(outcomes);
+  await probeQualities(sources);
   return { sources: sortSources(sources), subtitles, report: report.map((r) => ({ ...r, group: 'StreamViva' })) };
 }

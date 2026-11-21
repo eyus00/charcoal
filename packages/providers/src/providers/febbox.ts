@@ -62,8 +62,22 @@ async function findPage(fetcher: Fetcher, title: string, year: number | undefine
   return (year ? (rows.find((r) => r.year === year) ?? rows.find((r) => Math.abs(r.year - year) <= 1)) : rows[0])?.path ?? null;
 }
 
+interface Link {
+  url: string;
+  /** "2160", "1080", … or "original" */
+  quality: string;
+  size?: number;
+}
+
+/** "18.2 GB" → bytes. */
+function parseSize(text = ''): number | undefined {
+  const m = text.replace(/,/g, '').match(/([\d.]+)\s*(TB|GB|MB|KB)/i);
+  if (!m) return undefined;
+  return Math.round(Number(m[1]) * { TB: 1e12, GB: 1e9, MB: 1e6, KB: 1e3 }[m[2].toUpperCase() as 'TB' | 'GB' | 'MB' | 'KB']);
+}
+
 /** Playable links for one file, from the quality list (needs the viewer's token). */
-async function qualities(fetcher: Fetcher, file: FebFile, shareKey: string, token: string, signal?: AbortSignal): Promise<Stream[]> {
+async function qualities(fetcher: Fetcher, file: FebFile, shareKey: string, token: string, signal?: AbortSignal): Promise<Link[]> {
   const res = await fetcher(`${FEBBOX}/console/video_quality_list?fid=${file.fid}&share_key=${shareKey}`, {
     headers: { ...PAGE_HEADERS, Cookie: `ui=${token}`, 'X-Requested-With': 'XMLHttpRequest' },
     signal,
@@ -79,34 +93,80 @@ async function qualities(fetcher: Fetcher, file: FebFile, shareKey: string, toke
     throw new Error('Febbox: the token wasn’t accepted (log in to febbox.com again and copy a fresh "ui" cookie)');
   }
   const html = data.html ?? '';
-  const out: Stream[] = [];
-  for (const tag of html.match(/<div[^>]*class="[^"]*file_quality[^"]*"[^>]*>/g) ?? []) {
+  const out: Link[] = [];
+  // Each quality is a <div class="file_quality" data-url data-quality>…<p class="size">1.2 GB</p>…
+  const blocks = html.split(/(?=<div[^>]*class="[^"]*file_quality)/);
+  for (const block of blocks) {
+    const tag = block.match(/^<div[^>]*class="[^"]*file_quality[^"]*"[^>]*>/)?.[0];
+    if (!tag) continue;
     const url = tag.match(/data-url="([^"]+)"/)?.[1]?.replace(/&amp;/g, '&');
-    const label = tag.match(/data-quality="([^"]+)"/)?.[1] ?? '';
+    const label = (tag.match(/data-quality="([^"]+)"/)?.[1] ?? '').toUpperCase();
     if (!url) continue;
-    const q = label.toUpperCase();
-    const quality = /ORG|ORIGINAL/.test(q) ? 'original' : /4K|2160/.test(q) ? '2160' : (q.match(/(\d{3,4})/)?.[1] ?? 'auto');
-    const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
-    out.push({
-      url,
-      type: ext === 'm3u8' ? 'hls' : ext === 'mkv' ? 'mkv' : 'mp4',
-      quality,
-      headers: VIDEO_HEADERS,
-      note: describe(file),
-    });
+    const quality = /ORG|ORIGINAL/.test(label) ? 'original' : /4K|2160/.test(label) ? '2160' : (label.match(/(\d{3,4})/)?.[1] ?? 'auto');
+    const size = parseSize(block.match(/class="[^"]*size[^"]*"[^>]*>([^<]+)</)?.[1]);
+    out.push({ url, quality, size });
   }
   return out;
 }
 
+const isHls = (url: string) => /\.m3u8(\?|$)/i.test(url);
+/** Rough bitrates when nothing better is known (bits per second). */
+const TYPICAL_BPS: Record<number, number> = { 2160: 16e6, 1440: 9e6, 1080: 5.5e6, 720: 2.8e6, 480: 1.4e6, 360: 0.8e6 };
+
+/**
+ * One adaptive stream from a file's qualities: a small master playlist (as a data: URL) listing
+ * each quality, so the player starts at the best one the connection and screen can take and steps
+ * down instead of stalling. If a quality's own URL is itself a master playlist, its variant is used.
+ */
+async function adaptive(fetcher: Fetcher, links: Link[], runtimeMin: number | undefined, signal?: AbortSignal) {
+  const variants = (
+    await Promise.all(
+      links.map(async (l) => {
+        let url = l.url;
+        let bandwidth: number | undefined;
+        let height = Number(l.quality) || 0;
+        let width: number | undefined;
+        try {
+          const r = await fetcher(l.url, { headers: VIDEO_HEADERS, signal });
+          if (!r.ok || !r.body.trimStart().startsWith('#EXTM3U')) return null; // dead link
+          const inf = r.body.match(/#EXT-X-STREAM-INF:([^\n]*)\n\s*([^\n#][^\n]*)/);
+          if (inf) {
+            url = new URL(inf[2].trim(), r.url || l.url).toString();
+            bandwidth = Number(inf[1].match(/BANDWIDTH=(\d+)/)?.[1]) || undefined;
+            const res = inf[1].match(/RESOLUTION=(\d+)x(\d+)/);
+            if (res) [width, height] = [Number(res[1]), Number(res[2])];
+          }
+        } catch {
+          return null;
+        }
+        if (!height) return null;
+        bandwidth ??= l.size && runtimeMin ? Math.round((l.size * 8) / (runtimeMin * 60)) : (TYPICAL_BPS[height] ?? 3e6);
+        width ??= Math.round((height * 16) / 9);
+        // Label by Febbox's quality name (a 3840×1600 picture is still "4K"); height stays for the playlist.
+        return { url, height, width, bandwidth, tier: Number(l.quality) || height, size: l.size };
+      }),
+    )
+  )
+    .filter((v): v is NonNullable<typeof v> => !!v)
+    .sort((a, b) => b.tier - a.tier);
+  if (!variants.length) return null;
+  const master =
+    '#EXTM3U\n#EXT-X-VERSION:3\n' +
+    variants.map((v) => `#EXT-X-STREAM-INF:BANDWIDTH=${v.bandwidth},RESOLUTION=${v.width}x${v.height}\n${v.url}`).join('\n') +
+    '\n';
+  const b64 = btoa(unescape(encodeURIComponent(master)));
+  return { url: `data:application/vnd.apple.mpegurl;base64,${b64}`, variants };
+}
+
 /** "Inception.2010.2160p.BluRay.x265.10bit…mkv", "48 GB" → "BluRay · x265 10bit · 48 GB". */
-function describe(f: FebFile): string {
+function describe(f: FebFile, withSize = true): string {
   const n = f.file_name;
   const parts = [
     n.match(/blu-?ray|web-?dl|webrip|hdtv|remux/i)?.[0],
     n.match(/x26[45]|h\.?26[45]|hevc|av1/i)?.[0]?.replace(/^h\.?/i, 'H.'),
     n.match(/10bit|hdr10\+?|hdr|dolby.?vision|dv\b/i)?.[0],
     n.match(/atmos|dts-?hd(\.ma)?|truehd|ddp?5\.1|aac/i)?.[0],
-    f.file_size,
+    withSize ? f.file_size : undefined,
   ].filter(Boolean);
   return parts.join(' · ');
 }
@@ -148,11 +208,34 @@ export const febbox: Provider = {
     files = files.filter((f) => !f.is_dir && /\.(mp4|mkv|m4v)$/i.test(f.file_name)).slice(0, 4);
     if (!files.length) throw new NotFoundError('Febbox: no video file');
 
-    const all = (await Promise.all(files.map((f) => qualities(fetch, f, shareKey, token, signal)))).flat();
-    // Browsers can't play MKV; and below 720p only matters when nothing better exists.
-    const playable = all.filter((st) => st.type !== 'mkv');
-    const big = playable.filter((st) => st.quality === 'original' || st.quality === 'auto' || Number(st.quality) >= 720);
-    const streams = big.length ? big : playable;
+    const max = settings?.febboxMaxHeight || Infinity;
+    const perFile = await Promise.all(
+      files.map(async (f) => {
+        const links = await qualities(fetch, f, shareKey, token, signal);
+        const out: Stream[] = [];
+        // Febbox's own conversions (HLS) as one adaptive stream, capped by the data-saver setting.
+        const hls = links.filter((l) => isHls(l.url) && l.quality !== 'original' && (Number(l.quality) || 0) <= max);
+        const a = hls.length ? await adaptive(fetch, hls, media.runtime, signal) : null;
+        if (a) {
+          out.push({
+            url: a.url,
+            type: 'hls',
+            quality: String(a.variants[0].tier),
+            headers: VIDEO_HEADERS,
+            note: describe(f, false),
+            size: a.variants[0].size,
+            levels: a.variants.map((v) => ({ quality: String(v.tier), size: v.size })),
+          });
+        }
+        // The untouched file (MP4 only: browsers can't play MKV). Its audio may be a format browsers
+        // can't decode (TrueHD, DTS), so it ranks after the conversions.
+        for (const l of links.filter((x) => x.quality === 'original' && !isHls(x.url) && !/\.mkv(\?|$)/i.test(x.url))) {
+          out.push({ url: l.url, type: 'mp4', quality: 'original', headers: VIDEO_HEADERS, note: describe(f, true), size: l.size ?? parseSize(f.file_size) });
+        }
+        return out;
+      }),
+    );
+    const streams = perFile.flat();
     if (!streams.length) throw new NotFoundError('Febbox: no playable links');
     return { streams, captions: [] };
   },
@@ -161,8 +244,8 @@ export const febbox: Provider = {
 /** Checks a token against a known public share (Inception). 'unknown' if Febbox changed. */
 export async function checkFebboxToken(fetcher: Fetcher, token: string): Promise<'ok' | 'invalid' | 'unknown'> {
   try {
-    const streams = await qualities(fetcher, { fid: 2605016, file_name: 'Inception.2010.1080p.mp4' }, 'Bp1Hw1MK', cleanToken(token));
-    return streams.length ? 'ok' : 'unknown';
+    const links = await qualities(fetcher, { fid: 2605016, file_name: 'Inception.2010.1080p.mp4' }, 'Bp1Hw1MK', cleanToken(token));
+    return links.length ? 'ok' : 'unknown';
   } catch (e) {
     return /token wasn’t accepted/.test((e as Error).message) ? 'invalid' : 'unknown';
   }
