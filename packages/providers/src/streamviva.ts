@@ -7,7 +7,7 @@
  * extension, and on a server it's plain fetch.
  *
  * PrimeSrc (a directory of file-host links per title) is ours, fed into StreamViva's file-host
- * resolvers.
+ * resolvers. It's kept but not used: its link endpoint is behind a Cloudflare bot check.
  *
  * The engine is loaded lazily (it's large), only when the fallback runs.
  */
@@ -22,6 +22,18 @@ const loadEngine = () => (enginePromise ??= import('@charcoal/streamviva'));
 
 /** StreamViva sources that only show another site's player in a frame (we have embed servers for that). */
 const IFRAME_ONLY = /-embed$|^vidsrc-embed$|^videasy-embed$/;
+/**
+ * Sources that don't work even from a home connection (tested 2026-11-21 from a viewer's browser
+ * and from a data centre). Re-check them after updating the vendored engine.
+ */
+const DEAD: Record<string, string> = {
+  vidsrcsh: 'needs an API token ("invalid api token")',
+  ee3: 'server error 500 on login',
+  embedsu: 'site unreachable',
+  movies4f: 'site unreachable',
+  turbovidSource: 'site unreachable',
+  '8stream': 'its API is gone',
+};
 /** Sites in another language: their streams are labelled so they sort after the viewer's language. */
 const SITE_LANGUAGE: Record<string, { name: string; code: string }> = {
   cuevana3: { name: 'Spanish', code: 'es' },
@@ -232,9 +244,10 @@ export const primesrc: Provider = {
   },
 };
 
-/** All fallback providers: every enabled StreamViva source (except frame-only ones) plus PrimeSrc. */
+/** All fallback providers: every enabled StreamViva source except frame-only and known-dead ones. */
 export async function loadFallbackProviders(): Promise<Provider[]> {
   const sv = await loadEngine();
-  const sources = sv.getBuiltinSources().filter((s: any) => !IFRAME_ONLY.test(s.id));
-  return [primesrc, ...sources.map((s: any) => fromSource(s))].sort((a, b) => b.rank - a.rank);
+  const sources = sv.getBuiltinSources().filter((s: any) => !IFRAME_ONLY.test(s.id) && !DEAD[s.id]);
+  // PrimeSrc isn't included: its links sit behind a Cloudflare bot check, from home connections too.
+  return sources.map((s: any) => fromSource(s)).sort((a, b) => b.rank - a.rank);
 }
