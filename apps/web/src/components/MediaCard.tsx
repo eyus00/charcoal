@@ -19,13 +19,22 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
-/** The bordered info area under a card's image (the image itself has no border). */
-export const CARD_INFO = 'rounded-b-2xl border border-t-0 border-white/[0.08] transition group-hover:border-white/20';
+/** The text under a card's image: no box, just aligned with the image's left edge. */
+export const CARD_INFO = 'pt-2.5';
 
-/** Small movie / TV icon, pushed to the right edge of a meta row. */
+/** A card image that floats: rounded, lifts a little on hover. */
+export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-black/40';
+
+/** Movie / TV mark, faint in the image's top-right corner like a watermark (hidden on hover). */
 export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
   const Icon = type === 'tv' ? Tv : Film;
-  return <Icon strokeWidth={1.5} className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
+  return (
+    <Icon
+      strokeWidth={1.75}
+      className={cx('pointer-events-none absolute top-2.5 right-2.5 size-4 text-white/50 drop-shadow-[0_1px_3px_rgb(0_0_0/0.6)] transition-opacity group-hover:opacity-0', className)}
+      aria-label={type === 'tv' ? 'TV show' : 'Movie'}
+    />
+  );
 }
 
 /** "2025 · ★ 7.2" */
@@ -64,13 +73,14 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
   return (
     <div className={cx('group relative', className)}>
       <Link to={href} className="block" {...usePrefetch(t, item.id)}>
-        <div className="relative overflow-hidden rounded-t-2xl">
+        <div className={CARD_IMAGE}>
           <Img path={item.poster_path} kind="poster" sizes={sizes} alt="" className="aspect-[2/3]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
+          <TypeIcon type={t} />
         </div>
-        <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
+        <div className={CARD_INFO}>
           <div className="truncate text-body-sm font-medium text-white/95" title={title}>{title}</div>
-          <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" extra={<TypeIcon type={t} />} />
+          <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" />
         </div>
       </Link>
       {overlay}

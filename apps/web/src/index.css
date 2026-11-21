@@ -9,7 +9,7 @@
   --color-faint: #87909d; /* 4.8:1 on raised, 5.9:1 on bg */
   --color-accent: #f4f5f7;
   --color-accent-hover: #ffffff;
-  --color-star: #f5c518;
+  --color-star: #f4f5f7;
   /* Status colours (text and dots), each passing on surface / raised. */
   --color-danger: #ff6467;
   --color-danger-solid: #e7000b;

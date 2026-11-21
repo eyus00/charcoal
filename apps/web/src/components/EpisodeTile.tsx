@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Play } from 'lucide-react';
 import Img from './Img';
-import { CARD_INFO, TypeIcon } from './MediaCard';
+import { CARD_IMAGE, CARD_INFO, TypeIcon } from './MediaCard';
 import { Bone } from './Skeletons';
 import type { ImageKind } from '../lib/images';
 import type { MediaType } from '../lib/tmdb';
@@ -58,7 +58,7 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
       {/* The whole card is one link (stretched under the content), so a title can be a link too. */}
       <Link to={to} title={title} aria-label={title} className="absolute inset-0 z-0 rounded-2xl" {...linkProps} />
       <div className="pointer-events-none relative [&_a]:pointer-events-auto">
-        <div className="relative overflow-hidden rounded-t-2xl">
+        <div className={CARD_IMAGE}>
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
           {shade && <span className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/10 to-transparent" />}
           {playable && (
@@ -71,17 +71,17 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           {topLeft && <span className="absolute top-2.5 left-2.5">{topLeft}</span>}
           {bottomLeft && <span className="absolute bottom-2.5 left-2.5">{bottomLeft}</span>}
           {bottomRight && <span className="absolute right-2.5 bottom-2.5">{bottomRight}</span>}
+          <TypeIcon type={type} />
           {progress > 0 && (
             <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
               <span className="block h-full bg-white" style={{ width: `${progress}%` }} />
             </span>
           )}
         </div>
-        <div className={cx(CARD_INFO, 'px-3 pt-2 pb-2.5')}>
+        <div className={CARD_INFO}>
           <div className="truncate text-body-sm font-medium text-white/95" title={typeof primary === 'string' ? primary : undefined}>{line('primary', primary)}</div>
           <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
             <span className="min-w-0 truncate">{line('secondary', secondary)}</span>
-            <TypeIcon type={type} />
           </div>
         </div>
       </div>
@@ -92,8 +92,8 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
 
 export const TileSkeleton = ({ className }: { className?: string }) => (
   <div className={className ?? TILE}>
-    <Bone className="aspect-video w-full rounded-b-none rounded-t-2xl" />
-    <div className="rounded-b-2xl border border-t-0 border-white/[0.08] p-3">
+    <Bone className="aspect-video w-full rounded-2xl" />
+    <div className="pt-3">
       <Bone className="h-3.5 w-3/4" />
       <Bone className="mt-2 h-3 w-1/2" />
     </div>

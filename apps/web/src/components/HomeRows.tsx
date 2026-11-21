@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import EpisodeTile, { Chip, TileSkeleton } from './EpisodeTile';
-import { Meta, TypeIcon, usePrefetch } from './MediaCard';
+import { CARD_IMAGE, Meta, TypeIcon, usePrefetch } from './MediaCard';
 import { ROW_BLEED, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { Bone } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type Details, type EpisodeRef, type MediaItem, type MediaType } from '../lib/tmdb';
@@ -46,21 +46,20 @@ function LazyRow({
   );
 }
 
-/** Title, a short overview, then "year · ★ rating" with the type icon bottom-right. */
-function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
+/** Title, a short overview, then "year · ★ rating". */
+function CardText({ item }: { item: MediaItem }) {
   return (
-    <div className={cx(LIST_INFO, 'flex min-w-0 flex-1 flex-col px-3.5 py-3')}>
+    <div className="flex min-w-0 flex-1 flex-col py-1 pl-4">
       <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium" title={titleOf(item)}>{titleOf(item)}</div>
       <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
-      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
+      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" />
     </div>
   );
 }
 
-// Poster on the left, bordered info area on the right (the poster itself has no border).
+// Poster on the left, text beside it (no box).
 const LIST_CARD = 'group flex w-[304px] shrink-0 snap-start sm:w-[336px]';
-const LIST_POSTER = 'aspect-[2/3] w-[104px] shrink-0 rounded-l-2xl';
-const LIST_INFO = 'rounded-r-2xl border border-l-0 border-white/[0.08] transition group-hover:border-white/20';
+const LIST_POSTER = cx(CARD_IMAGE, 'w-[104px] shrink-0');
 const listSkeleton = (n: number, extra = '') =>
   Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);
 
@@ -216,8 +215,11 @@ export function AiringThisWeek() {
 function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
     <Link to={`/${type}/${item.id}`} {...usePrefetch(type, item.id)} className={LIST_CARD}>
-      <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className={LIST_POSTER} />
-      <CardText item={item} type={type} />
+      <div className={LIST_POSTER}>
+        <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className="aspect-[2/3]" />
+        <TypeIcon type={type} className="top-2 right-2 size-3.5" />
+      </div>
+      <CardText item={item} />
     </Link>
   );
 }

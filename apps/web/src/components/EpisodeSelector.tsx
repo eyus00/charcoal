@@ -169,8 +169,8 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }, (_, i) => (
                 <div key={i}>
-                  <Bone className="aspect-video rounded-b-none rounded-t-2xl" />
-                  <div className="h-[112px] rounded-b-2xl border border-t-0 border-white/[0.08] p-3.5">
+                  <Bone className="aspect-video rounded-2xl" />
+                  <div className="h-[112px] pt-3">
                     <Bone className="h-4 w-3/4" />
                     <Bone className="mt-2 h-3 w-1/3" />
                   </div>
@@ -192,7 +192,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
                 const body = (
                   <>
-                    <div className="relative overflow-hidden rounded-t-2xl">
+                    <div className={cx('relative overflow-hidden rounded-2xl', (isCurrent || isSelected) && 'ring-2 ring-white/70')}>
                       {ep.still_path ? (
                         <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
                       ) : (
@@ -236,7 +236,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         </span>
                       )}
                     </div>
-                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 px-3.5 pt-2.5 pb-3', (isCurrent || isSelected) && 'border-white/30')}>
+                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 pb-3')}>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
                         <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>

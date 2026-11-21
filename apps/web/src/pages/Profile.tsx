@@ -325,6 +325,12 @@ function SettingsSection() {
             on={settings.showDiagnostics}
             onChange={(v) => actions.updateSettings({ showDiagnostics: v })}
           />
+          <Toggle
+            label="Warn before switching to an embed"
+            hint="Embedded players are other sites, with their own ads"
+            on={!settings.embedNoticeOff}
+            onChange={(v) => actions.updateSettings({ embedNoticeOff: !v })}
+          />
           <p className="text-xs text-muted">
             Intro, recap and credits times come from{' '}
             <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
