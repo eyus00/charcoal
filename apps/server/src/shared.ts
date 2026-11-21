@@ -88,7 +88,13 @@ function adapt(p: Provider): BaseProvider {
             const text = Buffer.from(dataUrl.split(',')[1] ?? '', 'base64').toString('utf8');
             const out = text
                 .split('\n')
-                .map((l) => (l.trim() && !l.startsWith('#') ? this.createProxyUrl(l.trim(), headers) : l))
+                .map((l) =>
+                    l.startsWith('#EXT-X-MEDIA:')
+                        ? l.replace(/URI="([^"]+)"/, (_m, u: string) => `URI="${this.createProxyUrl(u, headers)}"`)
+                        : l.trim() && !l.startsWith('#')
+                          ? this.createProxyUrl(l.trim(), headers)
+                          : l,
+                )
                 .join('\n');
             return `data:application/vnd.apple.mpegurl;base64,${Buffer.from(out).toString('base64')}`;
         }

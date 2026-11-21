@@ -121,20 +121,40 @@ const TYPICAL_BPS: Record<number, number> = { 2160: 16e6, 1440: 9e6, 1080: 5.5e6
 async function adaptive(fetcher: Fetcher, links: Link[], runtimeMin: number | undefined, signal?: AbortSignal) {
   const variants = (
     await Promise.all(
-      links.map(async (l) => {
+      links.map(async (l, idx) => {
         let url = l.url;
         let bandwidth: number | undefined;
         let height = Number(l.quality) || 0;
         let width: number | undefined;
+        let attrs = '';
+        let media: string[] = [];
         try {
           const r = await fetcher(l.url, { headers: VIDEO_HEADERS, signal });
           if (!r.ok || !r.body.trimStart().startsWith('#EXTM3U')) return null; // dead link
+          const base = r.url || l.url;
           const inf = r.body.match(/#EXT-X-STREAM-INF:([^\n]*)\n\s*([^\n#][^\n]*)/);
           if (inf) {
-            url = new URL(inf[2].trim(), r.url || l.url).toString();
+            url = new URL(inf[2].trim(), base).toString();
             bandwidth = Number(inf[1].match(/BANDWIDTH=(\d+)/)?.[1]) || undefined;
             const res = inf[1].match(/RESOLUTION=(\d+)x(\d+)/);
             if (res) [width, height] = [Number(res[1]), Number(res[2])];
+            // Febbox keeps the sound in separate audio playlists (EXT-X-MEDIA). Without them the
+            // picture plays silently, so carry them over, each quality with its own group name.
+            const group = inf[1].match(/AUDIO="([^"]+)"/)?.[1];
+            if (group) {
+              const own = `a${idx}`;
+              media = r.body
+                .split(/\r?\n/)
+                .filter((line) => line.startsWith('#EXT-X-MEDIA:') && /TYPE=AUDIO/.test(line) && line.includes(`GROUP-ID="${group}"`))
+                .map((line) =>
+                  line
+                    .replace(`GROUP-ID="${group}"`, `GROUP-ID="${own}"`)
+                    .replace(/URI="([^"]+)"/, (_m, u: string) => `URI="${new URL(u, base).toString()}"`),
+                );
+              if (media.length) attrs += `,AUDIO="${own}"`;
+            }
+            const codecs = inf[1].match(/CODECS="[^"]+"/)?.[0];
+            if (codecs) attrs += `,${codecs}`;
           }
         } catch {
           return null;
@@ -143,7 +163,7 @@ async function adaptive(fetcher: Fetcher, links: Link[], runtimeMin: number | un
         bandwidth ??= l.size && runtimeMin ? Math.round((l.size * 8) / (runtimeMin * 60)) : (TYPICAL_BPS[height] ?? 3e6);
         width ??= Math.round((height * 16) / 9);
         // Label by Febbox's quality name (a 3840×1600 picture is still "4K"); height stays for the playlist.
-        return { url, height, width, bandwidth, tier: Number(l.quality) || height, size: l.size };
+        return { url, height, width, bandwidth, attrs, media, tier: Number(l.quality) || height, size: l.size };
       }),
     )
   )
@@ -151,8 +171,10 @@ async function adaptive(fetcher: Fetcher, links: Link[], runtimeMin: number | un
     .sort((a, b) => b.tier - a.tier);
   if (!variants.length) return null;
   const master =
-    '#EXTM3U\n#EXT-X-VERSION:3\n' +
-    variants.map((v) => `#EXT-X-STREAM-INF:BANDWIDTH=${v.bandwidth},RESOLUTION=${v.width}x${v.height}\n${v.url}`).join('\n') +
+    '#EXTM3U\n#EXT-X-VERSION:4\n' +
+    variants.flatMap((v) => v.media).join('\n') +
+    (variants.some((v) => v.media.length) ? '\n' : '') +
+    variants.map((v) => `#EXT-X-STREAM-INF:BANDWIDTH=${v.bandwidth},RESOLUTION=${v.width}x${v.height}${v.attrs}\n${v.url}`).join('\n') +
     '\n';
   const b64 = btoa(unescape(encodeURIComponent(master)));
   return { url: `data:application/vnd.apple.mpegurl;base64,${b64}`, variants };
