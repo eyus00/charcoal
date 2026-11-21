@@ -59,6 +59,16 @@ Then use `http://localhost:8080` in Settings. Requests to streaming sites leave 
 connection, which they rarely block, so more sources play. Chrome may ask to let the site reach
 "apps and services on this device": allow it. (Or `docker compose up -d` in `deploy/local/`.)
 
+**Febbox (up to 4K) on your own server**: give it your Febbox token and it uses Febbox like the
+extension does. The token stays on your machine:
+
+```bash
+docker run -d -p 127.0.0.1:8080:8080 -e FEBBOX_TOKEN=your-token --restart unless-stopped ghcr.io/eyus00/charcoal-server
+```
+
+Add `-e FEBBOX_MAX_HEIGHT=1080` to cap the quality. Don't set a token on a server other people use:
+everyone's watching would count against your Febbox account.
+
 **On a VPS**: Charcoal is an https site, so the server must be https too. `deploy/vps/` runs it
 behind Caddy, which gets a certificate automatically:
 

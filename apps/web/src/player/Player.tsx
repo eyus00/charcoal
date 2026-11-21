@@ -3,7 +3,13 @@ import type Hls from 'hls.js';
 import {
   Airplay,
   AlertTriangle,
+  AudioLines,
   Captions,
+  Expand,
+  FastForward,
+  Gauge,
+  Layers,
+  Info,
   Cast,
   Check,
   ChevronLeft,
@@ -43,6 +49,8 @@ interface Props {
   title: string;
   subtitle?: string;
   overview?: string;
+  /** Short facts for the pause card, e.g. "2010 · ★ 8.4 · 2h 28m". */
+  meta?: string;
   poster?: string;
   resumeAt: number;
   header: ReactNode;
@@ -84,7 +92,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, overview, poster, resumeAt, header, next, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, overview, meta, poster, resumeAt, header, next, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -98,12 +106,21 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   const [airplay, setAirplay] = useState<'none' | 'available' | 'active'>('none');
 
   // Start with the provider that last played, if it's in this response.
-  const [sourceIdx, setSourceIdx] = useState(() => {
-    const last = getState().settings.lastProvider;
-    const i = last ? data.sources.findIndex((s) => s.provider.id === last && s.type !== 'mkv') : -1;
-    return Math.max(0, i);
+  // The selected source and failures are kept by URL: the list can be re-sorted when more sources
+  // arrive (the fallback), and positions would then point at different sources.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const urlAt = (i: number) => dataRef.current.sources[i]?.url;
+  const [selectedUrl, setSelectedUrl] = useState(() => data.sources[0]?.url);
+  const sourceIdx = Math.max(0, data.sources.findIndex((x) => x.url === selectedUrl));
+  const setSourceIdx = useCallback((i: number) => setSelectedUrl(dataRef.current.sources[i]?.url), []);
+  const failedUrls = useRef(new Set<string>());
+  const failed = useRef({
+    has: (i: number) => failedUrls.current.has(urlAt(i) ?? ''),
+    add: (i: number) => void (urlAt(i) && failedUrls.current.add(urlAt(i)!)),
+    delete: (i: number) => void failedUrls.current.delete(urlAt(i) ?? ''),
+    clear: () => failedUrls.current.clear(),
   });
-  const failed = useRef(new Set<number>());
   const seekOnLoad = useRef(resumeAt);
   const [exhausted, setExhausted] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -129,6 +146,8 @@ export default function Player({ data, media, title, subtitle, overview, poster,
   const [held, setHeld] = useState(false);
   const [pausedIdle, setPausedIdle] = useState(false);
 
+  /** The source whose details are shown in the Source menu (its ⓘ button). */
+  const [infoOpen, setInfoOpen] = useState<string | null>(null);
   const setMenu = useCallback((m: Menu) => {
     setMenuState(m);
     setView('main');
@@ -271,7 +290,12 @@ export default function Player({ data, media, title, subtitle, overview, poster,
 
   // ---------- source loading & fallback ----------
   /** Why each failed source failed, in words (shown in the Source menu). */
-  const failReason = useRef(new Map<number, string>());
+  const reasons = useRef(new Map<string, string>());
+  const failReason = useRef({
+    get: (i: number) => reasons.current.get(urlAt(i) ?? ''),
+    set: (i: number, why: string) => void (urlAt(i) && reasons.current.set(urlAt(i)!, why)),
+    clear: () => reasons.current.clear(),
+  });
   const fail = useCallback(
     (why: string, blockedHost = false) => {
       failed.current.add(sourceIdx);
@@ -297,8 +321,12 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       flash(`Source ${sourceIdx + 1} failed — trying another`);
       setSourceIdx(nextIdx);
     },
-    [data.sources, sourceIdx, flash],
+    [data.sources, sourceIdx, flash, setSourceIdx],
   );
+  // The loading effect calls the latest fail() without depending on it: a new list (more sources
+  // arriving) must not reload the video that's playing.
+  const failRef = useRef(fail);
+  failRef.current = fail;
 
   useEffect(() => {
     const v = video.current;
@@ -313,7 +341,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
     setAudioTrack(-1);
     const startAt = seekOnLoad.current;
 
-    const startup = window.setTimeout(() => !cancelled && v.readyState < 3 && fail('startup timeout'), STARTUP_TIMEOUT_MS);
+    const startup = window.setTimeout(() => !cancelled && v.readyState < 3 && failRef.current('startup timeout'), STARTUP_TIMEOUT_MS);
     const clearStartup = () => window.clearTimeout(startup);
     // Remember the provider that actually played, so it's tried first next time.
     const onPlaying = () => {
@@ -380,7 +408,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
           if ([401, 403, 404, 410].includes(status) && /LoadError$/.test(d.details)) {
             if (!cancelled) {
               cancelled = true;
-              fail(`${d.details} ${status}`, status === 401 || status === 403);
+              failRef.current(`${d.details} ${status}`, status === 401 || status === 403);
             }
             return;
           }
@@ -392,7 +420,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
             mediaRetry = true;
             h.recoverMediaError();
           } else {
-            fail(d.details);
+            failRef.current(d.details);
           }
         });
         h.loadSource(source.url);
@@ -422,7 +450,8 @@ export default function Player({ data, media, title, subtitle, overview, poster,
       v.removeAttribute('src');
       v.load(); // stop downloading
     };
-  }, [source, fail, direct]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source?.url, direct]);
 
   // Apply persisted volume/speed (hold-to-speed overrides the speed while held).
   useEffect(() => {
@@ -908,20 +937,39 @@ export default function Player({ data, media, title, subtitle, overview, poster,
         </div>
       )}
 
-      {/* Paused for a while: what's playing, like a TV's pause screen. */}
+      {/* Paused for a while: what's playing, as a card in the details page's style. */}
       <div
         aria-hidden={!pausedIdle}
         className={cx(
-          'pointer-events-none absolute inset-0 flex items-center bg-gradient-to-r from-black/85 via-black/45 to-transparent px-6 transition-opacity duration-500 md:px-16',
+          'pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-black/30 to-black/10 p-4 transition-opacity duration-500 sm:items-center md:p-12',
           pausedIdle ? 'opacity-100' : 'opacity-0',
         )}
       >
-        <div className="max-w-xl">
-          <p className="text-sm text-muted">You’re watching</p>
-          <h2 className="mt-1 text-3xl font-semibold text-balance md:text-5xl">{title}</h2>
-          {subtitle && <p className="mt-2 text-lg text-white/85">{subtitle}</p>}
-          {overview && <p className="mt-4 line-clamp-4 text-body-sm leading-relaxed text-white/75 md:text-base">{overview}</p>}
-          <p className="mt-6 text-sm text-muted">Paused · {formatClock(time)} of {formatClock(duration)}</p>
+        <div
+          className={cx(
+            'flex w-full max-w-xl gap-4 rounded-3xl bg-surface/75 p-4 ring-1 ring-white/[0.08] shadow-2xl shadow-black/40 backdrop-blur-xl transition duration-500 md:gap-5 md:p-5',
+            pausedIdle ? 'translate-y-0' : 'translate-y-3',
+          )}
+        >
+          {poster && <img src={poster} alt="" className="hidden aspect-[2/3] w-28 shrink-0 self-start rounded-2xl object-cover sm:block md:w-32" />}
+          <div className="min-w-0 flex-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-black">
+              <Pause className="size-3 fill-current" strokeWidth={0} /> Paused
+            </span>
+            <h2 className="mt-2 line-clamp-2 text-xl leading-tight font-semibold text-balance md:text-2xl">{title}</h2>
+            {subtitle && <p className="mt-0.5 truncate text-body-sm text-white/80">{subtitle}</p>}
+            {meta && <p className="mt-1 text-caption text-muted">{meta}</p>}
+            {overview && <p className="mt-2.5 line-clamp-3 text-caption leading-relaxed text-white/70">{overview}</p>}
+            <div className="mt-3.5">
+              <div className="h-1 overflow-hidden rounded-full bg-white/15">
+                <div className="h-full rounded-full bg-white" style={{ width: `${duration ? Math.min(100, (now / duration) * 100) : 0}%` }} />
+              </div>
+              <div className="mt-1.5 flex justify-between text-micro text-muted tabular-nums">
+                <span>{formatClock(now)}</span>
+                <span>{duration ? `${Math.max(0, Math.round((duration - now) / 60))} min left` : ''}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1047,9 +1095,10 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                 <Captions className="size-5" />
               </IconButton>
               {menu === 'captions' && (
-                <Popover wide={view === 'transcript'}>
+                <Popover wide={view === 'transcript'} split={view === 'main'}>
                   {view === 'main' && (
                     <>
+                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                       <MenuItem selected={subIdx < 0} onClick={() => (chooseSub(-1), setMenu(null))}>
                         Off
                       </MenuItem>
@@ -1059,7 +1108,9 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                           {s.text !== undefined && <span className="text-micro tracking-wider text-faint uppercase">file</span>}
                         </MenuItem>
                       ))}
-                      <Divider />
+                      </div>
+                      {/* Always visible below the list. */}
+                      <div className="mt-1 shrink-0 border-t border-white/[0.08] pt-1">
                       <MenuItem onClick={() => fileInput.current?.click()}>
                         <FileUp className="size-4 shrink-0 text-muted" />
                         <span className="flex-1">Load a file…</span>
@@ -1082,6 +1133,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                       )}
                       <NavItem label="Style" value={`${Math.round(settings.subSize * 100)}%`} onClick={() => setView('style')} />
                       {cues.length > 0 && <NavItem label="Transcript" onClick={() => setView('transcript')} />}
+                      </div>
                     </>
                   )}
                   {view === 'style' && (
@@ -1118,17 +1170,30 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                 <Settings className="size-5" />
               </IconButton>
               {menu === 'settings' && (
-                <Popover wide={view === 'source'}>
+                <Popover>
                   {view === 'main' && (
                     <>
-                      {levels.length > 1 && <NavItem label="Quality" value={qualityNow} onClick={() => setView('quality')} />}
-                      {audioTracks.length > 1 && <NavItem label="Audio" value={audioTracks.find((t) => t.id === audioTrack)?.name} onClick={() => setView('audio')} />}
-                      <NavItem label="Source" value={`${qualityLabel(source.quality)} · ${source.provider.name}${source.audioTracks?.[0]?.label ? ` · ${source.audioTracks[0].label}` : ''}`} onClick={() => setView('source')} />
-                      <NavItem label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
-                      <Divider />
-                      <SwitchItem label="Fill screen" hint="Crop to remove black bars" on={fill} onChange={setFill} />
-                      <SwitchItem label="Skip intros automatically" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
-                      <SwitchItem label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
+                      <div className="grid grid-cols-2 gap-1.5 p-0.5">
+                        <Tile icon={Layers} label="Source" value={source.provider.name} onClick={() => setView('source')} />
+                        <Tile
+                          icon={Gauge}
+                          label="Quality"
+                          value={levels.length > 1 ? qualityNow : qualityLabel(source.quality)}
+                          onClick={levels.length > 1 ? () => setView('quality') : undefined}
+                        />
+                        <Tile icon={FastForward} label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
+                        <Tile
+                          icon={AudioLines}
+                          label="Audio"
+                          value={audioTracks.find((t) => t.id === audioTrack)?.name ?? source.audioTracks?.[0]?.label ?? 'Original'}
+                          onClick={audioTracks.length > 1 ? () => setView('audio') : undefined}
+                        />
+                      </div>
+                      <div className="mt-1.5 grid grid-cols-3 gap-1.5 p-0.5">
+                        <ToggleTile icon={Expand} label="Fill screen" on={fill} onChange={setFill} />
+                        <ToggleTile icon={ChevronsRight} label="Skip intros" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
+                        <ToggleTile icon={SkipForward} label="Autoplay" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
+                      </div>
                     </>
                   )}
                   {view === 'quality' && (
@@ -1183,9 +1248,11 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                   {view === 'source' && (
                     <>
                       <BackHeader onBack={() => setView('main')}>Source</BackHeader>
-                      <p className="px-3 pb-1.5 text-xs text-muted">
-                        Found by {data.via === 'extension' ? 'this browser (Charcoal Helper)' : data.via === 'own' ? 'your server' : 'Charcoal’s server'}
-                      </p>
+                      {settings.showDiagnostics && (
+                        <p className="px-3 pb-1.5 text-xs text-muted">
+                          Found by {data.via === 'extension' ? 'this browser (Charcoal Helper)' : data.via === 'own' ? 'your server' : 'Charcoal’s server'}
+                        </p>
+                      )}
                       {groupSources(data.sources).map(({ name, items }) => (
                         <div key={name} className="pb-1">
                           <div className="flex items-baseline justify-between px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">
@@ -1196,6 +1263,8 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                             <SourceRow
                               key={s.url}
                               source={s}
+                              infoOpen={infoOpen === s.url}
+                              onInfo={() => setInfoOpen((u) => (u === s.url ? null : s.url))}
                               selected={sourceIdx === i}
                               failed={failed.current.has(i)}
                               reason={failReason.current.get(i)}
@@ -1226,7 +1295,7 @@ export default function Player({ data, media, title, subtitle, overview, poster,
                         </button>
                       )}
                       {/* Every other provider, and why it had nothing: useful when a title won't play. */}
-                      {data.report?.some((r) => !r.ok) && (
+                      {settings.showDiagnostics && data.report?.some((r) => !r.ok) && (
                         <>
                           <Divider />
                           <p className="px-3 pt-1 pb-1 text-xs text-muted">No stream from</p>
@@ -1416,10 +1485,12 @@ const StepButton = ({ label, onClick, children }: { label: string; onClick: () =
   );
 };
 
-const Popover = ({ children, wide }: { children: ReactNode; wide?: boolean }) => (
+const Popover = ({ children, wide, split }: { children: ReactNode; wide?: boolean; split?: boolean }) => (
   <div
     className={cx(
-      'toast-in absolute right-0 bottom-12 z-30 max-h-[64vh] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
+      'toast-in absolute right-0 bottom-12 z-30 rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
+      // split: a scrolling list on top, fixed controls below (the subtitles menu).
+      split ? 'flex max-h-[min(26rem,60vh)] flex-col' : 'max-h-[64vh] overflow-y-auto overscroll-contain',
       wide ? 'w-[min(24rem,calc(100vw-1.5rem))]' : 'w-72',
     )}
   >
@@ -1446,34 +1517,65 @@ function levelLabel(pos: number, height: number, source: JellySource, count: num
 }
 const levelSize = (pos: number, source: JellySource, count: number) => (source.levels?.length === count ? formatSize(source.levels[pos]?.size) : '');
 
-/** One source: quality (with every level of an adaptive one), language, full file details, size. */
-function SourceRow({ source: s, selected, failed, reason, onClick }: { source: JellySource; selected: boolean; failed: boolean; reason?: string; onClick: () => void }) {
-  const lang = s.audioTracks?.[0]?.label;
+/**
+ * One source as a single tidy line: quality, a short tag (language, or the release type), size.
+ * The ⓘ button shows everything else underneath: each quality and its size, the file details, and
+ * why it failed.
+ */
+function SourceRow({
+  source: s,
+  selected,
+  failed,
+  reason,
+  onClick,
+  infoOpen,
+  onInfo,
+}: {
+  source: JellySource;
+  selected: boolean;
+  failed: boolean;
+  reason?: string;
+  onClick: () => void;
+  infoOpen: boolean;
+  onInfo: () => void;
+}) {
   const levels = s.levels && s.levels.length > 1 ? s.levels : null;
+  const label = s.quality === 'original' ? 'Original' : qualityLabel(s.quality);
+  const tag = s.audioTracks?.[0]?.label ?? s.note?.split(' · ')[0];
+  const hasInfo = !!(levels || s.note || reason || s.quality === 'original');
   return (
-    <button
-      onClick={onClick}
-      aria-pressed={selected}
-      className={cx('flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-white/10', selected && 'bg-white/[0.06]')}
-    >
-      <Check className={cx('mt-0.5 size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-baseline gap-x-2">
-          <span className="font-medium">{levels ? `Up to ${qualityLabel(s.quality)}` : s.quality === 'original' ? 'Original file' : qualityLabel(s.quality)}</span>
-          {lang && <span className="text-muted">{lang}</span>}
-          {!levels && s.size ? <span className="text-xs text-faint tabular-nums">{formatSize(s.size)}</span> : null}
-        </span>
-        {levels && (
-          <span className="mt-0.5 block text-xs text-muted tabular-nums">
-            {levels.map((l) => `${qualityLabel(l.quality)}${l.size ? ` ${formatSize(l.size)}` : ''}`).join(' · ')}
+    <div className={cx('rounded-xl', selected && 'bg-white/[0.06]')}>
+      <div className="flex items-center">
+        <button onClick={onClick} aria-pressed={selected} className="flex min-w-0 flex-1 items-center gap-2 rounded-xl py-2 pr-1 pl-3 text-left text-sm hover:bg-white/10">
+          <Check className={cx('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
+          <span className="shrink-0 font-medium">{label}</span>
+          {tag && <span className="min-w-0 truncate text-muted">{tag}</span>}
+          <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'text-faint')}>
+            {failed ? 'Failed' : formatSize(s.size)}
           </span>
+        </button>
+        {hasInfo && (
+          <button
+            type="button"
+            onClick={onInfo}
+            aria-label={`Details: ${label}${tag ? ` ${tag}` : ''}`}
+            aria-expanded={infoOpen}
+            className={cx('grid size-8 shrink-0 place-items-center rounded-full transition hover:bg-white/10 hover:text-white', infoOpen ? 'text-white' : 'text-faint')}
+          >
+            <Info className="size-4" />
+          </button>
         )}
-        {s.note && <span className="mt-0.5 block text-xs leading-snug text-faint">{s.note}</span>}
-        {s.quality === 'original' && <span className="mt-0.5 block text-xs leading-snug text-faint">Untouched file: its audio may not play in a browser</span>}
-        {failed && reason && <span className="mt-0.5 block text-xs leading-snug text-danger">{reason}</span>}
-      </span>
-      <span className={cx('mt-0.5 text-micro tracking-wider uppercase', failed ? 'text-danger' : 'text-faint')}>{failed ? 'failed' : s.type}</span>
-    </button>
+      </div>
+      {infoOpen && (
+        <div className="space-y-0.5 pr-3 pb-2 pl-9 text-xs leading-snug text-faint">
+          {levels && <p className="text-muted tabular-nums">{levels.map((l) => `${qualityLabel(l.quality)}${l.size ? ` ${formatSize(l.size)}` : ''}`).join(' · ')}</p>}
+          {s.note && <p>{s.note}</p>}
+          {s.quality === 'original' && <p>The untouched file, as released</p>}
+          <p className="uppercase">{s.type}</p>
+          {failed && reason && <p className="text-danger">{reason}</p>}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1501,26 +1603,52 @@ function BackHeader({ onBack, children }: { onBack: () => void; children: ReactN
   );
 }
 
+/** A settings card: icon, what it is, its current value. Without onClick it only shows the value. */
+function Tile({ icon: Icon, label, value, onClick }: { icon: typeof Settings; label: string; value?: string; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className="flex min-w-0 flex-col items-start gap-2 rounded-2xl bg-white/[0.06] p-3 text-left transition enabled:hover:bg-white/[0.11] disabled:cursor-default"
+    >
+      <span className="flex w-full items-center justify-between text-muted">
+        <Icon className="size-4" />
+        {onClick && <ChevronRight className="size-3.5" />}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-micro font-medium tracking-wider text-faint uppercase">{label}</span>
+        <span className="block truncate text-sm font-medium">{value}</span>
+      </span>
+    </button>
+  );
+}
+
+/** An on/off card: lights up (white) when on. */
+function ToggleTile({ icon: Icon, label, on, onChange }: { icon: typeof Settings; label: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={cx(
+        'flex flex-col items-center gap-1.5 rounded-2xl p-2.5 text-center text-xs font-medium transition',
+        on ? 'bg-white text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/[0.11]',
+      )}
+    >
+      <Icon className="size-4" />
+      {label}
+    </button>
+  );
+}
+
 function NavItem({ label, value, onClick }: { label: string; value?: string; onClick: () => void }) {
   return (
     <button onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/10">
       <span className="flex-1">{label}</span>
       {value && <span className="max-w-[55%] truncate text-muted">{value}</span>}
       <ChevronRight className="size-4 shrink-0 text-muted" />
-    </button>
-  );
-}
-
-function SwitchItem({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/10">
-      <span className="flex-1">
-        {label}
-        {hint && <span className="block text-xs text-muted">{hint}</span>}
-      </span>
-      <span className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-white/15')}>
-        <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', on ? 'translate-x-4 bg-black' : 'bg-white')} />
-      </span>
     </button>
   );
 }
