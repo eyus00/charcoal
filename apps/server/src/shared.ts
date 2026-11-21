@@ -6,6 +6,12 @@ import { BaseProvider } from '@omss/framework';
 import type { ProviderCapabilities, ProviderMediaObject, ProviderResult, Source, Subtitle } from '@omss/framework';
 import { loadFallbackProviders, nativeFetcher, NotFoundError, providers, type Media, type Provider } from '@charcoal/providers';
 
+/** Settings for providers that need them, from this server's own environment. */
+const SERVER_SETTINGS = {
+    febboxToken: process.env.FEBBOX_TOKEN?.trim().replace(/^ui=/, '') || undefined,
+    febboxMaxHeight: Number(process.env.FEBBOX_MAX_HEIGHT) || undefined,
+};
+
 const TMDB_KEY = process.env.TMDB_API_KEY || '50404130561567acf3e0725aeb09ec5d';
 const showNames = new Map<string, Promise<string | null>>();
 
@@ -56,9 +62,9 @@ function adapt(p: Provider): BaseProvider {
             const media = await toMedia(m);
             if (!media) return this.empty('Couldn’t look up the title');
             try {
-                const r = await p.scrape(media, { fetch: nativeFetcher });
+                const r = await p.scrape(media, { fetch: nativeFetcher, settings: SERVER_SETTINGS });
                 const sources: Source[] = r.streams.map((s) => ({
-                    url: this.createProxyUrl(s.url, s.headers),
+                    url: s.url.startsWith('data:') ? this.proxyDataPlaylist(s.url, s.headers) : this.createProxyUrl(s.url, s.headers),
                     type: s.type,
                     quality: s.quality,
                     audioTracks: [{ language: s.languageCode ?? 'und', label: s.language ?? 'Original' }],
@@ -77,6 +83,15 @@ function adapt(p: Provider): BaseProvider {
                 throw e;
             }
         }
+        /** A playlist built in memory (Febbox's adaptive list): its variant URLs go through the proxy. */
+        private proxyDataPlaylist(dataUrl: string, headers: Record<string, string>): string {
+            const text = Buffer.from(dataUrl.split(',')[1] ?? '', 'base64').toString('utf8');
+            const out = text
+                .split('\n')
+                .map((l) => (l.trim() && !l.startsWith('#') ? this.createProxyUrl(l.trim(), headers) : l))
+                .join('\n');
+            return `data:application/vnd.apple.mpegurl;base64,${Buffer.from(out).toString('base64')}`;
+        }
         private empty(message: string): ProviderResult {
             return { sources: [], subtitles: [], diagnostics: [{ code: 'PROVIDER_ERROR', message: `${p.name}: ${message}`, field: '', severity: 'error' }] };
         }
@@ -92,5 +107,7 @@ function adapt(p: Provider): BaseProvider {
  */
 export async function sharedProviders(): Promise<BaseProvider[]> {
     const fallback = process.env.STREAMVIVA === 'false' ? [] : await loadFallbackProviders();
-    return [...providers, ...fallback].filter((p) => !p.requires).map(adapt);
+    // A provider that needs a setting runs only when the server has it (e.g. FEBBOX_TOKEN on a server
+    // at home): the website never sends a viewer's token to a server.
+    return [...providers, ...fallback].filter((p) => !p.requires || SERVER_SETTINGS[p.requires]).map(adapt);
 }

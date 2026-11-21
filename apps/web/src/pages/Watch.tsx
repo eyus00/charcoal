@@ -8,10 +8,10 @@ import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
 import { detectExtension } from '../lib/extension';
 import { fetchFallbackViaExtension, fetchViaExtension } from '../lib/direct';
-import { EMBEDS, embedById, fetchJelly, type Target } from '../lib/servers';
+import { EMBEDS, embedById, fetchJelly, sortSources, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
-import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
+import { cx, formatRuntime, useDismiss, useKeys, useTitle } from '../lib/util';
 import { hotkeysCtl } from '../components/Hotkeys';
 import Kbd from '../components/Kbd';
 import { btn } from '../components/Button';
@@ -159,8 +159,8 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     if (!extra) return jelly.data;
     return {
       ...jelly.data,
-      // Appended, never re-sorted: the player's source indexes must stay put.
-      sources: [...jelly.data.sources, ...extra.sources.filter((s) => !jelly.data.sources.some((j) => j.url === s.url))],
+      // One ranked list (the player keeps its place by URL, so re-sorting is safe).
+      sources: sortSources([...jelly.data.sources, ...extra.sources.filter((s) => !jelly.data.sources.some((j) => j.url === s.url))]),
       subtitles: [...jelly.data.subtitles, ...extra.subtitles.filter((s) => !jelly.data.subtitles.some((j) => j.url === s.url))],
       report: [...(jelly.data.report ?? []), ...extra.report],
     };
@@ -257,6 +257,13 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           title={title}
           subtitle={subtitle}
           overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
+          meta={[
+            (d?.release_date || d?.first_air_date || '').slice(0, 4),
+            d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : '',
+            formatRuntime((type === 'tv' ? ep?.runtime : d?.runtime) ?? 0),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
           header={header}

@@ -184,15 +184,25 @@ export function languageRank(audio: { language: string; label: string }[] | unde
   return 1;
 }
 
-/** Sources in the preferred (or original) language first, then by quality: 4K, 1440p, 1080p,
- *  adaptive, 720p, original files…, bigger files first within a quality; MKV last (most browsers
- *  can't play it). */
+/** By provider (Febbox, LookMovie, VixSrc, others, Castle), then the preferred (or original)
+ *  language, then quality: 4K, 1440p, 1080p, adaptive, 720p, original files…; bigger files first
+ *  within a quality; MKV last (most browsers can't play it). */
+/** Providers in order of preference: originals first, the dubbed 720p catalogue last. */
+const PROVIDER_ORDER = ['febbox', 'sv-lookmovie', 'vixsrc'];
+const LAST_PROVIDERS = ['castle'];
+const providerRank = (id: string) => {
+  const i = PROVIDER_ORDER.indexOf(id);
+  if (i >= 0) return i;
+  return LAST_PROVIDERS.includes(id) ? PROVIDER_ORDER.length + 1 : PROVIDER_ORDER.length;
+};
+
 export function sortSources(list: JellySource[]): JellySource[] {
   const typeRank = (t: string) => (t === 'hls' ? 0 : t === 'mp4' ? 1 : 2);
   const pref = getState().settings.audioLang;
   return [...list].sort(
     (a, b) =>
       (typeRank(a.type) === 2 ? 1 : 0) - (typeRank(b.type) === 2 ? 1 : 0) ||
+      providerRank(a.provider.id) - providerRank(b.provider.id) ||
       languageRank(a.audioTracks, pref) - languageRank(b.audioTracks, pref) ||
       typeRank(a.type) - typeRank(b.type) ||
       (RANK[qualityLabel(a.quality)] ?? 8) - (RANK[qualityLabel(b.quality)] ?? 8) ||

@@ -319,6 +319,12 @@ function SettingsSection() {
           <Toggle label="Next episode when the credits start" hint="Starts the autoplay countdown early" on={settings.creditsNext} onChange={(v) => actions.updateSettings({ creditsNext: v })} />
           <Toggle label="Show details while paused" hint="Title and overview after a few seconds" on={settings.pauseOverlay} onChange={(v) => actions.updateSettings({ pauseOverlay: v })} />
           <Toggle label="Press and hold for 2× speed" on={settings.holdToSpeed} onChange={(v) => actions.updateSettings({ holdToSpeed: v })} />
+          <Toggle
+            label="Show source diagnostics"
+            hint="Where sources came from, and why others had none"
+            on={settings.showDiagnostics}
+            onChange={(v) => actions.updateSettings({ showDiagnostics: v })}
+          />
           <p className="text-xs text-muted">
             Intro, recap and credits times come from{' '}
             <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">

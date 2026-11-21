@@ -227,9 +227,11 @@ export const febbox: Provider = {
             levels: a.variants.map((v) => ({ quality: String(v.tier), size: v.size })),
           });
         }
-        // The untouched file (MP4 only: browsers can't play MKV). Its audio may be a format browsers
-        // can't decode (TrueHD, DTS), so it ranks after the conversions.
-        for (const l of links.filter((x) => x.quality === 'original' && !isHls(x.url) && !/\.mkv(\?|$)/i.test(x.url))) {
+        // The untouched file, only when a browser can play it: MP4 (not MKV) with audio browsers
+        // decode (AAC / Opus / MP3, or unnamed). DTS, TrueHD, FLAC, PCM and (E-)AC3 files stall or
+        // play silent, so they're left out; the conversions above have browser-friendly audio.
+        const browserAudio = !/dts|truehd|atmos|flac|pcm|\bddp?\b|dd\+|ddp?5|e-?ac-?3|\bac-?3/i.test(f.file_name) || /aac|opus|mp3/i.test(f.file_name);
+        for (const l of links.filter((x) => browserAudio && x.quality === 'original' && !isHls(x.url) && !/\.mkv(\?|$)/i.test(x.url))) {
           out.push({ url: l.url, type: 'mp4', quality: 'original', headers: VIDEO_HEADERS, note: describe(f, true), size: l.size ?? parseSize(f.file_size) });
         }
         return out;

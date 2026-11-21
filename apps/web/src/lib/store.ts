@@ -73,6 +73,8 @@ export interface Settings {
   febboxToken: string;
   /** Highest Febbox quality (0 = as high as the connection and screen allow), to save traffic. */
   febboxMaxHeight: number;
+  /** Show where sources came from and why others had none (for troubleshooting). */
+  showDiagnostics: boolean;
 }
 
 export interface State {
@@ -108,6 +110,7 @@ const defaultSettings: Settings = {
   lastProvider: null,
   febboxToken: '',
   febboxMaxHeight: 0,
+  showDiagnostics: false,
   audioLang: (typeof navigator !== 'undefined' && navigator.language?.slice(0, 2).toLowerCase()) || 'en',
 };
 
