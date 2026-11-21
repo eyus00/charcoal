@@ -8,6 +8,9 @@ export interface Media {
   year?: number;
   season?: number;
   episode?: number;
+  /** TMDB ids of the season / episode, when known (some fallback sources use them). */
+  seasonTmdbId?: string;
+  episodeTmdbId?: string;
 }
 
 /** A playable stream. `headers` must be sent with every request for it (playlist, segments, keys). */
@@ -78,6 +81,8 @@ export interface Provider {
   /** Higher runs first when results are ordered. */
   rank: number;
   supports: ('movie' | 'tv')[];
+  /** Set on fallback providers (StreamViva): they run after ours, and their sources are added later. */
+  fallback?: 'streamviva';
   /** A setting this provider can't work without; it's skipped when the setting is missing. */
   requires?: keyof ProviderSettings;
   /** Resolves with streams, or throws (NotFoundError when the title simply isn't there). */

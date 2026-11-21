@@ -9,6 +9,7 @@ apps/
   extension/  Charcoal Helper, finds and plays sources from the viewer's browser → GitHub Releases
 packages/
   providers/  Source scrapers shared by the server and the website
+  streamviva/ StreamViva's provider engine (vendored, MIT), used as a fallback
 ```
 
 ## Where streams come from

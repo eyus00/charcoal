@@ -4,7 +4,7 @@
  */
 import { BaseProvider } from '@omss/framework';
 import type { ProviderCapabilities, ProviderMediaObject, ProviderResult, Source, Subtitle } from '@omss/framework';
-import { nativeFetcher, NotFoundError, providers, type Media, type Provider } from '@charcoal/providers';
+import { loadFallbackProviders, nativeFetcher, NotFoundError, providers, type Media, type Provider } from '@charcoal/providers';
 
 const TMDB_KEY = process.env.TMDB_API_KEY || '50404130561567acf3e0725aeb09ec5d';
 const showNames = new Map<string, Promise<string | null>>();
@@ -84,6 +84,13 @@ function adapt(p: Provider): BaseProvider {
     return new Shared();
 }
 
-// Providers that need a viewer's own login (Febbox) only run in the viewer's browser; the server never
-// gets those tokens.
-export const sharedProviders = (): BaseProvider[] => providers.filter((p) => !p.requires).map(adapt);
+/**
+ * Our shared providers, plus the StreamViva fallback ones (set STREAMVIVA=false to leave those out).
+ * Providers that need a viewer's own login (Febbox) only run in the viewer's browser; the server
+ * never gets those tokens. On a data-centre host the fallback ones mostly fail and provider health
+ * benches them; on a server at home they can work.
+ */
+export async function sharedProviders(): Promise<BaseProvider[]> {
+    const fallback = process.env.STREAMVIVA === 'false' ? [] : await loadFallbackProviders();
+    return [...providers, ...fallback].filter((p) => !p.requires).map(adapt);
+}
