@@ -41,7 +41,7 @@ function Shell() {
       <ScrollRestoration />
       <Rail />
       <div className="relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
-        <TopBar />
+        <TopBar hideLogo={sidebarOpen} />
         <main>
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
@@ -170,6 +170,11 @@ function Rail() {
           </span>
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
+        {open && (
+          <Link to="/" className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
+            <Wordmark />
+          </Link>
+        )}
 
       </div>
       <nav className="flex flex-col gap-5" aria-label="Browse">
@@ -208,7 +213,7 @@ const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV 
  *   and changes made on the page (type switch, filter pills) flow back into the draft;
  * - elsewhere, Enter / "Search" in the quick filters opens the results page.
  */
-function TopBar() {
+function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
@@ -306,6 +311,8 @@ function TopBar() {
       to="/"
       className={cx(
         'absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
+        // With the sidebar open, the wordmark moves into it.
+        hideLogo && 'lg:hidden',
         open && 'max-md:hidden',
       )}
       aria-label="Charcoal home"
