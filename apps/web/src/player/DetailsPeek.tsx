@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import { CertBadge } from '../components/MediaCard';
 import { Tip } from '../components/Tip';
 import { btn } from '../components/Button';
+import BookmarkMenu from '../components/BookmarkMenu';
 import { certificationOf, titleOf, type Details, type MediaType } from '../lib/tmdb';
 import { cx, formatRuntime } from '../lib/util';
 
@@ -112,7 +113,10 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor }: { d: Details; type: 
 
   // Close on outside press, Escape, scroll or resize (it's pinned to where the card was).
   useEffect(() => {
-    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && onClose();
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Element;
+      if (!ref.current?.contains(t) && !t.closest?.('[role=menu]')) onClose();
+    };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     const shut = () => onClose();
     document.addEventListener('pointerdown', onDown);
@@ -142,6 +146,10 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor }: { d: Details; type: 
         <Img path={d.backdrop_path} kind="backdrop" sizes="340px" alt="" className="aspect-video w-full" imgClassName="object-[70%_20%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/10 to-transparent" />
         <div className="absolute top-2.5 right-2.5 flex gap-1.5">
+          <Link to={detailsUrl} aria-label="Open the full details page" className={roundBtn}>
+            <Maximize2 className="size-3.5" />
+            <Tip label="Open full page" side="bottom" align="end" />
+          </Link>
           <button type="button" onClick={onClose} aria-label="Close" className={roundBtn}>
             <X className="size-3.5" />
             <Tip label="Close" keys="Esc" side="bottom" align="end" />
@@ -157,9 +165,11 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor }: { d: Details; type: 
           <Link to={`/watch/${type}/${d.id}`} className={cx(btn({ variant: 'primary' }), 'h-9 flex-1 text-sm')}>
             <Play className="size-3.5 fill-current" strokeWidth={0} /> Watch
           </Link>
-          <Link to={detailsUrl} className={cx(btn(), 'h-9 flex-1 text-sm')}>
-            Details
-          </Link>
+          <BookmarkMenu
+            size="md"
+            className="flex-1 [&>button]:h-9 [&>button]:w-full [&>button]:text-sm"
+            item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
+          />
         </div>
       </div>
     </div>,
