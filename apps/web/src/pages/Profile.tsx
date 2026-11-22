@@ -534,8 +534,9 @@ function TraktCard({ className }: { className: string }) {
             )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user.name || user.username}</p>
-              <a href={`https://trakt.tv/users/${user.username}`} target="_blank" rel="noreferrer" className="text-xs text-muted transition-colors hover:text-white">
+              <a href={`https://trakt.tv/users/${user.username}`} target="_blank" rel="noreferrer" className="group/tip relative text-xs text-muted transition-colors hover:text-white">
                 @{user.username} on Trakt
+                <Tip label="Open your profile on trakt.tv" side="bottom" align="start" />
               </a>
             </div>
             <button

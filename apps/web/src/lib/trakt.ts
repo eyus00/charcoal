@@ -78,6 +78,12 @@ export const traktQ = {
     staleTime: 30 * 60_000,
     queryFn: async ({ signal }: { signal: AbortSignal }) => (await trakt<TraktRatings>(`/${t!.kind}/${t!.slug}/ratings`, signal)).data,
   }),
+  /** Replies to a comment (oldest first, like a conversation). */
+  replies: (commentId: number) => ({
+    queryKey: ['trakt', 'replies', commentId],
+    staleTime: 5 * 60_000,
+    queryFn: async ({ signal }: { signal: AbortSignal }) => (await trakt<TraktComment[]>(`/comments/${commentId}/replies?limit=50&extended=images`, signal)).data,
+  }),
   comments: (t: TraktTitle | null | undefined, sort: CommentSort, page: number) => ({
     queryKey: ['trakt', 'comments', t?.kind, t?.slug, sort, page],
     enabled: !!t,
@@ -269,6 +275,7 @@ export function traktSignOut() {
 const target = (t: TraktTitle) => (t.kind === 'movies' ? { movie: { ids: { trakt: t.traktId } } } : { show: { ids: { trakt: t.traktId } } });
 
 export const postComment = (t: TraktTitle, comment: string, spoiler: boolean) => traktSend<TraktComment>('POST', '/comments', { ...target(t), comment, spoiler });
+export const postReply = (commentId: number, comment: string, spoiler: boolean) => traktSend<TraktComment>('POST', `/comments/${commentId}/replies`, { comment, spoiler });
 export const deleteComment = (id: number) => traktSend('DELETE', `/comments/${id}`);
 export const likeComment = (id: number, like: boolean) => traktSend(like ? 'POST' : 'DELETE', `/comments/${id}/like`);
 

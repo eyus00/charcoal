@@ -1,15 +1,17 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Heart, MessageCircle, Star, Trash2 } from 'lucide-react';
 import { SectionHeader } from './Row';
 import { btn } from './Button';
 import { toast } from './Toast';
+import { Tip } from './Tip';
 import { letterboxdUrl } from '../lib/letterboxd';
 import {
   deleteComment,
   likeComment,
   myRatingsQ,
   postComment,
+  postReply,
   rateTitle,
   startTraktLogin,
   traktQ,
@@ -60,14 +62,14 @@ export default function Community({ type, id }: { type: MediaType; id: number })
           action={
             <div className="flex items-center gap-4">
               {type === 'movie' && (
-                <a href={letterboxdUrl(id)} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-muted transition-colors hover:text-white">
-                  Letterboxd <ArrowUpRight className="size-3.5" />
-                </a>
+                <ExternalLink href={letterboxdUrl(id)} tip="Open on letterboxd.com">
+                  Letterboxd
+                </ExternalLink>
               )}
               {t && (
-                <a href={traktUrl(t, 'comments')} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-muted transition-colors hover:text-white">
-                  Trakt <ArrowUpRight className="size-3.5" />
-                </a>
+                <ExternalLink href={traktUrl(t, 'comments')} tip="Open on trakt.tv" align="end">
+                  Trakt
+                </ExternalLink>
               )}
             </div>
           }
@@ -109,34 +111,70 @@ export default function Community({ type, id }: { type: MediaType; id: number })
                   ))}
                   <span className="ml-auto text-xs text-faint">{total.toLocaleString()} comments</span>
                 </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {list.map((c) => (
-                    <CommentCard key={c.id} c={c} me={user} onDeleted={refresh} />
-                  ))}
-                </div>
-                {comments.hasNextPage && (
-                  <button
-                    type="button"
-                    onClick={() => comments.fetchNextPage()}
-                    disabled={comments.isFetchingNextPage}
-                    className="mt-4 h-10 w-full rounded-full bg-white/[0.06] text-sm text-white/85 transition-colors hover:bg-white/10 disabled:opacity-50"
-                  >
-                    {comments.isFetchingNextPage ? 'Loading…' : 'Show more'}
-                  </button>
-                )}
+                {/* A couple of rows high; the rest scrolls (and loads more near the end). */}
+                <Scrollbox key={sort} onEnd={() => comments.hasNextPage && !comments.isFetchingNextPage && comments.fetchNextPage()}>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {list.map((c) => (
+                      <CommentCard key={c.id} c={c} me={user} onDeleted={refresh} />
+                    ))}
+                  </div>
+                  {comments.isFetchingNextPage && <p className="py-4 text-center text-xs text-faint">Loading more…</p>}
+                </Scrollbox>
               </>
             )}
             {!list.length && tmdb.data && tmdb.data.results.length > 0 && (
-              <div className="grid gap-3 md:grid-cols-2">
-                {tmdb.data.results.slice(0, 6).map((r) => (
-                  <TmdbReviewCard key={r.id} r={r} />
-                ))}
-              </div>
+              <Scrollbox>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {tmdb.data.results.map((r) => (
+                    <TmdbReviewCard key={r.id} r={r} />
+                  ))}
+                </div>
+              </Scrollbox>
             )}
           </div>
         </div>
       )}
     </section>
+  );
+}
+
+/** A link that leaves Charcoal: arrow icon, and a tooltip saying where it goes. */
+function ExternalLink({ href, tip, align = 'center', children }: { href: string; tip: string; align?: 'start' | 'center' | 'end'; children: React.ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="group/tip relative flex items-center gap-1 text-sm text-muted transition-colors hover:text-white">
+      {children} <ArrowUpRight className="size-3.5" />
+      <Tip label={tip} side="bottom" align={align} />
+    </a>
+  );
+}
+
+/** A fixed-height scrolling area with a soft fade at the bottom; `onEnd` fires near the end. */
+function Scrollbox({ children, onEnd }: { children: React.ReactNode; onEnd?: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const end = useRef<HTMLDivElement>(null);
+  const cb = useRef(onEnd);
+  cb.current = onEnd;
+  const [atEnd, setAtEnd] = useState(false);
+  useEffect(() => {
+    if (!box.current || !end.current) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        setAtEnd(e.isIntersecting);
+        if (e.isIntersecting) cb.current?.();
+      },
+      { root: box.current, rootMargin: '0px 0px 300px 0px' },
+    );
+    io.observe(end.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div className="relative">
+      <div ref={box} className="no-scrollbar max-h-[34rem] overflow-y-auto overscroll-contain rounded-2xl md:max-h-[30rem]">
+        {children}
+        <div ref={end} className="h-px" />
+      </div>
+      <div aria-hidden className={cx('pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-bg to-transparent transition-opacity', atEnd && 'opacity-0')} />
+    </div>
   );
 }
 
@@ -146,7 +184,8 @@ function RatingSummary({ r, t, user }: { r?: { rating: number; votes: number; di
   const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
   return (
     <div className="self-start rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
-      <a href={traktUrl(t)} target="_blank" rel="noreferrer" className="block transition-opacity hover:opacity-85">
+      <a href={traktUrl(t)} target="_blank" rel="noreferrer" className="group/tip relative block transition-opacity hover:opacity-85">
+        <Tip label="Open on trakt.tv" side="bottom" align="start" />
         <div className="flex items-baseline gap-2">
           <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
           <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
@@ -226,6 +265,18 @@ function YourRating({ t }: { t: TraktTitle }) {
   );
 }
 
+/** A small on/off switch with its label (like the settings toggles). */
+function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex items-center gap-2 rounded-full py-1 pr-2 text-xs text-white/80 transition-colors hover:text-white">
+      <span className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-white/15')}>
+        <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', on ? 'translate-x-4 bg-black' : 'bg-white')} />
+      </span>
+      {label}
+    </button>
+  );
+}
+
 /** Write a comment (posted to Trakt, so everyone there sees it). */
 function Composer({ t, user, onPosted }: { t: TraktTitle; user: TraktUser | null; onPosted: () => void }) {
   const [text, setText] = useState('');
@@ -271,23 +322,17 @@ function Composer({ t, user, onPosted }: { t: TraktTitle; user: TraktUser | null
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && send()}
           rows={open ? 4 : 1}
-          placeholder="Share what you think…"
+          placeholder="Share what you think (5 words or more)…"
           aria-label="Your comment"
           className="min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-base leading-6 outline-none placeholder:text-faint sm:text-sm"
         />
       </div>
       {open && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 pl-12">
-          <button
-            type="button"
-            aria-pressed={spoiler}
-            onClick={() => setSpoiler((v) => !v)}
-            className={cx('h-8 rounded-full px-3 text-xs transition-colors', spoiler ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10')}
-          >
-            Contains spoilers
-          </button>
-          <span className="text-xs text-faint">{ok ? (words >= 200 ? 'Posts as a review' : `${words} words`) : `At least 5 words (${words})`}</span>
-          <div className="ml-auto flex gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3">
+          <Switch on={spoiler} onChange={setSpoiler} label="Spoilers" />
+          <div className="ml-auto flex items-center gap-2">
+            {/* Right where it matters: next to Post, only while it can't be posted yet (or will post as a review). */}
+            {(!ok || words >= 200) && <span className="text-xs text-faint">{ok ? 'Posts as a review' : `${5 - words} more word${5 - words === 1 ? '' : 's'}`}</span>}
             <button
               type="button"
               onClick={() => {
@@ -310,7 +355,7 @@ function Composer({ t, user, onPosted }: { t: TraktTitle; user: TraktUser | null
 }
 
 /** Trakt marks spoilers inline as [spoiler]…[/spoiler]: blur those parts until tapped. */
-function Body({ text, spoiler, clamp }: { text: string; spoiler: boolean; clamp: boolean }) {
+function Body({ text, spoiler, clamp, small }: { text: string; spoiler: boolean; clamp: boolean; small?: boolean }) {
   const [shown, setShown] = useState(false);
   const parts = text.split(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi);
   const content = parts.map((p, i) =>
@@ -323,8 +368,8 @@ function Body({ text, spoiler, clamp }: { text: string; spoiler: boolean; clamp:
     ),
   );
   return (
-    <div className="relative mt-2.5">
-      <p className={cx('text-body-sm leading-6 break-words whitespace-pre-line text-white/85', clamp && 'line-clamp-5', spoiler && !shown && 'blur-[6px] select-none')}>{content}</p>
+    <div className={cx('relative', small ? 'mt-0.5' : 'mt-2.5')}>
+      <p className={cx('break-words whitespace-pre-line text-white/85', small ? 'text-caption leading-5' : 'text-body-sm leading-6', clamp && 'line-clamp-5', spoiler && !shown && 'blur-[6px] select-none')}>{content}</p>
       {spoiler && !shown && (
         <button type="button" onClick={() => setShown(true)} className="absolute inset-0 grid place-items-center text-sm font-medium text-white">
           <span className="rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-sm">Contains spoilers · Show</span>
@@ -334,11 +379,12 @@ function Body({ text, spoiler, clamp }: { text: string; spoiler: boolean; clamp:
   );
 }
 
-function Avatar({ src, name }: { src?: string | null; name: string }) {
+function Avatar({ src, name, small }: { src?: string | null; name: string; small?: boolean }) {
+  const size = small ? 'size-7 text-xs' : 'size-9 text-sm';
   return src ? (
-    <img src={src} alt="" loading="lazy" className="size-9 shrink-0 rounded-full bg-white/10 object-cover" />
+    <img src={src} alt="" loading="lazy" className={cx('shrink-0 rounded-full bg-white/10 object-cover', size)} />
   ) : (
-    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-medium uppercase">{name.slice(0, 1)}</span>
+    <span className={cx('grid shrink-0 place-items-center rounded-full bg-white/10 font-medium uppercase', size)}>{name.slice(0, 1)}</span>
   );
 }
 
@@ -355,6 +401,8 @@ function CommentCard({ c, me, onDeleted }: { c: TraktComment; me: TraktUser | nu
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(c.likes);
   const [confirm, setConfirm] = useState(false);
+  const [thread, setThread] = useState(false);
+  const [replies, setReplies] = useState(c.replies);
   const mine = !!me && me.username === c.user.username;
   const like = async () => {
     const next = !liked;
@@ -410,9 +458,15 @@ function CommentCard({ c, me, onDeleted }: { c: TraktComment; me: TraktUser | nu
             <Heart className="size-3.5" /> {likes}
           </span>
         )}
-        <a href={`https://trakt.tv/comments/${c.id}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 transition-colors hover:text-white">
-          <MessageCircle className="size-3.5" /> {c.replies}
-        </a>
+        <button
+          type="button"
+          onClick={() => setThread((v) => !v)}
+          aria-expanded={thread}
+          aria-label={`${c.replies} replies`}
+          className={cx('flex items-center gap-1 transition-colors hover:text-white', thread && 'text-white')}
+        >
+          <MessageCircle className={cx('size-3.5', thread && 'fill-current')} /> {replies}
+        </button>
         {mine && (
           <button
             type="button"
@@ -429,7 +483,68 @@ function CommentCard({ c, me, onDeleted }: { c: TraktComment; me: TraktUser | nu
           </button>
         )}
       </footer>
+      {thread && <Thread id={c.id} me={me} onReplied={() => setReplies((n) => n + 1)} />}
     </article>
+  );
+}
+
+/** A comment's replies, read here; signed in, you can answer. */
+function Thread({ id, me, onReplied }: { id: number; me: TraktUser | null; onReplied: () => void }) {
+  const qc = useQueryClient();
+  const { data, isPending, isError } = useQuery(traktQ.replies(id));
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const send = async () => {
+    if (words < 5 || busy) return;
+    setBusy(true);
+    try {
+      await postReply(id, text.trim(), false);
+      setText('');
+      onReplied();
+      qc.invalidateQueries({ queryKey: ['trakt', 'replies', id] });
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-3 space-y-3 border-t border-white/[0.06] pt-3">
+      {isPending && <div className="skeleton h-12 rounded-xl" />}
+      {isError && <p className="text-xs text-faint">Couldn’t load the replies.</p>}
+      {data?.length === 0 && <p className="text-xs text-faint">No replies yet.</p>}
+      {data?.map((r) => {
+        const name = r.user.name || r.user.username;
+        return (
+          <div key={r.id} className="flex gap-2.5">
+            <Avatar src={r.user.images?.avatar?.full} name={name} small />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs">
+                <span className="font-medium text-white/90">{name}</span> <span className="text-faint">· {ago(r.created_at)}</span>
+              </p>
+              <Body text={r.comment} spoiler={r.spoiler} clamp={false} small />
+            </div>
+          </div>
+        );
+      })}
+      {me && (
+        <div className="flex items-end gap-2">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && send()}
+            rows={1}
+            placeholder="Reply (5 words or more)…"
+            aria-label="Your reply"
+            className="min-h-9 min-w-0 flex-1 resize-none rounded-xl bg-white/[0.06] px-3 py-2 text-base outline-none placeholder:text-faint sm:text-sm"
+          />
+          <button type="button" onClick={send} disabled={words < 5 || busy} className={cx(btn({ variant: 'primary' }), 'h-9 px-4 text-sm disabled:opacity-40')}>
+            {busy ? '…' : 'Reply'}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
