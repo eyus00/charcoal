@@ -60,6 +60,10 @@ export interface Settings {
   pauseOverlay: boolean;
   /** Use frames from what you watched as Continue watching images (kept in this browser). */
   frameThumbs: boolean;
+  /** Trakt (when connected): mark what's played in the Jelly player as watched there. */
+  traktScrobble: boolean;
+  /** Trakt (when connected): keep "To watch" in step with the Trakt watchlist. */
+  traktSyncWatchlist: boolean;
   /** Press and hold the video to play at 2× until released. */
   holdToSpeed: boolean;
   /** Subtitle look: size multiplier, text colour, background opacity (0–1), bold. */
@@ -108,6 +112,8 @@ const defaultSettings: Settings = {
   creditsNext: true,
   pauseOverlay: true,
   frameThumbs: true,
+  traktScrobble: true,
+  traktSyncWatchlist: true,
   holdToSpeed: true,
   subSize: 1,
   subColor: '#ffffff',
@@ -187,14 +193,14 @@ if (typeof window !== 'undefined') {
   if (!localStorage.getItem(KEY)) persist();
 }
 
-const subscribe = (l: () => void) => {
+export const subscribeStore = (l: () => void) => {
   listeners.add(l);
   return () => listeners.delete(l);
 };
 
 /** Select a slice. Selectors must return existing references (no new objects/arrays). */
 export function useStore<T>(selector: (s: State) => T): T {
-  return useSyncExternalStore(subscribe, () => selector(state), () => selector(state));
+  return useSyncExternalStore(subscribeStore, () => selector(state), () => selector(state));
 }
 export const getState = () => state;
 

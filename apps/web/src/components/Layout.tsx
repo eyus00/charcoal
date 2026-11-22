@@ -9,6 +9,7 @@ import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 import { Wordmark } from './Logo';
 import PeekHost from './PeekHost';
+import { startWatchlistSync, syncWatchlistOnStart } from '../lib/trakt';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
 import { btn } from './Button';
@@ -37,6 +38,12 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
 
 function Shell() {
   const sidebarOpen = useStore((s) => s.settings.sidebarOpen);
+  // Trakt (when connected): push "To watch" changes as they happen; pull Trakt's watchlist once a visit.
+  useEffect(() => {
+    syncWatchlistOnStart();
+    const stop = startWatchlistSync();
+    return () => void stop();
+  }, []);
   return (
     <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[232px]' : 'lg:pl-[80px]')}>
       <ScrollRestoration />

@@ -12,6 +12,8 @@ import { checkFebboxToken } from '@charcoal/providers';
 import { SubtitleStyleControls } from '../player/captions';
 import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
 import { toast } from '../components/Toast';
+import { startTraktLogin, syncWatchlistNow, traktSignOut, useTraktUser } from '../lib/trakt';
+import { importLetterboxd } from '../lib/letterboxd';
 import { btn } from '../components/Button';
 import { cx, scrollBehavior, useTitle } from '../lib/util';
 import { Tip } from '../components/Tip';
@@ -292,6 +294,10 @@ function SettingsSection() {
           {!settings.serverUrl && !serverState && <p className="text-xs text-faint">Now using Charcoal’s server ({new URL(HOSTED_SERVER).host}).</p>}
         </div>
 
+        <TraktCard className={cx(card, 'space-y-4')} />
+
+        <LetterboxdCard className={cx(card, 'space-y-3')} />
+
         <HelperCard className={cx(card, 'space-y-3')} />
 
         <FebboxCard className={cx(card, 'space-y-3')} />
@@ -498,6 +504,129 @@ const FEBBOX_HOURS: Record<number, string> = {
 };
 
 /** Charcoal Helper: is it installed and allowed, and should Charcoal use it. */
+function TraktCard({ className }: { className: string }) {
+  const user = useTraktUser();
+  const settings = useStore((s) => s.settings);
+  const [syncing, setSyncing] = useState(false);
+  const syncNow = async () => {
+    setSyncing(true);
+    try {
+      const r = await syncWatchlistNow();
+      toast(r.added || r.sent ? `Watchlist synced: ${r.added} added here, ${r.sent} sent to Trakt` : 'Watchlist already in sync');
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+  return (
+    <div className={className}>
+      <h3 className="font-medium">
+        Trakt <span className="text-sm font-normal text-muted">· ratings, comments, history</span>
+      </h3>
+      {user ? (
+        <>
+          <div className="flex items-center gap-3 rounded-2xl bg-raised/60 p-3">
+            {user.avatar ? (
+              <img src={user.avatar} alt="" className="size-10 rounded-full bg-white/10 object-cover" />
+            ) : (
+              <span className="grid size-10 place-items-center rounded-full bg-white/10 font-medium uppercase">{user.username.slice(0, 1)}</span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{user.name || user.username}</p>
+              <a href={`https://trakt.tv/users/${user.username}`} target="_blank" rel="noreferrer" className="text-xs text-muted transition-colors hover:text-white">
+                @{user.username} on Trakt
+              </a>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                traktSignOut();
+                toast('Disconnected from Trakt');
+              }}
+              className={cx(btn(), 'h-9 px-4 text-sm')}
+            >
+              Disconnect
+            </button>
+          </div>
+          <Toggle
+            label="Mark what you watch on Trakt"
+            hint="The Jelly player tells Trakt what's playing; finished titles count as watched"
+            on={settings.traktScrobble}
+            onChange={(v) => actions.updateSettings({ traktScrobble: v })}
+          />
+          <Toggle
+            label="Sync your watchlist"
+            hint="“To watch” here and your Trakt watchlist stay in step"
+            on={settings.traktSyncWatchlist}
+            onChange={(v) => actions.updateSettings({ traktSyncWatchlist: v })}
+          />
+          {settings.traktSyncWatchlist && (
+            <button type="button" onClick={syncNow} disabled={syncing} className={cx(btn(), 'h-9 px-4 text-sm disabled:opacity-50')}>
+              {syncing ? 'Syncing…' : 'Sync now'}
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted">
+            Connect your Trakt account to rate titles and post comments that everyone on Trakt sees, mark what you watch automatically, and keep your watchlist in step.
+            Signing in happens on trakt.tv; Charcoal never sees your password, and the sign-in stays in this browser.
+          </p>
+          <button type="button" onClick={() => startTraktLogin('/profile#settings')} className={btn({ variant: 'primary' })}>
+            Connect Trakt
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function LetterboxdCard({ className }: { className: string }) {
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const run = async (files: File[]) => {
+    if (!files.length) return;
+    const before = getState().watchlist;
+    try {
+      const r = await importLetterboxd(files, (done, total) => setProgress({ done, total }));
+      const missed = r.notFound.length ? `, ${r.notFound.length} not found` : '';
+      toast(`Imported ${r.added} films from Letterboxd${r.skipped ? ` (${r.skipped} already here)` : ''}${missed}`, r.added ? { label: 'Undo', run: () => actions.restore({ watchlist: before }) } : undefined);
+    } catch {
+      toast('Couldn’t read those files. Pick watchlist.csv or watched.csv from your Letterboxd export.');
+    } finally {
+      setProgress(null);
+    }
+  };
+  return (
+    <div className={className}>
+      <h3 className="font-medium">
+        Letterboxd <span className="text-sm font-normal text-muted">· import</span>
+      </h3>
+      <p className="text-sm text-muted">
+        Bring your Letterboxd films in: your watchlist becomes “To watch” and what you’ve watched becomes “Watched”. On letterboxd.com go to Settings → Data → Export your
+        data, unzip it, then pick <span className="text-white/85">watchlist.csv</span> and <span className="text-white/85">watched.csv</span>.
+      </p>
+      <input
+        ref={input}
+        type="file"
+        accept=".csv,text/csv"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = '';
+          run(files);
+        }}
+      />
+      <button type="button" onClick={() => input.current?.click()} disabled={!!progress} className={cx(btn(), 'disabled:opacity-60')}>
+        <Upload className="size-4" />
+        {progress ? `Importing ${progress.done} of ${progress.total}…` : 'Choose files'}
+      </button>
+    </div>
+  );
+}
+
 function HelperCard({ className }: { className: string }) {
   const useExtension = useStore((s) => s.settings.useExtension);
   const { data: info, isLoading, refetch } = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(true), staleTime: 0, retry: false });
