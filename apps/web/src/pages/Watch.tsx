@@ -390,7 +390,8 @@ function BigTitle({ children, onEpisodes }: { children: React.ReactNode; onEpiso
         className="absolute -inset-x-1 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
       />
       <div className="pointer-events-none relative px-1">{children}</div>
-      <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
+      {/* Hidden while the title (its own "Open details" tooltip) is hovered. */}
+      <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100 group-has-[a:hover]/hub:opacity-0 group-has-[a:focus-visible]/hub:opacity-0">
         Episodes
         <Kbd>E</Kbd>
       </span>

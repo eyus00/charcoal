@@ -35,7 +35,6 @@ export default function MiniEpisodes({
   const history = useStore((s) => s.history);
   const list = useRef<HTMLDivElement>(null);
   const [picking, setPicking] = useState(false);
-  const idx = seasons.findIndex((x) => x.season_number === season);
   const nameOf = (n: number) => (n === 0 ? 'Specials' : `Season ${n}`);
 
   // Open on the playing episode, with its season's tab in view.
@@ -59,7 +58,6 @@ export default function MiniEpisodes({
             className={cx('flex h-9 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors', picking ? 'bg-white/10' : 'bg-white/[0.06] hover:bg-white/10')}
           >
             {nameOf(season)}
-            {seasons[idx]?.episode_count ? <span className="font-normal text-muted">{seasons[idx].episode_count} episodes</span> : null}
             <ChevronDown className={cx('size-4 text-muted transition-transform', picking && 'rotate-180')} />
           </button>
           {picking && (
@@ -77,7 +75,7 @@ export default function MiniEpisodes({
                     className={cx('flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-sm transition-colors', on ? 'bg-white text-black' : 'hover:bg-white/10')}
                   >
                     <span className="flex-1">{nameOf(s.season_number)}</span>
-                    <span className={cx('text-xs', on ? 'text-black/50' : 'text-faint')}>{s.episode_count}</span>
+                    {on && <Check className="size-4" />}
                   </button>
                 );
               })}
@@ -88,7 +86,7 @@ export default function MiniEpisodes({
           type="button"
           onClick={onAll}
           aria-label="All episodes (E)"
-          className="group/tip relative grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
+          className="group/tip relative grid size-9 shrink-0 place-items-center rounded-full bg-white/[0.06] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
         >
           <Maximize2 className="size-4" />
           <Tip label="All episodes" keys="E" align="end" />

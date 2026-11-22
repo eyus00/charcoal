@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play, RotateCcw, Share2, Star, X } from 'lucide-react';
+import { Play, Share2, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { ErrorBox } from '../components/Grid';
@@ -400,7 +400,6 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
 }
 
 const PRIMARY = btn({ variant: 'primary', size: 'lg' });
-const SECONDARY = btn({ size: 'lg' });
 
 function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisodes: () => void }) {
   const history = useStore((s) => s.history);
@@ -414,11 +413,6 @@ function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisode
           {resumable ? `Resume ${formatClock(p.progress!.watched)}` : 'Watch now'}
           <Kbd light>P</Kbd>
         </Link>
-        {resumable && (
-          <Link to={`/watch/movie/${d.id}?t=0`} className={SECONDARY}>
-            <RotateCcw className="size-4" /> Start over
-          </Link>
-        )}
       </>
     );
   }
