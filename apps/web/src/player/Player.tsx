@@ -60,6 +60,8 @@ interface Props {
   detailsUrl?: string;
   /** TV: the episode line opens the episode list. */
   onEpisodes?: () => void;
+  /** The title block opens a details pop-up. */
+  onDetails?: () => void;
   resumeAt: number;
   /** The top bar. As a function it gets the paused-info block to show top-left while paused. */
   header: ReactNode | ((pausedInfo: ReactNode | null) => ReactNode);
@@ -104,7 +106,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, onDetails, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -565,7 +567,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   // Paused (or not started): what's playing, top-left, like a TV's pause screen.
   // What's playing, top-left in the top bar: always there with the controls, and kept on screen
   // while paused.
-  const pausedInfo = <TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />;
+  const pausedInfo = <TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onDetails={onDetails} onEpisodes={onEpisodes} />;
   const keepTop = !isPlaying && !exhausted && !casting;
 
   // ---------- actions ----------
@@ -1559,11 +1561,29 @@ function IconButton({
  * What's playing, big, top-left of the player (and of the page while sources load). The whole
  * block opens the details page; on TV the episode line opens the episode list instead.
  */
-export function TitleInfo({ title, subtitle, meta, detailsUrl, onEpisodes }: { title: string; subtitle?: string; meta?: string; detailsUrl?: string; onEpisodes?: () => void }) {
+export function TitleInfo({
+  title,
+  subtitle,
+  meta,
+  detailsUrl,
+  onDetails,
+  onEpisodes,
+}: {
+  title: string;
+  subtitle?: string;
+  meta?: string;
+  detailsUrl?: string;
+  /** Opens a details pop-up instead of leaving for the details page. */
+  onDetails?: () => void;
+  onEpisodes?: () => void;
+}) {
+  const area = 'pointer-events-auto absolute -inset-x-2 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.04]';
   return (
     <div className="group/info relative max-w-2xl py-1">
-      {detailsUrl && (
-        <Link to={detailsUrl} aria-label={`${title}: details`} className="pointer-events-auto absolute -inset-x-2 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.04]" />
+      {onDetails ? (
+        <button type="button" onClick={onDetails} aria-label={`${title}: details`} className={area} />
+      ) : (
+        detailsUrl && <Link to={detailsUrl} aria-label={`${title}: details`} className={area} />
       )}
       <div className="pointer-events-none relative">
         <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">{title}</h2>
@@ -1583,9 +1603,9 @@ export function TitleInfo({ title, subtitle, meta, detailsUrl, onEpisodes }: { t
           ))}
         {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
       </div>
-      {detailsUrl && (
-        <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition-opacity delay-100 group-has-[a:hover]/info:opacity-100">
-          Open details
+      {(onDetails || detailsUrl) && (
+        <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition-opacity delay-100 group-has-[a:hover]/info:opacity-100 group-has-[>button:hover]/info:opacity-100">
+          Details
         </span>
       )}
     </div>

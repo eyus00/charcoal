@@ -19,6 +19,7 @@ import { btn } from '../components/Button';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
+import DetailsPeek from '../player/DetailsPeek';
 import { Tip } from '../components/Tip';
 
 export default function Watch() {
@@ -202,6 +203,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   // Switching from Jelly to an embed: first say what embeds are (once, unless turned off).
   const [embedAsk, setEmbedAsk] = useState<string | null>(null);
+  const [peek, setPeek] = useState(false);
   const pickServer = (s: string, confirmed = false) => {
     if (s !== 'jelly' && server === 'jelly' && !confirmed && !getState().settings.embedNoticeOff) return setEmbedAsk(s);
     setEmbedAsk(null);
@@ -241,6 +243,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
+      {peek && d && <DetailsPeek d={d} type={type} detailsUrl={detailsUrl} onClose={() => setPeek(false)} />}
       {embedAsk && <EmbedNotice name={embedById(embedAsk)?.name ?? 'this server'} onCancel={() => setEmbedAsk(null)} onContinue={() => pickServer(embedAsk, true)} />}
       {embed ? (
         <>
@@ -267,6 +270,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
           detailsUrl={detailsUrl}
           onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
+          onDetails={d ? () => setPeek(true) : undefined}
           meta={meta}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
@@ -299,7 +303,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         />
       ) : (
         <>
-          <div className="relative z-10 shrink-0">{makeHeader(<TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined} />)}</div>
+          <div className="relative z-10 shrink-0">{makeHeader(<TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onDetails={d ? () => setPeek(true) : undefined} onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined} />)}</div>
           <JellyLoading backdrop={d?.backdrop_path} onSkip={() => pickServer(EMBEDS[0].id)} />
         </>
       )}
