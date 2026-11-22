@@ -25,12 +25,14 @@ export default function DetailsPeek({ d, type, detailsUrl, onClose }: { d: Detai
       <div className="fixed inset-0 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
         {/* A small version of the details page: backdrop, then the same glass info card on it. */}
         <div
-          className="toast-in relative max-h-[90dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-h-[88dvh] sm:max-w-3xl sm:rounded-3xl"
+          className="toast-in relative max-h-[90dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-h-[88dvh] sm:max-w-3xl sm:rounded-3xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 640px) 768px, 100vw" alt="" className="absolute! inset-0 size-full" imgClassName="object-[70%_20%]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/30 to-bg/40" />
-          <div className="absolute inset-0 hidden bg-gradient-to-r from-bg/80 via-bg/20 to-transparent sm:block" />
+          {/* The backdrop sits on top; the info card only overlaps its lower edge. */}
+          <div className="relative">
+            <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 640px) 768px, 100vw" alt="" className="aspect-video w-full sm:aspect-[16/8]" imgClassName="object-[70%_20%]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/10 to-bg/20" />
+          </div>
 
           <div className="absolute top-3 right-3 z-10 flex gap-2">
             <Link to={detailsUrl} aria-label="Open the full details page" className={cx(btn({ icon: true }), 'group/tip relative bg-black/55! backdrop-blur-md hover:bg-black/75!')}>
@@ -43,7 +45,7 @@ export default function DetailsPeek({ d, type, detailsUrl, onClose }: { d: Detai
             </button>
           </div>
 
-          <div className="relative flex min-h-[26rem] items-end p-4 sm:min-h-[30rem] sm:p-6">
+          <div className="relative -mt-20 px-4 pb-4 sm:-mt-24 sm:px-6 sm:pb-6">
             <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
               <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
               {/* Same order everywhere: year · ★ rating · age rating · length; genres below. */}
