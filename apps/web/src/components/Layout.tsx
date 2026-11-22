@@ -8,6 +8,7 @@ import { cx, scrollBehavior } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 import { Wordmark } from './Logo';
+import PeekHost from './PeekHost';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
 import { btn } from './Button';
@@ -51,6 +52,7 @@ function Shell() {
       <BottomBar />
       <ScrollTop />
       <Hotkeys openSearch={() => searchCtl.open()} />
+      <PeekHost />
       <Toaster />
       <OfflineNotice />
     </div>

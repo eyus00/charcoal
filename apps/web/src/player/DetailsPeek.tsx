@@ -67,7 +67,6 @@ export default function DetailsPeek({ d, type, detailsUrl, onClose }: { d: Detai
                 ))}
               </div>
               {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
-              {d.tagline && <p className="mt-3 text-sm text-white/60 italic">{d.tagline}</p>}
               {d.overview && <p className="mt-4 line-clamp-5 text-body-sm leading-6 text-pretty text-white/80">{d.overview}</p>}
             </div>
           </div>
