@@ -45,7 +45,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
   return (
     <EpisodeTile
       to={watchUrl(h)}
-      linkProps={peekProps(h.mediaType, h.id)}
+      linkProps={peekProps(h.mediaType, h.id, { tap: false })}
       titleLink={{ to: `/${h.mediaType}/${h.id}`, line: tv ? 'secondary' : 'primary', label: `${h.title}: details` }}
       type={h.mediaType}
       title={name ? `${h.title} · ${name}` : h.title}

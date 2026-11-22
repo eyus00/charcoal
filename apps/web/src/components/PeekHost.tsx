@@ -1,16 +1,42 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import DetailsPeek from '../player/DetailsPeek';
+import EpisodeSelector from './EpisodeSelector';
 import { peek, usePeek } from '../lib/peek';
-import { q } from '../lib/tmdb';
+import { q, type Details } from '../lib/tmdb';
 
-/** Shows the details peek opened from a card (see lib/peek). Closes when the page changes. */
+/**
+ * Shows the details peek opened from a card (see lib/peek); closes when the page changes. For
+ * TV, Play opens the episode list (like the details page), which resumes / plays from its footer.
+ */
 export default function PeekHost() {
   const target = usePeek();
   const { pathname } = useLocation();
-  useEffect(() => peek.close(), [pathname]);
+  const [episodesOf, setEpisodesOf] = useState<Details | null>(null);
+  useEffect(() => {
+    peek.close();
+    setEpisodesOf(null);
+  }, [pathname]);
   const { data } = useQuery({ ...q.details(target?.type ?? 'movie', target?.id ?? 0), enabled: !!target });
-  if (!target || !data || data.id !== target.id) return null;
-  return <DetailsPeek d={data} type={target.type} detailsUrl={`/${target.type}/${target.id}`} onClose={peek.close} anchor={target.anchor} />;
+  return (
+    <>
+      {target && data && data.id === target.id && (
+        <DetailsPeek
+          key={`${target.type}-${target.id}-${target.mode}`}
+          d={data}
+          type={target.type}
+          detailsUrl={`/${target.type}/${target.id}`}
+          onClose={peek.close}
+          mini={target.mode === 'mini'}
+          anchor={target.anchor}
+          onEpisodes={() => {
+            peek.close();
+            setEpisodesOf(data);
+          }}
+        />
+      )}
+      {episodesOf && <EpisodeSelector show={episodesOf} onClose={() => setEpisodesOf(null)} />}
+    </>
+  );
 }

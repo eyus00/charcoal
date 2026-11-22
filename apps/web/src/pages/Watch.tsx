@@ -243,7 +243,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
-      {peek && d && <DetailsPeek d={d} type={type} detailsUrl={detailsUrl} onClose={() => setPeek(false)} />}
+      {peek && d && <DetailsPeek d={d} type={type} detailsUrl={detailsUrl} onClose={() => setPeek(false)} play={false} />}
       {embedAsk && <EmbedNotice name={embedById(embedAsk)?.name ?? 'this server'} onCancel={() => setEmbedAsk(null)} onContinue={() => pickServer(embedAsk, true)} />}
       {embed ? (
         <>

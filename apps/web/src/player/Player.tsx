@@ -755,7 +755,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
-      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
+      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open],[aria-modal="true"]')) return;
       // YouTube-style keys, the de facto standard for web video.
       const jumpTo = (frac: number) => durRef.current && (seekTo(durRef.current * frac), flash(`${Math.round(frac * 100)}%`));
       const speed = (dir: 1 | -1) => {

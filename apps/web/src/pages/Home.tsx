@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Film, Pause, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
-import { peekProps } from '../lib/peek';
+import { peek, peekProps } from '../lib/peek';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
@@ -117,7 +117,11 @@ function Hero() {
     if (d.axis === 'x') {
       swiped.current = true;
       if (Math.abs(dx) > width * 0.18 || Math.abs(d.v) > 0.45) go(dx < 0 ? 1 : -1);
-    } else if (!d.axis && !(e.target as HTMLElement).closest('[data-swipe]')) navigate(`/${typeOf(item)}/${item.id}`);
+    } else if (!d.axis && !(e.target as HTMLElement).closest('[data-swipe]')) {
+      // Touch screens: the peek sheet first (swipe it up for the full page), like the cards.
+      if (e.pointerType === 'touch') peek.open(typeOf(item), item.id, 'medium');
+      else navigate(`/${typeOf(item)}/${item.id}`);
+    }
   };
 
   return (
@@ -233,7 +237,7 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
   const TypeIcon = type === 'movie' ? Film : Tv;
   return (
     // Right-click / Shift-click the banner: the details peek.
-    <div className="absolute inset-0" {...peekProps(type, item.id)}>
+    <div className="absolute inset-0" {...peekProps(type, item.id, { hover: false, tap: false })}>
       <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="absolute! inset-0 size-full" imgClassName="object-[70%_20%] pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-bg/40" />
