@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Keyboard, ShieldAlert, X } from 'lucide-react';
 import Modal from '../components/Modal';
+import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -232,6 +233,16 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       detailsUrl={detailsUrl}
       onClose={leave}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
+      meta={[(d?.release_date || d?.first_air_date || '').slice(0, 4), d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : ''].filter(Boolean).join(' · ')}
+      bookmark={
+        d ? (
+          <BookmarkMenu
+            variant="round"
+            size="md"
+            item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
+          />
+        ) : null
+      }
       serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={jelly.isError ? 'failed' : jelly.isFetching ? 'loading' : jelly.data ? 'ok' : 'idle'} />}
     />
   );
@@ -281,6 +292,8 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
                     current={{ season: season!, episode: episode! }}
                     onPick={(s, e) => (close(), go(s, e))}
                     onAll={() => (close(), setDrawer(true))}
+                    onPrev={prev ? () => (close(), go(prev.season, prev.episode)) : undefined}
+                    onNext={next ? () => (close(), go(next.season, next.episode)) : undefined}
                   />
                 )
               : undefined
@@ -335,7 +348,11 @@ function Header({
   onEpisodes,
   serverMenu,
   onClose,
+  meta,
+  bookmark,
 }: {
+  meta?: string;
+  bookmark?: React.ReactNode;
   title: string;
   subtitle?: string;
   detailsUrl: string;
@@ -346,14 +363,10 @@ function Header({
   return (
     // Close and the title on the left, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      <div className="justify-self-start">
-        <HeaderButton label="Close player" keys="Esc" onClick={onClose} tipSide="left" solid>
-          <X className="size-5" />
-        </HeaderButton>
-      </div>
-      <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />
-      <div className="flex shrink-0 items-center gap-1 justify-self-end md:gap-3">
+    <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
+      <TitleBox title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />
+      {bookmark && <div className="hidden shrink-0 self-center sm:block">{bookmark}</div>}
+      <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
           type="button"
@@ -366,6 +379,9 @@ function Header({
           <Kbd>?</Kbd>
         </button>
         {serverMenu}
+        <HeaderButton label="Close player" keys="Esc" onClick={onClose} solid>
+          <X className="size-5" />
+        </HeaderButton>
       </div>
     </div>
   );
@@ -376,19 +392,20 @@ function Header({
  * name (long names truncate; the full name is in the tooltip and the episode list). For TV the
  * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
-function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; onEpisodes?: () => void }) {
-  const titleLink = (
-    <Link
-      to={detailsUrl}
-      title={`${title}: details`}
-      className={cx(TEXT_LINK, 'pointer-events-auto inline-block max-w-full truncate align-top text-sm font-medium text-white md:text-body-sm')}
-    >
-      {title}
-    </Link>
+/** What's playing, top-left like the pause screen: title, episode, year and rating. */
+function TitleBox({ title, subtitle, meta, detailsUrl, onEpisodes }: { title: string; subtitle?: string; meta?: string; detailsUrl: string; onEpisodes?: () => void }) {
+  const text = (
+    <div className="min-w-0 leading-snug">
+      <Link to={detailsUrl} title={`${title}: details`} className={cx(TEXT_LINK, 'pointer-events-auto block truncate text-base font-semibold text-white md:text-lg')}>
+        {title}
+      </Link>
+      {subtitle && <div className="truncate text-sm text-white/80">{subtitle}</div>}
+      {meta && <div className="truncate text-xs text-white/55">{meta}</div>}
+    </div>
   );
-  if (!onEpisodes) return <div className="min-w-0 justify-self-start px-1">{titleLink}</div>;
+  if (!onEpisodes) return <div className="min-w-0 px-1 pt-0.5">{text}</div>;
   return (
-    <div className="group/hub relative min-w-0 justify-self-start">
+    <div className="group/hub relative min-w-0">
       <button
         type="button"
         onClick={onEpisodes}
@@ -396,12 +413,9 @@ function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; 
         title={subtitle}
         className="absolute inset-0 rounded-xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
       />
-      <div className="pointer-events-none relative flex items-center gap-2 px-2.5 py-1.5 leading-snug">
-        <div className="min-w-0">
-          {titleLink}
-          {subtitle && <div className="truncate text-caption text-white/55">{subtitle}</div>}
-        </div>
-        <ChevronDown className="size-4 shrink-0 text-white/40" />
+      <div className="pointer-events-none relative flex items-center gap-2 px-2.5 py-1">
+        {text}
+        <Kbd className="shrink-0 self-center">E</Kbd>
       </div>
       <span className="pointer-events-none absolute top-full left-0 z-50 mt-2 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
         Episodes

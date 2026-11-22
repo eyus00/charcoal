@@ -53,7 +53,7 @@ function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
       <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium text-white/90 transition-colors group-hover:text-white" title={titleOf(item)}>{titleOf(item)}</div>
       <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
       <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
-      <CornerArc />
+      <CornerArc rise={false} />
     </div>
   );
 }
