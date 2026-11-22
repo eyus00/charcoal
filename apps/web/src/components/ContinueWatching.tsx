@@ -3,7 +3,8 @@ import { Check, X } from 'lucide-react';
 import EpisodeTile, { Chip } from './EpisodeTile';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { toast } from './Toast';
-import { actions, getState, percent, watchUrl, type HistoryItem } from '../lib/store';
+import { actions, getState, percent, useStore, watchUrl, type HistoryItem } from '../lib/store';
+import { deleteFrames, frameKey, useFrame } from '../lib/frames';
 import { epLabel } from '../lib/episodes';
 import { q, type Episode } from '../lib/tmdb';
 import { formatRuntime } from '../lib/util';
@@ -36,6 +37,9 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
   const runtime = p?.duration ? mins(p.duration) : ep?.runtime;
   const name = ep?.name ?? (isNext ? undefined : h.episodeTitle);
   const still = ep?.still_path;
+  // A frame from where you stopped (saved by the player), else the episode still / backdrop.
+  const thumbs = useStore((st) => st.settings.frameThumbs);
+  const frame = useFrame(isNext ? undefined : frameKey(h.mediaType, h.id, h.season, h.episode), thumbs);
 
   return (
     <EpisodeTile
@@ -43,7 +47,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
       titleLink={{ to: `/${h.mediaType}/${h.id}`, line: tv ? 'secondary' : 'primary', label: `${h.title}: details` }}
       type={h.mediaType}
       title={name ? `${h.title} · ${name}` : h.title}
-      image={{ path: still ?? h.backdropPath ?? h.posterPath, kind: still ? 'still' : h.backdropPath ? 'backdrop' : 'poster' }}
+      image={{ path: still ?? h.backdropPath ?? h.posterPath, kind: still ? 'still' : h.backdropPath ? 'backdrop' : 'poster', src: frame }}
       progress={watched ? Math.round(percent(h)) : 0}
       topLeft={isNext ? <Chip light>Up next</Chip> : h.isCompleted ? <Chip><Check className="size-3.5" /> Watched</Chip> : null}
       bottomLeft={watched ? <Chip light>{formatRuntime(watched)}</Chip> : null}
@@ -60,12 +64,13 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           h.title
         )
       }
-      secondary={tv ? h.title : left ? `${formatRuntime(left)} left` : h.isCompleted ? 'Watched' : 'Movie'}
+      secondary={tv ? h.title : left ? `${formatRuntime(left)} left` : ''}
     >
       <button
         onClick={() => {
           const before = getState().history;
           actions.removeHistory(h.mediaType, h.id);
+          deleteFrames(`${h.mediaType}-${h.id}`);
           toast(`Removed “${h.title}” from your history`, { label: 'Undo', run: () => actions.restore({ history: before }) });
         }}
         aria-label={`Remove ${h.title} from watch history`}

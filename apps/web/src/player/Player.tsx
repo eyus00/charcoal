@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type Hls from 'hls.js';
+import { Link } from 'react-router';
 import {
   Airplay,
   AlertTriangle,
@@ -41,6 +42,7 @@ import { cx, formatClock } from '../lib/util';
 import { btn } from '../components/Button';
 import { useCast } from './cast';
 import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension';
+import { captureFrame, frameKey } from '../lib/frames';
 import { activeCues, CaptionOverlay, CueText, parseCaptions, subColorName, SubtitleStyleControls, type Cue } from './captions';
 import { splitKeys, Tip } from '../components/Tip';
 
@@ -54,6 +56,8 @@ interface Props {
   /** Short facts for the pause card, e.g. "2010 · ★ 8.4 · 2h 28m". */
   meta?: string;
   poster?: string;
+  /** The title links here (the details page). */
+  detailsUrl?: string;
   resumeAt: number;
   /** The top bar. As a function it gets the paused-info block to show top-left while paused. */
   header: ReactNode | ((pausedInfo: ReactNode | null) => ReactNode);
@@ -98,7 +102,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, meta, poster, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -274,6 +278,28 @@ export default function Player({ data, media, title, subtitle, meta, poster, res
   const durRef = useRef(dur);
   durRef.current = dur;
   const segment = dur ? segmentAt(segments, now, dur) : undefined;
+  const inCredits = useRef(false);
+  inCredits.current = segment?.type === 'credits';
+
+  // Stills for Continue watching: every 90 s while playing, and on pause / leaving (see lib/frames).
+  const stillKey = frameKey(media.type, media.id, media.season, media.episode);
+  useEffect(() => {
+    if (!settings.frameThumbs) return;
+    const v = video.current;
+    const grab = () => {
+      const el = video.current;
+      if (el && el.currentTime > 20 && !inCredits.current && !(el.duration && el.duration - el.currentTime < 60)) captureFrame(el, stillKey);
+    };
+    const tick = window.setInterval(() => video.current && !video.current.paused && grab(), 90_000);
+    const first = window.setTimeout(grab, 25_000);
+    v?.addEventListener('pause', grab);
+    return () => {
+      window.clearInterval(tick);
+      window.clearTimeout(first);
+      v?.removeEventListener('pause', grab);
+      grab();
+    };
+  }, [stillKey, settings.frameThumbs]);
   const skipped = useRef(new Set<number>()); // auto-skipped segment starts
   const creditsOffered = useRef(false);
 
@@ -537,13 +563,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, res
   // Paused (or not started): what's playing, top-left, like a TV's pause screen.
   // What's playing, top-left in the top bar: always there with the controls, and kept on screen
   // while paused.
-  const pausedInfo = (
-    <div className="max-w-2xl pt-0.5">
-      <h2 className="text-2xl leading-tight font-semibold text-balance md:text-4xl">{title}</h2>
-      {subtitle && <p className="mt-1 text-base text-white/85 md:text-lg">{subtitle}</p>}
-      {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
-    </div>
-  );
+  const pausedInfo = <TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} />;
   const keepTop = !isPlaying && !exhausted && !casting;
 
   // ---------- actions ----------
@@ -1530,6 +1550,25 @@ function IconButton({
       {children}
       <Tip label={text} keys={keys} align={tipAlign} hidden={expanded} />
     </button>
+  );
+}
+
+/** What's playing, big, top-left of the player (and of the page while sources load). */
+export function TitleInfo({ title, subtitle, meta, detailsUrl }: { title: string; subtitle?: string; meta?: string; detailsUrl?: string }) {
+  return (
+    <div className="max-w-2xl py-1">
+      <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">
+        {detailsUrl ? (
+          <Link to={detailsUrl} title={`${title}: details`} className="pointer-events-auto relative z-10 text-white/95 transition-colors hover:text-white">
+            {title}
+          </Link>
+        ) : (
+          title
+        )}
+      </h2>
+      {subtitle && <p className="mt-0.5 text-sm text-white/85 md:text-base">{subtitle}</p>}
+      {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
+    </div>
   );
 }
 

@@ -12,12 +12,12 @@ import { fetchFallbackViaExtension, fetchViaExtension } from '../lib/direct';
 import { EMBEDS, embedById, fetchJelly, sortSources, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
-import { cx, formatRuntime, useDismiss, useKeys, useTitle } from '../lib/util';
+import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
 import { hotkeysCtl } from '../components/Hotkeys';
 import Kbd from '../components/Kbd';
 import { btn } from '../components/Button';
 import EmbedPlayer from '../player/EmbedPlayer';
-import Player from '../player/Player';
+import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
 import { Tip } from '../components/Tip';
 
@@ -225,6 +225,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   });
   const subtitle = type === 'tv' ? `${epLabel(season, episode)}${ep?.name ? ` · ${ep.name}` : ''}` : undefined;
 
+  const meta = [(d?.release_date || d?.first_air_date || '').slice(0, 4), d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : ''].filter(Boolean).join(' · ');
   const makeHeader = (pausedInfo?: React.ReactNode) => (
     <Header
       pausedInfo={pausedInfo}
@@ -264,13 +265,8 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           title={title}
           subtitle={subtitle}
           overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
-          meta={[
-            (d?.release_date || d?.first_air_date || '').slice(0, 4),
-            d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : '',
-            formatRuntime((type === 'tv' ? ep?.runtime : d?.runtime) ?? 0),
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          detailsUrl={detailsUrl}
+          meta={meta}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
           header={makeHeader}
@@ -302,7 +298,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         />
       ) : (
         <>
-          <div className="relative z-10 shrink-0">{header}</div>
+          <div className="relative z-10 shrink-0">{makeHeader(<TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} />)}</div>
           <JellyLoading backdrop={d?.backdrop_path} onSkip={() => pickServer(EMBEDS[0].id)} />
         </>
       )}
@@ -330,8 +326,8 @@ function nextLabel(n: { season: number; episode: number }, eps?: { season_number
 // ---------- header ----------
 
 
-/** Text links underline on hover (the app-wide convention for links that are text). */
-const TEXT_LINK = 'underline-offset-4 decoration-white/40 hover:underline';
+/** Text links brighten on hover (the app-wide convention for links that are text). */
+const TEXT_LINK = 'transition-colors hover:text-white';
 
 function Header({
   title,
@@ -355,7 +351,7 @@ function Header({
     // Close and the title on the left, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
     <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      {pausedInfo ? <div className="min-w-0 px-1">{pausedInfo}</div> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
+      {pausedInfo ? <BigTitle onEpisodes={onEpisodes}>{pausedInfo}</BigTitle> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
       <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
@@ -382,7 +378,27 @@ function Header({
  * name (long names truncate; the full name is in the tooltip and the episode list). For TV the
  * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
-/** What's playing, top-left: the title and the episode. */
+/** The big "what's playing" block (Jelly); for TV the whole block opens the episode list. */
+function BigTitle({ children, onEpisodes }: { children: React.ReactNode; onEpisodes?: () => void }) {
+  if (!onEpisodes) return <div className="min-w-0 px-1">{children}</div>;
+  return (
+    <div className="group/hub relative min-w-0">
+      <button
+        type="button"
+        onClick={onEpisodes}
+        aria-label="Episodes (E)"
+        className="absolute -inset-x-1 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
+      />
+      <div className="pointer-events-none relative px-1">{children}</div>
+      <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
+        Episodes
+        <Kbd>E</Kbd>
+      </span>
+    </div>
+  );
+}
+
+/** What's playing, top-left (embedded players): the title and the episode. */
 function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; onEpisodes?: () => void }) {
   const text = (
     <div className="min-w-0 leading-snug">

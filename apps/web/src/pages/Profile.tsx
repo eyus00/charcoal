@@ -262,7 +262,7 @@ function SettingsSection() {
           <p className="text-sm text-muted">
             Optional. Run Charcoal’s server on your computer or a VPS and paste its address. One on your own computer uses your home connection, so more sources
             play.{' '}
-            <a href="https://github.com/eyus00/charcoal#run-the-server-yourself-vps-or-your-own-computer" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+            <a href="https://github.com/eyus00/charcoal#run-the-server-yourself-vps-or-your-own-computer" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
               How to set one up
             </a>
           </p>
@@ -317,7 +317,12 @@ function SettingsSection() {
           <Toggle label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle label="Skip intros and recaps automatically" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
           <Toggle label="Next episode when the credits start" hint="Starts the autoplay countdown early" on={settings.creditsNext} onChange={(v) => actions.updateSettings({ creditsNext: v })} />
-          <Toggle label="Show details while paused" hint="Title and overview after a few seconds" on={settings.pauseOverlay} onChange={(v) => actions.updateSettings({ pauseOverlay: v })} />
+          <Toggle
+            label="Continue watching shows where you left off"
+            hint="Saves a still from the video in this browser"
+            on={settings.frameThumbs}
+            onChange={(v) => actions.updateSettings({ frameThumbs: v })}
+          />
           <Toggle label="Press and hold for 2× speed" on={settings.holdToSpeed} onChange={(v) => actions.updateSettings({ holdToSpeed: v })} />
           <Toggle
             label="Show source diagnostics"
@@ -333,7 +338,7 @@ function SettingsSection() {
           />
           <p className="text-xs text-muted">
             Intro, recap and credits times come from{' '}
-            <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+            <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
               TheIntroDB
             </a>
             , a community database.
@@ -435,7 +440,7 @@ function FebboxCard({ className }: { className: string }) {
       <ol className="list-decimal space-y-0.5 pl-5 text-xs text-muted">
         <li>
           Log in at{' '}
-          <a href="https://www.febbox.com" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+          <a href="https://www.febbox.com" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
             febbox.com
           </a>{' '}
           (a separate Google account is safest).
@@ -509,7 +514,7 @@ function HelperCard({ className }: { className: string }) {
       <p className="text-sm text-muted">
         A browser extension that finds and plays sources from your own connection, with no server in between, so more of them work. For Chrome, Edge, Brave and
         Firefox on a computer.{' '}
-        <a href="https://github.com/eyus00/charcoal/tree/main/apps/extension#install" target="_blank" rel="noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+        <a href="https://github.com/eyus00/charcoal/tree/main/apps/extension#install" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
           How to install
         </a>
       </p>
@@ -517,7 +522,7 @@ function HelperCard({ className }: { className: string }) {
         <span aria-hidden className={cx('size-2 rounded-full', state === 'ready' ? 'bg-success' : state === 'permission' ? 'bg-warning' : 'bg-white/25')} />
         {TEXT[state]}
         {state !== 'checking' && state !== 'ready' && (
-          <button onClick={() => refetch()} className="ml-auto text-xs text-white/70 underline-offset-2 hover:text-white hover:underline">
+          <button onClick={() => refetch()} className="ml-auto text-xs text-white/70 transition-colors hover:text-white">
             Check again
           </button>
         )}

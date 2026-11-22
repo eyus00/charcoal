@@ -19,7 +19,7 @@ export const TILE_SIZES = '(min-width: 640px) 344px, 288px';
 interface Props {
   to: string;
   type: MediaType;
-  image: { path: string | null | undefined; kind: ImageKind };
+  image: { path: string | null | undefined; kind: ImageKind; src?: string };
   /** First line (e.g. "S2 · E5 Name" or a movie title). */
   primary: ReactNode;
   /** Second line (e.g. the show name); the type icon sits at its right edge. */
@@ -49,7 +49,7 @@ interface Props {
 export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, titleLink, children, still }: Props) {
   const line = (which: 'primary' | 'secondary', content: ReactNode) =>
     titleLink?.line === which ? (
-      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 underline-offset-4 decoration-white/40 hover:text-white hover:underline">
+      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 transition-colors hover:text-white">
         {content}
       </Link>
     ) : (
@@ -61,7 +61,7 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
       <Link to={to} title={title} aria-label={title} className="absolute inset-0 z-0 rounded-2xl" {...linkProps} />
       <div className={cx('pointer-events-none relative [&_a]:pointer-events-auto', !still && CARD_LIFT)}>
         <div className={CARD_IMAGE}>
-          <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
+          <Img key={image.src ?? image.path ?? ''} path={image.path} kind={image.kind} src={image.src} sizes={TILE_SIZES} alt="" className="aspect-video" />
           {shade && <span className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/10 to-transparent" />}
           {playable && (
             <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
