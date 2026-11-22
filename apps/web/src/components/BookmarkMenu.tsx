@@ -42,13 +42,15 @@ interface Props {
   item: { id: number; mediaType: MediaType; title: string; posterPath: string | null; releaseDate?: string; ratingScore?: number };
   /** round: outlined circle (hero, details). full: labelled button. */
   variant?: 'round' | 'full';
+  /** Button size: lg on title pages, md in compact bars. */
+  size?: 'md' | 'lg';
   className?: string;
   /** Bind the "b" shortcut (one per page). */
   hotkey?: boolean;
 }
 
 /** Bookmark button + status menu (Watching / To watch / Watched / Remove). */
-export default function BookmarkMenu({ item, variant = 'full', className, hotkey }: Props) {
+export default function BookmarkMenu({ item, variant = 'full', size = 'lg', className, hotkey }: Props) {
   const watchlist = useStore((s) => s.watchlist);
   const current = watchlist.find((w) => w.id === item.id && w.mediaType === item.mediaType);
   const [open, setOpen] = useState(false);
@@ -151,7 +153,7 @@ export default function BookmarkMenu({ item, variant = 'full', className, hotkey
         aria-expanded={open}
         aria-label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'}
         // Saved shows as primary (filled), not saved as secondary (outline).
-        className={cx(btn({ variant: current ? 'primary' : 'secondary', size: 'lg', icon: variant === 'round' }), 'group/tip relative')}
+        className={cx(btn({ variant: current ? 'primary' : 'secondary', size, icon: variant === 'round' }), 'group/tip relative')}
       >
         <Tip label={current ? `In watchlist: ${STATUS_LABEL[current.status]}` : 'Add to watchlist'} keys={hotkey ? 'B' : undefined} hidden={open} />
         <Bookmark className={current ? 'size-4 fill-current' : 'size-[18px]'} />

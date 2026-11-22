@@ -1147,7 +1147,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                   <GalleryVerticalEnd className="size-5" />
                 </IconButton>
                 {menu === 'episodes' && (
-                  <Popover wide split className="w-[min(28rem,calc(100vw-1.5rem))] max-sm:w-auto">
+                  <Popover wide split className="max-h-[min(30rem,65vh)]!">
                     {episodes(() => setMenu(null))}
                   </Popover>
                 )}

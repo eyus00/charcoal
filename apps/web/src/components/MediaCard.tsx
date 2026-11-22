@@ -26,25 +26,28 @@ export const CARD_INFO = 'relative pt-2 pr-2.5 pb-2';
 export const CARD_LIFT = '';
 
 /**
- * A thin arc around the bottom-right corner of the card's text: the right edge fades out as it
- * rises and the bottom edge as it runs left, so the lines melt into the card. A quiet separator.
+ * A thin arc around the bottom-right corner of the card's text, a quiet separator. The right edge
+ * rises straight into the image's edge (no taper); the bottom edge fades out as it runs left.
+ * `rise={false}` keeps it to the text (cards whose text sits beside the image).
  */
 const ARC_MASK = {
-  maskImage: 'linear-gradient(to left, black 15%, transparent 95%), linear-gradient(to top, black 10%, transparent 100%)',
-  WebkitMaskImage: 'linear-gradient(to left, black 15%, transparent 95%), linear-gradient(to top, black 10%, transparent 100%)',
-  maskComposite: 'intersect',
-  WebkitMaskComposite: 'source-in',
+  maskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
+  WebkitMaskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
 } as const;
-export const CornerArc = () => (
+export const CornerArc = ({ rise = true }: { rise?: boolean }) => (
   <span
     aria-hidden
     style={ARC_MASK}
-    className="pointer-events-none absolute -top-3 right-0 bottom-0 w-28 rounded-br-2xl border-r border-b border-white/20 transition-colors group-hover:border-white/35"
+    className={cx(
+      'pointer-events-none absolute right-0 bottom-0 w-28 rounded-br-2xl border-r border-b border-white/[0.12] transition-colors duration-200 group-hover:border-white/20',
+      rise ? '-top-6' : 'top-0',
+    )}
   />
 );
 
-/** A card image: rounded, a touch brighter on hover (like our buttons). */
-export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition duration-200 group-hover:brightness-110';
+/** A card image: rounded; on hover a touch brighter with a faint outline (like our buttons). */
+export const CARD_IMAGE =
+  'relative overflow-hidden rounded-2xl ring-1 ring-transparent transition duration-200 group-hover:brightness-110 group-hover:ring-white/15';
 
 /** A card title: brightens with the card on hover. */
 export const CARD_TITLE = 'truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white';
