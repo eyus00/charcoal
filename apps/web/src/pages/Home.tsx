@@ -5,7 +5,7 @@ import BookmarkMenu from '../components/BookmarkMenu';
 import { peekProps } from '../lib/peek';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
-import { ForYouRow, FriendsRow } from '../components/TraktRows';
+import { ForYouRow } from '../components/TraktRows';
 import Img from '../components/Img';
 import Kbd from '../components/Kbd';
 import { btn } from '../components/Button';
@@ -31,7 +31,6 @@ export default function Home() {
       <Hero />
       {resume.length > 0 && <ContinueWatching items={resume} />}
       <ForYouRow />
-      <FriendsRow />
       <Top10 />
       <Browse />
       <AiringThisWeek />

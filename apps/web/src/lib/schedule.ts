@@ -17,6 +17,8 @@ import { tmdb, type MediaItem, type MediaType, type Page } from './tmdb';
 import { trakt, traktSend, useTraktUser } from './trakt';
 import { tImg, type TEpisode, type TMedia } from './traktData';
 import { affinity, fromTrakt, quality, relevant, useTaste, type Taste } from './recommend';
+import { useFollows } from './follows';
+import { useStore } from './store';
 
 export const DAY = 86_400_000;
 export const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -83,10 +85,11 @@ async function fetchRaw(start: Date, days: number, langs: string[], signed: bool
 }
 
 /** Pick and rank a week (or any span) of releases for you. */
-function pick(raw: Raw, taste: Taste, perDay: number): Airing[] {
+function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<number>, listedMovies: Set<number>): Airing[] {
   const out: Airing[] = [];
   const mineShows = new Set(raw.mine.map((r) => r.show.ids.tmdb));
-  const isYours = (type: MediaType, id: number) => (type === 'tv' && mineShows.has(id)) || taste.known.has(`${type}-${id}`);
+  // Yours: shows you follow, watch or saved (and Trakt's list); movies on your watchlist.
+  const isYours = (type: MediaType, id: number) => (type === 'tv' ? mineShows.has(id) || followed.has(id) || taste.known.has(`tv-${id}`) : listedMovies.has(id));
 
   // Episodes: one entry per show per day (a whole season dropped at once becomes "E1–8").
   const groups = new Map<string, EpRow[]>();
@@ -118,7 +121,7 @@ function pick(raw: Raw, taste: Taste, perDay: number): Airing[] {
     const sub =
       g.length > 1
         ? `S${first.episode.season} E${ep(first)}–${ep(last)}`
-        : `S${first.episode.season} E${ep(first)}${first.episode.title && !/^episode \d+$/i.test(first.episode.title) ? ` · ${first.episode.title}` : ''}`;
+        : `S${first.episode.season} E${ep(first)}${first.episode.title && !/^episode \d+$/i.test(first.episode.title) && !/^\d{1,2}:\d\d/.test(first.episode.title) ? ` · ${first.episode.title}` : ''}`;
     const score =
       (yours ? 1 : 0) +
       0.5 * (Math.log1p(votes) / Math.log1p(maxVotes)) +
@@ -133,8 +136,9 @@ function pick(raw: Raw, taste: Taste, perDay: number): Airing[] {
       sub,
       season: first.episode.season,
       episode: first.episode.number,
-      at: Date.parse(first.first_aired),
-      image: tImg(first.episode.images?.screenshot) ?? tImg(show.images?.fanart) ?? tImg(show.images?.thumb),
+      at: startOfDay(new Date(first.first_aired)).getTime(),
+      allDay: true,
+      image: tImg(first.episode.images?.screenshot, true) ?? tImg(show.images?.fanart, true) ?? tImg(show.images?.thumb),
       poster: tImg(show.images?.poster),
       network: show.network ?? undefined,
       runtime: first.episode.runtime ?? undefined,
@@ -161,10 +165,9 @@ function pick(raw: Raw, taste: Taste, perDay: number): Airing[] {
       type: 'movie',
       id,
       title: m.title,
-      sub: m.year ? `${m.year} film` : undefined,
       at: new Date(`${r.released}T00:00:00`).getTime(),
       allDay: true,
-      image: tImg(m.images?.fanart) ?? tImg(m.images?.thumb),
+      image: tImg(m.images?.fanart, true) ?? tImg(m.images?.thumb),
       poster: tImg(m.images?.poster),
       runtime: m.runtime ?? undefined,
       tag: 'Streaming',
@@ -210,7 +213,7 @@ function pick(raw: Raw, taste: Taste, perDay: number): Airing[] {
 }
 
 /** Releases from `start` for `days` days, picked for you. */
-export function useSchedule(start: Date, days = 7, perDay = 8) {
+export function useSchedule(start: Date, days = 7, perDay = 8, enabled = true) {
   const taste = useTaste();
   const user = useTraktUser();
   const langs = [...taste.langs].sort();
@@ -218,7 +221,14 @@ export function useSchedule(start: Date, days = 7, perDay = 8) {
     queryKey: ['schedule', ymd(start), days, langs.join(','), user?.username],
     queryFn: ({ signal }) => fetchRaw(start, days, langs, !!user, signal),
     staleTime: 30 * 60_000,
+    enabled,
   });
-  const items = useMemo(() => (raw.data ? pick(raw.data, taste, perDay) : []), [raw.data, taste, perDay]);
+  const follows = useFollows();
+  const watchlist = useStore((st) => st.watchlist);
+  const items = useMemo(() => {
+    if (!raw.data) return [];
+    const listed = new Set(watchlist.filter((w) => w.mediaType === 'movie' && w.status !== 'completed').map((w) => w.id));
+    return pick(raw.data, taste, perDay, new Set(follows.map((f) => f.id)), listed);
+  }, [raw.data, taste, perDay, follows, watchlist]);
   return { items, isPending: raw.isPending, isError: raw.isError, refetch: raw.refetch };
 }

@@ -143,3 +143,14 @@ export function downloadIcs(name: string, events: (Reminder & { minutes?: number
   a.click();
   window.setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+
+/** Add reminders that aren't there yet, quietly (for followed shows). */
+export function ensureReminders(rs: Reminder[]) {
+  const fresh = rs.filter((r) => !list.some((x) => x.key === r.key));
+  if (fresh.length) save([...list, ...fresh.map((r) => ({ ...r, done: false }))]);
+}
+
+/** Remove every reminder whose key starts with `prefix` (e.g. an unfollowed show's). */
+export function removeReminders(prefix: string) {
+  if (list.some((r) => r.key.startsWith(prefix))) save(list.filter((r) => !r.key.startsWith(prefix)));
+}

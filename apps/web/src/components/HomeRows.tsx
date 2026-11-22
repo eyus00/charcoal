@@ -187,7 +187,7 @@ export function InTheaters() {
 export function AiringThisWeek() {
   const [ref, inView] = useInView<HTMLElement>('500px');
   const start = useMemo(() => startOfDay(new Date()), []);
-  const { items, isPending, isError } = useSchedule(start, 7, 8);
+  const { items, isPending, isError } = useSchedule(start, 7, 8, inView);
   const { ref: scrollRef, scroll } = useRowScroll();
   // One card per show (its next episode); your shows first, then the most notable.
   const shows = useMemo(() => {
@@ -221,7 +221,7 @@ export function AiringThisWeek() {
       ) : (
         <Scroller label="Airing this week" scrollRef={scrollRef}>
           {shows.map((a) => (
-            <AiringTile key={a.key} a={a} when="day" className={TILE} />
+            <AiringTile key={a.key} a={a} day className={TILE} />
           ))}
         </Scroller>
       )}

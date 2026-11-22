@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Activity, Film, Heart, MessageCircle, Search, Star, Trash2, UserCircle, UserPlus, Users } from 'lucide-react';
+import { Activity, Film, Heart, MessageCircle, Star, Trash2, UserCircle, Users } from 'lucide-react';
 import Img from './Img';
 import { btn } from './Button';
 import { toast } from './Toast';
@@ -12,26 +12,10 @@ import { FriendCard } from './TraktRows';
 import { epLabel } from '../lib/episodes';
 import { peekProps } from '../lib/peek';
 import { deleteComment, startTraktLogin, useTraktUser } from '../lib/trakt';
-import {
-  fetchFollowing,
-  fetchFriendsActivity,
-  fetchHistory,
-  fetchMyComments,
-  fetchMyRatings,
-  fetchMyStats,
-  follow,
-  fetchFollowers,
-  lookupUser,
-  userSlug,
-  tImg,
-  type MyComment,
-  type TMedia,
-  type TUser,
-} from '../lib/traktData';
+import { fetchHistory, fetchMyComments, fetchMyRatings, fetchMyStats, tImg, type MyComment, type TMedia, type TUser } from '../lib/traktData';
 import { cx, timeAgo } from '../lib/util';
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
-const fmt = (n: number) => new Intl.NumberFormat().format(n);
 
 function Avatar({
   user,
@@ -93,12 +77,6 @@ export function ProfileHeader({ local }: { local: { k: string; v: number }[] }) 
                   @{user.username}
                   <Tip label="Open on trakt.tv" side="bottom" align="start" />
                 </a>
-                {s && (
-                  <>
-                    {' · '}
-                    {fmt(s.network.following)} following · {fmt(s.network.followers)} followers
-                  </>
-                )}
               </>
             ) : (
               'Watch history, watchlist and settings, saved in this browser'
@@ -341,236 +319,5 @@ function YourRatings() {
         )
       }
     </RowPanel>
-  );
-}
-
-// ---------- Friends ----------
-
-type Lookup = { state: 'idle' } | { state: 'loading'; slug: string } | { state: 'found'; user: TUser } | { state: 'missing'; slug: string };
-
-export function FriendsTab() {
-  const user = useTraktUser();
-  const qc = useQueryClient();
-  const following = useQuery({ queryKey: ['trakt', 'following', user?.username], queryFn: fetchFollowing, enabled: !!user, staleTime: 2 * 60_000 });
-  const followers = useQuery({ queryKey: ['trakt', 'followers', user?.username], queryFn: fetchFollowers, enabled: !!user, staleTime: 5 * 60_000 });
-  const activity = useQuery({
-    queryKey: ['trakt', 'friends-activity', user?.username],
-    queryFn: () => fetchFriendsActivity((following.data ?? []).map((f) => f.user)),
-    enabled: !!following.data?.length,
-    staleTime: 2 * 60_000,
-  });
-  const followed = new Set((following.data ?? []).map((f) => f.user.ids.slug));
-  // Optimistic follow state, so buttons flip at once.
-  const [pending, setPending] = useState<Record<string, boolean>>({});
-  const isFollowing = (slug: string) => pending[slug] ?? followed.has(slug);
-  const toggle = useMutation({
-    mutationFn: ({ u, on }: { u: TUser; on: boolean }) => follow(u.ids.slug, on),
-    onMutate: ({ u, on }) => setPending((p) => ({ ...p, [u.ids.slug]: on })),
-    onSuccess: (_d, { u, on }) => {
-      toast(on ? (u.private ? `Follow request sent to ${u.username}` : `Following ${u.name || u.username}`) : `Unfollowed ${u.name || u.username}`);
-      qc.invalidateQueries({ queryKey: ['trakt', 'following'] });
-      qc.invalidateQueries({ queryKey: ['trakt', 'friends-activity'] });
-      qc.invalidateQueries({ queryKey: ['trakt', 'my-stats'] });
-    },
-    onError: (e, { u }) => {
-      setPending((p) => ({ ...p, [u.ids.slug]: !p[u.ids.slug] }));
-      toast((e as Error).message);
-    },
-  });
-  const onToggle = (u: TUser) => toggle.mutate({ u, on: !isFollowing(u.ids.slug) });
-
-  if (!user)
-    return (
-      <div className={PANEL}>
-        <EmptyState icon={Users} title="Friends" body="Connect Trakt to follow friends and see what they're watching, rating and talking about." action={connect('/profile?tab=friends')} />
-      </div>
-    );
-
-  const a = activity.data;
-  const suggestions = (followers.data ?? []).filter((f) => !followed.has(f.user.ids.slug) && f.user.ids.slug !== user.username).slice(0, 6);
-  const feedCount = (a?.watchingNow.length ?? 0) + (a?.feed.length ?? 0);
-  return (
-    <div className="space-y-6">
-      <FindPeople me={user.username} isFollowing={isFollowing} onToggle={onToggle} />
-
-      <RowPanel title="What friends watched">
-        {(ref) =>
-          following.isPending || (!!following.data?.length && activity.isPending) ? (
-            <WideSkeletons />
-          ) : !following.data?.length ? (
-            <EmptyState icon={Users} title="Follow people to see what they watch" body="Find friends by their Trakt username above. Their plays show up here." />
-          ) : !feedCount ? (
-            <EmptyState icon={Film} title="Nothing yet" body="When people you follow watch something it shows up here. Private profiles stay private." />
-          ) : (
-            <Scroller label="What friends watched" scrollRef={ref} bleed={false}>
-              {a!.watchingNow.map(({ user: u, now }) => {
-                const x = mediaOf(now);
-                return x && <FriendCard key={`now-${u.username}`} user={u} media={x.m} episode={now.episode} type={x.type} when={Date.now()} live />;
-              })}
-              {a!.feed.map(({ user: u, row, at }) => {
-                const x = mediaOf(row);
-                return x && <FriendCard key={row.id} user={u} media={x.m} episode={row.episode} type={x.type} when={at} />;
-              })}
-            </Scroller>
-          )
-        }
-      </RowPanel>
-
-      <div className={PANEL}>
-        <SectionHeader title={following.data?.length ? `Following · ${following.data.length}` : 'Following'} />
-        {following.isPending ? (
-          <PeopleSkeleton />
-        ) : !following.data?.length ? (
-          <EmptyState icon={UserPlus} title="You’re not following anyone yet" body="Look people up by username above, or follow back the people who follow you." />
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {following.data.map(({ user: u }) => {
-              const now = a?.watchingNow.find((w) => w.user.ids.slug === u.ids.slug)?.now;
-              const what = now && (now.movie ?? now.show);
-              return (
-                <PersonRow
-                  key={u.ids.slug}
-                  u={u}
-                  following={isFollowing(u.ids.slug)}
-                  status={what ? `Watching ${what.title}${now.episode ? ` · ${epLabel(now.episode.season, now.episode.number)}` : ''}` : undefined}
-                  onToggle={() => onToggle(u)}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {suggestions.length > 0 && (
-        <div className={PANEL}>
-          <SectionHeader title="Follows you" />
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {suggestions.map(({ user: u }) => (
-              <PersonRow key={u.ids.slug} u={u} following={isFollowing(u.ids.slug)} onToggle={() => onToggle(u)} followBack />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Look someone up by username or profile link. One fixed-height result slot, so nothing jumps. */
-function FindPeople({ me, isFollowing, onToggle }: { me: string; isFollowing: (slug: string) => boolean; onToggle: (u: TUser) => void }) {
-  const [query, setQuery] = useState('');
-  const [res, setRes] = useState<Lookup>({ state: 'idle' });
-  const find = async () => {
-    const slug = userSlug(query);
-    if (!slug) return;
-    setRes({ state: 'loading', slug });
-    try {
-      const u = await lookupUser(slug);
-      setRes(u?.ids?.slug ? { state: 'found', user: u } : { state: 'missing', slug });
-    } catch {
-      setRes({ state: 'missing', slug });
-    }
-  };
-  return (
-    <div className={PANEL}>
-      <SectionHeader title="Find people" />
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          find();
-        }}
-        className="flex gap-2"
-      >
-        <label className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-raised px-4 ring-1 ring-white/[0.06] focus-within:ring-white/20">
-          <Search className="size-4 shrink-0 text-muted" />
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (!e.target.value) setRes({ state: 'idle' });
-            }}
-            placeholder="Trakt username or profile link"
-            aria-label="Trakt username or profile link"
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint sm:text-sm"
-          />
-        </label>
-        <button className={cx(btn({ variant: 'primary' }), 'h-11')} disabled={!query.trim() || res.state === 'loading'}>
-          Find
-        </button>
-      </form>
-      <div className="mt-3 h-[68px]" aria-live="polite">
-        {res.state === 'idle' && (
-          <p className="flex h-full items-center px-2 text-sm text-faint">
-            Trakt doesn’t list members, so enter the exact username (it’s in their profile link: trakt.tv/users/<span className="text-muted">name</span>).
-          </p>
-        )}
-        {res.state === 'loading' && (
-          <div className="flex h-full items-center gap-3 px-2">
-            <div className="skeleton size-11 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <div className="skeleton h-3.5 w-40 rounded-md" />
-              <div className="skeleton h-3 w-24 rounded-md" />
-            </div>
-          </div>
-        )}
-        {res.state === 'missing' && <p className="flex h-full items-center px-2 text-sm text-muted">No Trakt member called “{res.slug}”. Check the spelling, or paste their profile link.</p>}
-        {res.state === 'found' && <PersonRow u={res.user} big following={isFollowing(res.user.ids.slug)} me={res.user.ids.slug === me} onToggle={() => onToggle(res.user)} />}
-      </div>
-    </div>
-  );
-}
-
-function PeopleSkeleton() {
-  return (
-    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="flex h-[60px] items-center gap-3 p-2">
-          <div className="skeleton size-10 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <div className="skeleton h-3.5 w-32 rounded-md" />
-            <div className="skeleton h-3 w-20 rounded-md" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PersonRow({
-  u,
-  following,
-  me,
-  status,
-  big,
-  followBack,
-  onToggle,
-}: {
-  u: TUser;
-  following: boolean;
-  me?: boolean;
-  status?: string;
-  big?: boolean;
-  followBack?: boolean;
-  onToggle: () => void;
-}) {
-  const sub = status ?? [`@${u.username}`, u.private && 'private', u.location].filter(Boolean).join(' · ');
-  return (
-    <div className={cx('flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-white/[0.04]', big ? 'h-[68px]' : 'h-[60px]')}>
-      <a href={`https://trakt.tv/users/${u.ids.slug}`} target="_blank" rel="noreferrer" className="group/tip relative flex min-w-0 flex-1 items-center gap-3">
-        <Avatar user={u} className={big ? 'size-11' : 'size-10'} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{u.name || u.username}</span>
-          <span className={cx('block truncate text-xs', status ? 'text-success' : 'text-muted')}>{sub}</span>
-        </span>
-        <Tip label="Open profile on trakt.tv" side="bottom" align="start" />
-      </a>
-      {!me && (
-        <button type="button" onClick={onToggle} className={cx(btn({ variant: following ? 'secondary' : 'primary' }), 'h-9 w-[104px] shrink-0 px-0 text-sm')}>
-          {following ? 'Following' : followBack ? 'Follow back' : 'Follow'}
-        </button>
-      )}
-    </div>
   );
 }
