@@ -11,3 +11,30 @@ export function LogoMark({ className = 'size-7' }: { className?: string }) {
     </svg>
   );
 }
+
+/** The mark as a plain white glyph with the ember crack cut out (used as the "o" in the wordmark). */
+export function LogoGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="4 3.5 25.5 25" className={className} aria-hidden>
+      <defs>
+        <mask id="charcoal-ember">
+          <rect x="0" y="0" width="32" height="32" fill="white" />
+          <path d="M11.5 21.5 15 18.5l2.5 2.5 4.5-4.5" fill="none" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="22" cy="16.5" r="1.4" fill="black" />
+        </mask>
+      </defs>
+      <path d="M5 20 9 8.5 18.5 4.5 27 10.5l1.5 10-6.5 7H10.5z" fill="currentColor" mask="url(#charcoal-ember)" />
+    </svg>
+  );
+}
+
+/** "Charcoal" with the mark as its second "o". */
+export function Wordmark({ className }: { className?: string }) {
+  return (
+    <span aria-label="Charcoal" className={className}>
+      <span aria-hidden>Charc</span>
+      <LogoGlyph className="mx-[0.02em] inline-block h-[0.8em] w-[0.82em] align-[-0.07em]" />
+      <span aria-hidden>al</span>
+    </span>
+  );
+}

@@ -49,7 +49,7 @@ interface Props {
 export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, titleLink, children, still }: Props) {
   const line = (which: 'primary' | 'secondary', content: ReactNode) =>
     titleLink?.line === which ? (
-      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 transition-colors hover:text-white">
+      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline">
         {content}
       </Link>
     ) : (
