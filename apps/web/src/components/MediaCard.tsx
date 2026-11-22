@@ -11,14 +11,19 @@ import { peekProps } from '../lib/peek';
 export function usePrefetch(type: MediaType, id: number) {
   const qc = useQueryClient();
   const timer = useRef<number>(undefined);
+  // Hover / right-click / Shift-click / tap: the details peek (lib/peek).
+  const pk = peekProps(type, id);
   return {
-    onPointerEnter: () => {
+    ...pk,
+    onPointerEnter: (e: React.PointerEvent) => {
       timer.current = window.setTimeout(() => qc.prefetchQuery(q.details(type, id)), 180);
+      pk.onPointerEnter(e);
     },
-    onPointerLeave: () => window.clearTimeout(timer.current),
+    onPointerLeave: (e: React.PointerEvent) => {
+      window.clearTimeout(timer.current);
+      pk.onPointerLeave(e);
+    },
     onFocus: () => qc.prefetchQuery(q.details(type, id)),
-    // Right-click / Shift-click: the details peek.
-    ...peekProps(type, id),
   };
 }
 

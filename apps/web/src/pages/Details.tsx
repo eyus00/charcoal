@@ -1,9 +1,10 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Share2, Star, X } from 'lucide-react';
+import { Play, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
+import { PlayTitleButton, ShareButton } from '../components/TitleActions';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
@@ -13,13 +14,10 @@ import MediaCard, { CARD_IMAGE, CARD_LIFT, CertBadge, CornerArc } from '../compo
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
-import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
 import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video, certificationOf } from '../lib/tmdb';
-import { cx, formatClock, formatRuntime, useKeys, useTitle } from '../lib/util';
-import { toast } from '../components/Toast';
+import { cx, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
-import { Tip } from '../components/Tip';
 
 export default function Details({ type }: { type: MediaType }) {
   const id = Number(useParams().id);
@@ -130,7 +128,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
-              <PlayActions d={d} type={type} onEpisodes={() => openEpisodes()} />
+              <PlayTitleButton id={d.id} type={type} kbd onEpisodes={() => openEpisodes()} />
               <BookmarkMenu variant="round" hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
               <ShareButton title={title} />
             </div>
@@ -264,36 +262,6 @@ function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season
 }
 
 /** Native share sheet on phones, otherwise copy the link. */
-function ShareButton({ title }: { title: string }) {
-  const share = async () => {
-    const url = window.location.href.split('?')[0];
-    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-      try {
-        await navigator.share({ title, url });
-      } catch {
-        /* cancelled */
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast('Link copied');
-    } catch {
-      toast('Couldn’t copy the link. Copy it from the address bar.');
-    }
-  };
-  return (
-    <button
-      type="button"
-      onClick={share}
-      aria-label="Share"
-      className={cx(btn({ size: 'lg', icon: true }), 'group/tip relative')}
-    >
-      <Share2 className="size-[18px]" />
-      <Tip label="Share" />
-    </button>
-  );
-}
 
 /**
  * Overview clamped to 3 lines (4 from md). When it doesn't fit, the text is cut at a word
@@ -401,31 +369,3 @@ function OverviewDialog({ title, text, onClose }: { title: string; text: string;
   );
 }
 
-const PRIMARY = btn({ variant: 'primary', size: 'lg' });
-
-function PlayActions({ d, type, onEpisodes }: { d: D; type: MediaType; onEpisodes: () => void }) {
-  const history = useStore((s) => s.history);
-  if (type === 'movie') {
-    const p = findProgress(history, 'movie', d.id);
-    const resumable = p && !p.isCompleted && percent(p) > 1;
-    return (
-      <>
-        <Link to={`/watch/movie/${d.id}`} className={PRIMARY}>
-          <Play className="size-4 fill-current" strokeWidth={0} />
-          {resumable ? `Resume ${formatClock(p.progress!.watched)}` : 'Watch now'}
-          <Kbd light>P</Kbd>
-        </Link>
-      </>
-    );
-  }
-  const r = resumeTarget(history, 'tv', d.id);
-  const label = r?.season !== undefined ? `${r.isNext ? 'Play' : 'Resume'} ${epLabel(r.season, r.episode)}` : 'Watch now';
-  // Opens the episode selector; its footer button resumes / plays.
-  return (
-    <button onClick={onEpisodes} className={PRIMARY} aria-haspopup="dialog">
-      <Play className="size-4 fill-current" strokeWidth={0} />
-      {label}
-      <Kbd light>P</Kbd>
-    </button>
-  );
-}
