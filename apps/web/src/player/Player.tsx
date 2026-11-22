@@ -1566,7 +1566,7 @@ export function TitleInfo({ title, subtitle, meta, detailsUrl, onEpisodes }: { t
         <Link to={detailsUrl} aria-label={`${title}: details`} className="pointer-events-auto absolute -inset-x-2 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.04]" />
       )}
       <div className="pointer-events-none relative">
-        <h2 className="text-xl leading-snug font-semibold text-balance decoration-white/40 underline-offset-4 md:text-3xl group-has-[a:hover]/info:underline">{title}</h2>
+        <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">{title}</h2>
         {subtitle &&
           (onEpisodes ? (
             <button
