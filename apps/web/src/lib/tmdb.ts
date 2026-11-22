@@ -170,6 +170,14 @@ export const q = {
     queryFn: ({ signal }: { signal: AbortSignal }) => tmdb<Page<MediaItem>>(`/${type}/${list}`, {}, signal),
   }),
 
+  // Just the basics and recommendations (genres, language…): for taste and "For you", where the
+  // full details (cast, images, videos) would be ~10x the download.
+  lite: (type: MediaType, id: number) => ({
+    queryKey: ['lite', type, id],
+    staleTime: 6 * 60 * 60_000,
+    queryFn: ({ signal }: { signal: AbortSignal }) => tmdb<Details>(`/${type}/${id}`, { append_to_response: 'recommendations' }, signal),
+  }),
+
   // One request per title: everything the details page AND player need.
   details: (type: MediaType, id: number) => ({
     queryKey: ['details', type, id],

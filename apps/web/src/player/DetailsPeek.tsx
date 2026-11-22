@@ -10,15 +10,14 @@ import { btn } from '../components/Button';
 import BookmarkMenu from '../components/BookmarkMenu';
 import { PlayTitleButton, ShareButton } from '../components/TitleActions';
 import { peek } from '../lib/peek';
-import { certificationOf, titleOf, type Details, type MediaType } from '../lib/tmdb';
+import { certificationOf, cleanList, titleOf, trailersOf, type Details, type MediaType } from '../lib/tmdb';
 import { cx, formatRuntime, isTypingTarget } from '../lib/util';
 
 /** year · ★ rating · age rating · length: the same order everywhere. */
 function Facts({ d, type, className }: { d: Details; type: MediaType; className?: string }) {
   const year = (d.release_date || d.first_air_date || '').slice(0, 4);
   const cert = certificationOf(d);
-  const length =
-    type === 'movie' ? formatRuntime(d.runtime ?? 0) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
+  const length = type === 'movie' ? formatRuntime(d.runtime ?? 0) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
   return (
     <div className={cx('flex flex-wrap items-center gap-x-2 gap-y-1 text-white/80', className)}>
       {[year, d.vote_average > 0 ? 'rating' : '', cert ? 'cert' : '', length].filter(Boolean).map((t, i) => (
@@ -69,10 +68,7 @@ function ExpandButton({ to, small }: { to: string; small?: boolean }) {
     <Link
       to={to}
       aria-label="Open the full details page (D)"
-      className={cx(
-        'group/tip relative flex items-center gap-1.5 rounded-full bg-black/55 pr-1.5 text-white backdrop-blur-md transition-colors hover:bg-black/75',
-        small ? 'h-8 pl-2.5' : 'h-10 pl-3',
-      )}
+      className={cx('group/tip relative flex items-center gap-1.5 rounded-full bg-black/55 pr-1.5 text-white backdrop-blur-md transition-colors hover:bg-black/75', small ? 'h-8 pl-2.5' : 'h-10 pl-3')}
     >
       <Maximize2 className={small ? 'size-3.5' : 'size-4'} />
       <Kbd className="bg-white/15 text-white/80 ring-0">D</Kbd>
@@ -120,8 +116,7 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
   const sheet = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
-  // Swiped up: the sheet fills the screen and shows a soft placeholder until the page is there.
-  const [expanding, setExpanding] = useState(false);
+  const top = useRef<HTMLDivElement>(null);
 
   // A plain overlay (not a native modal dialog) so the watchlist menu, which opens in its own
   // layer, still shows above it. Esc closes, focus moves in and comes back, the page doesn't scroll.
@@ -139,17 +134,27 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
     };
   }, []);
 
-  // Phones: drag the sheet down to close it, or up to open the full details page.
+  // Phones: the sheet opens at the height of its top part; what's below it (the details page's
+  // next sections) is already there. Drag up and it grows, revealing them, then becomes the full
+  // page (its code is loaded and its data cached, so it appears at once). Drag down to close.
   useEffect(() => {
     const el = sheet.current;
     if (!el || matchMedia('(min-width: 640px)').matches) return;
+    void import('../pages/Details');
+    const full = () => window.innerHeight;
+    const collapsed = Math.min(top.current?.offsetHeight ?? 0, full() * 0.9);
+    const canGrow = collapsed > 0 && collapsed < full() * 0.9 - 1;
+    if (canGrow) {
+      el.style.height = `${collapsed}px`;
+      el.style.overflow = 'hidden';
+    }
+    const reveal = (h: number) => el.style.setProperty('--reveal', String(Math.max(0, Math.min(1, (h - collapsed) / Math.max(1, full() - collapsed)))));
     let start: { y: number; h: number; up: boolean } | null = null;
     let dy = 0;
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1 || el.scrollTop > 0) return;
       const y = e.touches[0].clientY;
-      // Upward drags count from the picture / handle, so the text below can still scroll.
-      start = { y, h: el.offsetHeight, up: y - el.getBoundingClientRect().top < 220 || el.scrollHeight <= el.clientHeight + 1 };
+      start = { y, h: el.offsetHeight, up: canGrow || y - el.getBoundingClientRect().top < 220 || el.scrollHeight <= el.clientHeight + 1 };
       dy = 0;
       el.style.transition = 'none';
     };
@@ -158,32 +163,36 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
       dy = e.touches[0].clientY - start.y;
       if (dy > 0) {
         e.preventDefault();
-        el.style.height = '';
         el.style.transform = `translateY(${dy}px)`;
       } else if (start.up) {
         e.preventDefault();
         el.style.transform = '';
         el.style.maxHeight = 'none';
-        el.style.height = `${Math.min(window.innerHeight, start.h - dy)}px`;
+        const h = Math.min(full(), start.h - dy);
+        el.style.height = `${h}px`;
+        el.style.borderRadius = h >= full() - 2 ? '0' : '';
+        reveal(h);
       } else start = null;
     };
     const onEnd = () => {
       if (!start) return;
       start = null;
-      el.style.transition = 'transform 220ms ease, height 220ms ease, border-radius 220ms ease';
+      el.style.transition = 'transform 220ms ease, height 240ms cubic-bezier(0.22, 0.8, 0.2, 1), border-radius 240ms ease';
       if (dy > 110) {
         el.style.transform = 'translateY(100%)';
         window.setTimeout(() => close.current(), 200);
       } else if (dy < -70) {
         el.style.maxHeight = 'none';
-        el.style.height = `${window.innerHeight}px`;
+        el.style.height = `${full()}px`;
         el.style.borderRadius = '0';
-        setExpanding(true);
-        window.setTimeout(() => navigate(detailsUrl), 260);
+        reveal(full());
+        window.setTimeout(() => navigate(detailsUrl), 250);
       } else {
         el.style.transform = '';
-        el.style.height = '';
+        el.style.height = canGrow ? `${collapsed}px` : '';
         el.style.maxHeight = '';
+        el.style.borderRadius = '';
+        reveal(collapsed);
       }
     };
     el.addEventListener('touchstart', onStart, { passive: true });
@@ -210,61 +219,84 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
         className="toast-in relative max-h-[90dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none sm:max-h-[88dvh] sm:max-w-3xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {expanding && (
-          <div aria-hidden className="absolute inset-0 z-20 overflow-hidden bg-bg">
-            <Img path={d.backdrop_path} kind="backdrop" sizes="100vw" alt="" className="absolute! inset-0 size-full scale-110 opacity-40 blur-2xl" imgClassName="object-cover" />
-            <div className="absolute inset-x-4 bottom-8 space-y-3 rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl">
-              <div className="skeleton h-8 w-3/4 rounded-lg" />
-              <div className="skeleton h-4 w-1/2 rounded-md" />
-              <div className="skeleton h-4 w-2/5 rounded-md" />
-              <div className="space-y-2 pt-2">
-                <div className="skeleton h-3.5 w-full rounded-md" />
-                <div className="skeleton h-3.5 w-full rounded-md" />
-                <div className="skeleton h-3.5 w-4/5 rounded-md" />
-              </div>
-              <div className="flex gap-2.5 pt-3">
-                <div className="skeleton h-12 w-40 rounded-full" />
-                <div className="skeleton size-12 rounded-full" />
-                <div className="skeleton size-12 rounded-full" />
-              </div>
-            </div>
-          </div>
-        )}
         {/* Drag handle (phones). */}
         <div aria-hidden className="absolute top-2 left-1/2 z-10 h-1 w-10 -translate-x-1/2 rounded-full bg-white/50 sm:hidden" />
 
-        {/* The backdrop sits on top; the info card only overlaps its lower edge. */}
-        <div className="relative">
-          <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 640px) 768px, 100vw" alt="" className="aspect-video w-full sm:aspect-[16/8]" imgClassName="object-[70%_20%]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/10 to-bg/20" />
-        </div>
-
-        <div className="absolute top-3 right-3 z-10 flex gap-2">
-          <div className="hidden sm:block">
-            <ExpandButton to={detailsUrl} />
+        <div ref={top}>
+          {/* The backdrop sits on top; the info card only overlaps its lower edge. */}
+          <div className="relative">
+            <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 640px) 768px, 100vw" alt="" className="aspect-video w-full sm:aspect-[16/8]" imgClassName="object-[70%_20%]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/10 to-bg/20" />
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className={cx(btn({ icon: true }), 'group/tip relative bg-black/55! backdrop-blur-md hover:bg-black/75!')}>
-            <X className="size-4" />
-            <Tip label="Close" keys="Esc" side="bottom" align="end" />
-          </button>
-        </div>
 
-        <div className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
-          <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
-            <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
-            <Facts d={d} type={type} className="mt-2 text-sm" />
-            {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
-            {d.overview && <p className="mt-4 line-clamp-5 text-body-sm leading-6 text-pretty text-white/80">{d.overview}</p>}
-            <div className="mt-5 flex flex-wrap items-center gap-2.5">
-              {play && <PlayTitleButton id={d.id} type={type} onEpisodes={() => onEpisodes?.()} />}
-              <BookmarkMenu variant="round" item={bookmarkItem(d, type)} />
-              <ShareButton title={title} path={detailsUrl} />
+          <div className="absolute top-3 right-3 z-10 flex gap-2">
+            <div className="hidden sm:block">
+              <ExpandButton to={detailsUrl} />
+            </div>
+            <button type="button" onClick={onClose} aria-label="Close" className={cx(btn({ icon: true }), 'group/tip relative bg-black/55! backdrop-blur-md hover:bg-black/75!')}>
+              <X className="size-4" />
+              <Tip label="Close" keys="Esc" side="bottom" align="end" />
+            </button>
+          </div>
+
+          <div className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
+            <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
+              <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
+              <Facts d={d} type={type} className="mt-2 text-sm" />
+              {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
+              {d.overview && <p className="mt-4 line-clamp-5 text-body-sm leading-6 text-pretty text-white/80">{d.overview}</p>}
+              <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                {play && <PlayTitleButton id={d.id} type={type} onEpisodes={() => onEpisodes?.()} />}
+                <BookmarkMenu variant="round" item={bookmarkItem(d, type)} />
+                <ShareButton title={title} path={detailsUrl} />
+              </div>
             </div>
           </div>
         </div>
+        <SheetMore d={d} type={type} />
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Phones: the details page's next sections, under the sheet's fold. Dragging the sheet up reveals
+ * them (fading in with `--reveal`), so it flows straight into the full page.
+ */
+function SheetMore({ d, type }: { d: Details; type: MediaType }) {
+  const trailers = trailersOf(d).slice(0, 4);
+  const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 8);
+  if (!trailers.length && !recs.length) return null;
+  return (
+    <div aria-hidden className="space-y-8 px-4 pb-10 sm:hidden" style={{ opacity: 'var(--reveal, 0)', transform: 'translateY(calc((1 - var(--reveal, 0)) * 24px))' }}>
+      {trailers.length > 0 && (
+        <section>
+          <h3 className="mb-3 text-lg font-semibold tracking-tight">Trailers & videos</h3>
+          <div className="flex gap-3 overflow-hidden">
+            {trailers.map((v) => (
+              <div key={v.key} className="w-64 shrink-0">
+                <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="aspect-video w-full rounded-2xl bg-surface object-cover" />
+                <p className="mt-2 line-clamp-1 text-body-sm font-medium text-white/90">{v.name}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {recs.length > 0 && (
+        <section>
+          <h3 className="mb-3 text-lg font-semibold tracking-tight">More like this</h3>
+          <div className="flex gap-3 overflow-hidden">
+            {recs.map((m) => (
+              <div key={m.id} className="w-[156px] shrink-0">
+                <Img path={m.poster_path} kind="poster" sizes="156px" alt="" className="aspect-[2/3] rounded-2xl" />
+                <p className="mt-2 truncate text-body-sm font-medium text-white/90">{titleOf(m)}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -282,8 +314,7 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor, onEpisodes }: { d: Det
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const gap = 12;
-    const left =
-      anchor.right + gap + W <= vw - gap ? anchor.right + gap : anchor.left - gap - W >= gap ? anchor.left - gap - W : Math.max(gap, Math.min(anchor.left, vw - W - gap));
+    const left = anchor.right + gap + W <= vw - gap ? anchor.right + gap : anchor.left - gap - W >= gap ? anchor.left - gap - W : Math.max(gap, Math.min(anchor.left, vw - W - gap));
     const top = Math.max(gap, Math.min(anchor.top, vh - h - gap));
     setPos({ left, top });
   }, [anchor]);

@@ -1,15 +1,13 @@
 import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import MediaCard, { CARD_IMAGE, CARD_INFO, CARD_LIFT, CARD_TITLE, CornerArc } from './MediaCard';
 import { ROW_BLEED, ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { CardSkeleton } from './Skeletons';
 import { epLabel } from '../lib/episodes';
 import { peekProps } from '../lib/peek';
-import { useTraktUser } from '../lib/trakt';
 import { useForYou } from '../lib/recommend';
-import { fetchFollowing, fetchFriendsActivity, tImg, type TEpisode, type TMedia, type TUser } from '../lib/traktData';
-import { cx, timeAgo, useInView } from '../lib/util';
+import { tImg, type TEpisode, type TMedia, type TUser } from '../lib/traktData';
+import { cx, timeAgo } from '../lib/util';
 
 /** Picks for you from what you watch (and Trakt, when connected): see lib/recommend. */
 export function ForYouRow() {
@@ -60,7 +58,7 @@ export function FriendCard({
   if (!id) return null;
   const name = user.name || user.username;
   const avatar = user.images?.avatar?.full;
-  const image = tImg(episode?.images?.screenshot) ?? tImg(media.images?.fanart) ?? tImg(media.images?.thumb);
+  const image = tImg(episode?.images?.screenshot, true) ?? tImg(media.images?.fanart, true) ?? tImg(media.images?.thumb);
   return (
     <Link to={`/${type}/${id}`} {...peekProps(type, id)} className={cx('group block shrink-0 snap-start', className ?? 'w-[248px] sm:w-[288px]', CARD_LIFT)}>
       <div className={CARD_IMAGE}>
@@ -90,78 +88,5 @@ export function FriendCard({
         <CornerArc />
       </div>
     </Link>
-  );
-}
-
-/** What the people you follow on Trakt are watching (only when connected and following someone). */
-export function FriendsRow() {
-  const user = useTraktUser();
-  const [ref, inView] = useInView<HTMLElement>('500px');
-  const following = useQuery({
-    queryKey: ['trakt', 'following', user?.username],
-    queryFn: fetchFollowing,
-    enabled: !!user && inView,
-    staleTime: 10 * 60_000,
-  });
-  const activity = useQuery({
-    queryKey: ['trakt', 'friends-activity', user?.username],
-    queryFn: () => fetchFriendsActivity((following.data ?? []).map((f) => f.user)),
-    enabled: !!following.data?.length,
-    staleTime: 5 * 60_000,
-  });
-  const { ref: scrollRef, scroll } = useRowScroll();
-  if (!user) return null;
-  if (following.data && !following.data.length) return null;
-  const a = activity.data;
-  const cards = a
-    ? [
-        ...a.watchingNow.map(({ user: u, now }) => ({
-          key: `now-${u.username}`,
-          user: u,
-          media: (now.movie ?? now.show)!,
-          episode: now.episode,
-          type: now.movie ? ('movie' as const) : ('tv' as const),
-          when: Date.now(),
-          live: true,
-        })),
-        ...a.feed.map(({ user: u, row, at }) => ({
-          key: `h-${row.id}`,
-          user: u,
-          media: (row.movie ?? row.show)!,
-          episode: row.episode,
-          type: row.movie ? ('movie' as const) : ('tv' as const),
-          when: at,
-          live: false,
-        })),
-      ].filter((c) => c.media)
-    : [];
-  if (a && !cards.length) return null;
-  return (
-    <section ref={ref}>
-      <SectionHeader
-        title="Friends"
-        action={
-          <div className="flex items-center gap-3">
-            <Link to="/profile?tab=friends" className="text-sm text-muted transition-colors hover:text-white">
-              See all
-            </Link>
-            <RowArrows onScroll={scroll} />
-          </div>
-        }
-      />
-      {!a ? (
-        <div className={cx('flex gap-4 overflow-hidden', ROW_BLEED)}>
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="skeleton aspect-video w-[248px] shrink-0 rounded-2xl sm:w-[288px]" />
-          ))}
-        </div>
-      ) : (
-        <Scroller label="Friends" scrollRef={scrollRef}>
-          {cards.slice(0, 20).map(({ key, ...c }) => (
-            <FriendCard key={key} {...c} />
-          ))}
-        </Scroller>
-      )}
-    </section>
   );
 }

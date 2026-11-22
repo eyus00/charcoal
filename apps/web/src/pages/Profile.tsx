@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
-import { ActivityTab, FriendsTab, ProfileHeader } from '../components/ProfileSocial';
+import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
 import { Bookmark, Download, Film, Trash2, Upload, X } from 'lucide-react';
 import { StatusDot, StatusTag } from '../components/BookmarkMenu';
 import ContinueWatching from '../components/ContinueWatching';
@@ -32,7 +32,7 @@ const AUDIO_LANGS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'hi', 'ta', 'te', 'ja',
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 
-const TABS = ['library', 'activity', 'friends', 'settings'] as const;
+const TABS = ['library', 'activity', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function Profile() {
@@ -121,8 +121,6 @@ export default function Profile() {
         </>
       ) : tab === 'activity' ? (
         <ActivityTab />
-      ) : tab === 'friends' ? (
-        <FriendsTab />
       ) : (
         <div id="settings" className="scroll-mt-4">
           <SettingsSection />

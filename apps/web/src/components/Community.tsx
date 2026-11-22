@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, EyeOff, Heart, MessageCircle, PenLine, Star, Trash2 } from 'lucide-react';
+import { EyeOff, Heart, MessageCircle, MessagesSquare, PenLine, Star, Trash2 } from 'lucide-react';
+import { Tip } from './Tip';
 import { Dialog } from './Modal';
-import { SectionHeader } from './Row';
+import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { btn } from './Button';
 import { toast } from './Toast';
 import {
@@ -43,7 +44,6 @@ export default function Community({ type, id }: { type: MediaType; id: number })
     getNextPageParam: (last, all) => (all.length < last.pages ? all.length + 1 : undefined),
   });
   const list = useMemo(() => comments.data?.pages.flatMap((p) => p.data) ?? [], [comments.data]);
-  const total = comments.data?.pages[0]?.total ?? 0;
   const noTrakt = title.isSuccess && (!t || (comments.isSuccess && !list.length));
   const tmdb = useQuery({ ...q.reviews(type, id), enabled: inView && noTrakt });
 
@@ -84,37 +84,49 @@ export default function Community({ type, id }: { type: MediaType; id: number })
 
   const [writing, setWriting] = useState(false);
   const [draft, setDraft] = useState({ text: '', spoiler: false });
+  const [all, setAll] = useState(false);
   const write = () => (user ? setWriting(true) : startTraktLogin());
   const shown = [...mine, ...others];
+  const { ref: rowRef, scroll } = useRowScroll();
+  const onDeleted = (c: TraktComment) => {
+    setJustPosted((p) => p.filter((x) => x.id !== c.id));
+    refresh();
+  };
+  const sortPills = (
+    <div className="flex items-center gap-2">
+      {(
+        [
+          ['likes', 'Top'],
+          ['newest', 'Newest'],
+        ] as const
+      ).map(([v, label]) => (
+        <button
+          key={v}
+          type="button"
+          aria-pressed={sort === v}
+          onClick={() => setSort(v)}
+          className={cx('h-8 rounded-full px-3.5 text-sm transition-colors', sort === v ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10')}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <section ref={ref} className="mt-10">
-      {(loading || hasAnything) && <SectionHeader title="What people think" />}
+      {(loading || hasAnything) && <SectionHeader title="What people think" action={shown.length > 0 || tmdb.data?.results.length ? <RowArrows onScroll={scroll} /> : undefined} />}
       {loading && <CommunitySkeleton />}
       {!loading && hasAnything && (
         <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-          {t ? <RatingSummary r={ratings.data} t={t} user={user} /> : <div className="hidden lg:block" />}
+          <div className="space-y-3 self-start">
+            {t && <RatingSummary r={ratings.data} />}
+            {t && user && <YourRating t={t} />}
+          </div>
           <div className="min-w-0">
-            {/* One fixed-height toolbar: sort, count, and the button that opens the composer. */}
+            {/* One fixed-height toolbar: sort, and the button that opens the composer. */}
             <div className="mb-3 flex h-9 items-center gap-2">
-              {shown.length > 0 &&
-                (
-                  [
-                    ['likes', 'Top'],
-                    ['newest', 'Newest'],
-                  ] as const
-                ).map(([v, label]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={sort === v}
-                    onClick={() => setSort(v)}
-                    className={cx('h-8 rounded-full px-3.5 text-sm transition-colors', sort === v ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10')}
-                  >
-                    {label}
-                  </button>
-                ))}
-              {shown.length > 0 && <span className="ml-1 hidden text-xs text-faint sm:inline">{total.toLocaleString()} comments</span>}
+              {shown.length > 0 && sortPills}
               {t && (
                 <button type="button" onClick={write} className={cx(btn(), 'ml-auto h-9 px-4 text-sm')}>
                   <PenLine className="size-4" /> {user ? 'Write a comment' : 'Connect Trakt to comment'}
@@ -122,43 +134,30 @@ export default function Community({ type, id }: { type: MediaType; id: number })
               )}
             </div>
             {shown.length > 0 ? (
-              <Scrollbox
-                more={
-                  comments.hasNextPage ? (
-                    <button type="button" onClick={() => comments.fetchNextPage()} disabled={comments.isFetchingNextPage} className={cx(btn(), 'h-9 px-5 text-sm disabled:opacity-60')}>
-                      {comments.isFetchingNextPage ? 'Loading…' : 'Show more'}
-                    </button>
-                  ) : null
-                }
-              >
-                <div className="grid gap-3 md:grid-cols-2">
-                  {mine.map((c) => (
-                    <CommentCard
-                      key={c.id}
-                      c={c}
-                      me={user}
-                      pinned
-                      onDeleted={() => {
-                        setJustPosted((p) => p.filter((x) => x.id !== c.id));
-                        refresh();
-                      }}
-                    />
-                  ))}
-                  {others.map((c) => (
-                    <CommentCard key={c.id} c={c} me={user} onDeleted={refresh} />
-                  ))}
-                </div>
-              </Scrollbox>
+              // Sideways like the other rows: the first few, then "Read more" for everything.
+              <Scroller label="Comments" scrollRef={rowRef} bleed={false}>
+                {shown.slice(0, 5).map((c) => (
+                  <CommentCard key={c.id} c={c} me={user} pinned={mineIds.has(c.id)} onDeleted={() => onDeleted(c)} row />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setAll(true)}
+                  className="flex h-[232px] w-[180px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-2xl bg-white/[0.04] text-sm font-medium text-white/80 ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.07] hover:text-white"
+                >
+                  <span className="grid size-11 place-items-center rounded-full bg-white/10">
+                    <MessagesSquare className="size-5" />
+                  </span>
+                  Read more…
+                </button>
+              </Scroller>
             ) : tmdb.data && tmdb.data.results.length > 0 ? (
-              <Scrollbox>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {tmdb.data.results.map((r) => (
-                    <TmdbReviewCard key={r.id} r={r} />
-                  ))}
-                </div>
-              </Scrollbox>
+              <Scroller label="Reviews" scrollRef={rowRef} bleed={false}>
+                {tmdb.data.results.slice(0, 8).map((r) => (
+                  <TmdbReviewCard key={r.id} r={r} />
+                ))}
+              </Scroller>
             ) : (
-              <div className="flex min-h-40 flex-col items-center justify-center gap-1.5 rounded-2xl bg-white/[0.04] p-6 text-center ring-1 ring-white/[0.06]">
+              <div className="flex h-[232px] flex-col items-center justify-center gap-1.5 rounded-2xl bg-white/[0.04] p-6 text-center ring-1 ring-white/[0.06]">
                 <MessageCircle className="mb-1 size-6 text-faint" />
                 <p className="text-sm font-medium">No comments yet</p>
                 <p className="text-sm text-muted">Be the first to share what you think.</p>
@@ -166,6 +165,34 @@ export default function Community({ type, id }: { type: MediaType; id: number })
             )}
           </div>
         </div>
+      )}
+      {all && t && (
+        <Dialog
+          title="What people think"
+          subtitle={ratings.data?.votes ? `★ ${ratings.data.rating.toFixed(1)} from ${compact(ratings.data.votes)} ratings on Trakt` : 'Comments on Trakt'}
+          onClose={() => setAll(false)}
+          wide
+        >
+          <div className="sticky top-0 z-10 -mx-5 mb-3 flex items-center gap-2 bg-surface px-5 pb-3">
+            {sortPills}
+            <button type="button" onClick={write} className={cx(btn(), 'ml-auto h-9 px-4 text-sm')}>
+              <PenLine className="size-4" /> {user ? 'Write' : 'Connect Trakt'}
+            </button>
+          </div>
+          <div className="space-y-3">
+            {shown.map((c) => (
+              <CommentCard key={c.id} c={c} me={user} pinned={mineIds.has(c.id)} onDeleted={() => onDeleted(c)} />
+            ))}
+            {comments.isFetchingNextPage && Array.from({ length: 2 }, (_, i) => <div key={i} className="skeleton h-36 rounded-2xl" />)}
+          </div>
+          {comments.hasNextPage && !comments.isFetchingNextPage && (
+            <div className="flex justify-center pt-4">
+              <button type="button" onClick={() => comments.fetchNextPage()} className={cx(btn(), 'h-9 px-5 text-sm')}>
+                Show more
+              </button>
+            </div>
+          )}
+        </Dialog>
       )}
       {writing && t && user && (
         <Composer
@@ -186,36 +213,13 @@ export default function Community({ type, id }: { type: MediaType; id: number })
   );
 }
 
-/** A fixed-height scrolling area with a soft fade at the bottom, and "Show more" at its end. */
-function Scrollbox({ children, more }: { children: React.ReactNode; more?: React.ReactNode }) {
-  const box = useRef<HTMLDivElement>(null);
-  const end = useRef<HTMLDivElement>(null);
-  const [atEnd, setAtEnd] = useState(false);
-  useEffect(() => {
-    if (!box.current || !end.current) return;
-    const io = new IntersectionObserver(([e]) => setAtEnd(e.isIntersecting), { root: box.current });
-    io.observe(end.current);
-    return () => io.disconnect();
-  }, []);
-  return (
-    <div className="relative">
-      <div ref={box} className="no-scrollbar max-h-[34rem] overflow-y-auto overscroll-contain rounded-2xl md:max-h-[30rem]">
-        {children}
-        {more && <div className="flex justify-center pt-4 pb-1">{more}</div>}
-        <div ref={end} className="h-px" />
-      </div>
-      <div aria-hidden className={cx('pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-bg to-transparent transition-opacity', atEnd && 'opacity-0')} />
-    </div>
-  );
-}
-
 const compact = (n: number) =>
   new Intl.NumberFormat(undefined, {
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(n);
 
-function RatingSummary({ r, t, user }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; t: TraktTitle; user: TraktUser | null }) {
+function RatingSummary({ r }: { r?: { rating: number; votes: number; distribution: Record<string, number> } }) {
   const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
   return (
     <div className="self-start rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
@@ -246,29 +250,23 @@ function RatingSummary({ r, t, user }: { r?: { rating: number; votes: number; di
           </div>
         </>
       )}
-      {user && <YourRating t={t} />}
     </div>
   );
 }
 
-const SCORE_WORDS = ['', 'Awful', 'Terrible', 'Bad', 'Poor', 'Meh', 'Fair', 'Good', 'Great', 'Superb', 'Masterpiece'];
-
-/** Your own 1–10 rating, saved to Trakt. Picking the same score again removes it. */
+/**
+ * Your own 1–10 rating, saved to Trakt: a separate pill under the score. Saving makes the stars
+ * shine in a row and shows a toast; picking your score again removes it (a tooltip says so).
+ */
 function YourRating({ t }: { t: TraktTitle }) {
   const qc = useQueryClient();
   const mine = useQuery(myRatingsQ(t.kind, true));
   const saved = mine.data?.get(t.traktId) ?? 0;
   const [hover, setHover] = useState(0);
   const [pending, setPending] = useState<number | null>(null);
-  // Bumped on each save so the stars replay their "pop".
+  // Bumped on each save so the stars replay their shine.
   const [popKey, setPopKey] = useState(0);
-  const [flash, setFlash] = useState<string | null>(null);
   const shown = hover || (pending ?? saved);
-  useEffect(() => {
-    if (!flash) return;
-    const id = window.setTimeout(() => setFlash(null), 1600);
-    return () => window.clearTimeout(id);
-  }, [flash]);
   const pick = async (n: number) => {
     const next = n === saved ? null : n;
     setPending(next ?? 0);
@@ -283,56 +281,48 @@ function YourRating({ t }: { t: TraktTitle }) {
       });
       qc.invalidateQueries({ queryKey: ['trakt', 'ratings', t.kind, t.slug] });
       if (next) setPopKey((k) => k + 1);
-      setFlash(next ? 'Saved' : 'Removed');
+      toast(next ? `Rated ${next}/10` : 'Rating removed');
     } catch (e) {
       toast((e as Error).message);
     } finally {
       setPending(null);
     }
   };
-  const label = flash ? null : shown ? `${shown}/10 · ${SCORE_WORDS[shown]}` : 'Tap a star';
   return (
-    <div className="mt-4 border-t border-white/[0.06] pt-3.5">
-      <p className="flex h-4 items-center justify-between text-xs text-muted">
-        Your rating
-        {flash ? (
-          <span key={flash + popKey} className="toast-in flex items-center gap-1 font-medium text-success">
-            <Check className="size-3.5" strokeWidth={2.5} /> {flash}
-          </span>
-        ) : (
-          <span className={cx('tabular-nums', shown ? 'text-white/85' : 'text-faint')}>{label}</span>
-        )}
-      </p>
-      <div className={cx('mt-2 flex transition-opacity', pending !== null && 'opacity-60')} role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)}>
-        {Array.from({ length: 10 }, (_, i) => {
-          const on = i < shown;
-          return (
-            <button
-              key={`${i}-${popKey}`}
-              type="button"
-              role="radio"
-              aria-checked={saved === i + 1}
-              aria-label={`${i + 1} out of 10, ${SCORE_WORDS[i + 1]}`}
-              disabled={pending !== null}
-              onPointerEnter={() => setHover(i + 1)}
-              onClick={() => pick(i + 1)}
-              className="grid h-8 flex-1 place-items-center rounded-md transition-colors hover:bg-white/[0.06]"
-            >
-              <Star
-                className={cx(
-                  'size-[18px] transition-[color,transform] duration-150',
-                  on ? 'fill-current text-star' : 'text-white/25',
-                  hover === i + 1 && 'scale-125',
-                  popKey > 0 && on && i < saved && 'pop',
-                )}
-                style={popKey > 0 ? { animationDelay: `${i * 30}ms` } : undefined}
-                strokeWidth={on ? 0 : 1.5}
-              />
-            </button>
-          );
-        })}
+    <div>
+      <p className="mb-1.5 px-1 text-xs text-muted">Your rating</p>
+      <div className="group/tip relative flex h-12 items-center rounded-full bg-white/[0.04] px-4 ring-1 ring-white/[0.06]">
+        <div className={cx('flex flex-1 justify-between transition-opacity', pending !== null && 'opacity-60')} role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)}>
+          {Array.from({ length: 10 }, (_, i) => {
+            const on = i < shown;
+            return (
+              <button
+                key={`${i}-${popKey}`}
+                type="button"
+                role="radio"
+                aria-checked={saved === i + 1}
+                aria-label={`${i + 1} out of 10`}
+                disabled={pending !== null}
+                onPointerEnter={() => setHover(i + 1)}
+                onClick={() => pick(i + 1)}
+                className="grid h-8 w-5 place-items-center"
+              >
+                <Star
+                  className={cx(
+                    'size-[18px] transition-[color,transform] duration-150',
+                    on ? 'fill-current text-star' : 'text-white/25',
+                    hover === i + 1 && 'scale-125',
+                    popKey > 0 && on && i < saved && 'pop',
+                  )}
+                  style={popKey > 0 ? { animationDelay: `${i * 35}ms` } : undefined}
+                  strokeWidth={on ? 0 : 1.5}
+                />
+              </button>
+            );
+          })}
+        </div>
+        {saved > 0 && <Tip label="Tap your score again to remove it" side="bottom" />}
       </div>
-      <p className="mt-1.5 h-4 text-micro text-faint">{saved && !hover ? 'Tap your score again to remove it' : ''}</p>
     </div>
   );
 }
@@ -421,7 +411,7 @@ function Composer({
 }
 
 /** Trakt marks spoilers inline as [spoiler]…[/spoiler]: blur those parts until tapped. */
-function Body({ text, spoiler, clamp, small }: { text: string; spoiler: boolean; clamp: boolean; small?: boolean }) {
+function Body({ text, spoiler, clamp, small, lines = 5 }: { text: string; spoiler: boolean; clamp: boolean; small?: boolean; lines?: 4 | 5 }) {
   const [shown, setShown] = useState(false);
   const parts = text.split(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi);
   const content = parts.map((p, i) =>
@@ -438,7 +428,12 @@ function Body({ text, spoiler, clamp, small }: { text: string; spoiler: boolean;
     <div className={cx('relative', small ? 'mt-0.5' : 'mt-2.5', gated && 'min-h-20')}>
       <p
         aria-hidden={gated}
-        className={cx('break-words whitespace-pre-line text-white/85', small ? 'text-caption leading-5' : 'text-body-sm leading-6', clamp && 'line-clamp-5', gated && 'blur-[7px] select-none')}
+        className={cx(
+          'break-words whitespace-pre-line text-white/85',
+          small ? 'text-caption leading-5' : 'text-body-sm leading-6',
+          clamp && (lines === 4 ? 'line-clamp-4' : 'line-clamp-5'),
+          gated && 'blur-[7px] select-none',
+        )}
       >
         {content}
       </p>
@@ -473,7 +468,7 @@ const ago = (iso: string) => {
   return `${Math.floor(days / 365)}y ago`;
 };
 
-function CommentCard({ c, me, pinned, onDeleted }: { c: TraktComment; me: TraktUser | null; pinned?: boolean; onDeleted: () => void }) {
+function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: TraktUser | null; pinned?: boolean; row?: boolean; onDeleted: () => void }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(c.likes);
   const [confirm, setConfirm] = useState(false);
@@ -504,11 +499,17 @@ function CommentCard({ c, me, pinned, onDeleted }: { c: TraktComment; me: TraktU
       setConfirm(false);
     }
   };
-  const long = c.comment.length > 320;
+  const long = c.comment.length > (row ? 220 : 320);
   return (
-    <article className={cx('flex flex-col rounded-2xl p-4 ring-1', pinned ? 'bg-white/[0.06] ring-white/[0.12]' : 'bg-white/[0.04] ring-white/[0.06]')}>
+    <article
+      className={cx(
+        'flex flex-col rounded-2xl p-4 ring-1',
+        row && 'h-[232px] w-[300px] shrink-0 snap-start sm:w-[340px]',
+        pinned ? 'bg-white/[0.06] ring-white/[0.12]' : 'bg-white/[0.04] ring-white/[0.06]',
+      )}
+    >
       <CommentHead c={c} pinned={pinned} />
-      <Body text={c.comment} spoiler={c.spoiler} clamp />
+      <Body text={c.comment} spoiler={c.spoiler} clamp lines={row ? 4 : 5} />
       <footer className="mt-auto flex items-center gap-4 pt-3 text-xs text-faint">
         {me && !mine ? (
           <button
@@ -673,7 +674,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
   const avatarSrc = r.author_details.avatar_path ? `https://image.tmdb.org/t/p/w92${r.author_details.avatar_path}` : null;
   const avatar = r.author_details.avatar_path ? `https://image.tmdb.org/t/p/w92${r.author_details.avatar_path}` : null;
   return (
-    <article className="flex flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06]">
+    <article className="flex h-[232px] w-[300px] shrink-0 snap-start flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
       <header className="flex items-center gap-3">
         <Avatar src={avatar} name={r.author} />
         <div className="min-w-0 flex-1">
@@ -687,9 +688,9 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
           </span>
         ) : null}
       </header>
-      <Body text={r.content} spoiler={false} clamp />
-      {r.content.length > 320 && (
-        <button type="button" onClick={() => setOpen(true)} className="mt-3 self-end text-xs font-medium text-white/70 transition-colors hover:text-white">
+      <Body text={r.content} spoiler={false} clamp lines={4} />
+      {r.content.length > 220 && (
+        <button type="button" onClick={() => setOpen(true)} className="mt-auto self-end pt-2 text-xs font-medium text-white/70 transition-colors hover:text-white">
           Read more
         </button>
       )}
@@ -709,11 +710,17 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
 function CommunitySkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-      <div className="skeleton h-44 rounded-3xl" />
-      <div className="grid gap-3 md:grid-cols-2">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="skeleton h-40 rounded-2xl" />
-        ))}
+      <div className="space-y-3">
+        <div className="skeleton h-44 rounded-3xl" />
+        <div className="skeleton h-12 rounded-full" />
+      </div>
+      <div className="min-w-0">
+        <div className="mb-3 h-9" />
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="skeleton h-[232px] w-[300px] shrink-0 rounded-2xl sm:w-[340px]" />
+          ))}
+        </div>
       </div>
     </div>
   );

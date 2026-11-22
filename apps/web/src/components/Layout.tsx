@@ -10,6 +10,7 @@ import { PageSkeleton } from './Skeletons';
 import { Wordmark } from './Logo';
 import PeekHost from './PeekHost';
 import { startReminderLoop } from '../lib/reminders';
+import { useFollowReminders } from '../lib/follows';
 import { startWatchlistSync, syncWatchlistOnStart } from '../lib/trakt';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
@@ -42,6 +43,17 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
 function ReminderLoop() {
   const navigate = useNavigate();
   useEffect(() => startReminderLoop((url) => navigate(url)), [navigate]);
+  // Followed shows' next episodes get reminders; checked a moment after load, off the first paint.
+  const [later, setLater] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setLater(true), 4000);
+    return () => window.clearTimeout(t);
+  }, []);
+  return later ? <FollowReminders /> : null;
+}
+
+function FollowReminders() {
+  useFollowReminders();
   return null;
 }
 

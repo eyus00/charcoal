@@ -52,7 +52,13 @@ export interface TUser {
   images?: { avatar?: { full?: string } };
 }
 
-export const tImg = (list?: string[] | null) => (list?.[0] ? (list[0].startsWith('http') ? list[0] : `https://${list[0]}`) : undefined);
+/** A Trakt image URL. `small`: the thumb size (~3x smaller), plenty for cards. */
+export const tImg = (list?: string[] | null, small = false) => {
+  const u = list?.[0];
+  if (!u) return undefined;
+  const url = u.startsWith('http') ? u : `https://${u}`;
+  return small ? url.replace('/medium/', '/thumb/') : url;
+};
 
 /** A Trakt movie / show as one of our cards (posters come from Trakt). */
 export function toItem(kind: MediaType, m: TMedia): MediaItem | null {
@@ -118,59 +124,6 @@ export const fetchHistory = (user = 'me', limit = 20) => traktSend<HistoryRow[]>
 export async function fetchWatchedMovies(): Promise<Set<number>> {
   const rows = await traktSend<{ movie: TMedia }[]>('GET', '/sync/watched/movies');
   return new Set((rows ?? []).map((r) => r.movie.ids.tmdb).filter((x): x is number => !!x));
-}
-
-// ---------- friends ----------
-
-export const fetchFollowing = () => traktSend<{ followed_at: string; user: TUser }[]>('GET', '/users/me/following?extended=full');
-/** Trakt has no user search: find someone by username or profile link instead. */
-export const lookupUser = (slug: string) => traktSend<TUser>('GET', `/users/${encodeURIComponent(slug)}?extended=full`);
-export const fetchFollowers = () => traktSend<{ followed_at: string; user: TUser }[]>('GET', '/users/me/followers?extended=full');
-/** "@Some Name", "some.name" or "https://trakt.tv/users/some-name/…" → "some-name". */
-export function userSlug(input: string) {
-  const fromUrl = input.match(/trakt\.tv\/users\/([^/?#\s]+)/i)?.[1];
-  return (fromUrl ?? input)
-    .trim()
-    .replace(/^@/, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-export const follow = (slug: string, on: boolean) => traktSend(on ? 'POST' : 'DELETE', `/users/${slug}/follow`);
-
-export interface WatchingNow {
-  action: 'watching' | 'checkin';
-  expires_at: string;
-  type: 'movie' | 'episode';
-  movie?: TMedia;
-  show?: TMedia;
-  episode?: TEpisode;
-}
-export const fetchWatchingNow = (slug: string) => traktSend<WatchingNow | null>('GET', `/users/${slug}/watching?extended=images`);
-
-/** Friends' recent plays and what they're watching right now, newest first. */
-export async function fetchFriendsActivity(users: TUser[]) {
-  const picked = users.filter((u) => !u.private).slice(0, 12);
-  const per = await Promise.all(
-    picked.map(async (u) => {
-      const [now, history] = await Promise.all([fetchWatchingNow(u.ids.slug).catch(() => null), fetchHistory(u.ids.slug, 8).catch(() => [] as HistoryRow[])]);
-      return { user: u, now, history: history ?? [] };
-    }),
-  );
-  const feed = per
-    .flatMap((p) =>
-      p.history.map((h) => ({
-        user: p.user,
-        row: h,
-        at: Date.parse(h.watched_at),
-      })),
-    )
-    .sort((a, b) => b.at - a.at)
-    .slice(0, 40);
-  return {
-    watchingNow: per.filter((p) => p.now).map((p) => ({ user: p.user, now: p.now! })),
-    feed,
-  };
 }
 
 // ---------- import ----------

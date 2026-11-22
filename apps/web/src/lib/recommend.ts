@@ -15,7 +15,7 @@
  * no account: with no history it falls back to sensible defaults.
  */
 import { useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { q, tmdb, typeOf, type Details, type MediaItem, type MediaType, type Page } from './tmdb';
 import { trakt, traktSend, useTraktUser } from './trakt';
 import { toItem, type TMedia } from './traktData';
@@ -92,7 +92,14 @@ export interface Taste {
 }
 
 /** Your taste, from history + watchlist (and the details of your most recent titles). */
+/** The light query, starting from the full details if they're already loaded (no second request). */
+const liteOrFull = (qc: QueryClient, type: MediaType, id: number) => {
+  const full = qc.getQueryState<Details>(q.details(type, id).queryKey);
+  return { ...q.lite(type, id), initialData: full?.data, initialDataUpdatedAt: full?.dataUpdatedAt };
+};
+
 export function useTaste(): Taste {
+  const qc = useQueryClient();
   const history = useStore((s) => s.history);
   const watchlist = useStore((s) => s.watchlist);
   const seeds = useMemo(() => {
@@ -108,7 +115,7 @@ export function useTaste(): Taste {
     watchlist.forEach((w) => add(w.mediaType, w.id, 0.5));
     return out;
   }, [history, watchlist]);
-  const details = useQueries({ queries: seeds.map((s) => ({ ...q.details(s.type, s.id), staleTime: 60 * 60_000 })) });
+  const details = useQueries({ queries: seeds.map((s) => liteOrFull(qc, s.type, s.id)) });
   const ready = details.map((d) => d.data?.id ?? 0).join(',');
 
   return useMemo(() => {
@@ -331,9 +338,10 @@ export function refine(items: MediaItem[], taste: Taste, type?: MediaType, opts:
  * things you've started, saved or finished.
  */
 export function useForYou() {
+  const qc = useQueryClient();
   const taste = useTaste();
   const user = useTraktUser();
-  const recs = useQueries({ queries: taste.seeds.slice(0, 8).map((s) => ({ ...q.details(s.type, s.id), staleTime: 60 * 60_000 })) });
+  const recs = useQueries({ queries: taste.seeds.slice(0, 8).map((s) => liteOrFull(qc, s.type, s.id)) });
   const traktRecs = useQuery({
     queryKey: ['hybrid', 'trakt-recs', user?.username],
     enabled: !!user,
