@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Play, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
+import Community from '../components/Community';
 import { PlayTitleButton, ShareButton } from '../components/TitleActions';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
@@ -137,6 +138,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
       </section>
 
       {trailers.length > 0 && <Trailers videos={trailers} onPlay={setTrailer} />}
+      <Community type={type} id={d.id} />
       {recs.length > 0 && <MoreLikeThis items={recs} type={type} />}
       {trailer && <TrailerModal video={trailer} onClose={() => setTrailer(null)} />}
 
