@@ -1,11 +1,12 @@
-export type MediaType = 'movie' | 'tv';
+export type MediaType = "movie" | "tv";
 
-const API = 'https://api.themoviedb.org/3';
-const KEY = import.meta.env.VITE_TMDB_API_KEY || '50404130561567acf3e0725aeb09ec5d';
+const API = "https://api.themoviedb.org/3";
+const KEY =
+  import.meta.env.VITE_TMDB_API_KEY || "50404130561567acf3e0725aeb09ec5d";
 
 export interface MediaItem {
   id: number;
-  media_type?: MediaType | 'person';
+  media_type?: MediaType | "person";
   title?: string;
   name?: string;
   original_title?: string;
@@ -19,6 +20,8 @@ export interface MediaItem {
   first_air_date?: string;
   genre_ids?: number[];
   popularity?: number;
+  /** A ready poster URL (titles that come from Trakt rather than TMDB). */
+  poster_url?: string;
 }
 
 export interface Page<T> {
@@ -28,9 +31,24 @@ export interface Page<T> {
   total_results: number;
 }
 
-export interface Video { key: string; name: string; site: string; type: string; official?: boolean }
-export interface CastMember { id: number; name: string; character?: string; profile_path: string | null }
-export interface ImageAsset { file_path: string; iso_639_1: string | null; vote_average: number }
+export interface Video {
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official?: boolean;
+}
+export interface CastMember {
+  id: number;
+  name: string;
+  character?: string;
+  profile_path: string | null;
+}
+export interface ImageAsset {
+  file_path: string;
+  iso_639_1: string | null;
+  vote_average: number;
+}
 export interface SeasonSummary {
   season_number: number;
   episode_count: number;
@@ -66,7 +84,12 @@ export interface Details extends MediaItem {
   recommendations?: Page<MediaItem>;
   similar?: Page<MediaItem>;
   images?: { logos: ImageAsset[] };
-  release_dates?: { results: { iso_3166_1: string; release_dates: { certification: string }[] }[] };
+  release_dates?: {
+    results: {
+      iso_3166_1: string;
+      release_dates: { certification: string }[];
+    }[];
+  };
   content_ratings?: { results: { iso_3166_1: string; rating: string }[] };
   imdb_id?: string | null;
   external_ids?: { imdb_id?: string | null };
@@ -75,7 +98,11 @@ export interface Details extends MediaItem {
 export interface TmdbReview {
   id: string;
   author: string;
-  author_details: { username: string; avatar_path: string | null; rating: number | null };
+  author_details: {
+    username: string;
+    avatar_path: string | null;
+    rating: number | null;
+  };
   content: string;
   created_at: string;
   url: string;
@@ -101,21 +128,33 @@ export interface Season {
 }
 
 export class HttpError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
 
 type Params = Record<string, string | number | undefined | null>;
 
-export async function tmdb<T>(path: string, params: Params = {}, signal?: AbortSignal): Promise<T> {
+export async function tmdb<T>(
+  path: string,
+  params: Params = {},
+  signal?: AbortSignal,
+): Promise<T> {
   const url = new URL(API + path);
-  url.searchParams.set('api_key', KEY);
+  url.searchParams.set("api_key", KEY);
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+    if (v !== undefined && v !== null && v !== "")
+      url.searchParams.set(k, String(v));
   }
   const res = await fetch(url, { signal });
-  if (!res.ok) throw new HttpError(res.status, res.status === 404 ? 'Not found' : `TMDB error ${res.status}`);
+  if (!res.ok)
+    throw new HttpError(
+      res.status,
+      res.status === 404 ? "Not found" : `TMDB error ${res.status}`,
+    );
   return res.json() as Promise<T>;
 }
 
@@ -124,40 +163,44 @@ export async function tmdb<T>(path: string, params: Params = {}, signal?: AbortS
 export const q = {
   /** TMDB's own user reviews (few per title; shown when Trakt has none). */
   reviews: (type: MediaType, id: number) => ({
-    queryKey: ['reviews', type, id],
+    queryKey: ["reviews", type, id],
     staleTime: 60 * 60_000,
-    queryFn: ({ signal }: { signal: AbortSignal }) => tmdb<Page<TmdbReview>>(`/${type}/${id}/reviews`, {}, signal),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      tmdb<Page<TmdbReview>>(`/${type}/${id}/reviews`, {}, signal),
   }),
 
-  trending: (type: MediaType | 'all', window: 'day' | 'week') => ({
-    queryKey: ['trending', type, window],
+  trending: (type: MediaType | "all", window: "day" | "week") => ({
+    queryKey: ["trending", type, window],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       tmdb<Page<MediaItem>>(`/trending/${type}/${window}`, {}, signal),
   }),
 
-  list: (type: MediaType, list: 'popular' | 'top_rated' | 'now_playing' | 'on_the_air' | 'upcoming') => ({
-    queryKey: ['list', type, list],
+  list: (
+    type: MediaType,
+    list: "popular" | "top_rated" | "now_playing" | "on_the_air" | "upcoming",
+  ) => ({
+    queryKey: ["list", type, list],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       tmdb<Page<MediaItem>>(`/${type}/${list}`, {}, signal),
   }),
 
   // One request per title: everything the details page AND player need.
   details: (type: MediaType, id: number) => ({
-    queryKey: ['details', type, id],
+    queryKey: ["details", type, id],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       tmdb<Details>(
         `/${type}/${id}`,
         {
           append_to_response: [
-            'videos',
-            'credits',
-            'recommendations',
-            'similar',
-            'images',
-            'external_ids',
-            type === 'movie' ? 'release_dates' : 'content_ratings',
-          ].join(','),
-          include_image_language: 'en,null',
+            "videos",
+            "credits",
+            "recommendations",
+            "similar",
+            "images",
+            "external_ids",
+            type === "movie" ? "release_dates" : "content_ratings",
+          ].join(","),
+          include_image_language: "en,null",
         },
         signal,
       ),
@@ -165,56 +208,79 @@ export const q = {
   }),
 
   season: (id: number, season: number) => ({
-    queryKey: ['season', id, season],
-    queryFn: ({ signal }: { signal: AbortSignal }) => tmdb<Season>(`/tv/${id}/season/${season}`, {}, signal),
+    queryKey: ["season", id, season],
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      tmdb<Season>(`/tv/${id}/season/${season}`, {}, signal),
     staleTime: 1000 * 60 * 30,
   }),
 };
 
 // ---------- helpers ----------
 
-export const titleOf = (m: Pick<MediaItem, 'title' | 'name'>) => m.title || m.name || 'Untitled';
-export const dateOf = (m: Pick<MediaItem, 'release_date' | 'first_air_date'>) => m.release_date || m.first_air_date || '';
-export const yearOf = (m: Pick<MediaItem, 'release_date' | 'first_air_date'>) => dateOf(m).slice(0, 4);
+export const titleOf = (m: Pick<MediaItem, "title" | "name">) =>
+  m.title || m.name || "Untitled";
+export const dateOf = (m: Pick<MediaItem, "release_date" | "first_air_date">) =>
+  m.release_date || m.first_air_date || "";
+export const yearOf = (m: Pick<MediaItem, "release_date" | "first_air_date">) =>
+  dateOf(m).slice(0, 4);
 
 /** media_type is missing on /movie/* and /discover/movie results, so infer it. */
 export function typeOf(m: MediaItem, fallback?: MediaType): MediaType {
-  if (m.media_type === 'movie' || m.media_type === 'tv') return m.media_type;
+  if (m.media_type === "movie" || m.media_type === "tv") return m.media_type;
   if (fallback) return fallback;
-  return m.title !== undefined || m.release_date !== undefined ? 'movie' : 'tv';
+  return m.title !== undefined || m.release_date !== undefined ? "movie" : "tv";
 }
 
 export function certificationOf(d: Details): string | null {
   if (d.release_dates) {
-    const us = d.release_dates.results.find((r) => r.iso_3166_1 === 'US');
-    return us?.release_dates.find((r) => r.certification)?.certification || null;
+    const us = d.release_dates.results.find((r) => r.iso_3166_1 === "US");
+    return (
+      us?.release_dates.find((r) => r.certification)?.certification || null
+    );
   }
   if (d.content_ratings) {
-    return d.content_ratings.results.find((r) => r.iso_3166_1 === 'US')?.rating || null;
+    return (
+      d.content_ratings.results.find((r) => r.iso_3166_1 === "US")?.rating ||
+      null
+    );
   }
   return null;
 }
 
 export function logoOf(d: Details | undefined): string | null {
   const logos = d?.images?.logos ?? [];
-  const best = logos.find((l) => l.iso_639_1 === 'en') ?? logos.find((l) => !l.iso_639_1);
+  const best =
+    logos.find((l) => l.iso_639_1 === "en") ?? logos.find((l) => !l.iso_639_1);
   return best?.file_path ?? null;
 }
 
 export function trailersOf(d: Details): Video[] {
-  const order = ['Trailer', 'Teaser', 'Clip', 'Featurette', 'Behind the Scenes'];
+  const order = [
+    "Trailer",
+    "Teaser",
+    "Clip",
+    "Featurette",
+    "Behind the Scenes",
+  ];
   return (d.videos?.results ?? [])
-    .filter((v) => v.site === 'YouTube' && order.includes(v.type))
-    .sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || Number(!!b.official) - Number(!!a.official))
+    .filter((v) => v.site === "YouTube" && order.includes(v.type))
+    .sort(
+      (a, b) =>
+        order.indexOf(a.type) - order.indexOf(b.type) ||
+        Number(!!b.official) - Number(!!a.official),
+    )
     .slice(0, 10);
 }
 
 /** Drop people, items without art, and duplicates. */
-export function cleanList(items: MediaItem[], fallback?: MediaType): MediaItem[] {
+export function cleanList(
+  items: MediaItem[],
+  fallback?: MediaType,
+): MediaItem[] {
   const seen = new Set<string>();
   const out: MediaItem[] = [];
   for (const m of items) {
-    if (m.media_type === 'person' || !m.poster_path) continue;
+    if (m.media_type === "person" || !m.poster_path) continue;
     const key = typeOf(m, fallback) + m.id;
     if (seen.has(key)) continue;
     seen.add(key);
