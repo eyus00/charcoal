@@ -45,9 +45,9 @@ export const CornerArc = ({ rise = true }: { rise?: boolean }) => (
   />
 );
 
-/** A card image: rounded; on hover a touch brighter with a faint outline (like our buttons). */
-export const CARD_IMAGE =
-  'relative overflow-hidden rounded-2xl ring-1 ring-transparent transition duration-200 group-hover:brightness-110 group-hover:ring-white/15';
+/** A card image: rounded; a touch brighter on hover (like our buttons). */
+// z-[1]: the corner arc below runs up underneath the image.
+export const CARD_IMAGE = 'relative z-[1] overflow-hidden rounded-2xl transition duration-200 group-hover:brightness-110';
 
 /** A card title: brightens with the card on hover. */
 export const CARD_TITLE = 'truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white';

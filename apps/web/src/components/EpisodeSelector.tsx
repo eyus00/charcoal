@@ -288,11 +288,6 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 <Kbd>Shift N</Kbd> Next
               </span>
             )}
-            {!current && !selUnaired && (
-              <span className="flex items-center gap-1.5">
-                <Kbd>P</Kbd> {cta.label}
-              </span>
-            )}
             <span className="flex items-center gap-1.5">
               <Kbd>Esc</Kbd> Close
             </span>
@@ -330,6 +325,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
               <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
                 <Play className="size-4 fill-current" strokeWidth={0} />
                 {cta.label} {epLabel(cta.s, cta.e)}
+                {!current && <Kbd light className="ml-1">P</Kbd>}
               </Link>
             ))}
         </div>

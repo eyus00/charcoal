@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Maximize2, SkipBack, SkipForward } from 'lucide-react';
+import { Check, ChevronDown, Maximize2, SkipBack, SkipForward } from 'lucide-react';
 import Img from '../components/Img';
 import { Tip } from '../components/Tip';
 import { allSeasons } from '../lib/episodes';
@@ -34,41 +34,55 @@ export default function MiniEpisodes({
   const { data } = useQuery(q.season(show.id, season));
   const history = useStore((s) => s.history);
   const list = useRef<HTMLDivElement>(null);
-  const tabs = useRef<HTMLDivElement>(null);
+  const [picking, setPicking] = useState(false);
+  const idx = seasons.findIndex((x) => x.season_number === season);
+  const nameOf = (n: number) => (n === 0 ? 'Specials' : `Season ${n}`);
 
   // Open on the playing episode, with its season's tab in view.
   useEffect(() => {
     list.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'center' });
   }, [data]);
-  useEffect(() => {
-    tabs.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }, [season]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-start gap-2 px-1 pb-2">
-        {/* Wraps instead of scrolling, so each number's tooltip isn't clipped. */}
-        <div ref={tabs} role="group" aria-label="Seasons" className="flex min-w-0 flex-1 flex-wrap gap-1">
-          {seasons.map((s) => {
-            const name = s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`;
-            return (
-              <button
-                key={s.season_number}
-                type="button"
-                aria-pressed={s.season_number === season}
-                aria-label={name}
-                onClick={() => setSeason(s.season_number)}
-                onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
-                className={cx(
-                  'group/tip relative h-8 min-w-8 shrink-0 rounded-full px-2.5 text-sm tabular-nums transition-colors',
-                  s.season_number === season ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10 hover:text-white',
-                )}
-              >
-                {s.season_number === 0 ? 'Specials' : s.season_number}
-                {s.season_number !== 0 && <Tip label={`${name}${s.episode_count ? ` · ${s.episode_count} episodes` : ''}`} />}
-              </button>
-            );
-          })}
+      <div className="flex shrink-0 items-center gap-2 px-1 pb-2">
+        {/* Season picker: a small dropdown. */}
+        <div
+          className="relative min-w-0 flex-1"
+          onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setPicking(false)}
+        >
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={picking}
+            onClick={() => setPicking((v) => !v)}
+            className={cx('flex h-9 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors', picking ? 'bg-white/10' : 'bg-white/[0.06] hover:bg-white/10')}
+          >
+            {nameOf(season)}
+            {seasons[idx]?.episode_count ? <span className="font-normal text-muted">{seasons[idx].episode_count} episodes</span> : null}
+            <ChevronDown className={cx('size-4 text-muted transition-transform', picking && 'rotate-180')} />
+          </button>
+          {picking && (
+            <div role="listbox" aria-label="Seasons" className="toast-in absolute top-full left-0 z-20 mt-1 max-h-60 w-48 overflow-y-auto overscroll-contain rounded-xl bg-raised p-1 shadow-2xl ring-1 ring-white/10">
+              {seasons.map((s) => {
+                const on = s.season_number === season;
+                return (
+                  <button
+                    key={s.season_number}
+                    type="button"
+                    role="option"
+                    aria-selected={on}
+                    onClick={() => (setSeason(s.season_number), setPicking(false))}
+                    onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
+                    className={cx('flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-sm transition-colors', on ? 'bg-white text-black' : 'hover:bg-white/10')}
+                  >
+                    <span className="flex-1">{nameOf(s.season_number)}</span>
+                    <span className={cx('text-xs', on ? 'text-black/50' : 'text-faint')}>{s.episode_count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <button
           type="button"

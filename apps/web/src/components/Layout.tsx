@@ -161,14 +161,17 @@ function Rail() {
           onClick={toggle}
           aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-expanded={open}
-          className="group relative grid size-12 shrink-0 place-items-center rounded-xl text-faint transition hover:text-white"
+          className="group relative grid size-12 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-white/[0.06] hover:text-white"
         >
-          {open ? <PanelLeftClose className="size-5" strokeWidth={1.75} /> : <PanelLeftOpen className="size-5" strokeWidth={1.75} />}
+          {/* The logo; on hover it turns into the sidebar icon. */}
+          <LogoMark className="size-7 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0" />
+          <span className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+            {open ? <PanelLeftClose className="size-5" strokeWidth={1.75} /> : <PanelLeftOpen className="size-5" strokeWidth={1.75} />}
+          </span>
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
         {open && (
-          <Link to="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
-            <LogoMark className="size-7" />
+          <Link to="/" className="text-lg font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
             Charcoal
           </Link>
         )}
