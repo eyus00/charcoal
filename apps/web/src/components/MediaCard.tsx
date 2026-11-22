@@ -5,6 +5,7 @@ import { Film, Star, Tv } from 'lucide-react';
 import Img from './Img';
 import { q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx } from '../lib/util';
+import { peekProps } from '../lib/peek';
 
 /** Prefetch details after a short hover so opening a title feels instant. */
 export function usePrefetch(type: MediaType, id: number) {
@@ -16,6 +17,8 @@ export function usePrefetch(type: MediaType, id: number) {
     },
     onPointerLeave: () => window.clearTimeout(timer.current),
     onFocus: () => qc.prefetchQuery(q.details(type, id)),
+    // Right-click / Shift-click: the details peek.
+    ...peekProps(type, id),
   };
 }
 

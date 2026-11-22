@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Film, Pause, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
+import { peekProps } from '../lib/peek';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
@@ -81,6 +82,8 @@ function Hero() {
   // Drag: the track follows the finger; release snaps to the neighbour (distance or flick) or back.
   const onDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('a,button:not([data-swipe])')) return;
+    // Right-click / Shift-click open the details peek instead (see HeroSlide).
+    if (e.button !== 0 || e.shiftKey) return;
     swiped.current = false;
     drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId, lastX: e.clientX, lastT: performance.now(), v: 0 };
   };
@@ -229,7 +232,8 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
   const genres = (item.genre_ids ?? []).map((g) => genreName(type, g)).filter(Boolean).slice(0, 2) as string[];
   const TypeIcon = type === 'movie' ? Film : Tv;
   return (
-    <div className="absolute inset-0">
+    // Right-click / Shift-click the banner: the details peek.
+    <div className="absolute inset-0" {...peekProps(type, item.id)}>
       <Img path={item.backdrop_path} kind="backdrop" sizes={HERO_SIZES} alt="" priority={active} className="absolute! inset-0 size-full" imgClassName="object-[70%_20%] pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/55 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-bg/40" />

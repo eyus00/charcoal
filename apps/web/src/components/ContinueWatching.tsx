@@ -5,6 +5,7 @@ import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { toast } from './Toast';
 import { actions, getState, percent, useStore, watchUrl, type HistoryItem } from '../lib/store';
 import { deleteFrames, frameKey, useFrame } from '../lib/frames';
+import { peekProps } from '../lib/peek';
 import { epLabel } from '../lib/episodes';
 import { q, type Episode } from '../lib/tmdb';
 import { formatRuntime } from '../lib/util';
@@ -44,6 +45,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
   return (
     <EpisodeTile
       to={watchUrl(h)}
+      linkProps={peekProps(h.mediaType, h.id)}
       titleLink={{ to: `/${h.mediaType}/${h.id}`, line: tv ? 'secondary' : 'primary', label: `${h.title}: details` }}
       type={h.mediaType}
       title={name ? `${h.title} · ${name}` : h.title}
