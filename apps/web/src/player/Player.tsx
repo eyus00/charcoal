@@ -1559,8 +1559,13 @@ export function TitleInfo({ title, subtitle, meta, detailsUrl }: { title: string
     <div className="max-w-2xl py-1">
       <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">
         {detailsUrl ? (
-          <Link to={detailsUrl} title={`${title}: details`} className="pointer-events-auto relative z-10 text-white/95 transition-colors hover:text-white">
+          <Link
+            to={detailsUrl}
+            aria-label={`${title}: details`}
+            className="group/tip pointer-events-auto relative z-10 decoration-white/40 underline-offset-4 hover:underline"
+          >
             {title}
+            <Tip label="Open details" side="bottom" align="start" />
           </Link>
         ) : (
           title
