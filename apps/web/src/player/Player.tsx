@@ -8,7 +8,7 @@ import {
   FastForward,
   Gauge,
   Layers,
-  ListVideo,
+  GalleryVerticalEnd,
   Palette,
   Info,
   Cast,
@@ -1141,18 +1141,13 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
             {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
           </span>
           <div className="ml-auto flex items-center gap-1 md:gap-1.5">
-            {next && (
-              <IconButton label={`Next: ${next.label} (Shift N)`} onClick={next.go}>
-                <SkipForward className="size-5" />
-              </IconButton>
-            )}
             {episodes && (
               <div className="relative">
                 <IconButton label="Episodes" active={menu === 'episodes'} expanded={menu === 'episodes'} onClick={() => setMenu(menu === 'episodes' ? null : 'episodes')}>
-                  <ListVideo className="size-5" />
+                  <GalleryVerticalEnd className="size-5" />
                 </IconButton>
                 {menu === 'episodes' && (
-                  <Popover wide split>
+                  <Popover wide split className="w-[min(28rem,calc(100vw-1.5rem))] max-sm:w-auto">
                     {episodes(() => setMenu(null))}
                   </Popover>
                 )}
@@ -1595,7 +1590,7 @@ const StepButton = ({ label, onClick, children }: { label: string; onClick: () =
   );
 };
 
-const Popover = ({ children, wide, split, onScroll }: { children: ReactNode; wide?: boolean; split?: boolean; onScroll?: () => void }) => (
+const Popover = ({ children, wide, split, onScroll, className }: { children: ReactNode; wide?: boolean; split?: boolean; onScroll?: () => void; className?: string }) => (
   <div
     data-popover
     onScroll={onScroll}
@@ -1607,6 +1602,7 @@ const Popover = ({ children, wide, split, onScroll }: { children: ReactNode; wid
       split ? 'flex max-h-[min(26rem,60vh)] flex-col' : 'max-h-[64vh] overflow-y-auto overscroll-contain',
       wide ? 'w-[min(24rem,calc(100vw-1.5rem))]' : 'w-72',
       'max-sm:w-auto',
+      className,
     )}
   >
     {children}
