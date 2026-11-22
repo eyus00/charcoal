@@ -415,7 +415,7 @@ function TitleBox({ title, subtitle, meta, detailsUrl, onEpisodes }: { title: st
       />
       <div className="pointer-events-none relative flex items-center gap-2 px-2.5 py-1">
         {text}
-        <ChevronDown className="size-4 shrink-0 self-center text-white/40" />
+        <Kbd className="shrink-0 self-center">E</Kbd>
       </div>
       <span className="pointer-events-none absolute top-full left-0 z-50 mt-2 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
         Episodes

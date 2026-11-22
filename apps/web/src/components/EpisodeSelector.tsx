@@ -47,7 +47,8 @@ const FILLER = [
 ];
 
 /** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
-const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
+/** The playing / selected episode is white-filled, like selected items everywhere. */
+const SELECTED = 'bg-white text-black';
 
 export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick, prev, next, selected }: Props) {
   const qc = useQueryClient();
@@ -190,9 +191,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 const isCurrent = current?.season === season && current.episode === ep.episode_number;
                 const isSelected = sel?.season === season && sel.episode === ep.episode_number;
                 const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
+                const on = isCurrent || isSelected;
                 const body = (
                   <>
-                    <div className={cx('relative overflow-hidden rounded-2xl', (isCurrent || isSelected) && 'ring-2 ring-white/70')}>
+                    <div className="relative overflow-hidden rounded-xl">
                       {ep.still_path ? (
                         <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
                       ) : (
@@ -236,14 +238,14 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         </span>
                       )}
                     </div>
-                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 pb-3')}>
+                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 px-1 pb-2')}>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                        <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
+                        <span className={cx('text-sm tabular-nums', on ? 'text-black/50' : 'text-muted')}>{ep.episode_number}</span>
+                        <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', on ? 'text-black' : upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
                       </div>
-                      {!upcoming && ep.air_date && <div className="text-caption text-faint">{formatDate(ep.air_date)}</div>}
+                      {!upcoming && ep.air_date && <div className={cx('text-caption', on ? 'text-black/50' : 'text-faint')}>{formatDate(ep.air_date)}</div>}
                       {ep.overview ? (
-                        <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
+                        <p className={cx('mt-1.5 text-caption leading-[1.4] text-pretty', on ? 'text-black/65' : 'text-muted')}>{ep.overview}</p>
                       ) : (
                         // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
                         <div className="relative mt-1.5">
@@ -257,11 +259,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                   </>
                 );
                 return upcoming ? (
-                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl', isSelected && SELECTED)}>
+                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl p-1.5', on && SELECTED)}>
                     {body}
                   </div>
                 ) : (
-                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className={cx('group flex flex-col rounded-2xl', isSelected && SELECTED)} aria-current={isCurrent || undefined}>
+                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className={cx('group flex flex-col rounded-2xl p-1.5 transition-colors', on ? SELECTED : 'hover:bg-white/[0.04]')} aria-current={isCurrent || undefined}>
                     {body}
                   </Link>
                 );

@@ -72,7 +72,7 @@ export default function MiniEpisodes({
                 s.season_number === season ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10 hover:text-white',
               )}
             >
-              {s.season_number === 0 ? 'Sp' : s.season_number}
+              {s.season_number === 0 ? 'Specials' : s.season_number}
             </button>
           ))}
         </div>
@@ -94,12 +94,12 @@ export default function MiniEpisodes({
               onClick={() => onPick(season, ep.episode_number)}
               className={cx(
                 'flex w-full gap-3 rounded-xl p-1.5 text-left transition-colors disabled:opacity-45',
-                playing ? 'bg-white/[0.06]' : 'enabled:hover:bg-white/[0.06]',
+                playing ? 'bg-white text-black' : 'enabled:hover:bg-white/[0.06]',
               )}
             >
-              <span className={cx('relative w-40 shrink-0 self-start overflow-hidden rounded-lg bg-white/5', playing && 'ring-2 ring-white')}>
+              <span className="relative w-40 shrink-0 self-start overflow-hidden rounded-lg bg-white/5">
                 <Img path={ep.still_path} kind="still" sizes="160px" alt="" className="aspect-video" />
-                {playing && <span className="absolute top-1 right-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">Playing</span>}
+                {playing && <span className="absolute top-1 left-1 rounded-full bg-black/70 px-1.5 py-px text-micro font-medium text-white backdrop-blur-sm">Playing</span>}
                 {h?.isCompleted ? (
                   <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">
                     <Check className="size-3" /> Watched
@@ -118,13 +118,13 @@ export default function MiniEpisodes({
               </span>
               <span className="min-w-0 flex-1 py-0.5">
                 <span className="line-clamp-1 text-sm font-medium">
-                  <span className="mr-1.5 text-faint tabular-nums">{ep.episode_number}</span>
+                  <span className={cx('mr-1.5 tabular-nums', playing ? 'text-black/45' : 'text-faint')}>{ep.episode_number}</span>
                   {ep.name}
                 </span>
-                <span className="block text-xs text-faint">
+                <span className={cx('block text-xs', playing ? 'text-black/50' : 'text-faint')}>
                   {upcoming ? (ep.air_date ? `Airs ${formatDate(ep.air_date)}` : 'Coming soon') : ep.air_date ? formatDate(ep.air_date) : ''}
                 </span>
-                {ep.overview && <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted">{ep.overview}</span>}
+                {ep.overview && <span className={cx('mt-1 line-clamp-2 text-xs leading-snug', playing ? 'text-black/65' : 'text-muted')}>{ep.overview}</span>}
               </span>
             </button>
           );
@@ -146,7 +146,7 @@ export default function MiniEpisodes({
             disabled={!onNext}
             className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-medium text-black transition-colors enabled:hover:bg-white/85 disabled:opacity-35"
           >
-            Next episode <SkipForward className="size-4" />
+            Next <SkipForward className="size-4" />
           </button>
         </div>
       )}
