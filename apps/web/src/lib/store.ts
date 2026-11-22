@@ -273,11 +273,13 @@ export const actions = {
       const next: HistoryItem = { ...prev, ...item, progress, isCompleted: isCompleted || (!item.progress && !!prev?.isCompleted), lastWatched: Date.now() };
       const history = [next, ...s.history.filter((h) => !sameEntry(h, item))].slice(0, MAX_HISTORY);
 
-      // Keep the bookmark status in step with playback (old app behaviour).
+      // "Watching" is never picked by hand: titles in the watchlist move to it once you're 10 % in,
+      // and to "Watched" when a movie, or a show's last episode, is finished.
+      const lastEpisode = item.mediaType === 'tv' && item.nextEpisode === null;
       const watchlist = s.watchlist.map((w) => {
         if (w.id !== item.id || w.mediaType !== item.mediaType) return w;
         const status: WatchStatus =
-          item.mediaType === 'movie' && isCompleted ? 'completed' : ratio > 0.1 || isCompleted ? 'watching' : w.status;
+          isCompleted && (item.mediaType === 'movie' || lastEpisode) ? 'completed' : ratio > 0.1 || isCompleted ? 'watching' : w.status;
         return status === w.status ? w : { ...w, status };
       });
       return { ...s, history, watchlist };

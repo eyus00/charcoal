@@ -1,20 +1,58 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
-import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
-import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
-import { actions, useStore } from '../lib/store';
-import { cx, scrollBehavior } from '../lib/util';
-import { QuickFilterMenu } from './Filters';
-import { PageSkeleton } from './Skeletons';
-import { Wordmark } from './Logo';
-import PeekHost from './PeekHost';
-import { startWatchlistSync, syncWatchlistOnStart } from '../lib/trakt';
-import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
-import Kbd from './Kbd';
-import { btn } from './Button';
-import { OfflineNotice, Toaster, toast } from './Toast';
-import { Tip as HoverTip } from './Tip';
+import { Suspense, useEffect, useRef, useState } from "react";
+import {
+  Link,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
+import {
+  ArrowUp,
+  Bookmark,
+  CalendarDays,
+  Compass,
+  Film,
+  History,
+  Home,
+  Keyboard,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  Tv,
+  User,
+  X,
+} from "lucide-react";
+import {
+  EMPTY_FILTERS,
+  activeFilterCount,
+  genresFor,
+  parseFilters,
+  writeFilters,
+  type Filters,
+} from "../lib/filters";
+import {
+  addRecent,
+  clearRecent,
+  getRecent,
+  removeRecent,
+  restoreRecent,
+} from "../lib/recent";
+import { actions, useStore } from "../lib/store";
+import { cx, scrollBehavior } from "../lib/util";
+import { QuickFilterMenu } from "./Filters";
+import { PageSkeleton } from "./Skeletons";
+import { Wordmark } from "./Logo";
+import PeekHost from "./PeekHost";
+import { startReminderLoop } from "../lib/reminders";
+import { startWatchlistSync, syncWatchlistOnStart } from "../lib/trakt";
+import Hotkeys, { MOD, hotkeysCtl } from "./Hotkeys";
+import Kbd from "./Kbd";
+import { btn } from "./Button";
+import { OfflineNotice, Toaster, toast } from "./Toast";
+import { Tip as HoverTip } from "./Tip";
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -30,10 +68,18 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
         <Toaster />
         <OfflineNotice />
         <Hotkeys />
+        <ReminderLoop />
       </>
     );
   }
   return <Shell />;
+}
+
+/** Due reminders (calendar) show while Charcoal is open, in any page. */
+function ReminderLoop() {
+  const navigate = useNavigate();
+  useEffect(() => startReminderLoop((url) => navigate(url)), [navigate]);
+  return null;
 }
 
 function Shell() {
@@ -45,7 +91,12 @@ function Shell() {
     return () => void stop();
   }, []);
   return (
-    <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[232px]' : 'lg:pl-[80px]')}>
+    <div
+      className={cx(
+        "relative min-h-dvh transition-[padding] duration-300 ease-out",
+        sidebarOpen ? "lg:pl-[232px]" : "lg:pl-[80px]",
+      )}
+    >
       <ScrollRestoration />
       <Rail />
       <div className="relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
@@ -59,6 +110,7 @@ function Shell() {
       <BottomBar />
       <ScrollTop />
       <Hotkeys openSearch={() => searchCtl.open()} />
+      <ReminderLoop />
       <PeekHost />
       <Toaster />
       <OfflineNotice />
@@ -70,31 +122,97 @@ function Shell() {
 function useSection() {
   const { pathname, hash } = useLocation();
   const [params] = useSearchParams();
-  if (pathname === '/') return 'home';
-  if (pathname === '/discover') return params.get('type') === 'movie' ? 'movies' : params.get('type') === 'tv' ? 'tv' : 'discover';
-  if (pathname === '/profile') return hash && hash !== '#profile' ? `profile${hash}` : 'profile';
-  return '';
+  if (pathname === "/") return "home";
+  if (pathname === "/discover")
+    return params.get("type") === "movie"
+      ? "movies"
+      : params.get("type") === "tv"
+        ? "tv"
+        : "discover";
+  if (pathname === "/calendar") return "calendar";
+  if (pathname === "/profile")
+    return hash && hash !== "#profile" ? `profile${hash}` : "profile";
+  return "";
 }
 
 // ---------- icon rail (lg+) ----------
 
-interface RailItem { to: string; label: string; icon: typeof Home; id: string; keys?: string }
-interface RailGroup extends RailItem { children: RailItem[] }
+interface RailItem {
+  to: string;
+  label: string;
+  icon: typeof Home;
+  id: string;
+  keys?: string;
+}
+interface RailGroup extends RailItem {
+  children: RailItem[];
+}
 
-const HOME: RailItem = { to: '/', label: 'Home', icon: Home, id: 'home', keys: 'G H' };
+const HOME: RailItem = {
+  to: "/",
+  label: "Home",
+  icon: Home,
+  id: "home",
+  keys: "G H",
+};
 const DISCOVER: RailGroup = {
-  to: '/discover', label: 'Discover', icon: Compass, id: 'discover', keys: 'G D',
+  to: "/discover",
+  label: "Discover",
+  icon: Compass,
+  id: "discover",
+  keys: "G D",
   children: [
-    { to: '/discover?type=movie', label: 'Movies', icon: Film, id: 'movies', keys: 'G M' },
-    { to: '/discover?type=tv', label: 'TV shows', icon: Tv, id: 'tv', keys: 'G T' },
+    {
+      to: "/discover?type=movie",
+      label: "Movies",
+      icon: Film,
+      id: "movies",
+      keys: "G M",
+    },
+    {
+      to: "/discover?type=tv",
+      label: "TV shows",
+      icon: Tv,
+      id: "tv",
+      keys: "G T",
+    },
   ],
 };
+const CALENDAR: RailItem = {
+  to: "/calendar",
+  label: "Calendar",
+  icon: CalendarDays,
+  id: "calendar",
+  keys: "G C",
+};
 const PROFILE: RailGroup = {
-  to: '/profile', label: 'Profile', icon: User, id: 'profile', keys: 'G P',
+  to: "/profile",
+  label: "Profile",
+  icon: User,
+  id: "profile",
+  keys: "G P",
   children: [
-    { to: '/profile#history', label: 'History', icon: History, id: 'profile#history', keys: 'G Y' },
-    { to: '/profile#watchlist', label: 'Watchlist', icon: Bookmark, id: 'profile#watchlist', keys: 'G W' },
-    { to: '/profile#settings', label: 'Settings', icon: Settings, id: 'profile#settings', keys: 'G S' },
+    {
+      to: "/profile#history",
+      label: "History",
+      icon: History,
+      id: "profile#history",
+      keys: "G Y",
+    },
+    {
+      to: "/profile#watchlist",
+      label: "Watchlist",
+      icon: Bookmark,
+      id: "profile#watchlist",
+      keys: "G W",
+    },
+    {
+      to: "/profile#settings",
+      label: "Settings",
+      icon: Settings,
+      id: "profile#settings",
+      keys: "G S",
+    },
   ],
 };
 
@@ -112,23 +230,46 @@ function Tip({ label, keys }: { label: string; keys?: string }) {
  * One rail row: a plain icon and label, no boxes. Icons sit at the same x whether the rail is
  * collapsed or expanded, so toggling only reveals or hides the labels.
  */
-function RailLink({ item, active, open, within }: { item: RailItem; active: boolean; open: boolean; within?: boolean }) {
+function RailLink({
+  item,
+  active,
+  open,
+  within,
+}: {
+  item: RailItem;
+  active: boolean;
+  open: boolean;
+  within?: boolean;
+}) {
   const Icon = item.icon;
   return (
     <Link
       to={item.to}
       aria-label={open ? undefined : item.label}
-      aria-current={active ? 'page' : undefined}
+      aria-current={active ? "page" : undefined}
       className={cx(
-        'group relative flex h-10 w-full items-center gap-3 rounded-xl px-[14px] text-sm transition-colors',
-        active ? 'bg-white font-medium text-black' : within ? 'text-white' : 'text-muted hover:bg-white/[0.06] hover:text-white',
+        "group relative flex h-10 w-full items-center gap-3 rounded-xl px-[14px] text-sm transition-colors",
+        active
+          ? "bg-white font-medium text-black"
+          : within
+            ? "text-white"
+            : "text-muted hover:bg-white/[0.06] hover:text-white",
       )}
     >
       <Icon className="size-5 shrink-0" strokeWidth={active ? 2 : 1.75} />
       {open ? (
         <>
           <span className="truncate">{item.label}</span>
-          {item.keys && <Kbd className={cx('ml-auto opacity-0 transition group-hover:opacity-100', active && 'bg-black/10 text-black/60 ring-0')}>{item.keys}</Kbd>}
+          {item.keys && (
+            <Kbd
+              className={cx(
+                "ml-auto opacity-0 transition group-hover:opacity-100",
+                active && "bg-black/10 text-black/60 ring-0",
+              )}
+            >
+              {item.keys}
+            </Kbd>
+          )}
         </>
       ) : (
         <Tip label={item.label} keys={item.keys} />
@@ -138,11 +279,28 @@ function RailLink({ item, active, open, within }: { item: RailItem; active: bool
 }
 
 /** A section and its sub-sections: just rows, a little space between groups. */
-function RailGroupBox({ group, section, open }: { group: RailGroup; section: string; open: boolean }) {
+function RailGroupBox({
+  group,
+  section,
+  open,
+}: {
+  group: RailGroup;
+  section: string;
+  open: boolean;
+}) {
   const childActive = group.children.some((c) => c.id === section);
   return (
-    <div role="group" aria-label={group.label} className="flex flex-col gap-0.5">
-      <RailLink item={group} open={open} active={section === group.id} within={childActive} />
+    <div
+      role="group"
+      aria-label={group.label}
+      className="flex flex-col gap-0.5"
+    >
+      <RailLink
+        item={group}
+        open={open}
+        active={section === group.id}
+        within={childActive}
+      />
       <Sep />
       {group.children.map((c) => (
         <RailLink key={c.id} item={c} open={open} active={section === c.id} />
@@ -151,7 +309,9 @@ function RailGroupBox({ group, section, open }: { group: RailGroup; section: str
   );
 }
 
-const Sep = () => <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" />;
+const Sep = () => (
+  <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" />
+);
 
 function Rail() {
   const section = useSection();
@@ -160,31 +320,39 @@ function Rail() {
   return (
     <aside
       className={cx(
-        'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.08] bg-bg px-4 pb-5 transition-[width] duration-300 ease-out lg:flex',
-        open ? 'w-[232px] overflow-hidden' : 'w-[80px]',
+        "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.08] bg-bg px-4 pb-5 transition-[width] duration-300 ease-out lg:flex",
+        open ? "w-[232px] overflow-hidden" : "w-[80px]",
       )}
     >
       <div className="flex h-[92px] shrink-0 items-center gap-2">
         <button
           type="button"
           onClick={toggle}
-          aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
           aria-expanded={open}
           className="group relative grid size-12 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-white/[0.06] hover:text-white"
         >
-          {open ? <PanelLeftClose className="size-5" strokeWidth={1.75} /> : <PanelLeftOpen className="size-5" strokeWidth={1.75} />}
+          {open ? (
+            <PanelLeftClose className="size-5" strokeWidth={1.75} />
+          ) : (
+            <PanelLeftOpen className="size-5" strokeWidth={1.75} />
+          )}
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
         {open && (
-          <Link to="/" className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
+          <Link
+            to="/"
+            className="text-xl font-semibold tracking-tight whitespace-nowrap"
+            aria-label="Charcoal home"
+          >
             <Wordmark />
           </Link>
         )}
-
       </div>
       <nav className="flex flex-col gap-5" aria-label="Browse">
-        <RailLink item={HOME} open={open} active={section === 'home'} />
+        <RailLink item={HOME} open={open} active={section === "home"} />
         <RailGroupBox group={DISCOVER} section={section} open={open} />
+        <RailLink item={CALENDAR} open={open} active={section === "calendar"} />
       </nav>
       <nav className="mt-auto flex flex-col gap-3" aria-label="Your library">
         <RailGroupBox group={PROFILE} section={section} open={open} />
@@ -192,11 +360,14 @@ function Rail() {
           type="button"
           onClick={() => hotkeysCtl.help()}
           aria-label="Keyboard shortcuts"
-          className={cx('group relative flex h-10 items-center gap-3 rounded-xl text-sm text-faint transition hover:text-white', open ? 'px-[14px]' : 'justify-center')}
+          className={cx(
+            "group relative flex h-10 items-center gap-3 rounded-xl text-sm text-faint transition hover:text-white",
+            open ? "px-[14px]" : "justify-center",
+          )}
         >
           <Keyboard className="size-5 shrink-0" strokeWidth={1.5} />
           {open && <span>Shortcuts</span>}
-          <Kbd className={open ? 'ml-auto' : ''}>?</Kbd>
+          <Kbd className={open ? "ml-auto" : ""}>?</Kbd>
           {!open && <Tip label="Keyboard shortcuts" />}
         </button>
       </nav>
@@ -207,9 +378,13 @@ function Rail() {
 // ---------- top bar: wordmark + universal search ----------
 
 /** Floating pill look shared by the logo and the search field (matches the sidebar's group boxes). */
-const FLOAT = 'bg-bg/70 ring-white/[0.08] hover:ring-white/15';
+const FLOAT = "bg-bg/70 ring-white/[0.08] hover:ring-white/15";
 
-const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV shows', movie: 'Search movies', tv: 'Search TV shows' };
+const PLACEHOLDER: Record<Filters["type"], string> = {
+  all: "Search movies & TV shows",
+  movie: "Search movies",
+  tv: "Search TV shows",
+};
 
 /**
  * Universal search. The bar keeps a draft (text + type + quick filters):
@@ -222,11 +397,13 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
-  const onDiscover = pathname === '/discover';
-  const urlQ = onDiscover ? (params.get('q') ?? '') : '';
-  const urlKey = onDiscover ? params.toString() : '';
+  const onDiscover = pathname === "/discover";
+  const urlQ = onDiscover ? (params.get("q") ?? "") : "";
+  const urlKey = onDiscover ? params.toString() : "";
   const [text, setText] = useState(urlQ);
-  const [draft, setDraft] = useState<Filters>(() => (onDiscover ? parseFilters(params) : EMPTY_FILTERS));
+  const [draft, setDraft] = useState<Filters>(() =>
+    onDiscover ? parseFilters(params) : EMPTY_FILTERS,
+  );
   const [open, setOpen] = useState(onDiscover);
   const [menu, setMenu] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -244,13 +421,13 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   useEffect(() => {
     if (!onDiscover || typing.current) return;
     const p = new URLSearchParams(urlKey);
-    setText(p.get('q') ?? '');
+    setText(p.get("q") ?? "");
     setDraft(parseFilters(p));
   }, [onDiscover, urlKey]);
 
   const apply = (q: string, f: Filters, replace: boolean) => {
     const next = writeFilters(new URLSearchParams(), f);
-    if (q) next.set('q', q);
+    if (q) next.set("q", q);
     navigate(`/discover?${next}`, { replace, preventScrollReset: true });
   };
 
@@ -260,7 +437,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
     const t = setTimeout(() => {
       typing.current = false;
       const v = text.trim();
-      if (v !== urlQ || draft.type !== parseFilters(params).type) apply(v, draft, true);
+      if (v !== urlQ || draft.type !== parseFilters(params).type)
+        apply(v, draft, true);
     }, 350);
     return () => clearTimeout(t);
   }, [text]);
@@ -269,12 +447,16 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   useEffect(() => {
     if (!open && !menu) return;
     const onDown = (e: PointerEvent) => {
-      if (form.current?.contains(e.target as Node) || (e.target as Element).closest?.('[data-search-trigger]')) return;
+      if (
+        form.current?.contains(e.target as Node) ||
+        (e.target as Element).closest?.("[data-search-trigger]")
+      )
+        return;
       setMenu(false);
       if (!onDiscover && !searchInput.current?.value) setOpen(false);
     };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
   }, [open, menu, onDiscover]);
 
   // Focus first, inside the tap (opens the keyboard), then reveal a fresh universal search.
@@ -286,7 +468,6 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
     setDraft(onDiscover ? parseFilters(params) : EMPTY_FILTERS);
   };
 
-
   const submit = () => {
     typing.current = false;
     setMenu(false);
@@ -296,11 +477,11 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   };
   const close = () => {
     typing.current = false;
-    setText('');
+    setText("");
     setMenu(false);
     if (onDiscover && urlQ) {
       const next = new URLSearchParams(params);
-      next.delete('q');
+      next.delete("q");
       setParams(next, { replace: true });
     }
     if (!onDiscover) setOpen(false);
@@ -311,155 +492,204 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 
   return (
     <>
-    {/* The wordmark sits at the top of the page and scrolls away with it. */}
-    <Link
-      to="/"
-      className={cx(
-        'absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
-        // With the sidebar open, the wordmark moves into it.
-        hideLogo && 'lg:hidden',
-        open && 'max-md:hidden',
-      )}
-      aria-label="Charcoal home"
-    >
-      <Wordmark />
-    </Link>
-    <header
-      // Only the search field floats and sticks (as a pill, no bar behind it). The header itself
-      // ignores clicks so the page around the pill stays usable.
-      className="pointer-events-none sticky top-0 z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4"
-    >
-      <form
-        ref={form}
-        role="search"
-        // The recent-searches list stays while focus moves inside the form (so Tab reaches it).
-        onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setFocused(false)}
+      {/* The wordmark sits at the top of the page and scrolls away with it. */}
+      <Link
+        to="/"
         className={cx(
-          'pointer-events-auto',
-          open
-            ? 'relative w-full md:ml-auto md:max-w-md'
-            : 'sr-only lg:not-sr-only lg:relative lg:ml-auto lg:w-full lg:max-w-md',
+          "absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10",
+          // With the sidebar open, the wordmark moves into it.
+          hideLogo && "lg:hidden",
+          open && "max-md:hidden",
         )}
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
+        aria-label="Charcoal home"
       >
-        <div className={cx('group/search pointer-events-auto flex h-12 items-center gap-1.5 rounded-full pr-1.5 pl-4 ring-1 backdrop-blur-xl transition has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent', FLOAT)}>
-          <Search className="size-[18px] shrink-0 text-muted" />
-          <input
-            ref={(el) => {
-              searchInput.current = el;
-            }}
-            value={text}
-            onChange={(e) => {
-              typing.current = true;
-              setText(e.target.value);
-            }}
-            onKeyDown={(e) => e.key === 'Escape' && close()}
-            onFocus={() => {
-              setOpen(true);
-              setFocused(true);
-              setRecent(getRecent());
-            }}
-            onBlur={() => {
-              // Live results never press Enter: remember the query once the user is done typing.
-              if (onDiscover) addRecent(text);
-            }}
-            type="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            placeholder={PLACEHOLDER[draft.type]}
-            aria-label="Search"
-            className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
-          />
-          {!text && <Kbd className="mr-1.5 group-focus-within/search:hidden">{MOD} K</Kbd>}
-          {(text || !onDiscover) && (
-            <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className={cx('grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white', !text && 'lg:hidden')}>
-              <X className="size-4" />
-            </button>
+        <Wordmark />
+      </Link>
+      <header
+        // Only the search field floats and sticks (as a pill, no bar behind it). The header itself
+        // ignores clicks so the page around the pill stays usable.
+        className="pointer-events-none sticky top-0 z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4"
+      >
+        <form
+          ref={form}
+          role="search"
+          // The recent-searches list stays while focus moves inside the form (so Tab reaches it).
+          onBlur={(e) =>
+            !e.currentTarget.contains(e.relatedTarget as Node) &&
+            setFocused(false)
+          }
+          className={cx(
+            "pointer-events-auto",
+            open
+              ? "relative w-full md:ml-auto md:max-w-md"
+              : "sr-only lg:not-sr-only lg:relative lg:ml-auto lg:w-full lg:max-w-md",
           )}
-          {/* Filters live in the search bar on every page; the clear button sits before them so it doesn't shift. */}
-          {(
-            <button
-              type="button"
-              onClick={() => setMenu((m) => !m)}
-              aria-label={count ? `Filters (${count} active)` : 'Filters'}
-              aria-expanded={menu}
-              className={cx(
-                'group/tip relative flex h-9 shrink-0 items-center gap-1.5 rounded-full transition',
-                count ? 'px-3' : 'w-9 justify-center',
-                menu ? 'bg-white text-black' : count ? 'bg-white/15 text-white hover:bg-white/20' : 'text-muted hover:bg-white/10 hover:text-white',
-              )}
-            >
-              <SlidersHorizontal className="size-4" />
-              <HoverTip label="Filters" side="bottom" align="end" hidden={menu} />
-              {count > 0 && <span className="text-xs font-medium tabular-nums">{count}</span>}
-            </button>
-          )}
-        </div>
-        {focused && !text && !menu && recent.length > 0 && (
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
           <div
-            className="toast-in absolute inset-x-0 top-full z-50 mt-2 rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
-            // Keep focus in the input while picking.
-            onPointerDown={(e) => e.preventDefault()}
+            className={cx(
+              "group/search pointer-events-auto flex h-12 items-center gap-1.5 rounded-full pr-1.5 pl-4 ring-1 backdrop-blur-xl transition has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent",
+              FLOAT,
+            )}
           >
-            <div className="flex items-center justify-between px-3 pt-1.5 pb-1 text-xs text-faint">
-              Recent searches
+            <Search className="size-[18px] shrink-0 text-muted" />
+            <input
+              ref={(el) => {
+                searchInput.current = el;
+              }}
+              value={text}
+              onChange={(e) => {
+                typing.current = true;
+                setText(e.target.value);
+              }}
+              onKeyDown={(e) => e.key === "Escape" && close()}
+              onFocus={() => {
+                setOpen(true);
+                setFocused(true);
+                setRecent(getRecent());
+              }}
+              onBlur={() => {
+                // Live results never press Enter: remember the query once the user is done typing.
+                if (onDiscover) addRecent(text);
+              }}
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              placeholder={PLACEHOLDER[draft.type]}
+              aria-label="Search"
+              className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
+            />
+            {!text && (
+              <Kbd className="mr-1.5 group-focus-within/search:hidden">
+                {MOD} K
+              </Kbd>
+            )}
+            {(text || !onDiscover) && (
               <button
                 type="button"
-                onClick={() => {
-                  const before = getRecent();
-                  clearRecent();
-                  setRecent([]);
-                  toast('Recent searches cleared', { label: 'Undo', run: () => restoreRecent(before) });
-                }}
-                className="rounded-full px-2 py-0.5 hover:bg-white/10 hover:text-white"
+                aria-label={onDiscover ? "Clear search" : "Close search"}
+                onClick={close}
+                className={cx(
+                  "grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white",
+                  !text && "lg:hidden",
+                )}
               >
-                Clear all
+                <X className="size-4" />
               </button>
-            </div>
-            {recent.map((r) => (
-              <div key={r} className="group/recent flex items-center rounded-xl hover:bg-white/[0.06]">
+            )}
+            {/* Filters live in the search bar on every page; the clear button sits before them so it doesn't shift. */}
+            {
+              <button
+                type="button"
+                onClick={() => setMenu((m) => !m)}
+                aria-label={count ? `Filters (${count} active)` : "Filters"}
+                aria-expanded={menu}
+                className={cx(
+                  "group/tip relative flex h-9 shrink-0 items-center gap-1.5 rounded-full transition",
+                  count ? "px-3" : "w-9 justify-center",
+                  menu
+                    ? "bg-white text-black"
+                    : count
+                      ? "bg-white/15 text-white hover:bg-white/20"
+                      : "text-muted hover:bg-white/10 hover:text-white",
+                )}
+              >
+                <SlidersHorizontal className="size-4" />
+                <HoverTip
+                  label="Filters"
+                  side="bottom"
+                  align="end"
+                  hidden={menu}
+                />
+                {count > 0 && (
+                  <span className="text-xs font-medium tabular-nums">
+                    {count}
+                  </span>
+                )}
+              </button>
+            }
+          </div>
+          {focused && !text && !menu && recent.length > 0 && (
+            <div
+              className="toast-in absolute inset-x-0 top-full z-50 mt-2 rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
+              // Keep focus in the input while picking.
+              onPointerDown={(e) => e.preventDefault()}
+            >
+              <div className="flex items-center justify-between px-3 pt-1.5 pb-1 text-xs text-faint">
+                Recent searches
                 <button
                   type="button"
                   onClick={() => {
-                    typing.current = false;
-                    setText(r);
-                    addRecent(r);
-                    apply(r, draft, onDiscover);
-                    searchInput.current?.blur();
+                    const before = getRecent();
+                    clearRecent();
+                    setRecent([]);
+                    toast("Recent searches cleared", {
+                      label: "Undo",
+                      run: () => restoreRecent(before),
+                    });
                   }}
-                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-sm"
+                  className="rounded-full px-2 py-0.5 hover:bg-white/10 hover:text-white"
                 >
-                  <span className="truncate">{r}</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Remove “${r}” from recent searches`}
-                  onClick={() => {
-                    removeRecent(r);
-                    setRecent(getRecent());
-                  }}
-                  className="mr-1 grid size-8 shrink-0 place-items-center rounded-full text-faint opacity-0 transition group-hover/recent:opacity-100 hover:bg-white/10 hover:text-white focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-                >
-                  <X className="size-3.5" />
+                  Clear all
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-        {menu && (
-          <QuickFilterMenu
-            filters={draft}
-            set={(patch) => setDraft((d) => ({ ...d, ...patch, genres: patch.type ? (patch.genres ?? d.genres).filter((g) => genresFor(patch.type!).some((x) => x.slug === g)) : (patch.genres ?? d.genres) }))}
-            onClear={() => setDraft(EMPTY_FILTERS)}
-            onApply={submit}
-            placement="below"
-          />
-        )}
-      </form>
-    </header>
+              {recent.map((r) => (
+                <div
+                  key={r}
+                  className="group/recent flex items-center rounded-xl hover:bg-white/[0.06]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      typing.current = false;
+                      setText(r);
+                      addRecent(r);
+                      apply(r, draft, onDiscover);
+                      searchInput.current?.blur();
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-sm"
+                  >
+                    <span className="truncate">{r}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Remove “${r}” from recent searches`}
+                    onClick={() => {
+                      removeRecent(r);
+                      setRecent(getRecent());
+                    }}
+                    className="mr-1 grid size-8 shrink-0 place-items-center rounded-full text-faint opacity-0 transition group-hover/recent:opacity-100 hover:bg-white/10 hover:text-white focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {menu && (
+            <QuickFilterMenu
+              filters={draft}
+              set={(patch) =>
+                setDraft((d) => ({
+                  ...d,
+                  ...patch,
+                  genres: patch.type
+                    ? (patch.genres ?? d.genres).filter((g) =>
+                        genresFor(patch.type!).some((x) => x.slug === g),
+                      )
+                    : (patch.genres ?? d.genres),
+                }))
+              }
+              onClear={() => setDraft(EMPTY_FILTERS)}
+              onApply={submit}
+              placement="below"
+            />
+          )}
+        </form>
+      </header>
     </>
   );
 }
@@ -468,16 +698,30 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 
 function BottomBar() {
   const section = useSection();
-  const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} className={cx('flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-micro transition-colors', active ? 'text-white' : 'text-faint')}>
+  const item = (
+    to: string,
+    Icon: typeof Home,
+    label: string,
+    active: boolean,
+  ) => (
+    <Link
+      to={to}
+      className={cx(
+        "flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-micro transition-colors",
+        active ? "text-white" : "text-faint",
+      )}
+    >
       <Icon className="size-[22px]" />
       {label}
     </Link>
   );
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-end border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
-      {item('/', Home, 'Home', section === 'home')}
-      {item('/discover?type=movie', Film, 'Movies', section === 'movies')}
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 flex items-end border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      aria-label="Main"
+    >
+      {item("/", Home, "Home", section === "home")}
+      {item("/discover?type=movie", Film, "Movies", section === "movies")}
       <div className="flex flex-1 justify-center">
         {/* Plain static styles: no hover/active states that stick after a tap on touch screens. */}
         <button
@@ -490,8 +734,8 @@ function BottomBar() {
           <Search className="size-6" />
         </button>
       </div>
-      {item('/discover?type=tv', Tv, 'TV', section === 'tv')}
-      {item('/profile', User, 'Profile', section.startsWith('profile'))}
+      {item("/discover?type=tv", Tv, "TV", section === "tv")}
+      {item("/profile", User, "Profile", section.startsWith("profile"))}
     </nav>
   );
 }
@@ -502,14 +746,20 @@ function ScrollTop() {
   const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = sentinel.current;
-    if (!el || !('IntersectionObserver' in window)) return;
-    const io = new IntersectionObserver(([e]) => setShow(!e.isIntersecting && e.boundingClientRect.top < 0));
+    if (!el || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver(([e]) =>
+      setShow(!e.isIntersecting && e.boundingClientRect.top < 0),
+    );
     io.observe(el);
     return () => io.disconnect();
   }, []);
   return (
     <>
-      <div ref={sentinel} aria-hidden className="pointer-events-none absolute top-[150vh] h-px w-px" />
+      <div
+        ref={sentinel}
+        aria-hidden
+        className="pointer-events-none absolute top-[150vh] h-px w-px"
+      />
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: scrollBehavior() })}
         inert={!show}
@@ -517,8 +767,10 @@ function ScrollTop() {
         className={cx(
           btn({ icon: true }),
           // Floats over content, so it keeps a backdrop behind its outline.
-          'fixed right-4 bottom-24 z-30 size-11 border border-transparent bg-bg/80 shadow-lg backdrop-blur-md transition-[translate,opacity,background-color,box-shadow] lg:right-8 lg:bottom-8',
-          show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-16 opacity-0',
+          "fixed right-4 bottom-24 z-30 size-11 border border-transparent bg-bg/80 shadow-lg backdrop-blur-md transition-[translate,opacity,background-color,box-shadow] lg:right-8 lg:bottom-8",
+          show
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-16 opacity-0",
         )}
       >
         <ArrowUp className="size-5" />

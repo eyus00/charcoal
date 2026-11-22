@@ -19,7 +19,8 @@ export const STATUS_BG: Record<WatchStatus, string> = {
   planned: 'bg-planned',
   completed: 'bg-completed',
 };
-const STATUSES = Object.keys(STATUS_LABEL) as WatchStatus[];
+/** What you can pick. "Watching" is set by the app while you watch (see store.recordProgress). */
+const STATUSES: WatchStatus[] = ['planned', 'completed'];
 const MENU_W = 192;
 const MENU_H = 156;
 
@@ -170,6 +171,15 @@ export default function BookmarkMenu({ item, variant = 'full', size = 'lg', clas
           onClick={(e) => e.stopPropagation()}
           onKeyDown={onMenuKey}
         >
+          {current?.status === 'watching' && (
+            <div className="flex items-center gap-3 px-3 pt-1.5 pb-2 text-sm text-white/85">
+              <StatusDot status="watching" />
+              <span className="flex-1">
+                Watching
+                <span className="block text-xs text-muted">Set while you watch</span>
+              </span>
+            </div>
+          )}
           {STATUSES.map((s) => {
             const on = current?.status === s;
             return (
