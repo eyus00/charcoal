@@ -1175,9 +1175,12 @@ export default function Player({ data, media, title, subtitle, meta, poster, res
                           icon={Palette}
                           label="Style"
                           value={
-                            <span className="flex items-center gap-2">
-                              {Math.round(settings.subSize * 100)}%
-                              <span aria-label={subColorName(settings.subColor)} className="size-3.5 rounded-full ring-1 ring-white/30" style={{ background: settings.subColor }} />
+                            <span className="flex items-center gap-1.5">
+                              {Math.round(settings.subSize * 100)}%,
+                              {/* Like the colour picker's selected swatch: a white ring around the colour. */}
+                              <span aria-label={subColorName(settings.subColor)} className="grid size-[18px] place-items-center rounded-full ring-[1.5px] ring-white">
+                                <span className="size-3 rounded-full" style={{ background: settings.subColor }} />
+                              </span>
                             </span>
                           }
                           onClick={() => setView('style')}
