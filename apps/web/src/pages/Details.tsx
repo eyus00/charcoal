@@ -128,6 +128,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
               ))}
             </div>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
+            {d.tagline && <p className="mt-3 text-sm text-white/60 italic">{d.tagline}</p>}
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={() => openEpisodes()} />
