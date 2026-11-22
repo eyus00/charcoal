@@ -12,5 +12,5 @@ export default function PeekHost() {
   useEffect(() => peek.close(), [pathname]);
   const { data } = useQuery({ ...q.details(target?.type ?? 'movie', target?.id ?? 0), enabled: !!target });
   if (!target || !data || data.id !== target.id) return null;
-  return <DetailsPeek d={data} type={target.type} detailsUrl={`/${target.type}/${target.id}`} onClose={peek.close} />;
+  return <DetailsPeek d={data} type={target.type} detailsUrl={`/${target.type}/${target.id}`} onClose={peek.close} anchor={target.anchor} />;
 }

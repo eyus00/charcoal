@@ -6,15 +6,16 @@
 import { useSyncExternalStore } from 'react';
 import type { MediaType } from './tmdb';
 
-export type PeekTarget = { type: MediaType; id: number } | null;
+/** `anchor`: where it was opened from (the card), so the compact peek can sit beside it. */
+export type PeekTarget = { type: MediaType; id: number; anchor?: DOMRect } | null;
 
 let current: PeekTarget = null;
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 
 export const peek = {
-  open(type: MediaType, id: number) {
-    current = { type, id };
+  open(type: MediaType, id: number, anchor?: DOMRect) {
+    current = { type, id, anchor };
     emit();
   },
   close() {
@@ -34,16 +35,22 @@ export const usePeek = () =>
  * menu / a new window. A plain click still follows the link.
  */
 export function peekProps(type: MediaType, id: number) {
+  const open = (e: React.MouseEvent) => {
+    e.preventDefault();
+    peek.open(type, id, anchorFor(e));
+  };
   return {
-    onContextMenu: (e: React.MouseEvent) => {
-      e.preventDefault();
-      peek.open(type, id);
-    },
+    onContextMenu: open,
     onClickCapture: (e: React.MouseEvent) => {
       if (!e.shiftKey) return;
-      e.preventDefault();
       e.stopPropagation();
-      peek.open(type, id);
+      open(e);
     },
   };
+}
+
+/** The card's box; for something very wide (the Home banner), a point at the pointer instead. */
+function anchorFor(e: React.MouseEvent): DOMRect {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  return r.width > window.innerWidth * 0.5 ? new DOMRect(e.clientX, e.clientY, 0, 0) : r;
 }
