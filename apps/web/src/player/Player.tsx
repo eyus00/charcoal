@@ -1073,7 +1073,8 @@ export default function Player({ data, media, title, subtitle, meta, poster, res
       {/* top bar (stays while paused, with what's playing top-left) */}
       <div
         className={cx(
-          'absolute inset-x-0 top-0 bg-gradient-to-b to-transparent transition-[opacity,padding] duration-300 focus-within:pointer-events-auto focus-within:opacity-100',
+          // Keyboard focus keeps a bar up; a mouse click inside it doesn't (both bars hide together).
+          'absolute inset-x-0 top-0 bg-gradient-to-b to-transparent transition-[opacity,padding] duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100',
           'from-black/85 via-black/40 pb-20',
           showControls || keepTop ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
@@ -1084,7 +1085,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, res
       {/* bottom controls */}
       <div
         className={cx(
-          'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-opacity duration-200 focus-within:pointer-events-auto focus-within:opacity-100 md:px-6',
+          'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-opacity duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 md:px-6',
           showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
@@ -1170,7 +1171,20 @@ export default function Player({ data, media, title, subtitle, meta, poster, res
                         </button>
                       )}
                       <div className="grid grid-cols-2 gap-1.5 pt-1">
-                        <Card icon={Palette} label="Style" value={`${Math.round(settings.subSize * 100)}% · ${subColorName(settings.subColor)}`} onClick={() => setView('style')} />
+                        <Card
+                          icon={Palette}
+                          label="Style"
+                          value={
+                            <span className="flex items-center gap-1.5">
+                              {Math.round(settings.subSize * 100)}%,
+                              {/* Like the colour picker's selected swatch: a white ring around the colour. */}
+                              <span aria-label={subColorName(settings.subColor)} className="grid size-[18px] place-items-center rounded-full ring-[1.5px] ring-white">
+                                <span className="size-3 rounded-full" style={{ background: settings.subColor }} />
+                              </span>
+                            </span>
+                          }
+                          onClick={() => setView('style')}
+                        />
                         <Card icon={FileUp} label="Load file" value="SRT, VTT" onClick={() => fileInput.current?.click()} />
                       </div>
                       </div>
@@ -1709,7 +1723,7 @@ function BackHeader({ onBack, children }: { onBack: () => void; children: ReactN
 }
 
 /** A card button: icon, what it is, its current value. Without onClick it only shows the value. */
-function Card({ icon: Icon, label, value, onClick }: { icon: typeof Settings; label: string; value?: string; onClick?: () => void }) {
+function Card({ icon: Icon, label, value, onClick }: { icon: typeof Settings; label: string; value?: ReactNode; onClick?: () => void }) {
   return (
     <button
       type="button"
