@@ -37,7 +37,7 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
 function Shell() {
   const sidebarOpen = useStore((s) => s.settings.sidebarOpen);
   return (
-    <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[240px]' : 'lg:pl-[84px]')}>
+    <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[232px]' : 'lg:pl-[80px]')}>
       <ScrollRestoration />
       <Rail />
       <div className="relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
@@ -134,6 +134,7 @@ function RailGroupBox({ group, section, open }: { group: RailGroup; section: str
   return (
     <div role="group" aria-label={group.label} className="flex flex-col gap-0.5">
       <RailLink item={group} open={open} active={section === group.id} within={childActive} />
+      <Sep />
       {group.children.map((c) => (
         <RailLink key={c.id} item={c} open={open} active={section === c.id} />
       ))}
@@ -141,7 +142,7 @@ function RailGroupBox({ group, section, open }: { group: RailGroup; section: str
   );
 }
 
-const Sep = () => <span aria-hidden className="mx-3 h-px bg-white/[0.08]" />;
+const Sep = () => <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" />;
 
 function Rail() {
   const section = useSection();
@@ -150,12 +151,11 @@ function Rail() {
   return (
     <aside
       className={cx(
-        // Floats like the search bar: inset from the edges, see-through with a blur.
-        'fixed top-3 bottom-3 left-3 z-40 hidden flex-col rounded-3xl bg-bg/70 px-3 pb-3 ring-1 ring-white/[0.08] backdrop-blur-xl transition-[width] duration-300 ease-out lg:flex',
-        open ? 'w-[228px] overflow-hidden' : 'w-[72px]',
+        'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.08] bg-bg px-4 pb-5 transition-[width] duration-300 ease-out lg:flex',
+        open ? 'w-[232px] overflow-hidden' : 'w-[80px]',
       )}
     >
-      <div className="flex h-20 shrink-0 items-center gap-2">
+      <div className="flex h-[92px] shrink-0 items-center gap-2">
         <button
           type="button"
           onClick={toggle}
@@ -173,14 +173,12 @@ function Rail() {
           </Link>
         )}
       </div>
-      <nav className="flex flex-col gap-2" aria-label="Browse">
+      <nav className="flex flex-col gap-5" aria-label="Browse">
         <RailLink item={HOME} open={open} active={section === 'home'} />
-        <Sep />
         <RailGroupBox group={DISCOVER} section={section} open={open} />
       </nav>
-      <nav className="mt-auto flex flex-col gap-2" aria-label="Your library">
+      <nav className="mt-auto flex flex-col gap-3" aria-label="Your library">
         <RailGroupBox group={PROFILE} section={section} open={open} />
-        <Sep />
         <button
           type="button"
           onClick={() => hotkeysCtl.help()}

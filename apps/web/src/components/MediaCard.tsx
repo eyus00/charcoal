@@ -22,19 +22,29 @@ export function usePrefetch(type: MediaType, id: number) {
 /** The text under a card's image: close under it, aligned with its left edge; room for the arc. */
 export const CARD_INFO = 'relative pt-2 pr-2.5 pb-2';
 
-/** Every card zooms in a touch on hover, image and text together. */
-export const CARD_LIFT = 'transition-transform duration-300 ease-out group-hover:scale-[1.02]';
+/** Cards don't move on hover (kept as a hook so every card can share one hover style). */
+export const CARD_LIFT = '';
 
-/** A thin arc around the card's bottom-right corner that fades out: a quiet separator. */
+/**
+ * A thin arc around the bottom-right corner of the card's text: the right edge fades out as it
+ * rises and the bottom edge as it runs left, so the lines melt into the card. A quiet separator.
+ */
+const ARC_MASK = {
+  maskImage: 'linear-gradient(to left, black 15%, transparent 95%), linear-gradient(to top, black 10%, transparent 100%)',
+  WebkitMaskImage: 'linear-gradient(to left, black 15%, transparent 95%), linear-gradient(to top, black 10%, transparent 100%)',
+  maskComposite: 'intersect',
+  WebkitMaskComposite: 'source-in',
+} as const;
 export const CornerArc = () => (
   <span
     aria-hidden
-    className="pointer-events-none absolute right-0 bottom-0 h-8 w-12 rounded-br-2xl border-r border-b border-white/[0.14] transition-colors [mask-image:linear-gradient(to_top_left,black_35%,transparent_80%)] group-hover:border-white/25"
+    style={ARC_MASK}
+    className="pointer-events-none absolute -top-3 right-0 bottom-0 w-28 rounded-br-2xl border-r border-b border-white/20 transition-colors group-hover:border-white/35"
   />
 );
 
-/** A card image that floats: rounded, with a soft shadow on hover. */
-export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-black/40';
+/** A card image: rounded, a touch brighter on hover (like our buttons). */
+export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition duration-200 group-hover:brightness-110';
 
 /** A card title: brightens with the card on hover. */
 export const CARD_TITLE = 'truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white';
