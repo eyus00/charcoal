@@ -27,6 +27,7 @@ import {
   RotateCcw,
   RotateCw,
   Settings,
+  SkipBack,
   SkipForward,
   Volume1,
   Volume2,
@@ -54,8 +55,10 @@ interface Props {
   meta?: string;
   poster?: string;
   resumeAt: number;
-  header: ReactNode;
+  /** The top bar. As a function it gets the paused-info block to show top-left while paused. */
+  header: ReactNode | ((pausedInfo: ReactNode | null) => ReactNode);
   next?: { label: string; go: () => void } | null;
+  prev?: { label: string; go: () => void } | null;
   /** A small episode list for the bottom bar (TV); gets a function that closes the menu. */
   episodes?: (close: () => void) => ReactNode;
   onProgress: (watched: number, duration: number, ended?: boolean) => void;
@@ -95,7 +98,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, overview, meta, poster, resumeAt, header, next, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, overview, meta, poster, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -531,6 +534,29 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
   // Phones (and small touch tablets): iOS-style controls in the middle, menus as bottom sheets.
   const compact = useCompact();
   const showControls = !pausedIdle && (controls || !isPlaying || casting || menu !== null || exhausted || countdown !== null);
+  // Paused (or not started): what's playing, top-left, like a TV's pause screen.
+  const pausedInfo =
+    !isPlaying && !exhausted && !casting && settings.pauseOverlay ? (
+      <div className="toast-in max-w-xl pt-0.5">
+        <h2 className="text-2xl leading-tight font-semibold text-balance md:text-4xl">{title}</h2>
+        {subtitle && <p className="mt-1.5 text-base text-white/85 md:text-lg">{subtitle}</p>}
+        {meta && <p className="mt-1.5 text-sm text-white/60">{meta}</p>}
+        {overview && <p className="mt-3 line-clamp-3 max-w-lg text-body-sm leading-relaxed text-white/75">{overview}</p>}
+        <div className="mt-4 flex items-center gap-3 text-sm text-white/60 tabular-nums">
+          {duration > 0 && (
+            <>
+              <div className="h-1 w-32 overflow-hidden rounded-full bg-white/20">
+                <div className="h-full rounded-full bg-white" style={{ width: `${Math.min(100, (now / duration) * 100)}%` }} />
+              </div>
+              <span>{Math.max(0, Math.round((duration - now) / 60))} min left</span>
+            </>
+          )}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-white/85">
+            <Pause className="size-3 fill-current" strokeWidth={0} /> Paused
+          </span>
+        </div>
+      </div>
+    ) : null;
 
   // ---------- actions ----------
   const toggle = useCallback(() => {
@@ -934,37 +960,29 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
       )}
 
       {/* centre states */}
-      {buffering && !exhausted && !casting && !(compact && showControls) && (
+      {buffering && !exhausted && !casting && !showControls && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
           <div className="size-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
         </div>
       )}
-      {!compact && !playing && !buffering && !exhausted && countdown === null && !pausedIdle && !casting && (
-        <button onClick={toggle} aria-label="Play" className="absolute inset-0 m-auto grid size-20 place-items-center rounded-full bg-black/50 backdrop-blur-sm transition hover:bg-black/70">
-          <Play className="ml-1 size-9 fill-white text-white" />
-        </button>
-      )}
-      {compact && !exhausted && !casting && countdown === null && (
+      {/* Centre controls: previous episode, back 10, play / pause, forward 10, next episode. */}
+      {!exhausted && !casting && countdown === null && (
         <div
           className={cx(
-            'pointer-events-none absolute inset-0 flex items-center justify-center gap-10 bg-black/30 transition-opacity duration-200',
+            'pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-200',
+            compact ? 'gap-7 bg-black/30' : 'gap-6',
             showControls ? 'opacity-100' : 'opacity-0',
           )}
         >
-          <button
-            type="button"
-            aria-label="Back 10 seconds"
-            onClick={() => (seekBy(-10), poke())}
-            className={cx('grid size-14 place-items-center rounded-full bg-black/35 backdrop-blur-md active:scale-90 transition', showControls && 'pointer-events-auto')}
-          >
-            <RotateCcw className="size-7" />
-          </button>
-          <button
-            type="button"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-            onClick={() => (toggle(), poke())}
-            className={cx('grid size-[76px] place-items-center rounded-full bg-black/35 backdrop-blur-md active:scale-90 transition', showControls && 'pointer-events-auto')}
-          >
+          {prev !== undefined && (
+            <CentreButton label={prev ? `Previous: ${prev.label}` : 'No previous episode'} onClick={prev ? prev.go : undefined} shown={showControls} size="sm" tip={!compact}>
+              <SkipBack className="size-5 fill-current" />
+            </CentreButton>
+          )}
+          <CentreButton label="Back 10 seconds (J)" onClick={() => (seekBy(-10), poke())} shown={showControls} size="md" tip={!compact}>
+            <RotateCcw className={compact ? 'size-7' : 'size-6'} />
+          </CentreButton>
+          <CentreButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={() => (toggle(), poke())} shown={showControls} size="lg" tip={!compact}>
             {buffering ? (
               <span className="size-9 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
             ) : isPlaying ? (
@@ -972,15 +990,15 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
             ) : (
               <Play className="ml-1 size-9 fill-white" strokeWidth={0} />
             )}
-          </button>
-          <button
-            type="button"
-            aria-label="Forward 10 seconds"
-            onClick={() => (seekBy(10), poke())}
-            className={cx('grid size-14 place-items-center rounded-full bg-black/35 backdrop-blur-md active:scale-90 transition', showControls && 'pointer-events-auto')}
-          >
-            <RotateCw className="size-7" />
-          </button>
+          </CentreButton>
+          <CentreButton label="Forward 10 seconds (L)" onClick={() => (seekBy(10), poke())} shown={showControls} size="md" tip={!compact}>
+            <RotateCw className={compact ? 'size-7' : 'size-6'} />
+          </CentreButton>
+          {next !== undefined && (
+            <CentreButton label={next ? `Next: ${next.label} (Shift N)` : 'No next episode'} onClick={next ? next.go : undefined} shown={showControls} size="sm" tip={!compact}>
+              <SkipForward className="size-5 fill-current" />
+            </CentreButton>
+          )}
         </div>
       )}
       {held && (
@@ -1000,34 +1018,6 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
           </div>
         </div>
       )}
-
-      {/* Paused for a while: what's playing, written over the picture like a TV's pause screen. */}
-      <div
-        aria-hidden={!pausedIdle}
-        className={cx(
-          'pointer-events-none absolute inset-0 flex items-end bg-gradient-to-r from-black/85 via-black/50 to-transparent px-6 pb-16 transition-opacity duration-700 sm:items-center sm:pb-0 md:px-16',
-          pausedIdle ? 'opacity-100' : 'opacity-0',
-        )}
-      >
-        <div className={cx('max-w-xl transition-transform duration-700', pausedIdle ? 'translate-y-0' : 'translate-y-2')}>
-          <p className="flex items-center gap-2 text-sm text-white/60">
-            <Pause className="size-3.5 fill-current" strokeWidth={0} />
-            Paused
-          </p>
-          <h2 className="mt-2 text-3xl leading-tight font-semibold text-balance md:text-5xl">{title}</h2>
-          {subtitle && <p className="mt-2 text-lg text-white/85">{subtitle}</p>}
-          {meta && <p className="mt-2 text-sm text-white/60">{meta}</p>}
-          {overview && <p className="mt-4 line-clamp-3 text-body-sm leading-relaxed text-white/75 md:text-base">{overview}</p>}
-          {duration > 0 && (
-            <div className="mt-6 flex items-center gap-3 text-sm text-white/60 tabular-nums">
-              <div className="h-1 w-40 overflow-hidden rounded-full bg-white/20">
-                <div className="h-full rounded-full bg-white" style={{ width: `${Math.min(100, (now / duration) * 100)}%` }} />
-              </div>
-              {Math.max(0, Math.round((duration - now) / 60))} min left
-            </div>
-          )}
-        </div>
-      </div>
 
       {exhausted && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center">
@@ -1092,14 +1082,15 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
         </div>
       )}
 
-      {/* top bar */}
+      {/* top bar (stays while paused, with what's playing top-left) */}
       <div
         className={cx(
-          'absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent pb-10 transition-opacity duration-200 focus-within:pointer-events-auto focus-within:opacity-100',
-          showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
+          'absolute inset-x-0 top-0 bg-gradient-to-b to-transparent transition-[opacity,padding] duration-300 focus-within:pointer-events-auto focus-within:opacity-100',
+          pausedInfo ? 'from-black/85 via-black/45 pb-24' : 'from-black/80 pb-10',
+          showControls || pausedInfo ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        {header}
+        {typeof header === 'function' ? header(pausedInfo) : header}
       </div>
 
       {/* bottom controls */}
@@ -1114,12 +1105,6 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
           {!compact && (
             <>
               <PlayButton playing={isPlaying} onClick={toggle} />
-              <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
-                <RotateCcw className="size-5" />
-              </IconButton>
-              <IconButton label="Forward 10 seconds (L)" onClick={() => seekBy(10)}>
-                <RotateCw className="size-5" />
-              </IconButton>
             </>
           )}
           <div className={cx('group/vol hidden items-center', !compact && 'sm:flex')}>
@@ -1547,6 +1532,27 @@ function IconButton({
     >
       {children}
       <Tip label={text} keys={keys} align={tipAlign} hidden={expanded} />
+    </button>
+  );
+}
+
+/** A round see-through button in the middle of the video (iOS-player style). */
+function CentreButton({ label, onClick, shown, size, tip, children }: { label: string; onClick?: () => void; shown: boolean; size: 'sm' | 'md' | 'lg'; tip: boolean; children: ReactNode }) {
+  const [text, keys] = splitKeys(label);
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={!onClick}
+      className={cx(
+        'group/tip relative grid place-items-center rounded-full bg-black/35 text-white backdrop-blur-md transition enabled:hover:bg-black/55 enabled:active:scale-90 disabled:opacity-30',
+        size === 'lg' ? 'size-[76px]' : size === 'md' ? 'size-14' : 'size-11',
+        shown && 'pointer-events-auto',
+      )}
+    >
+      {children}
+      {tip && onClick && <Tip label={text} keys={keys} />}
     </button>
   );
 }

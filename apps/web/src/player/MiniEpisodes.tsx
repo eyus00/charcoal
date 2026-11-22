@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Maximize2, SkipBack, SkipForward } from 'lucide-react';
 import Img from '../components/Img';
+import { Tip } from '../components/Tip';
 import { allSeasons } from '../lib/episodes';
 import { findProgress, useStore } from '../lib/store';
 import { q, type Details } from '../lib/tmdb';
@@ -45,37 +46,39 @@ export default function MiniEpisodes({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between px-1.5 pt-0.5 pb-1">
-        <span className="text-sm font-medium">Seasons</span>
+      <div className="flex shrink-0 items-start gap-2 px-1 pb-2">
+        {/* Wraps instead of scrolling, so each number's tooltip isn't clipped. */}
+        <div ref={tabs} role="group" aria-label="Seasons" className="flex min-w-0 flex-1 flex-wrap gap-1">
+          {seasons.map((s) => {
+            const name = s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`;
+            return (
+              <button
+                key={s.season_number}
+                type="button"
+                aria-pressed={s.season_number === season}
+                aria-label={name}
+                onClick={() => setSeason(s.season_number)}
+                onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
+                className={cx(
+                  'group/tip relative h-8 min-w-8 shrink-0 rounded-full px-2.5 text-sm tabular-nums transition-colors',
+                  s.season_number === season ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10 hover:text-white',
+                )}
+              >
+                {s.season_number === 0 ? 'Specials' : s.season_number}
+                {s.season_number !== 0 && <Tip label={`${name}${s.episode_count ? ` · ${s.episode_count} episodes` : ''}`} />}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           onClick={onAll}
-          aria-label="All episodes"
-          title="All episodes"
-          className="grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
+          aria-label="All episodes (E)"
+          className="group/tip relative grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
         >
           <Maximize2 className="size-4" />
+          <Tip label="All episodes" keys="E" align="end" />
         </button>
-      </div>
-      <div className="flex shrink-0 items-center px-1 pb-2">
-        <div ref={tabs} role="group" aria-label="Seasons" className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto">
-          {seasons.map((s) => (
-            <button
-              key={s.season_number}
-              type="button"
-              aria-pressed={s.season_number === season}
-              aria-label={s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`}
-              onClick={() => setSeason(s.season_number)}
-              onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
-              className={cx(
-                'h-8 min-w-8 shrink-0 rounded-full px-2.5 text-sm tabular-nums transition-colors',
-                s.season_number === season ? 'bg-white font-medium text-black' : 'bg-white/[0.06] text-white/80 hover:bg-white/10 hover:text-white',
-              )}
-            >
-              {s.season_number === 0 ? 'Specials' : s.season_number}
-            </button>
-          ))}
-        </div>
       </div>
       <div ref={list} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain border-t border-white/[0.08] pt-1.5">
         {!data && Array.from({ length: 3 }, (_, i) => <div key={i} className="skeleton h-[96px] rounded-xl" />)}
@@ -94,12 +97,12 @@ export default function MiniEpisodes({
               onClick={() => onPick(season, ep.episode_number)}
               className={cx(
                 'flex w-full gap-3 rounded-xl p-1.5 text-left transition-colors disabled:opacity-45',
-                playing ? 'bg-white text-black' : 'enabled:hover:bg-white/[0.06]',
+                playing ? 'bg-white/[0.06]' : 'enabled:hover:bg-white/[0.06]',
               )}
             >
-              <span className="relative w-40 shrink-0 self-start overflow-hidden rounded-lg bg-white/5">
+              <span className={cx('relative w-40 shrink-0 self-start overflow-hidden rounded-lg bg-white/5', playing && 'ring-2 ring-white')}>
                 <Img path={ep.still_path} kind="still" sizes="160px" alt="" className="aspect-video" />
-                {playing && <span className="absolute top-1 left-1 rounded-full bg-black/70 px-1.5 py-px text-micro font-medium text-white backdrop-blur-sm">Playing</span>}
+                {playing && <span className="absolute top-1 left-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">Playing</span>}
                 {h?.isCompleted ? (
                   <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">
                     <Check className="size-3" /> Watched
@@ -118,13 +121,13 @@ export default function MiniEpisodes({
               </span>
               <span className="min-w-0 flex-1 py-0.5">
                 <span className="line-clamp-1 text-sm font-medium">
-                  <span className={cx('mr-1.5 tabular-nums', playing ? 'text-black/45' : 'text-faint')}>{ep.episode_number}</span>
+                  <span className="mr-1.5 text-faint tabular-nums">{ep.episode_number}</span>
                   {ep.name}
                 </span>
-                <span className={cx('block text-xs', playing ? 'text-black/50' : 'text-faint')}>
+                <span className="block text-xs text-faint">
                   {upcoming ? (ep.air_date ? `Airs ${formatDate(ep.air_date)}` : 'Coming soon') : ep.air_date ? formatDate(ep.air_date) : ''}
                 </span>
-                {ep.overview && <span className={cx('mt-1 line-clamp-2 text-xs leading-snug', playing ? 'text-black/65' : 'text-muted')}>{ep.overview}</span>}
+                {ep.overview && <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted">{ep.overview}</span>}
               </span>
             </button>
           );

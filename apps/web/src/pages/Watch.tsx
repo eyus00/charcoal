@@ -226,14 +226,14 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   });
   const subtitle = type === 'tv' ? `${epLabel(season, episode)}${ep?.name ? ` · ${ep.name}` : ''}` : undefined;
 
-  const header = (
+  const makeHeader = (pausedInfo?: React.ReactNode) => (
     <Header
+      pausedInfo={pausedInfo}
       title={title}
       subtitle={subtitle}
       detailsUrl={detailsUrl}
       onClose={leave}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
-      meta={[(d?.release_date || d?.first_air_date || '').slice(0, 4), d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : ''].filter(Boolean).join(' · ')}
       bookmark={
         d ? (
           <BookmarkMenu
@@ -246,6 +246,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={jelly.isError ? 'failed' : jelly.isFetching ? 'loading' : jelly.data ? 'ok' : 'idle'} />}
     />
   );
+  const header = makeHeader();
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
@@ -282,8 +283,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
             .join(' · ')}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
-          header={header}
-          next={next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null}
+          header={makeHeader}
+          prev={type === 'tv' ? (prev ? { label: nextLabel(prev, seasonData?.episodes), go: () => go(prev.season, prev.episode) } : null) : undefined}
+          next={type === 'tv' ? (next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null) : undefined}
           episodes={
             type === 'tv' && d
               ? (close) => (
@@ -348,11 +350,12 @@ function Header({
   onEpisodes,
   serverMenu,
   onClose,
-  meta,
   bookmark,
+  pausedInfo,
 }: {
-  meta?: string;
   bookmark?: React.ReactNode;
+  /** While paused (Jelly player): the bigger "what's playing" block replaces the title. */
+  pausedInfo?: React.ReactNode;
   title: string;
   subtitle?: string;
   detailsUrl: string;
@@ -364,8 +367,8 @@ function Header({
     // Close and the title on the left, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
     <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      <TitleBox title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />
-      {bookmark && <div className="hidden shrink-0 self-center sm:block">{bookmark}</div>}
+      {pausedInfo ? <div className="min-w-0 px-1">{pausedInfo}</div> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
+      {bookmark && <div className={cx('hidden shrink-0 sm:block', pausedInfo ? 'self-start' : 'self-center')}>{bookmark}</div>}
       <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
@@ -392,15 +395,14 @@ function Header({
  * name (long names truncate; the full name is in the tooltip and the episode list). For TV the
  * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
-/** What's playing, top-left like the pause screen: title, episode, year and rating. */
-function TitleBox({ title, subtitle, meta, detailsUrl, onEpisodes }: { title: string; subtitle?: string; meta?: string; detailsUrl: string; onEpisodes?: () => void }) {
+/** What's playing, top-left: the title and the episode. */
+function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; onEpisodes?: () => void }) {
   const text = (
     <div className="min-w-0 leading-snug">
       <Link to={detailsUrl} title={`${title}: details`} className={cx(TEXT_LINK, 'pointer-events-auto block truncate text-base font-semibold text-white md:text-lg')}>
         {title}
       </Link>
       {subtitle && <div className="truncate text-sm text-white/80">{subtitle}</div>}
-      {meta && <div className="truncate text-xs text-white/55">{meta}</div>}
     </div>
   );
   if (!onEpisodes) return <div className="min-w-0 px-1 pt-0.5">{text}</div>;
