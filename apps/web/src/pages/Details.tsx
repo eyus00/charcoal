@@ -110,7 +110,6 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="mb-3" />}
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
-            {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
               {[yearOf(d), d.vote_average > 0 ? 'rating' : '', certificationOf(d) ? 'cert' : '', length].filter(Boolean).map((x, i) => (
                 <span key={x} className="flex items-center gap-2">
@@ -128,6 +127,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
                 </span>
               ))}
             </div>
+            {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayActions d={d} type={type} onEpisodes={() => openEpisodes()} />
