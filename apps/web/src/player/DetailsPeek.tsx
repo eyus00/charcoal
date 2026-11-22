@@ -120,6 +120,8 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
   const sheet = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
+  // Swiped up: the sheet fills the screen and shows a soft placeholder until the page is there.
+  const [expanding, setExpanding] = useState(false);
 
   // A plain overlay (not a native modal dialog) so the watchlist menu, which opens in its own
   // layer, still shows above it. Esc closes, focus moves in and comes back, the page doesn't scroll.
@@ -176,7 +178,8 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
         el.style.maxHeight = 'none';
         el.style.height = `${window.innerHeight}px`;
         el.style.borderRadius = '0';
-        window.setTimeout(() => navigate(detailsUrl), 200);
+        setExpanding(true);
+        window.setTimeout(() => navigate(detailsUrl), 260);
       } else {
         el.style.transform = '';
         el.style.height = '';
@@ -207,6 +210,26 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
         className="toast-in relative max-h-[90dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none sm:max-h-[88dvh] sm:max-w-3xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {expanding && (
+          <div aria-hidden className="absolute inset-0 z-20 overflow-hidden bg-bg">
+            <Img path={d.backdrop_path} kind="backdrop" sizes="100vw" alt="" className="absolute! inset-0 size-full scale-110 opacity-40 blur-2xl" imgClassName="object-cover" />
+            <div className="absolute inset-x-4 bottom-8 space-y-3 rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl">
+              <div className="skeleton h-8 w-3/4 rounded-lg" />
+              <div className="skeleton h-4 w-1/2 rounded-md" />
+              <div className="skeleton h-4 w-2/5 rounded-md" />
+              <div className="space-y-2 pt-2">
+                <div className="skeleton h-3.5 w-full rounded-md" />
+                <div className="skeleton h-3.5 w-full rounded-md" />
+                <div className="skeleton h-3.5 w-4/5 rounded-md" />
+              </div>
+              <div className="flex gap-2.5 pt-3">
+                <div className="skeleton h-12 w-40 rounded-full" />
+                <div className="skeleton size-12 rounded-full" />
+                <div className="skeleton size-12 rounded-full" />
+              </div>
+            </div>
+          </div>
+        )}
         {/* Drag handle (phones). */}
         <div aria-hidden className="absolute top-2 left-1/2 z-10 h-1 w-10 -translate-x-1/2 rounded-full bg-white/50 sm:hidden" />
 
@@ -217,14 +240,16 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
         </div>
 
         <div className="absolute top-3 right-3 z-10 flex gap-2">
-          <ExpandButton to={detailsUrl} />
+          <div className="hidden sm:block">
+            <ExpandButton to={detailsUrl} />
+          </div>
           <button type="button" onClick={onClose} aria-label="Close" className={cx(btn({ icon: true }), 'group/tip relative bg-black/55! backdrop-blur-md hover:bg-black/75!')}>
             <X className="size-4" />
             <Tip label="Close" keys="Esc" side="bottom" align="end" />
           </button>
         </div>
 
-        <div className="relative -mt-20 px-4 pb-4 sm:-mt-24 sm:px-6 sm:pb-6">
+        <div className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
           <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
             <Facts d={d} type={type} className="mt-2 text-sm" />

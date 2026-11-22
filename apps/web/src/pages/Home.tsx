@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Film, Pause, Play, Star, Tv } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
-import { peek, peekProps } from '../lib/peek';
+import { peekProps } from '../lib/peek';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
 import Img from '../components/Img';
@@ -118,9 +118,7 @@ function Hero() {
       swiped.current = true;
       if (Math.abs(dx) > width * 0.18 || Math.abs(d.v) > 0.45) go(dx < 0 ? 1 : -1);
     } else if (!d.axis && !(e.target as HTMLElement).closest('[data-swipe]')) {
-      // Touch screens: the peek sheet first (swipe it up for the full page), like the cards.
-      if (e.pointerType === 'touch') peek.open(typeOf(item), item.id, 'medium');
-      else navigate(`/${typeOf(item)}/${item.id}`);
+      navigate(`/${typeOf(item)}/${item.id}`);
     }
   };
 
