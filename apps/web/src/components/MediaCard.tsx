@@ -58,6 +58,11 @@ export function TypeIcon({ type, className }: { type: MediaType; className?: str
   return <Icon strokeWidth={1.5} className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
 }
 
+/** Age rating (PG-13, TV-MA…) as a small outlined tag. */
+export const CertBadge = ({ children }: { children: ReactNode }) => (
+  <span className="rounded-[5px] px-1.5 py-px text-xs leading-tight font-medium ring-1 ring-white/35">{children}</span>
+);
+
 /** "2025 · ★ 7.2" */
 export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
   return (

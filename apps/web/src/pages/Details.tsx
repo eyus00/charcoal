@@ -9,12 +9,12 @@ import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
 import Modal from '../components/Modal';
 import { btn } from '../components/Button';
-import MediaCard, { CARD_IMAGE, CARD_LIFT, CornerArc } from '../components/MediaCard';
+import MediaCard, { CARD_IMAGE, CARD_LIFT, CertBadge, CornerArc } from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
-import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
+import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video, certificationOf } from '../lib/tmdb';
 import { cx, formatClock, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { toast } from '../components/Toast';
 import { BLEED } from './Home';
@@ -112,10 +112,12 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
-              {[yearOf(d), d.vote_average > 0 ? 'rating' : '', length].filter(Boolean).map((x, i) => (
+              {[yearOf(d), d.vote_average > 0 ? 'rating' : '', certificationOf(d) ? 'cert' : '', length].filter(Boolean).map((x, i) => (
                 <span key={x} className="flex items-center gap-2">
                   {i > 0 && <span className="text-white/35">·</span>}
-                  {x === 'rating' ? (
+                  {x === 'cert' ? (
+                    <CertBadge>{certificationOf(d)}</CertBadge>
+                  ) : x === 'rating' ? (
                     <span className="flex items-center gap-1 font-medium">
                       <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
                       {d.vote_average.toFixed(1)}

@@ -28,13 +28,12 @@ export function LogoGlyph({ className }: { className?: string }) {
   );
 }
 
-/** "Charcoal" with the mark as its second "o". */
+/** The logo and "Charcoal" beside it. */
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span aria-label="Charcoal" className={className}>
-      <span aria-hidden>Charc</span>
-      <LogoGlyph className="mx-[0.03em] inline-block h-[0.64em] w-[0.66em] align-[-0.01em]" />
-      <span aria-hidden>al</span>
+    <span className={`flex items-center gap-2 ${className ?? ''}`}>
+      <LogoMark className="size-[1.3em]" />
+      Charcoal
     </span>
   );
 }
