@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Play } from 'lucide-react';
 import Img from './Img';
-import { CARD_IMAGE, CARD_INFO, CARD_LIFT, CARD_TITLE, TypeIcon } from './MediaCard';
+import { CARD_IMAGE, CARD_INFO, CARD_LIFT, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
 import { Bone } from './Skeletons';
 import type { ImageKind } from '../lib/images';
 import type { MediaType } from '../lib/tmdb';
@@ -37,6 +37,8 @@ interface Props {
   /** Replaces the default tile width classes. */
   width?: string;
   linkProps?: Record<string, unknown>;
+  /** The parent zooms the whole thing on hover (e.g. Top 10 with its number), so this doesn't. */
+  still?: boolean;
   /** Makes one text line a link of its own (e.g. the show name to its details page). */
   titleLink?: { to: string; line: 'primary' | 'secondary'; label?: string };
   /** Extra controls over the tile (e.g. a remove button). */
@@ -44,7 +46,7 @@ interface Props {
 }
 
 /** Outlined landscape card: still image with corner chips, two text lines, type icon bottom-right. */
-export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, titleLink, children }: Props) {
+export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, titleLink, children, still }: Props) {
   const line = (which: 'primary' | 'secondary', content: ReactNode) =>
     titleLink?.line === which ? (
       <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 underline-offset-4 decoration-white/40 hover:text-white hover:underline">
@@ -57,7 +59,7 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
     <div className={cx('group relative', width, className)}>
       {/* The whole card is one link (stretched under the content), so a title can be a link too. */}
       <Link to={to} title={title} aria-label={title} className="absolute inset-0 z-0 rounded-2xl" {...linkProps} />
-      <div className={cx('pointer-events-none relative [&_a]:pointer-events-auto', CARD_LIFT)}>
+      <div className={cx('pointer-events-none relative [&_a]:pointer-events-auto', !still && CARD_LIFT)}>
         <div className={CARD_IMAGE}>
           <Img path={image.path} kind={image.kind} sizes={TILE_SIZES} alt="" className="aspect-video" />
           {shade && <span className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/10 to-transparent" />}
@@ -71,7 +73,6 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           {topLeft && <span className="absolute top-2.5 left-2.5">{topLeft}</span>}
           {bottomLeft && <span className="absolute bottom-2.5 left-2.5">{bottomLeft}</span>}
           {bottomRight && <span className="absolute right-2.5 bottom-2.5">{bottomRight}</span>}
-          <TypeIcon type={type} />
           {progress > 0 && (
             <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
               <span className="block h-full bg-white" style={{ width: `${progress}%` }} />
@@ -82,7 +83,9 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           <div className={CARD_TITLE} title={typeof primary === 'string' ? primary : undefined}>{line('primary', primary)}</div>
           <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
             <span className="min-w-0 truncate">{line('secondary', secondary)}</span>
+            <TypeIcon type={type} />
           </div>
+          <CornerArc />
         </div>
       </div>
       {children}

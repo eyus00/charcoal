@@ -8,6 +8,7 @@ import {
   FastForward,
   Gauge,
   Layers,
+  ListVideo,
   Palette,
   Info,
   Cast,
@@ -55,6 +56,8 @@ interface Props {
   resumeAt: number;
   header: ReactNode;
   next?: { label: string; go: () => void } | null;
+  /** A small episode list for the bottom bar (TV); gets a function that closes the menu. */
+  episodes?: (close: () => void) => ReactNode;
   onProgress: (watched: number, duration: number, ended?: boolean) => void;
   /** Every source failed: let the page offer embed servers. */
   onExhausted: () => void;
@@ -89,10 +92,10 @@ function upstreamHost(url: string): string {
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
 type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string> };
 
-type Menu = null | 'captions' | 'settings';
+type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, overview, meta, poster, resumeAt, header, next, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, overview, meta, poster, resumeAt, header, next, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -525,6 +528,8 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
     const t = window.setTimeout(() => setPausedIdle(true), PAUSE_OVERLAY_MS);
     return () => window.clearTimeout(t);
   }, [idleEligible, pokes]);
+  // Phones (and small touch tablets): iOS-style controls in the middle, menus as bottom sheets.
+  const compact = useCompact();
   const showControls = !pausedIdle && (controls || !isPlaying || casting || menu !== null || exhausted || countdown !== null);
 
   // ---------- actions ----------
@@ -929,15 +934,54 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
       )}
 
       {/* centre states */}
-      {buffering && !exhausted && !casting && (
+      {buffering && !exhausted && !casting && !(compact && showControls) && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
           <div className="size-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
         </div>
       )}
-      {!playing && !buffering && !exhausted && countdown === null && !pausedIdle && !casting && (
+      {!compact && !playing && !buffering && !exhausted && countdown === null && !pausedIdle && !casting && (
         <button onClick={toggle} aria-label="Play" className="absolute inset-0 m-auto grid size-20 place-items-center rounded-full bg-black/50 backdrop-blur-sm transition hover:bg-black/70">
           <Play className="ml-1 size-9 fill-white text-white" />
         </button>
+      )}
+      {compact && !exhausted && !casting && countdown === null && (
+        <div
+          className={cx(
+            'pointer-events-none absolute inset-0 flex items-center justify-center gap-10 bg-black/30 transition-opacity duration-200',
+            showControls ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          <button
+            type="button"
+            aria-label="Back 10 seconds"
+            onClick={() => (seekBy(-10), poke())}
+            className={cx('grid size-14 place-items-center rounded-full bg-black/35 backdrop-blur-md active:scale-90 transition', showControls && 'pointer-events-auto')}
+          >
+            <RotateCcw className="size-7" />
+          </button>
+          <button
+            type="button"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            onClick={() => (toggle(), poke())}
+            className={cx('grid size-[76px] place-items-center rounded-full bg-black/35 backdrop-blur-md active:scale-90 transition', showControls && 'pointer-events-auto')}
+          >
+            {buffering ? (
+              <span className="size-9 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
+            ) : isPlaying ? (
+              <Pause className="size-9 fill-white" strokeWidth={0} />
+            ) : (
+              <Play className="ml-1 size-9 fill-white" strokeWidth={0} />
+            )}
+          </button>
+          <button
+            type="button"
+            aria-label="Forward 10 seconds"
+            onClick={() => (seekBy(10), poke())}
+            className={cx('grid size-14 place-items-center rounded-full bg-black/35 backdrop-blur-md active:scale-90 transition', showControls && 'pointer-events-auto')}
+          >
+            <RotateCw className="size-7" />
+          </button>
+        </div>
       )}
       {held && (
         <div className="pointer-events-none absolute top-20 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/75 px-4 py-2 text-sm font-medium backdrop-blur-sm">
@@ -1067,14 +1111,18 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
       >
         <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />
         <div className="mt-2 flex items-center gap-1 md:gap-1.5">
-          <PlayButton playing={isPlaying} onClick={toggle} />
-          <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
-            <RotateCcw className="size-5" />
-          </IconButton>
-          <IconButton label="Forward 10 seconds (L)" onClick={() => seekBy(10)}>
-            <RotateCw className="size-5" />
-          </IconButton>
-          <div className="group/vol hidden items-center sm:flex">
+          {!compact && (
+            <>
+              <PlayButton playing={isPlaying} onClick={toggle} />
+              <IconButton label="Back 10 seconds (J)" onClick={() => seekBy(-10)}>
+                <RotateCcw className="size-5" />
+              </IconButton>
+              <IconButton label="Forward 10 seconds (L)" onClick={() => seekBy(10)}>
+                <RotateCw className="size-5" />
+              </IconButton>
+            </>
+          )}
+          <div className={cx('group/vol hidden items-center', !compact && 'sm:flex')}>
             <IconButton label={muted || volume === 0 ? 'Unmute (M)' : 'Mute (M)'} onClick={toggleMute}>
               <VolumeIcon className="size-5" />
             </IconButton>
@@ -1089,7 +1137,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
               className="w-0 accent-white opacity-0 transition-[width,opacity] group-hover/vol:w-20 group-hover/vol:opacity-100 focus:w-20 focus:opacity-100"
             />
           </div>
-          <span className="ml-2 text-xs text-white/85 tabular-nums md:text-sm">
+          <span className={cx('text-xs text-white/85 tabular-nums md:text-sm', compact ? 'ml-1' : 'ml-2')}>
             {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
           </span>
           <div className="ml-auto flex items-center gap-1 md:gap-1.5">
@@ -1097,6 +1145,18 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
               <IconButton label={`Next: ${next.label} (Shift N)`} onClick={next.go}>
                 <SkipForward className="size-5" />
               </IconButton>
+            )}
+            {episodes && (
+              <div className="relative">
+                <IconButton label="Episodes" active={menu === 'episodes'} expanded={menu === 'episodes'} onClick={() => setMenu(menu === 'episodes' ? null : 'episodes')}>
+                  <ListVideo className="size-5" />
+                </IconButton>
+                {menu === 'episodes' && (
+                  <Popover wide split>
+                    {episodes(() => setMenu(null))}
+                  </Popover>
+                )}
+              </div>
             )}
 
             {/* Subtitles: tracks, own file, timing, look, transcript */}
@@ -1384,7 +1444,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                 <Airplay className="size-5" />
               </IconButton>
             )}
-            {'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && !casting && (
+            {!compact && 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && !casting && (
               <IconButton label="Picture in picture (I)" onClick={togglePip} className="hidden sm:grid">
                 <PictureInPicture2 className="size-5" />
               </IconButton>
@@ -1496,6 +1556,19 @@ function IconButton({
   );
 }
 
+/** Phone-sized screen, or a small touch screen: use the touch layout. */
+function useCompact() {
+  const query = '(max-width: 639px), (pointer: coarse) and (max-width: 1023px)';
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const f = () => setOn(m.matches);
+    m.addEventListener('change', f);
+    return () => m.removeEventListener('change', f);
+  }, []);
+  return on;
+}
+
 /** The bar's main button: a white circle, like our primary buttons. */
 function PlayButton({ playing, onClick }: { playing: boolean; onClick: () => void }) {
   const label = playing ? 'Pause' : 'Play';
@@ -1528,9 +1601,12 @@ const Popover = ({ children, wide, split, onScroll }: { children: ReactNode; wid
     onScroll={onScroll}
     className={cx(
       'toast-in absolute right-0 bottom-12 z-30 rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
+      // Phones: a sheet across the bottom of the screen.
+      'max-sm:fixed max-sm:inset-x-2 max-sm:right-2 max-sm:bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:max-h-[70dvh] max-sm:rounded-3xl max-sm:p-2',
       // split: a scrolling list on top, fixed controls below (the subtitles menu).
       split ? 'flex max-h-[min(26rem,60vh)] flex-col' : 'max-h-[64vh] overflow-y-auto overscroll-contain',
       wide ? 'w-[min(24rem,calc(100vw-1.5rem))]' : 'w-72',
+      'max-sm:w-auto',
     )}
   >
     {children}
