@@ -98,7 +98,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, overview, meta, poster, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, meta, poster, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -535,28 +535,16 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
   const compact = useCompact();
   const showControls = !pausedIdle && (controls || !isPlaying || casting || menu !== null || exhausted || countdown !== null);
   // Paused (or not started): what's playing, top-left, like a TV's pause screen.
-  const pausedInfo =
-    !isPlaying && !exhausted && !casting && settings.pauseOverlay ? (
-      <div className="toast-in max-w-xl pt-0.5">
-        <h2 className="text-2xl leading-tight font-semibold text-balance md:text-4xl">{title}</h2>
-        {subtitle && <p className="mt-1.5 text-base text-white/85 md:text-lg">{subtitle}</p>}
-        {meta && <p className="mt-1.5 text-sm text-white/60">{meta}</p>}
-        {overview && <p className="mt-3 line-clamp-3 max-w-lg text-body-sm leading-relaxed text-white/75">{overview}</p>}
-        <div className="mt-4 flex items-center gap-3 text-sm text-white/60 tabular-nums">
-          {duration > 0 && (
-            <>
-              <div className="h-1 w-32 overflow-hidden rounded-full bg-white/20">
-                <div className="h-full rounded-full bg-white" style={{ width: `${Math.min(100, (now / duration) * 100)}%` }} />
-              </div>
-              <span>{Math.max(0, Math.round((duration - now) / 60))} min left</span>
-            </>
-          )}
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-white/85">
-            <Pause className="size-3 fill-current" strokeWidth={0} /> Paused
-          </span>
-        </div>
-      </div>
-    ) : null;
+  // What's playing, top-left in the top bar: always there with the controls, and kept on screen
+  // while paused.
+  const pausedInfo = (
+    <div className="max-w-2xl pt-0.5">
+      <h2 className="text-2xl leading-tight font-semibold text-balance md:text-4xl">{title}</h2>
+      {subtitle && <p className="mt-1 text-base text-white/85 md:text-lg">{subtitle}</p>}
+      {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
+    </div>
+  );
+  const keepTop = !isPlaying && !exhausted && !casting;
 
   // ---------- actions ----------
   const toggle = useCallback(() => {
@@ -1086,8 +1074,8 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
       <div
         className={cx(
           'absolute inset-x-0 top-0 bg-gradient-to-b to-transparent transition-[opacity,padding] duration-300 focus-within:pointer-events-auto focus-within:opacity-100',
-          pausedInfo ? 'from-black/85 via-black/45 pb-24' : 'from-black/80 pb-10',
-          showControls || pausedInfo ? 'opacity-100' : 'pointer-events-none opacity-0',
+          'from-black/85 via-black/40 pb-20',
+          showControls || keepTop ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
         {typeof header === 'function' ? header(pausedInfo) : header}
@@ -1102,12 +1090,10 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
       >
         <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />
         <div className="mt-2 flex items-center gap-1 md:gap-1.5">
-          {!compact && (
-            <>
-              <PlayButton playing={isPlaying} onClick={toggle} />
-            </>
-          )}
-          <div className={cx('group/vol hidden items-center', !compact && 'sm:flex')}>
+          <span className="pl-1 text-xs text-white/85 tabular-nums md:text-sm">
+            {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
+          </span>
+          <div className={cx('group/vol ml-1 hidden items-center', !compact && 'sm:flex')}>
             <IconButton label={muted || volume === 0 ? 'Unmute (M)' : 'Mute (M)'} onClick={toggleMute}>
               <VolumeIcon className="size-5" />
             </IconButton>
@@ -1122,9 +1108,6 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
               className="w-0 accent-white opacity-0 transition-[width,opacity] group-hover/vol:w-20 group-hover/vol:opacity-100 focus:w-20 focus:opacity-100"
             />
           </div>
-          <span className={cx('text-xs text-white/85 tabular-nums md:text-sm', compact ? 'ml-1' : 'ml-2')}>
-            {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
-          </span>
           <div className="ml-auto flex items-center gap-1 md:gap-1.5">
             {episodes && (
               <div className="relative">
@@ -1132,7 +1115,7 @@ export default function Player({ data, media, title, subtitle, overview, meta, p
                   <GalleryVerticalEnd className="size-5" />
                 </IconButton>
                 {menu === 'episodes' && (
-                  <Popover wide split className="max-h-[min(30rem,65vh)]!">
+                  <Popover wide split className="max-h-[min(23rem,55vh)]!">
                     {episodes(() => setMenu(null))}
                   </Popover>
                 )}
@@ -1568,22 +1551,6 @@ function useCompact() {
     return () => m.removeEventListener('change', f);
   }, []);
   return on;
-}
-
-/** The bar's main button: a white circle, like our primary buttons. */
-function PlayButton({ playing, onClick }: { playing: boolean; onClick: () => void }) {
-  const label = playing ? 'Pause' : 'Play';
-  return (
-    <button
-      type="button"
-      aria-label={`${label} (K)`}
-      onClick={onClick}
-      className="group/tip relative mr-1 grid size-10 shrink-0 place-items-center rounded-full bg-white text-black transition hover:bg-white/85 active:scale-95"
-    >
-      {playing ? <Pause className="size-4 fill-current" strokeWidth={0} /> : <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />}
-      <Tip label={label} keys="K" align="start" />
-    </button>
-  );
 }
 
 const StepButton = ({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) => {

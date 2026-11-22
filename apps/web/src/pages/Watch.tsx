@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Keyboard, ShieldAlert, X } from 'lucide-react';
 import Modal from '../components/Modal';
-import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
@@ -234,15 +233,6 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       detailsUrl={detailsUrl}
       onClose={leave}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
-      bookmark={
-        d ? (
-          <BookmarkMenu
-            variant="round"
-            size="md"
-            item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
-          />
-        ) : null
-      }
       serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={jelly.isError ? 'failed' : jelly.isFetching ? 'loading' : jelly.data ? 'ok' : 'idle'} />}
     />
   );
@@ -350,11 +340,9 @@ function Header({
   onEpisodes,
   serverMenu,
   onClose,
-  bookmark,
   pausedInfo,
 }: {
-  bookmark?: React.ReactNode;
-  /** While paused (Jelly player): the bigger "what's playing" block replaces the title. */
+  /** Jelly player: the bigger "what's playing" block replaces the small title. */
   pausedInfo?: React.ReactNode;
   title: string;
   subtitle?: string;
@@ -368,7 +356,6 @@ function Header({
     // controls like the details page.
     <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
       {pausedInfo ? <div className="min-w-0 px-1">{pausedInfo}</div> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
-      {bookmark && <div className={cx('hidden shrink-0 sm:block', pausedInfo ? 'self-start' : 'self-center')}>{bookmark}</div>}
       <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
