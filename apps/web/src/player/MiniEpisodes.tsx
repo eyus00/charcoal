@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Maximize2 } from 'lucide-react';
+import { Check, Maximize2, SkipBack, SkipForward } from 'lucide-react';
 import Img from '../components/Img';
 import { allSeasons } from '../lib/episodes';
 import { findProgress, useStore } from '../lib/store';
@@ -17,11 +17,15 @@ export default function MiniEpisodes({
   current,
   onPick,
   onAll,
+  onPrev,
+  onNext,
 }: {
   show: Details;
   current: { season: number; episode: number };
   onPick: (season: number, episode: number) => void;
   onAll: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 }) {
   const qc = useQueryClient();
   const seasons = allSeasons(show);
@@ -41,8 +45,19 @@ export default function MiniEpisodes({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center gap-2 px-1 pb-2">
-        <span className="text-xs text-muted">Season</span>
+      <div className="flex shrink-0 items-center justify-between px-1.5 pt-0.5 pb-1">
+        <span className="text-sm font-medium">Seasons</span>
+        <button
+          type="button"
+          onClick={onAll}
+          aria-label="All episodes"
+          title="All episodes"
+          className="grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <Maximize2 className="size-4" />
+        </button>
+      </div>
+      <div className="flex shrink-0 items-center px-1 pb-2">
         <div ref={tabs} role="group" aria-label="Seasons" className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto">
           {seasons.map((s) => (
             <button
@@ -61,18 +76,9 @@ export default function MiniEpisodes({
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={onAll}
-          aria-label="All episodes"
-          title="All episodes"
-          className="grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
-        >
-          <Maximize2 className="size-4" />
-        </button>
       </div>
-      <div ref={list} className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain">
-        {!data && Array.from({ length: 3 }, (_, i) => <div key={i} className="skeleton h-[92px] rounded-xl" />)}
+      <div ref={list} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain border-t border-white/[0.08] pt-1.5">
+        {!data && Array.from({ length: 3 }, (_, i) => <div key={i} className="skeleton h-[96px] rounded-xl" />)}
         {data?.episodes.map((ep) => {
           const playing = season === current.season && ep.episode_number === current.episode;
           const upcoming = !ep.air_date || isFuture(ep.air_date);
@@ -87,12 +93,13 @@ export default function MiniEpisodes({
               disabled={upcoming}
               onClick={() => onPick(season, ep.episode_number)}
               className={cx(
-                'flex w-full gap-3 rounded-xl p-2 text-left transition-colors disabled:opacity-45',
-                playing ? 'bg-white text-black' : 'bg-white/[0.06] enabled:hover:bg-white/10',
+                'flex w-full gap-3 rounded-xl p-1.5 text-left transition-colors disabled:opacity-45',
+                playing ? 'bg-white/[0.06]' : 'enabled:hover:bg-white/[0.06]',
               )}
             >
-              <span className="relative w-32 shrink-0 self-start overflow-hidden rounded-lg bg-white/5">
-                <Img path={ep.still_path} kind="still" sizes="128px" alt="" className="aspect-video" />
+              <span className={cx('relative w-40 shrink-0 self-start overflow-hidden rounded-lg bg-white/5', playing && 'ring-2 ring-white')}>
+                <Img path={ep.still_path} kind="still" sizes="160px" alt="" className="aspect-video" />
+                {playing && <span className="absolute top-1 right-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">Playing</span>}
                 {h?.isCompleted ? (
                   <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">
                     <Check className="size-3" /> Watched
@@ -111,18 +118,38 @@ export default function MiniEpisodes({
               </span>
               <span className="min-w-0 flex-1 py-0.5">
                 <span className="line-clamp-1 text-sm font-medium">
-                  <span className={cx('mr-1.5 tabular-nums', playing ? 'text-black/45' : 'text-faint')}>{ep.episode_number}</span>
+                  <span className="mr-1.5 text-faint tabular-nums">{ep.episode_number}</span>
                   {ep.name}
                 </span>
-                <span className={cx('block text-xs', playing ? 'text-black/55' : 'text-faint')}>
-                  {playing ? 'Playing now' : upcoming ? (ep.air_date ? `Airs ${formatDate(ep.air_date)}` : 'Coming soon') : ep.air_date ? formatDate(ep.air_date) : ''}
+                <span className="block text-xs text-faint">
+                  {upcoming ? (ep.air_date ? `Airs ${formatDate(ep.air_date)}` : 'Coming soon') : ep.air_date ? formatDate(ep.air_date) : ''}
                 </span>
-                {ep.overview && <span className={cx('mt-1 line-clamp-2 text-xs leading-snug', playing ? 'text-black/70' : 'text-muted')}>{ep.overview}</span>}
+                {ep.overview && <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted">{ep.overview}</span>}
               </span>
             </button>
           );
         })}
       </div>
+      {(onPrev || onNext) && (
+        <div className="mt-1 grid shrink-0 grid-cols-2 gap-1.5 border-t border-white/[0.08] pt-1.5">
+          <button
+            type="button"
+            onClick={onPrev}
+            disabled={!onPrev}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-white/[0.06] text-sm transition-colors enabled:hover:bg-white/10 disabled:opacity-35"
+          >
+            <SkipBack className="size-4" /> Previous
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={!onNext}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-medium text-black transition-colors enabled:hover:bg-white/85 disabled:opacity-35"
+          >
+            Next episode <SkipForward className="size-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

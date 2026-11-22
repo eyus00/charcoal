@@ -292,6 +292,8 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
                     current={{ season: season!, episode: episode! }}
                     onPick={(s, e) => (close(), go(s, e))}
                     onAll={() => (close(), setDrawer(true))}
+                    onPrev={prev ? () => (close(), go(prev.season, prev.episode)) : undefined}
+                    onNext={next ? () => (close(), go(next.season, next.episode)) : undefined}
                   />
                 )
               : undefined
