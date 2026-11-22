@@ -18,7 +18,6 @@ export default function DetailsPeek({ d, type, detailsUrl, onClose }: { d: Detai
   const cert = certificationOf(d);
   const length =
     type === 'movie' ? formatRuntime(d.runtime ?? 0) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
-  const cast = (d.credits?.cast ?? []).slice(0, 6);
 
   return (
     <Modal label={`${title}: details`} onClose={onClose}>
@@ -46,8 +45,8 @@ export default function DetailsPeek({ d, type, detailsUrl, onClose }: { d: Detai
           <div className="-mt-10 px-5 pb-6 sm:px-6 md:px-7">
             <h2 className="relative text-2xl leading-tight font-semibold text-balance md:text-3xl">{title}</h2>
             <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-white/70">
-              {/* Same order as the details page: year · age rating · ★ · length. */}
-              {[year, cert ? 'cert' : '', d.vote_average > 0 ? 'rating' : '', length].filter(Boolean).map((t, i) => (
+              {/* Same order everywhere: year · ★ rating · age rating · length. */}
+              {[year, d.vote_average > 0 ? 'rating' : '', cert ? 'cert' : '', length].filter(Boolean).map((t, i) => (
                 <span key={i} className="contents">
                   {i > 0 && <span className="text-white/30">·</span>}
                   {t === 'cert' ? (
@@ -75,20 +74,6 @@ export default function DetailsPeek({ d, type, detailsUrl, onClose }: { d: Detai
             {d.tagline && <p className="mt-4 text-sm text-white/60 italic">{d.tagline}</p>}
             {d.overview && <p className="mt-2 text-body-sm leading-relaxed text-white/80">{d.overview}</p>}
 
-            {cast.length > 0 && (
-              <div className="mt-5">
-                <h3 className="text-xs text-muted">Cast</h3>
-                <div className="mt-2 grid grid-cols-3 gap-3 sm:grid-cols-6">
-                  {cast.map((c) => (
-                    <div key={c.id} className="min-w-0 text-center">
-                      <Img path={c.profile_path} kind="profile" sizes="64px" alt="" className="mx-auto aspect-square w-14 rounded-full" />
-                      <p className="mt-1.5 truncate text-xs text-white/85">{c.name}</p>
-                      {c.character && <p className="truncate text-micro text-faint">{c.character}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

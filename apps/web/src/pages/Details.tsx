@@ -112,7 +112,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
             {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
-              {[yearOf(d), certificationOf(d) ? 'cert' : '', d.vote_average > 0 ? 'rating' : '', length].filter(Boolean).map((x, i) => (
+              {[yearOf(d), d.vote_average > 0 ? 'rating' : '', certificationOf(d) ? 'cert' : '', length].filter(Boolean).map((x, i) => (
                 <span key={x} className="flex items-center gap-2">
                   {i > 0 && <span className="text-white/35">·</span>}
                   {x === 'cert' ? (
