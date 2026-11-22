@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
-import type { MediaItem, MediaType } from "../lib/tmdb";
-import MediaCard from "./MediaCard";
-import { btn } from "./Button";
-import { CardSkeleton, GRID, GRID_SIZES, GridSkeleton } from "./Skeletons";
+import { useEffect, useRef } from 'react';
+import type { MediaItem, MediaType } from '../lib/tmdb';
+import MediaCard from './MediaCard';
+import { btn } from './Button';
+import { CardSkeleton, GRID, GRID_SIZES, GridSkeleton } from './Skeletons';
 
 interface Props {
   items: MediaItem[];
@@ -14,50 +14,21 @@ interface Props {
   loadingMore?: boolean;
   onLoadMore?: () => void;
   empty?: React.ReactNode;
-  /** A tag on each poster (e.g. "3.4K watching"). */
-  badgeFor?: (m: MediaItem) => React.ReactNode;
 }
 
-export default function Grid({
-  items,
-  type,
-  loading,
-  error,
-  onRetry,
-  hasMore,
-  loadingMore,
-  onLoadMore,
-  empty,
-  badgeFor,
-}: Props) {
+export default function Grid({ items, type, loading, error, onRetry, hasMore, loadingMore, onLoadMore, empty }: Props) {
   if (loading) return <GridSkeleton />;
   if (error && !items.length) return <ErrorBox onRetry={onRetry} />;
-  if (!items.length)
-    return (
-      <>
-        {empty ?? (
-          <p className="py-20 text-center text-muted">Nothing found.</p>
-        )}
-      </>
-    );
+  if (!items.length) return <>{empty ?? <p className="py-20 text-center text-muted">Nothing found.</p>}</>;
   return (
     <>
       <div className={GRID}>
         {items.map((m) => (
-          <MediaCard
-            key={(m.media_type ?? type) + String(m.id)}
-            item={m}
-            type={type}
-            sizes={GRID_SIZES}
-            badge={badgeFor?.(m)}
-          />
+          <MediaCard key={(m.media_type ?? type) + String(m.id)} item={m} type={type} sizes={GRID_SIZES} />
         ))}
-        {loadingMore &&
-          Array.from({ length: 6 }, (_, i) => <CardSkeleton key={`s${i}`} />)}
+        {loadingMore && Array.from({ length: 6 }, (_, i) => <CardSkeleton key={`s${i}`} />)}
       </div>
-      {hasMore && onLoadMore && (
-        <LoadMore onLoad={onLoadMore} busy={!!loadingMore} />
-      )}
+      {hasMore && onLoadMore && <LoadMore onLoad={onLoadMore} busy={!!loadingMore} />}
     </>
   );
 }
@@ -69,11 +40,8 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
   cb.current = onLoad;
   useEffect(() => {
     const el = ref.current;
-    if (!el || busy || !("IntersectionObserver" in window)) return;
-    const io = new IntersectionObserver(
-      ([e]) => e.isIntersecting && cb.current(),
-      { rootMargin: "600px" },
-    );
+    if (!el || busy || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && cb.current(), { rootMargin: '600px' });
     io.observe(el);
     return () => io.disconnect();
   }, [busy]);
@@ -83,21 +51,15 @@ function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
         ref={ref}
         onClick={onLoad}
         disabled={busy}
-        className={btn({ size: "lg" })}
+        className={btn({ size: 'lg' })}
       >
-        {busy ? "Loading…" : "Load more"}
+        {busy ? 'Loading…' : 'Load more'}
       </button>
     </div>
   );
 }
 
-export function ErrorBox({
-  onRetry,
-  message = "Couldn’t load these titles. Check your connection and try again.",
-}: {
-  onRetry?: () => void;
-  message?: string;
-}) {
+export function ErrorBox({ onRetry, message = 'Couldn’t load these titles. Check your connection and try again.' }: { onRetry?: () => void; message?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <p className="text-muted">{message}</p>

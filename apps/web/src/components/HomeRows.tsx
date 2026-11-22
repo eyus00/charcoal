@@ -1,42 +1,16 @@
-import { useMemo } from "react";
-import { Link } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import Img from "./Img";
-import EpisodeTile, { Chip, TileSkeleton } from "./EpisodeTile";
-import {
-  CARD_IMAGE,
-  CARD_LIFT,
-  CornerArc,
-  Meta,
-  TypeIcon,
-  usePrefetch,
-} from "./MediaCard";
-import {
-  ROW_BLEED,
-  RowArrows,
-  Scroller,
-  SectionHeader,
-  useRowScroll,
-} from "./Row";
-import { Bone } from "./Skeletons";
-import {
-  cleanList,
-  q,
-  titleOf,
-  typeOf,
-  yearOf,
-  type Details,
-  type EpisodeRef,
-  type MediaItem,
-  type MediaType,
-} from "../lib/tmdb";
-import {
-  cx,
-  formatDate,
-  formatRuntime,
-  isFuture,
-  useInView,
-} from "../lib/util";
+import { useCallback, useMemo } from 'react';
+import { refine, useTaste, useTrending } from '../lib/recommend';
+import { Link } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import Img from './Img';
+import EpisodeTile, { TILE, TileSkeleton } from './EpisodeTile';
+import AiringTile, { AiringTileSkeleton } from './AiringTile';
+import { startOfDay, useSchedule } from '../lib/schedule';
+import { CARD_IMAGE, CARD_LIFT, CornerArc, Meta, TypeIcon, usePrefetch } from './MediaCard';
+import { ROW_BLEED, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
+import { Bone } from './Skeletons';
+import { cleanList, q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
+import { cx, useInView } from '../lib/util';
 
 type Query = ReturnType<typeof q.trending> | ReturnType<typeof q.list>;
 
@@ -49,24 +23,28 @@ function LazyRow({
   skeleton,
   render,
   link,
+  refine: refineFn,
+  preset,
 }: {
   link?: { to: string; label: string };
+  /** Filter / re-rank the list (see lib/recommend). */
+  refine?: (items: MediaItem[]) => MediaItem[];
+  /** Items already at hand (no query). */
+  preset?: MediaItem[] | null;
   title: string;
-  query: Query;
+  query?: Query;
   type?: MediaType;
   limit?: number;
   skeleton: React.ReactNode;
   render: (m: MediaItem, i: number) => React.ReactNode;
 }) {
-  const [ref, inView] = useInView<HTMLElement>("500px");
-  const { data, isError } = useQuery({ ...query, enabled: inView });
-  const items = useMemo(
-    () =>
-      cleanList(data?.results ?? [], type)
-        .filter((m) => m.backdrop_path)
-        .slice(0, limit),
-    [data, type, limit],
-  );
+  const [ref, inView] = useInView<HTMLElement>('500px');
+  const { data: fetched, isError } = useQuery({ ...(query ?? { queryKey: ['none'], queryFn: () => null }), enabled: inView && !!query });
+  const data = preset !== undefined ? (preset ? { results: preset } : undefined) : fetched;
+  const items = useMemo(() => {
+    const list = cleanList(data?.results ?? [], type).filter((m) => m.backdrop_path);
+    return (refineFn ? refineFn(list) : list).slice(0, limit);
+  }, [data, type, limit, refineFn]);
   const { ref: scrollRef, scroll } = useRowScroll();
   if (isError) return null;
   return (
@@ -76,10 +54,7 @@ function LazyRow({
         action={
           <div className="flex items-center gap-3">
             {link && (
-              <Link
-                to={link.to}
-                className="text-sm text-muted transition-colors hover:text-white"
-              >
+              <Link to={link.to} className="text-sm text-muted transition-colors hover:text-white">
                 {link.label}
               </Link>
             )}
@@ -92,9 +67,7 @@ function LazyRow({
           {items.map(render)}
         </Scroller>
       ) : (
-        <div className={cx("flex gap-4 overflow-hidden", ROW_BLEED)}>
-          {skeleton}
-        </div>
+        <div className={cx('flex gap-4 overflow-hidden', ROW_BLEED)}>{skeleton}</div>
       )}
     </section>
   );
@@ -104,41 +77,20 @@ function LazyRow({
 function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
     <div className="relative flex min-w-0 flex-1 flex-col py-1 pr-2.5 pb-2 pl-4">
-      <div
-        className="line-clamp-1 text-body-sm leading-[1.3] font-medium text-white/90 transition-colors group-hover:text-white"
-        title={titleOf(item)}
-      >
+      <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium text-white/90 transition-colors group-hover:text-white" title={titleOf(item)}>
         {titleOf(item)}
       </div>
-      <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">
-        {item.overview}
-      </p>
-      <Meta
-        year={yearOf(item)}
-        rating={item.vote_average}
-        className="mt-auto pt-2"
-        extra={<TypeIcon type={type} />}
-      />
+      <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
+      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
       <CornerArc rise={false} />
     </div>
   );
 }
 
 // Poster on the left, text beside it (no box).
-const LIST_CARD = cx(
-  "group flex w-[304px] shrink-0 snap-start sm:w-[336px]",
-  CARD_LIFT,
-);
-const LIST_POSTER = cx(CARD_IMAGE, "w-[104px] shrink-0");
-const listSkeleton = (n: number, extra = "") =>
-  Array.from({ length: n }, (_, i) => (
-    <Bone
-      key={i}
-      className={
-        "h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] " + extra
-      }
-    />
-  ));
+const LIST_CARD = cx('group flex w-[304px] shrink-0 snap-start sm:w-[336px]', CARD_LIFT);
+const LIST_POSTER = cx(CARD_IMAGE, 'w-[104px] shrink-0');
+const listSkeleton = (n: number, extra = '') => Array.from({ length: n }, (_, i) => <Bone key={i} className={'h-[156px] w-[304px] shrink-0 rounded-2xl sm:w-[336px] ' + extra} />);
 
 // ---------- Top 10: landscape card with an outlined rank number on its bottom-right ----------
 
@@ -146,29 +98,24 @@ const listSkeleton = (n: number, extra = "") =>
 // draw stray lines inside the strokes, static Helvetica / Arial don't. The fill matches the page
 // background so the part over the image reads like a cut-out.
 const RANK_STYLE = {
-  WebkitTextStroke: "2px rgb(255 255 255 / 0.85)",
-  color: "color-mix(in oklab, var(--color-bg) 55%, transparent)",
+  WebkitTextStroke: '2px rgb(255 255 255 / 0.85)',
+  color: 'color-mix(in oklab, var(--color-bg) 55%, transparent)',
   fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  textShadow: "0 4px 24px rgb(0 0 0 / 0.5)",
+  textShadow: '0 4px 24px rgb(0 0 0 / 0.5)',
 } as const;
 
 function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
     // Extra right margin leaves room for the number to leak past the card's edge.
-    <div
-      className={cx(
-        "group relative mr-3 shrink-0 snap-start md:mr-4",
-        CARD_LIFT,
-      )}
-    >
+    <div className={cx('group relative mr-3 shrink-0 snap-start md:mr-4', CARD_LIFT)}>
       <EpisodeTile
         still
         to={`/${t}/${item.id}`}
         type={t}
         title={`${rank}. ${titleOf(item)}`}
         linkProps={usePrefetch(t, item.id)}
-        image={{ path: item.backdrop_path, kind: "backdrop" }}
+        image={{ path: item.backdrop_path, kind: 'backdrop' }}
         playable={false}
         width="w-[248px] sm:w-[288px] lg:w-[312px]"
         primary={titleOf(item)}
@@ -187,20 +134,17 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
 }
 
 export function Top10() {
+  const { items, isPending, isError } = useTrending();
+  if (isError) return null;
   return (
     <LazyRow
       title="Top 10 today"
-      query={q.trending("all", "day")}
+      preset={isPending ? null : items.map((r) => r.item)}
       limit={10}
       skeleton={Array.from({ length: 4 }, (_, i) => (
-        <TileSkeleton
-          key={i}
-          className="mr-3 w-[248px] shrink-0 sm:w-[288px] md:mr-4 lg:w-[312px]"
-        />
+        <TileSkeleton key={i} className="mr-3 w-[248px] shrink-0 sm:w-[288px] md:mr-4 lg:w-[312px]" />
       ))}
-      render={(m, i) => (
-        <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />
-      )}
+      render={(m, i) => <RankCard key={typeOf(m) + m.id} item={m} rank={i + 1} />}
     />
   );
 }
@@ -212,8 +156,8 @@ function TheaterTile({ item }: { item: MediaItem }) {
     <EpisodeTile
       to={`/movie/${item.id}`}
       type="movie"
-      linkProps={usePrefetch("movie", item.id)}
-      image={{ path: item.backdrop_path, kind: "backdrop" }}
+      linkProps={usePrefetch('movie', item.id)}
+      image={{ path: item.backdrop_path, kind: 'backdrop' }}
       playable={false}
       primary={titleOf(item)}
       secondary={<Meta year={yearOf(item)} rating={item.vote_average} />}
@@ -222,11 +166,14 @@ function TheaterTile({ item }: { item: MediaItem }) {
 }
 
 export function InTheaters() {
+  const taste = useTaste();
+  const pick = useCallback((l: MediaItem[]) => refine(l, taste, 'movie'), [taste]);
   return (
     <LazyRow
       title="In theaters"
       type="movie"
-      query={q.list("movie", "now_playing")}
+      refine={pick}
+      query={q.list('movie', 'now_playing')}
       skeleton={Array.from({ length: 4 }, (_, i) => (
         <TileSkeleton key={i} />
       ))}
@@ -235,90 +182,50 @@ export function InTheaters() {
   );
 }
 
-// ---------- Airing this week: the latest / upcoming episode of each show ----------
-
-const DAY = 86_400_000;
-const dayOf = (d: string) => new Date(d + "T00:00:00").getTime();
-
-/** The episode worth showing: one airing in the next week, else the latest aired one. */
-function pickEpisode(d: Details): EpisodeRef | null {
-  const next = d.next_episode_to_air;
-  if (next?.air_date && dayOf(next.air_date) - Date.now() < 7 * DAY)
-    return next;
-  return d.last_episode_to_air ?? next ?? null;
-}
-
-function airLabel(date?: string) {
-  if (!date) return "";
-  const days = Math.round(
-    (dayOf(date) - dayOf(new Date().toLocaleDateString("en-CA"))) / DAY,
-  );
-  if (days === 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  if (days === -1) return "Yesterday";
-  if (days > 1 && days < 7)
-    return (
-      "Airs " +
-      new Date(date + "T00:00:00").toLocaleDateString(undefined, {
-        weekday: "long",
-      })
-    );
-  return (days > 0 ? "Airs " : "") + formatDate(date);
-}
-
-function AiringCard({ show }: { show: MediaItem }) {
-  const { data } = useQuery(q.details("tv", show.id));
-  const ep = data ? pickEpisode(data) : null;
-  const upcoming = isFuture(ep?.air_date);
-  const label = airLabel(ep?.air_date);
-  return (
-    <EpisodeTile
-      to={
-        ep
-          ? `/tv/${show.id}?episodes=${ep.season_number}&ep=${ep.episode_number}`
-          : `/tv/${show.id}`
-      }
-      type="tv"
-      linkProps={usePrefetch("tv", show.id)}
-      image={{
-        path: ep?.still_path || show.backdrop_path,
-        kind: ep?.still_path ? "still" : "backdrop",
-      }}
-      playable={!upcoming}
-      topLeft={label && <Chip light={upcoming}>{label}</Chip>}
-      bottomRight={
-        ep?.runtime ? <Chip>{formatRuntime(ep.runtime)}</Chip> : null
-      }
-      primary={
-        ep ? (
-          <>
-            <span className="text-muted">
-              S{ep.season_number} · E{ep.episode_number}
-            </span>
-            {ep.name ? <> &nbsp;{ep.name}</> : null}
-          </>
-        ) : (
-          <Bone className="mt-1 h-3.5 w-2/3" />
-        )
-      }
-      secondary={titleOf(show)}
-    />
-  );
-}
+// ---------- Airing this week: the next episode of each notable show (lib/schedule) ----------
 
 export function AiringThisWeek() {
+  const [ref, inView] = useInView<HTMLElement>('500px');
+  const start = useMemo(() => startOfDay(new Date()), []);
+  const { items, isPending, isError } = useSchedule(start, 7, 8);
+  const { ref: scrollRef, scroll } = useRowScroll();
+  // One card per show (its next episode); your shows first, then the most notable.
+  const shows = useMemo(() => {
+    const seen = new Set<number>();
+    return items
+      .filter((a) => a.kind === 'episode')
+      .sort((a, b) => Number(b.yours) - Number(a.yours) || b.score - a.score)
+      .filter((a) => !seen.has(a.id) && !!seen.add(a.id))
+      .slice(0, 14);
+  }, [items]);
+  if (isError || (!isPending && !shows.length)) return null;
   return (
-    <LazyRow
-      title="Airing this week"
-      link={{ to: "/calendar", label: "Calendar" }}
-      type="tv"
-      limit={12}
-      query={q.list("tv", "on_the_air")}
-      skeleton={Array.from({ length: 4 }, (_, i) => (
-        <TileSkeleton key={i} />
-      ))}
-      render={(m) => <AiringCard key={m.id} show={m} />}
-    />
+    <section ref={ref}>
+      <SectionHeader
+        title="Airing this week"
+        action={
+          <div className="flex items-center gap-3">
+            <Link to="/calendar" className="text-sm text-muted transition-colors hover:text-white">
+              Calendar
+            </Link>
+            <RowArrows onScroll={scroll} />
+          </div>
+        }
+      />
+      {isPending || !inView ? (
+        <div className={cx('flex gap-4 overflow-hidden', ROW_BLEED)}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <AiringTileSkeleton key={i} className={TILE} />
+          ))}
+        </div>
+      ) : (
+        <Scroller label="Airing this week" scrollRef={scrollRef}>
+          {shows.map((a) => (
+            <AiringTile key={a.key} a={a} when="day" className={TILE} />
+          ))}
+        </Scroller>
+      )}
+    </section>
   );
 }
 
@@ -326,19 +233,9 @@ export function AiringThisWeek() {
 
 function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
-    <Link
-      to={`/${type}/${item.id}`}
-      {...usePrefetch(type, item.id)}
-      className={LIST_CARD}
-    >
+    <Link to={`/${type}/${item.id}`} {...usePrefetch(type, item.id)} className={LIST_CARD}>
       <div className={LIST_POSTER}>
-        <Img
-          path={item.poster_path}
-          kind="poster"
-          sizes="104px"
-          alt=""
-          className="aspect-[2/3]"
-        />
+        <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className="aspect-[2/3]" />
       </div>
       <CardText item={item} type={type} />
     </Link>
@@ -346,13 +243,9 @@ function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
 }
 
 export function TopRated() {
+  const taste = useTaste();
+  const pick = useCallback((l: MediaItem[]) => refine(l, taste, 'movie', { popularity: 0.1 }), [taste]);
   return (
-    <LazyRow
-      title="Critically acclaimed"
-      type="movie"
-      query={q.list("movie", "top_rated")}
-      skeleton={listSkeleton(4)}
-      render={(m) => <ListCard key={m.id} item={m} type="movie" />}
-    />
+    <LazyRow title="Critically acclaimed" type="movie" refine={pick} query={q.list('movie', 'top_rated')} skeleton={listSkeleton(4)} render={(m) => <ListCard key={m.id} item={m} type="movie" />} />
   );
 }

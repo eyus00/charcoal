@@ -162,45 +162,45 @@ export default function BookmarkMenu({ item, variant = 'full', size = 'lg', clas
       </button>
       {open &&
         createPortal(
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label="Watchlist status"
-          style={{ position: 'fixed', ...pos }}
-          className="toast-in z-[120] w-48 space-y-0.5 rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={onMenuKey}
-        >
-          {current?.status === 'watching' && (
-            <div className="flex items-center gap-3 px-3 pt-1.5 pb-2 text-sm text-white/85">
-              <StatusDot status="watching" />
-              <span className="flex-1">
-                Watching
-                <span className="block text-xs text-muted">Set while you watch</span>
-              </span>
-            </div>
-          )}
-          {STATUSES.map((s) => {
-            const on = current?.status === s;
-            return (
-              <button
-                key={s}
-                role="menuitemcheckbox"
-                aria-checked={on}
-                title={on ? 'Select again to remove from watchlist' : undefined}
-                onClick={() => choose(s)}
-                className={cx(
-                  'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition',
-                  on ? 'bg-white font-medium text-black' : 'text-white/85 hover:bg-white/[0.06] hover:text-white',
-                )}
-              >
-                <StatusDot status={s} />
-                <span className="flex-1">{STATUS_LABEL[s]}</span>
-                {on && <Check className="size-4" />}
-              </button>
-            );
-          })}
-        </div>,
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label="Watchlist status"
+            style={{ position: 'fixed', ...pos }}
+            className="toast-in z-[120] w-48 space-y-0.5 rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/5"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={onMenuKey}
+          >
+            {current?.status === 'watching' && (
+              <div className="flex items-center gap-3 px-3 pt-1.5 pb-2 text-sm text-white/85">
+                <StatusDot status="watching" />
+                <span className="flex-1">
+                  Watching
+                  <span className="block text-xs text-muted">Set while you watch</span>
+                </span>
+              </div>
+            )}
+            {STATUSES.map((s) => {
+              const on = current?.status === s;
+              return (
+                <button
+                  key={s}
+                  role="menuitemcheckbox"
+                  aria-checked={on}
+                  title={on ? 'Select again to remove from watchlist' : undefined}
+                  onClick={() => choose(s)}
+                  className={cx(
+                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition',
+                    on ? 'bg-white font-medium text-black' : 'text-white/85 hover:bg-white/[0.06] hover:text-white',
+                  )}
+                >
+                  <StatusDot status={s} />
+                  <span className="flex-1">{STATUS_LABEL[s]}</span>
+                  {on && <Check className="size-4" />}
+                </button>
+              );
+            })}
+          </div>,
           document.body,
         )}
     </div>
