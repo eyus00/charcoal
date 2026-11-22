@@ -72,6 +72,15 @@ export interface Details extends MediaItem {
   external_ids?: { imdb_id?: string | null };
 }
 
+export interface TmdbReview {
+  id: string;
+  author: string;
+  author_details: { username: string; avatar_path: string | null; rating: number | null };
+  content: string;
+  created_at: string;
+  url: string;
+}
+
 export interface Episode {
   id: number;
   episode_number: number;
@@ -113,6 +122,13 @@ export async function tmdb<T>(path: string, params: Params = {}, signal?: AbortS
 // ---------- query option factories (shared by pages so caches are reused) ----------
 
 export const q = {
+  /** TMDB's own user reviews (few per title; shown when Trakt has none). */
+  reviews: (type: MediaType, id: number) => ({
+    queryKey: ['reviews', type, id],
+    staleTime: 60 * 60_000,
+    queryFn: ({ signal }: { signal: AbortSignal }) => tmdb<Page<TmdbReview>>(`/${type}/${id}/reviews`, {}, signal),
+  }),
+
   trending: (type: MediaType | 'all', window: 'day' | 'week') => ({
     queryKey: ['trending', type, window],
     queryFn: ({ signal }: { signal: AbortSignal }) =>

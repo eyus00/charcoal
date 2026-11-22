@@ -13,6 +13,7 @@ const Discover = lazy(() => import('./pages/Discover'));
 const Details = lazy(() => import('./pages/Details'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Watch = lazy(() => import('./pages/Watch'));
+const TraktCallback = lazy(() => import('./pages/TraktCallback'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
       { path: 'movie/:id', element: <Details type="movie" /> },
       { path: 'tv/:id', element: <Details type="tv" /> },
       { path: 'profile', element: <Profile /> },
+      { path: 'trakt/callback', element: <TraktCallback /> },
       { path: 'library', element: <LibraryRedirect /> },
       { path: '*', element: <NotFound /> },
     ],

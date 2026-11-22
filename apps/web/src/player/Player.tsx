@@ -43,6 +43,7 @@ import { btn } from '../components/Button';
 import { useCast } from './cast';
 import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension';
 import { captureFrame, frameKey } from '../lib/frames';
+import { scrobble } from '../lib/trakt';
 import { activeCues, CaptionOverlay, CueText, parseCaptions, subColorName, SubtitleStyleControls, type Cue } from './captions';
 import { splitKeys, Tip } from '../components/Tip';
 
@@ -286,6 +287,34 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   inCredits.current = segment?.type === 'credits';
 
   // Stills for Continue watching: every 90 s while playing, and on pause / leaving (see lib/frames).
+  // Trakt (when connected): tell it what's playing. Stopping at 80 %+ marks it watched there.
+  const scrobbleMedia = useRef(media);
+  scrobbleMedia.current = media;
+  useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+    let started = false;
+    const pct = () => (v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0);
+    const onPlaying = () => {
+      started = true;
+      scrobble('start', scrobbleMedia.current, pct());
+    };
+    const onPause = () => started && !v.ended && scrobble('pause', scrobbleMedia.current, pct());
+    const onEnded = () => {
+      started = false;
+      scrobble('stop', scrobbleMedia.current, 100);
+    };
+    v.addEventListener('playing', onPlaying);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('ended', onEnded);
+    return () => {
+      v.removeEventListener('playing', onPlaying);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('ended', onEnded);
+      if (started) scrobble('stop', scrobbleMedia.current, pct());
+    };
+  }, [media.type, media.id, media.season, media.episode]);
+
   const stillKey = frameKey(media.type, media.id, media.season, media.episode);
   useEffect(() => {
     if (!settings.frameThumbs) return;
