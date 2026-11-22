@@ -1,444 +1,318 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import {
-  Bell,
-  BellRing,
-  CalendarDays,
-  CalendarPlus,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import Img from "../components/Img";
-import { Empty } from "../components/PageHeader";
-import { Pill } from "../components/Row";
-import { Tip } from "../components/Tip";
-import { btn } from "../components/Button";
-import { epLabel } from "../lib/episodes";
-import { imageUrl } from "../lib/images";
-import { peekProps } from "../lib/peek";
-import {
-  downloadIcs,
-  toggleReminder,
-  useReminders,
-  type Reminder,
-} from "../lib/reminders";
-import { useStore } from "../lib/store";
-import {
-  q,
-  tmdb,
-  type MediaItem,
-  type MediaType,
-  type Page,
-} from "../lib/tmdb";
-import { startTraktLogin, useTraktUser } from "../lib/trakt";
-import {
-  fetchMyCalendar,
-  fetchPremieres,
-  tImg,
-  type CalendarEpisode,
-} from "../lib/traktData";
-import { cx, useTitle } from "../lib/util";
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, Columns3, Rows3 } from 'lucide-react';
+import AiringTile, { AiringTileSkeleton, reminderOf } from '../components/AiringTile';
+import { Pill } from '../components/Row';
+import { Tip } from '../components/Tip';
+import { btn } from '../components/Button';
+import { downloadIcs } from '../lib/reminders';
+import { DAY, startOfDay, useSchedule, type Airing } from '../lib/schedule';
+import { startTraktLogin, useTraktUser } from '../lib/trakt';
+import { cx, useTitle } from '../lib/util';
 
-/** One thing on the calendar. */
-interface Entry extends Reminder {
-  type: MediaType;
-  id: number;
-  image?: string;
-  badge?: string;
-  minutes?: number;
+type Filter = 'all' | 'yours' | 'shows' | 'movies';
+type View = 'week' | 'day';
+const FILTERS: [Filter, string][] = [
+  ['all', 'All'],
+  ['yours', 'Your shows'],
+  ['shows', 'Shows'],
+  ['movies', 'Movies'],
+];
+
+const VIEW_KEY = 'charcoal:calendar-view';
+const readView = (): View => {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === 'week' || v === 'day') return v;
+  } catch {
+    /* storage blocked */
+  }
+  return 'week';
+};
+
+/** Wide enough for seven columns? (Below that, the day view is the only view.) */
+function useWide() {
+  const query = '(min-width: 1024px)';
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const on = () => setWide(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
 }
 
-type Tab = "mine" | "premieres" | "movies";
-const DAY = 86_400_000;
-const startOfDay = (d: Date) =>
-  new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
 /**
- * What's airing and releasing, a week at a time: your shows (from Trakt when connected, else the
- * shows in your watchlist and history), series and season premieres, and new movies. Each entry
- * can get a reminder or be added to your own calendar.
+ * New episodes, premieres and movie releases, a week at a time: a week grid on wide screens and a
+ * day view (with a day strip) everywhere. Only what's relevant to you (lib/schedule). Every card
+ * can get a reminder or go into your own calendar.
  */
 export default function Calendar() {
-  useTitle("Calendar");
+  useTitle('Calendar');
   const user = useTraktUser();
-  const [tab, setTab] = useState<Tab>("mine");
-  const [week, setWeek] = useState(0);
-  const start = useMemo(
-    () => new Date(startOfDay(new Date()).getTime() + week * 7 * DAY),
-    [week],
-  );
-  const end = new Date(start.getTime() + 7 * DAY);
-
-  const mine = useMyShows(start, tab === "mine", !!user);
-  const premieres = useQuery({
-    queryKey: ["trakt", "premieres", start.toDateString()],
-    enabled: tab === "premieres",
-    staleTime: 30 * 60_000,
-    queryFn: () =>
-      fetchPremieres(start, 7).then((rows) =>
-        rows.map(episodeEntry).filter((e): e is Entry => !!e),
-      ),
-  });
-  const movies = useQuery({
-    queryKey: ["calendar-movies", start.toDateString()],
-    enabled: tab === "movies",
-    staleTime: 30 * 60_000,
-    queryFn: async () => {
-      const iso = (d: Date) => d.toISOString().slice(0, 10);
-      const page = await tmdb<Page<MediaItem>>("/discover/movie", {
-        "primary_release_date.gte": iso(start),
-        "primary_release_date.lte": iso(new Date(end.getTime() - DAY)),
-        with_release_type: "2|3|4",
-        sort_by: "popularity.desc",
-      });
-      return page.results
-        .filter((m) => m.release_date && m.poster_path)
-        .map(movieEntry);
-    },
-  });
-  const active =
-    tab === "mine" ? mine : tab === "premieres" ? premieres : movies;
-  const entries = useMemo(
-    () =>
-      (active.data ?? [])
-        .filter((e) => e.at >= start.getTime() && e.at < end.getTime())
-        .sort((a, b) => a.at - b.at),
-    [active.data, start, end],
-  );
-  const days = useMemo(() => {
-    const byDay = new Map<number, Entry[]>();
-    for (const e of entries) {
-      const d = startOfDay(new Date(e.at)).getTime();
-      byDay.set(d, [...(byDay.get(d) ?? []), e]);
+  const wide = useWide();
+  const [viewPref, setViewPref] = useState<View>(readView);
+  const view: View = wide ? viewPref : 'day';
+  const setView = (v: View) => {
+    setViewPref(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* storage blocked */
     }
-    return [...byDay.entries()];
-  }, [entries]);
+  };
+  const [filter, setFilter] = useState<Filter>('all');
+  // Weeks start today (so "this week" is always the next seven days).
+  const [week, setWeek] = useState(0);
+  const today = startOfDay(new Date()).getTime();
+  const start = useMemo(() => new Date(today + week * 7 * DAY), [today, week]);
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => start.getTime() + i * DAY), [start]);
+  const [selected, setSelected] = useState(days[0]);
+  useEffect(() => setSelected(days[0]), [days]);
 
-  const range = `${start.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(end.getTime() - DAY).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  const { items, isPending, isError, refetch } = useSchedule(start, 7, 8);
+  const shown = useMemo(() => items.filter((a) => (filter === 'yours' ? a.yours : filter === 'shows' ? a.kind === 'episode' : filter === 'movies' ? a.kind === 'movie' : true)), [items, filter]);
+  const byDay = useMemo(() => {
+    const m = new Map<number, Airing[]>(days.map((d) => [d, []]));
+    for (const a of shown) m.get(startOfDay(new Date(a.at)).getTime())?.push(a);
+    return m;
+  }, [shown, days]);
+
+  const fmt = (t: number, o: Intl.DateTimeFormatOptions) => new Date(t).toLocaleDateString(undefined, o);
+  const range = `${fmt(days[0], { month: 'short', day: 'numeric' })} – ${fmt(days[6], { month: 'short', day: 'numeric' })}`;
 
   return (
     <div className="space-y-6 pb-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            Calendar
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            New episodes, premieres and movies, with reminders.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Calendar</h1>
+          <p className="mt-1 text-sm text-muted">What’s coming out that you’ll care about: your shows, big premieres and notable movies.</p>
         </div>
-        <div className="flex items-center justify-between gap-1 rounded-full bg-surface p-1 sm:justify-start">
-          <button
-            type="button"
-            aria-label="Previous week"
-            onClick={() => setWeek((w) => w - 1)}
-            className="grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setWeek(0)}
-            className="h-9 min-w-36 rounded-full px-3 text-sm tabular-nums transition-colors hover:bg-white/10"
-          >
-            {week === 0 ? "This week" : range}
-          </button>
-          <button
-            type="button"
-            aria-label="Next week"
-            onClick={() => setWeek((w) => w + 1)}
-            className="grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
-          >
-            <ChevronRight className="size-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-1 rounded-full bg-surface p-1 sm:flex-none">
+            <button
+              type="button"
+              aria-label="Previous week"
+              onClick={() => setWeek((w) => w - 1)}
+              className="grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="min-w-36 flex-1 text-center text-sm tabular-nums">{week === 0 ? 'Next 7 days' : range}</span>
+            <button
+              type="button"
+              aria-label="Next week"
+              onClick={() => setWeek((w) => w + 1)}
+              className="grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+          {week !== 0 && (
+            <button type="button" onClick={() => setWeek(0)} className={cx(btn(), 'h-11')}>
+              Today
+            </button>
+          )}
+          {wide && (
+            <div className="flex rounded-full bg-surface p-1" role="group" aria-label="View">
+              {(
+                [
+                  ['week', 'Week', Columns3],
+                  ['day', 'Day', Rows3],
+                ] as const
+              ).map(([v, label, Icon]) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={view === v}
+                  onClick={() => setView(v)}
+                  className={cx('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm transition', view === v ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
+                >
+                  <Icon className="size-4" /> {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {(
-          [
-            ["mine", "Your shows"],
-            ["premieres", "Premieres"],
-            ["movies", "Movies"],
-          ] as const
-        ).map(([k, label]) => (
-          <Pill key={k} on={tab === k} onClick={() => setTab(k)}>
-            {label}
-          </Pill>
-        ))}
-        {entries.length > 0 && (
-          <button
-            type="button"
-            onClick={() => downloadIcs(`Charcoal ${range}`, entries)}
-            className={cx(btn(), "group/tip relative ml-auto")}
-            aria-label="Add week to calendar"
-          >
-            <CalendarPlus className="size-4" />{" "}
-            <span className="hidden sm:inline">Add week to calendar</span>
-            <Tip
-              label="Download this week as an .ics file"
-              align="end"
-              side="bottom"
-            />
-          </button>
-        )}
+      <div className="flex items-center gap-2">
+        <div
+          className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] sm:pr-0 sm:[mask-image:none]"
+          role="group"
+          aria-label="Show"
+        >
+          {FILTERS.map(([k, label]) => (
+            <Pill key={k} on={filter === k} onClick={() => setFilter(k)}>
+              {label}
+            </Pill>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={!shown.length}
+          onClick={() =>
+            downloadIcs(
+              `Charcoal ${range}`,
+              shown.map((a) => ({ ...reminderOf(a), minutes: a.runtime })),
+            )
+          }
+          aria-label="Add this week to your calendar"
+          className={cx(btn(), 'group/tip relative shrink-0 disabled:opacity-40')}
+        >
+          <CalendarPlus className="size-4" /> <span className="hidden sm:inline">Add week</span>
+          <Tip label="Download this week as an .ics file for your calendar app" side="bottom" align="end" />
+        </button>
       </div>
 
-      {tab === "mine" && !user && (
+      {filter === 'yours' && !user && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface px-4 py-3">
-          <p className="min-w-0 flex-1 text-sm text-muted">
-            Showing shows from your watchlist and history. Connect Trakt to
-            follow everything you watch.
-          </p>
-          <button
-            type="button"
-            onClick={() => startTraktLogin()}
-            className={cx(btn(), "h-9 px-4 text-sm")}
-          >
+          <p className="min-w-0 flex-1 text-sm text-muted">Showing shows from your watchlist and history. Connect Trakt to include everything you follow there.</p>
+          <button type="button" onClick={() => startTraktLogin('/calendar')} className={cx(btn(), 'h-9 px-4 text-sm')}>
             Connect Trakt
           </button>
         </div>
       )}
 
-      {active.isPending ? (
-        <div className="space-y-6">
-          {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="skeleton h-5 w-40 rounded-md" />
-              <div className="skeleton h-24 rounded-2xl" />
-            </div>
-          ))}
+      {isError ? (
+        <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-3xl bg-surface/60 text-center">
+          <p className="text-muted">Couldn’t load the calendar.</p>
+          <button type="button" onClick={() => refetch()} className={btn()}>
+            Try again
+          </button>
         </div>
-      ) : !days.length ? (
-        <Empty
-          icon={CalendarDays}
-          title={
-            tab === "mine"
-              ? "Nothing from your shows this week"
-              : "Nothing listed for this week"
-          }
-          body={
-            tab === "mine"
-              ? "Shows you watch or add to your watchlist show up here when new episodes air."
-              : "Try the next week."
-          }
-        />
+      ) : view === 'week' ? (
+        <WeekGrid days={days} byDay={byDay} loading={isPending} onDay={(d) => (setSelected(d), setView('day'))} />
       ) : (
-        <div className="space-y-7">
-          {days.map(([d, list]) => (
-            <section key={d}>
-              <h2 className="mb-2.5 flex items-baseline gap-2 text-sm font-medium">
-                {dayLabel(d)}
-                <span className="text-xs font-normal text-faint">
-                  {list.length}
-                </span>
-              </h2>
-              <div className="grid gap-2 lg:grid-cols-2">
-                {list.map((e) => (
-                  <EntryRow key={e.key} e={e} />
-                ))}
-              </div>
-            </section>
+        <>
+          <DayStrip days={days} byDay={byDay} loading={isPending} selected={selected} onSelect={setSelected} />
+          <DayList day={selected} items={byDay.get(selected) ?? []} loading={isPending} filter={filter} />
+        </>
+      )}
+    </div>
+  );
+}
+
+const dayNum = (t: number) => new Date(t).getDate();
+const weekday = (t: number, long = false) => new Date(t).toLocaleDateString(undefined, { weekday: long ? 'long' : 'short' });
+
+/** Seven columns, one per day: a calendar's week view. */
+function WeekGrid({ days, byDay, loading, onDay }: { days: number[]; byDay: Map<number, Airing[]>; loading: boolean; onDay: (d: number) => void }) {
+  const today = startOfDay(new Date()).getTime();
+  return (
+    <div className="grid grid-cols-7 gap-3 xl:gap-4">
+      {days.map((d) => {
+        const list = byDay.get(d) ?? [];
+        const isToday = d === today;
+        return (
+          <section key={d} aria-label={new Date(d).toDateString()} className="min-w-0">
+            <button type="button" onClick={() => onDay(d)} className="group/tip relative mb-3 flex w-full items-baseline gap-2 rounded-2xl px-1 py-1 text-left transition-colors hover:bg-white/[0.04]">
+              <span className={cx('grid size-9 shrink-0 place-items-center rounded-full text-base font-semibold tabular-nums', isToday ? 'bg-white text-black' : 'text-white')}>{dayNum(d)}</span>
+              <span className="min-w-0">
+                <span className={cx('block text-sm font-medium', isToday ? 'text-white' : 'text-white/85')}>{isToday ? 'Today' : weekday(d)}</span>
+                <span className="block text-xs text-faint">{loading ? ' ' : list.length ? `${list.length} release${list.length === 1 ? '' : 's'}` : 'Nothing'}</span>
+              </span>
+              <Tip label="Open this day" side="bottom" align="start" />
+            </button>
+            <div className="min-h-[28rem] space-y-4 rounded-3xl bg-surface/40 p-2.5 ring-1 ring-white/[0.04]">
+              {loading ? (
+                Array.from({ length: 3 }, (_, i) => <AiringTileSkeleton key={i} />)
+              ) : list.length ? (
+                list.map((a) => <AiringTile key={a.key} a={a} compact />)
+              ) : (
+                <p className="px-2 pt-3 text-xs text-faint">Nothing notable.</p>
+              )}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The week as seven day buttons with how much is on each; picks the day for the day view. */
+function DayStrip({ days, byDay, loading, selected, onSelect }: { days: number[]; byDay: Map<number, Airing[]>; loading: boolean; selected: number; onSelect: (d: number) => void }) {
+  const today = startOfDay(new Date()).getTime();
+  return (
+    <div className="grid grid-cols-7 gap-1.5 rounded-3xl bg-surface p-1.5 sm:gap-2" role="tablist" aria-label="Days">
+      {days.map((d) => {
+        const on = d === selected;
+        const n = byDay.get(d)?.length ?? 0;
+        return (
+          <button
+            key={d}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onSelect(d)}
+            className={cx('flex flex-col items-center gap-0.5 rounded-2xl py-2.5 transition-colors', on ? 'bg-white text-black' : 'text-white/80 hover:bg-white/[0.06] hover:text-white')}
+          >
+            <span className={cx('text-micro font-medium tracking-wide uppercase sm:text-xs', on ? 'text-black/60' : d === today ? 'text-white' : 'text-faint')}>
+              {d === today ? 'Today' : weekday(d)}
+            </span>
+            <span className="text-lg font-semibold tabular-nums sm:text-xl">{dayNum(d)}</span>
+            {/* How busy the day is: up to four dots. */}
+            <span className="flex h-1.5 gap-0.5" aria-label={loading ? undefined : `${n} releases`}>
+              {!loading && Array.from({ length: Math.min(4, n) }, (_, i) => <span key={i} className={cx('size-1 rounded-full', on ? 'bg-black/50' : 'bg-white/50')} />)}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** One day: big cards, grouped as your shows first, then the rest. */
+function DayList({ day, items, loading, filter }: { day: number; items: Airing[]; loading: boolean; filter: Filter }) {
+  const grid = 'grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
+  const yours = items.filter((a) => a.yours);
+  const rest = items.filter((a) => !a.yours);
+  const title = new Date(day).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  return (
+    <section aria-label={title} className="min-h-[24rem]">
+      <h2 className="mb-4 text-lg font-semibold tracking-tight">{title}</h2>
+      {loading ? (
+        <div className={grid}>
+          {Array.from({ length: 6 }, (_, i) => (
+            <AiringTileSkeleton key={i} />
           ))}
         </div>
+      ) : !items.length ? (
+        <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-3xl bg-surface/60 px-6 text-center">
+          <CalendarDays className="mb-1 size-7 text-faint" />
+          <p className="font-medium">Nothing notable on this day</p>
+          <p className="max-w-sm text-sm text-muted">{filter === 'yours' ? 'None of your shows air today. Add shows to your watchlist to follow them here.' : 'Try another day this week.'}</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {yours.length > 0 && rest.length > 0 && filter !== 'yours' ? (
+            <>
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-muted">Your shows</h3>
+                <div className={grid}>
+                  {yours.map((a) => (
+                    <AiringTile key={a.key} a={a} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-muted">Also out</h3>
+                <div className={grid}>
+                  {rest.map((a) => (
+                    <AiringTile key={a.key} a={a} />
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className={grid}>
+              {items.map((a) => (
+                <AiringTile key={a.key} a={a} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
-    </div>
+    </section>
   );
-}
-
-function dayLabel(d: number) {
-  const today = startOfDay(new Date()).getTime();
-  if (d === today) return "Today";
-  if (d === today + DAY) return "Tomorrow";
-  return new Date(d).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function EntryRow({ e }: { e: Entry }) {
-  const reminders = useReminders();
-  const on = reminders.some((r) => r.key === e.key);
-  const past = e.at < Date.now();
-  const time = e.allDay
-    ? "All day"
-    : new Date(e.at).toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-  return (
-    <div className="group flex min-w-0 items-center gap-2 rounded-2xl bg-surface p-2 pr-2 sm:gap-3 sm:pr-3 transition-colors hover:bg-raised/70">
-      <Link
-        to={`/${e.type}/${e.id}`}
-        {...peekProps(e.type, e.id)}
-        className="flex min-w-0 flex-1 items-center gap-3"
-      >
-        <span
-          className={cx(
-            "relative shrink-0 overflow-hidden rounded-xl bg-white/5",
-            e.type === "movie" ? "w-12 sm:w-14" : "w-24 sm:w-32",
-          )}
-        >
-          <Img
-            path={null}
-            src={e.image}
-            kind="still"
-            sizes="128px"
-            alt=""
-            className={e.type === "movie" ? "aspect-[2/3]" : "aspect-video"}
-          />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium">{e.title}</span>
-            {e.badge && (
-              <span className="shrink-0 rounded-full bg-white px-2 py-px text-micro font-medium text-black">
-                {e.badge}
-              </span>
-            )}
-          </span>
-          {e.body && (
-            <span className="block truncate text-xs text-muted">{e.body}</span>
-          )}
-          <span className="block text-xs text-faint tabular-nums">{time}</span>
-        </span>
-      </Link>
-      {!past && (
-        <button
-          type="button"
-          onClick={() => toggleReminder(e)}
-          aria-pressed={on}
-          aria-label={on ? "Remove reminder" : "Remind me"}
-          className={cx(
-            "group/tip relative grid size-9 shrink-0 place-items-center rounded-full transition-colors",
-            on
-              ? "bg-white text-black"
-              : "text-muted hover:bg-white/10 hover:text-white",
-          )}
-        >
-          {on ? <BellRing className="size-4" /> : <Bell className="size-4" />}
-          <Tip label={on ? "Reminder on" : "Remind me"} align="end" />
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() =>
-          downloadIcs(e.body ? `${e.title} ${e.body}` : e.title, [e])
-        }
-        aria-label="Add to calendar"
-        className="group/tip relative grid size-9 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-white"
-      >
-        <CalendarPlus className="size-4" />
-        <Tip label="Add to calendar (.ics)" align="end" />
-      </button>
-    </div>
-  );
-}
-
-function episodeEntry(c: CalendarEpisode): Entry | null {
-  const id = c.show.ids.tmdb;
-  if (!id || !c.first_aired) return null;
-  const ep = c.episode;
-  return {
-    key: `tv-${id}-${ep.season}-${ep.number}`,
-    type: "tv",
-    id,
-    title: c.show.title,
-    body: `${epLabel(ep.season, ep.number)}${ep.title ? ` · ${ep.title}` : ""}`,
-    at: Date.parse(c.first_aired),
-    url: `/watch/tv/${id}?season=${ep.season}&episode=${ep.number}`,
-    image:
-      tImg(ep.images?.screenshot) ??
-      tImg(c.show.images?.fanart) ??
-      tImg(c.show.images?.thumb),
-    badge:
-      ep.number === 1
-        ? ep.season === 1
-          ? "Series premiere"
-          : "Season premiere"
-        : undefined,
-  };
-}
-
-function movieEntry(m: MediaItem): Entry {
-  return {
-    key: `movie-${m.id}`,
-    type: "movie",
-    id: m.id,
-    title: m.title ?? "",
-    body: "Release",
-    at: new Date(`${m.release_date}T00:00:00`).getTime(),
-    allDay: true,
-    url: `/movie/${m.id}`,
-    image: imageUrl(m.poster_path, "poster", 185) ?? undefined,
-    minutes: 120,
-  };
-}
-
-/**
- * Your shows' new episodes: Trakt's "my shows" calendar when connected; otherwise the next episode
- * of each show in your watchlist and history (from TMDB).
- */
-function useMyShows(start: Date, enabled: boolean, connected: boolean) {
-  const trakt = useQuery({
-    queryKey: ["trakt", "my-calendar", start.toDateString()],
-    enabled: enabled && connected,
-    staleTime: 10 * 60_000,
-    queryFn: () =>
-      fetchMyCalendar(start, 7).then((rows) =>
-        rows.map(episodeEntry).filter((e): e is Entry => !!e),
-      ),
-  });
-  const watchlist = useStore((s) => s.watchlist);
-  const history = useStore((s) => s.history);
-  const ids = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...watchlist
-            .filter((w) => w.mediaType === "tv" && w.status !== "completed")
-            .map((w) => w.id),
-          ...history.filter((h) => h.mediaType === "tv").map((h) => h.id),
-        ]),
-      ].slice(0, 30),
-    [watchlist, history],
-  );
-  const shows = useQueries({
-    queries: ids.map((id) => ({
-      ...q.details("tv", id),
-      enabled: enabled && !connected,
-    })),
-  });
-  if (connected) return trakt;
-  const data = shows.flatMap((r): Entry[] => {
-    const d = r.data;
-    const n = d?.next_episode_to_air;
-    if (!d || !n?.air_date) return [];
-    return [
-      {
-        key: `tv-${d.id}-${n.season_number}-${n.episode_number}`,
-        type: "tv",
-        id: d.id,
-        title: d.name ?? "",
-        body: `${epLabel(n.season_number, n.episode_number)}${n.name ? ` · ${n.name}` : ""}`,
-        at: new Date(`${n.air_date}T00:00:00`).getTime(),
-        allDay: true,
-        url: `/watch/tv/${d.id}?season=${n.season_number}&episode=${n.episode_number}`,
-        image:
-          imageUrl(n.still_path ?? d.backdrop_path, "still", 300) ?? undefined,
-        badge:
-          n.episode_number === 1
-            ? n.season_number === 1
-              ? "Series premiere"
-              : "Season premiere"
-            : undefined,
-      },
-    ];
-  });
-  return {
-    data,
-    isPending: shows.some((r) => r.isPending) && enabled && ids.length > 0,
-  };
 }

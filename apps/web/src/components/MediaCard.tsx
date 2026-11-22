@@ -1,19 +1,13 @@
-import { useRef, type ReactNode } from "react";
-import { Link } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { Check, Film, Star, Tv } from "lucide-react";
-import Img from "./Img";
-import {
-  q,
-  titleOf,
-  typeOf,
-  yearOf,
-  type MediaItem,
-  type MediaType,
-} from "../lib/tmdb";
-import { cx } from "../lib/util";
-import { useIsWatched } from "../lib/watched";
-import { peekProps } from "../lib/peek";
+import { useRef, type ReactNode } from 'react';
+import { Link } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { Check, Film, Star, Tv } from 'lucide-react';
+import Img from './Img';
+import { q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
+import { cx } from '../lib/util';
+import { useIsWatched } from '../lib/watched';
+import { peekProps } from '../lib/peek';
+import { Tip } from './Tip';
 
 /** Prefetch details after a short hover so opening a title feels instant. */
 export function usePrefetch(type: MediaType, id: number) {
@@ -24,10 +18,7 @@ export function usePrefetch(type: MediaType, id: number) {
   return {
     ...pk,
     onPointerEnter: (e: React.PointerEvent) => {
-      timer.current = window.setTimeout(
-        () => qc.prefetchQuery(q.details(type, id)),
-        180,
-      );
+      timer.current = window.setTimeout(() => qc.prefetchQuery(q.details(type, id)), 180);
       pk.onPointerEnter(e);
     },
     onPointerLeave: (e: React.PointerEvent) => {
@@ -39,10 +30,10 @@ export function usePrefetch(type: MediaType, id: number) {
 }
 
 /** The text under a card's image: close under it, aligned with its left edge; room for the arc. */
-export const CARD_INFO = "relative pt-2 pr-2.5 pb-2";
+export const CARD_INFO = 'relative pt-2 pr-2.5 pb-2';
 
 /** Cards don't move on hover (kept as a hook so every card can share one hover style). */
-export const CARD_LIFT = "";
+export const CARD_LIFT = '';
 
 /**
  * A thin arc around the bottom-right corner of the card's text, a quiet separator. The right edge
@@ -50,73 +41,42 @@ export const CARD_LIFT = "";
  * `rise={false}` keeps it to the text (cards whose text sits beside the image).
  */
 const ARC_MASK = {
-  maskImage: "linear-gradient(to left, black 20%, transparent 100%)",
-  WebkitMaskImage: "linear-gradient(to left, black 20%, transparent 100%)",
+  maskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
+  WebkitMaskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
 } as const;
 export const CornerArc = ({ rise = true }: { rise?: boolean }) => (
   <span
     aria-hidden
     style={ARC_MASK}
     className={cx(
-      "pointer-events-none absolute right-0 bottom-0 w-28 rounded-br-2xl border-r border-b border-white/[0.12] transition-colors duration-200 group-hover:border-white/20",
-      rise ? "-top-6" : "top-0",
+      'pointer-events-none absolute right-0 bottom-0 w-28 rounded-br-2xl border-r border-b border-white/[0.12] transition-colors duration-200 group-hover:border-white/20',
+      rise ? '-top-6' : 'top-0',
     )}
   />
 );
 
 /** A card image: rounded; a touch brighter on hover (like our buttons). */
 // z-[1]: the corner arc below runs up underneath the image.
-export const CARD_IMAGE =
-  "relative z-[1] overflow-hidden rounded-2xl transition duration-200 group-hover:brightness-110";
+export const CARD_IMAGE = 'relative z-[1] overflow-hidden rounded-2xl transition duration-200 group-hover:brightness-110';
 
 /** A card title: brightens with the card on hover. */
-export const CARD_TITLE =
-  "truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white";
+export const CARD_TITLE = 'truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white';
 
 /** Small movie / TV icon, pushed to the right edge of a meta row. */
-export function TypeIcon({
-  type,
-  className,
-}: {
-  type: MediaType;
-  className?: string;
-}) {
-  const Icon = type === "tv" ? Tv : Film;
-  return (
-    <Icon
-      strokeWidth={1.5}
-      className={cx("ml-auto size-3.5 shrink-0 text-faint", className)}
-      aria-label={type === "tv" ? "TV show" : "Movie"}
-    />
-  );
+export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
+  const Icon = type === 'tv' ? Tv : Film;
+  return <Icon strokeWidth={1.5} className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
 }
 
 /** Age rating (PG-13, TV-MA…) as a small outlined tag. */
 export const CertBadge = ({ children }: { children: ReactNode }) => (
-  <span className="inline-flex h-5 items-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide ring-1 ring-white/35 ring-inset">
-    {children}
-  </span>
+  <span className="inline-flex h-5 items-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide ring-1 ring-white/35 ring-inset">{children}</span>
 );
 
 /** "2025 · ★ 7.2" */
-export function Meta({
-  year,
-  rating,
-  extra,
-  className,
-}: {
-  year?: string;
-  rating?: number;
-  extra?: ReactNode;
-  className?: string;
-}) {
+export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
   return (
-    <div
-      className={cx(
-        "flex items-center gap-1.5 text-caption text-muted",
-        className,
-      )}
-    >
+    <div className={cx('flex items-center gap-1.5 text-caption text-muted', className)}>
       {year && <span>{year}</span>}
       {year && rating ? <span className="text-faint">·</span> : null}
       {rating ? (
@@ -145,73 +105,35 @@ interface Props {
 function WatchedMark({ type, id }: { type: MediaType; id: number }) {
   if (!useIsWatched(type, id)) return null;
   return (
-    <span
-      title="Watched"
-      className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm"
-    >
+    <span title="Watched" className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm">
       <Check className="size-3.5" strokeWidth={2.5} />
       <span className="sr-only">Watched</span>
     </span>
   );
 }
 
-export type Stat = {
-  kind: "watching" | "anticipated" | "watched" | "revenue";
-  value: number;
-};
-
-/** What makes a title notable right now, as a tag on its poster ("3.4K watching", "$19M"). */
-export function StatTag({ stat }: { stat: Stat }) {
-  const n = new Intl.NumberFormat(undefined, {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(stat.value);
-  const label =
-    stat.kind === "watching"
-      ? `${n} watching`
-      : stat.kind === "anticipated"
-        ? `${n} waiting`
-        : stat.kind === "watched"
-          ? `${n} watched`
-          : `$${n}`;
+/** The 3 titles the most people are watching right now: "🔥 #1", with the count on hover. */
+export function FireTag({ rank, watchers }: { rank: number; watchers: number }) {
+  const n = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(watchers);
   return (
-    <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
-      {stat.kind === "watching" && (
-        <span className="size-1.5 animate-pulse rounded-full bg-success" />
-      )}
-      {label}
+    <span className="group/tip relative flex items-center gap-1 rounded-full bg-black/65 py-1 pr-2.5 pl-2 text-xs font-semibold tabular-nums backdrop-blur-sm">
+      <span aria-hidden>🔥</span>#{rank}
+      <span className="sr-only">most watched, {n} watching now</span>
+      <Tip label={`${n} watching now on Trakt`} side="bottom" align="start" />
     </span>
   );
 }
 
 /** Poster card: rounded poster, title, year · rating. */
-export default function MediaCard({
-  item,
-  type,
-  sizes,
-  className,
-  badge,
-  overlay,
-}: Props) {
+export default function MediaCard({ item, type, sizes, className, badge, overlay }: Props) {
   const t = typeOf(item, type);
   const title = titleOf(item);
   const href = `/${t}/${item.id}`;
   return (
-    <div className={cx("group relative", className)}>
-      <Link
-        to={href}
-        className={cx("block", CARD_LIFT)}
-        {...usePrefetch(t, item.id)}
-      >
+    <div className={cx('group relative', className)}>
+      <Link to={href} className={cx('block', CARD_LIFT)} {...usePrefetch(t, item.id)}>
         <div className={CARD_IMAGE}>
-          <Img
-            path={item.poster_path}
-            src={item.poster_url}
-            kind="poster"
-            sizes={sizes}
-            alt=""
-            className="aspect-[2/3]"
-          />
+          <Img path={item.poster_path} src={item.poster_url} kind="poster" sizes={sizes} alt="" className="aspect-[2/3]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
           <WatchedMark type={t} id={item.id} />
         </div>
@@ -219,12 +141,7 @@ export default function MediaCard({
           <div className={CARD_TITLE} title={title}>
             {title}
           </div>
-          <Meta
-            year={yearOf(item)}
-            rating={item.vote_average}
-            className="mt-0.5"
-            extra={<TypeIcon type={t} />}
-          />
+          <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" extra={<TypeIcon type={t} />} />
           <CornerArc />
         </div>
       </Link>
