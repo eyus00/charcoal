@@ -58,6 +58,8 @@ export interface Settings {
   creditsNext: boolean;
   /** Show the title and overview over the video after it has been paused for a moment. */
   pauseOverlay: boolean;
+  /** Use frames from what you watched as Continue watching images (kept in this browser). */
+  frameThumbs: boolean;
   /** Press and hold the video to play at 2× until released. */
   holdToSpeed: boolean;
   /** Subtitle look: size multiplier, text colour, background opacity (0–1), bold. */
@@ -105,6 +107,7 @@ const defaultSettings: Settings = {
   autoSkip: false,
   creditsNext: true,
   pauseOverlay: true,
+  frameThumbs: true,
   holdToSpeed: true,
   subSize: 1,
   subColor: '#ffffff',

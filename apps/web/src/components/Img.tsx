@@ -12,6 +12,8 @@ interface Props {
   className?: string;
   imgClassName?: string;
   priority?: boolean;
+  /** A ready image URL (e.g. a saved frame) used instead of the TMDB path. */
+  src?: string;
 }
 
 /**
@@ -19,17 +21,17 @@ interface Props {
  * size), so nothing shifts while loading. The box shimmers until the image has fully
  * loaded, then the image fades in whole (never a half-drawn picture).
  */
-export default function Img({ path, kind, sizes, alt, className, imgClassName, priority }: Props) {
+export default function Img({ path, kind, sizes, alt, className, imgClassName, priority, src: direct }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-  const src = imageUrl(path, kind, kind === 'backdrop' ? 780 : kind === 'poster' ? 342 : undefined);
+  const src = direct ?? imageUrl(path, kind, kind === 'backdrop' ? 780 : kind === 'poster' ? 342 : undefined);
 
   return (
     <div className={cx('relative overflow-hidden', src && !failed && !loaded ? 'skeleton' : 'bg-surface', className)}>
       {src && !failed ? (
         <img
           src={src}
-          srcSet={imageSrcSet(path, kind)}
+          srcSet={direct ? undefined : imageSrcSet(path, kind)}
           sizes={sizes}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}

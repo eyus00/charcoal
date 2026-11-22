@@ -41,7 +41,7 @@ function Shell() {
       <ScrollRestoration />
       <Rail />
       <div className="relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
-        <TopBar hideLogo={sidebarOpen} />
+        <TopBar />
         <main>
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
@@ -212,7 +212,7 @@ const PLACEHOLDER: Record<Filters['type'], string> = { all: 'Search movies & TV 
  *   and changes made on the page (type switch, filter pills) flow back into the draft;
  * - elsewhere, Enter / "Search" in the quick filters opens the results page.
  */
-function TopBar({ hideLogo }: { hideLogo: boolean }) {
+function TopBar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
@@ -310,7 +310,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
       to="/"
       className={cx(
         'absolute top-0 left-4 z-30 flex h-[76px] items-center gap-2 text-xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
-        hideLogo && 'lg:hidden',
+        // The sidebar carries the logo on large screens.
+        'lg:hidden',
         open && 'max-md:hidden',
       )}
       aria-label="Charcoal home"
@@ -368,12 +369,17 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
             className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
           {!text && <Kbd className="mr-1.5 group-focus-within/search:hidden">{MOD} K</Kbd>}
-          {/* Quick filters live in the search bar on every page. */}
+          {(text || !onDiscover) && (
+            <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className={cx('grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white', !text && 'lg:hidden')}>
+              <X className="size-4" />
+            </button>
+          )}
+          {/* Filters live in the search bar on every page; the clear button sits before them so it doesn't shift. */}
           {(
             <button
               type="button"
               onClick={() => setMenu((m) => !m)}
-              aria-label={count ? `Quick filters (${count} active)` : 'Quick filters'}
+              aria-label={count ? `Filters (${count} active)` : 'Filters'}
               aria-expanded={menu}
               className={cx(
                 'group/tip relative flex h-9 shrink-0 items-center gap-1.5 rounded-full transition',
@@ -382,13 +388,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               )}
             >
               <SlidersHorizontal className="size-4" />
-              <HoverTip label="Quick filters" side="bottom" align="end" hidden={menu} />
+              <HoverTip label="Filters" side="bottom" align="end" hidden={menu} />
               {count > 0 && <span className="text-xs font-medium tabular-nums">{count}</span>}
-            </button>
-          )}
-          {(text || !onDiscover) && (
-            <button type="button" aria-label={onDiscover ? 'Clear search' : 'Close search'} onClick={close} className={cx('grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white', !text && 'lg:hidden')}>
-              <X className="size-4" />
             </button>
           )}
         </div>
