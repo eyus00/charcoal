@@ -166,8 +166,9 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor }: { d: Details; type: 
             <Play className="size-3.5 fill-current" strokeWidth={0} /> Watch
           </Link>
           <BookmarkMenu
+            variant="round"
             size="md"
-            className="flex-1 [&>button]:h-9 [&>button]:w-full [&>button]:text-sm"
+            className="shrink-0 [&>button]:size-9"
             item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
           />
         </div>
