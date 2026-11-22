@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Keyboard, ShieldAlert, SkipBack, SkipForward, X } from 'lucide-react';
+import { ChevronDown, Keyboard, ShieldAlert, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
@@ -18,6 +18,7 @@ import Kbd from '../components/Kbd';
 import { btn } from '../components/Button';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player from '../player/Player';
+import MiniEpisodes from '../player/MiniEpisodes';
 import { Tip } from '../components/Tip';
 
 export default function Watch() {
@@ -230,8 +231,6 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       subtitle={subtitle}
       detailsUrl={detailsUrl}
       onClose={leave}
-      prev={prev ? () => go(prev.season, prev.episode) : undefined}
-      next={next ? () => go(next.season, next.episode) : undefined}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
       serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={jelly.isError ? 'failed' : jelly.isFetching ? 'loading' : jelly.data ? 'ok' : 'idle'} />}
     />
@@ -274,6 +273,18 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           resumeAt={resumeAt}
           header={header}
           next={next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null}
+          episodes={
+            type === 'tv' && d
+              ? (close) => (
+                  <MiniEpisodes
+                    show={d}
+                    current={{ season: season!, episode: episode! }}
+                    onPick={(s, e) => (close(), go(s, e))}
+                    onAll={() => (close(), setDrawer(true))}
+                  />
+                )
+              : undefined
+          }
           onProgress={record}
           searching={fallbackPending}
           refreshing={jelly.isFetching}
@@ -321,8 +332,6 @@ function Header({
   title,
   subtitle,
   detailsUrl,
-  prev,
-  next,
   onEpisodes,
   serverMenu,
   onClose,
@@ -331,21 +340,19 @@ function Header({
   subtitle?: string;
   detailsUrl: string;
   onClose: () => void;
-  prev?: () => void;
-  next?: () => void;
   onEpisodes?: () => void;
   serverMenu: React.ReactNode;
 }) {
   return (
-    // Close on the left, the title centred, shortcuts then the server on the far right. No boxes: plain round
+    // Close and the title on the left, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-4 md:px-5">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
       <div className="justify-self-start">
         <HeaderButton label="Close player" keys="Esc" onClick={onClose} tipSide="left" solid>
           <X className="size-5" />
         </HeaderButton>
       </div>
-      <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} prev={prev} next={next} onEpisodes={onEpisodes} />
+      <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />
       <div className="flex shrink-0 items-center gap-1 justify-self-end md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
@@ -369,7 +376,7 @@ function Header({
  * name (long names truncate; the full name is in the tooltip and the episode list). For TV the
  * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
-function TitleBox({ title, subtitle, detailsUrl, prev, next, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; prev?: () => void; next?: () => void; onEpisodes?: () => void }) {
+function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; onEpisodes?: () => void }) {
   const titleLink = (
     <Link
       to={detailsUrl}
@@ -379,33 +386,27 @@ function TitleBox({ title, subtitle, detailsUrl, prev, next, onEpisodes }: { tit
       {title}
     </Link>
   );
-  if (!onEpisodes) return <div className="min-w-0 justify-self-center px-3 text-center">{titleLink}</div>;
+  if (!onEpisodes) return <div className="min-w-0 justify-self-start px-1">{titleLink}</div>;
   return (
-    <div className="flex w-full min-w-0 items-center justify-self-center md:w-[26rem]">
-      <HeaderButton label="Previous episode" keys="Shift P" onClick={prev} disabled={!prev} tipSide="left" quiet>
-        <SkipBack className="size-4" />
-      </HeaderButton>
-      <div className="group/hub relative min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={onEpisodes}
-          aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`}
-          title={subtitle}
-          className="absolute inset-0 rounded-xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
-        />
-        <div className="pointer-events-none relative px-3 py-1.5 text-center leading-snug">
+    <div className="group/hub relative min-w-0 justify-self-start">
+      <button
+        type="button"
+        onClick={onEpisodes}
+        aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`}
+        title={subtitle}
+        className="absolute inset-0 rounded-xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
+      />
+      <div className="pointer-events-none relative flex items-center gap-2 px-2.5 py-1.5 leading-snug">
+        <div className="min-w-0">
           {titleLink}
           {subtitle && <div className="truncate text-caption text-white/55">{subtitle}</div>}
         </div>
-        {/* Key cue appears on hover, like the other controls' labels. */}
-        <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
-          Episodes
-          <Kbd>E</Kbd>
-        </span>
+        <ChevronDown className="size-4 shrink-0 text-white/40" />
       </div>
-      <HeaderButton label="Next episode" keys="Shift N" onClick={next} disabled={!next} quiet>
-        <SkipForward className="size-4" />
-      </HeaderButton>
+      <span className="pointer-events-none absolute top-full left-0 z-50 mt-2 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100">
+        Episodes
+        <Kbd>E</Kbd>
+      </span>
     </div>
   );
 }
@@ -473,7 +474,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
           <Kbd light={open}>S</Kbd>
         </button>
       {open && (
-        <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-72 overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
+        <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
           {/* Jelly: our own player, the one to use. */}
           <button
             aria-pressed={jellyOn}
@@ -485,7 +486,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
               <span className="block font-semibold">Jelly</span>
               <span className={cx('block text-xs', jellyOn ? 'text-black/60' : jellyState === 'failed' ? 'text-warning' : 'text-muted')}>{jellyNote}</span>
             </span>
-            <span className={cx('rounded-full px-2 py-0.5 text-micro font-medium', jellyOn ? 'bg-black/10 text-black/70' : 'bg-white/10 text-white/80')}>Recommended</span>
+            <span className={cx('rounded-full px-2 max-sm:hidden py-0.5 text-micro font-medium', jellyOn ? 'bg-black/10 text-black/70' : 'bg-white/10 text-white/80')}>Recommended</span>
           </button>
 
           {/* Embeds: other sites' players, a quiet list. */}

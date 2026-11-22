@@ -19,11 +19,19 @@ export function usePrefetch(type: MediaType, id: number) {
   };
 }
 
-/** The text under a card's image: no box, close under the image and aligned with its left edge. */
-export const CARD_INFO = 'pt-2';
+/** The text under a card's image: close under it, aligned with its left edge; room for the arc. */
+export const CARD_INFO = 'relative pt-2 pr-2.5 pb-2';
 
-/** The whole card (image and text) lifts a little on hover, together. */
-export const CARD_LIFT = 'transition-transform duration-300 ease-out group-hover:-translate-y-1';
+/** Every card zooms in a touch on hover, image and text together. */
+export const CARD_LIFT = 'transition-transform duration-300 ease-out group-hover:scale-[1.02]';
+
+/** A thin arc around the card's bottom-right corner that fades out: a quiet separator. */
+export const CornerArc = () => (
+  <span
+    aria-hidden
+    className="pointer-events-none absolute right-0 bottom-0 h-8 w-12 rounded-br-2xl border-r border-b border-white/[0.14] transition-colors [mask-image:linear-gradient(to_top_left,black_35%,transparent_80%)] group-hover:border-white/25"
+  />
+);
 
 /** A card image that floats: rounded, with a soft shadow on hover. */
 export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-black/40';
@@ -31,16 +39,10 @@ export const CARD_IMAGE = 'relative overflow-hidden rounded-2xl transition-shado
 /** A card title: brightens with the card on hover. */
 export const CARD_TITLE = 'truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white';
 
-/** Movie / TV mark, faint in the image's top-right corner like a watermark. */
+/** Small movie / TV icon, pushed to the right edge of a meta row. */
 export function TypeIcon({ type, className }: { type: MediaType; className?: string }) {
   const Icon = type === 'tv' ? Tv : Film;
-  return (
-    <Icon
-      strokeWidth={1.75}
-      className={cx('pointer-events-none absolute top-2.5 right-2.5 size-4 text-white/50 drop-shadow-[0_1px_3px_rgb(0_0_0/0.6)]', className)}
-      aria-label={type === 'tv' ? 'TV show' : 'Movie'}
-    />
-  );
+  return <Icon strokeWidth={1.5} className={cx('ml-auto size-3.5 shrink-0 text-faint', className)} aria-label={type === 'tv' ? 'TV show' : 'Movie'} />;
 }
 
 /** "2025 · ★ 7.2" */
@@ -82,11 +84,11 @@ export default function MediaCard({ item, type, sizes, className, badge, overlay
         <div className={CARD_IMAGE}>
           <Img path={item.poster_path} kind="poster" sizes={sizes} alt="" className="aspect-[2/3]" />
           {badge && <div className="absolute top-2 left-2">{badge}</div>}
-          <TypeIcon type={t} />
         </div>
         <div className={CARD_INFO}>
           <div className={CARD_TITLE} title={title}>{title}</div>
-          <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" />
+          <Meta year={yearOf(item)} rating={item.vote_average} className="mt-0.5" extra={<TypeIcon type={t} />} />
+          <CornerArc />
         </div>
       </Link>
       {overlay}

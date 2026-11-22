@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import Img from './Img';
 import EpisodeTile, { Chip, TileSkeleton } from './EpisodeTile';
-import { CARD_IMAGE, CARD_LIFT, Meta, TypeIcon, usePrefetch } from './MediaCard';
+import { CARD_IMAGE, CARD_LIFT, CornerArc, Meta, TypeIcon, usePrefetch } from './MediaCard';
 import { ROW_BLEED, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { Bone } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type Details, type EpisodeRef, type MediaItem, type MediaType } from '../lib/tmdb';
@@ -47,12 +47,13 @@ function LazyRow({
 }
 
 /** Title, a short overview, then "year · ★ rating". */
-function CardText({ item }: { item: MediaItem }) {
+function CardText({ item, type }: { item: MediaItem; type: MediaType }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col py-1 pl-4">
+    <div className="relative flex min-w-0 flex-1 flex-col py-1 pr-2.5 pb-2 pl-4">
       <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium text-white/90 transition-colors group-hover:text-white" title={titleOf(item)}>{titleOf(item)}</div>
       <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
-      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" />
+      <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
+      <CornerArc />
     </div>
   );
 }
@@ -80,8 +81,9 @@ function RankCard({ item, rank }: { item: MediaItem; rank: number }) {
   const t = typeOf(item);
   return (
     // Extra right margin leaves room for the number to leak past the card's edge.
-    <div className="relative mr-3 shrink-0 snap-start md:mr-4">
+    <div className={cx('group relative mr-3 shrink-0 snap-start md:mr-4', CARD_LIFT)}>
       <EpisodeTile
+        still
         to={`/${t}/${item.id}`}
         type={t}
         title={`${rank}. ${titleOf(item)}`}
@@ -217,9 +219,8 @@ function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
     <Link to={`/${type}/${item.id}`} {...usePrefetch(type, item.id)} className={LIST_CARD}>
       <div className={LIST_POSTER}>
         <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className="aspect-[2/3]" />
-        <TypeIcon type={type} className="top-2 right-2 size-3.5" />
       </div>
-      <CardText item={item} />
+      <CardText item={item} type={type} />
     </Link>
   );
 }

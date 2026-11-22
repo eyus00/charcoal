@@ -9,7 +9,7 @@ import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
 import Modal from '../components/Modal';
 import { btn } from '../components/Button';
-import MediaCard from '../components/MediaCard';
+import MediaCard, { CARD_IMAGE, CARD_LIFT, CornerArc } from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import { epLabel } from '../lib/episodes';
 import { imageSrcSet, imageUrl } from '../lib/images';
@@ -171,8 +171,8 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
       />
       <Scroller label="Trailers and videos" scrollRef={ref}>
         {videos.map((v) => (
-          <button key={v.key} onClick={() => onPlay(v)} title={v.name} className="group w-64 shrink-0 snap-start text-left sm:w-80">
-            <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface">
+          <button key={v.key} onClick={() => onPlay(v)} title={v.name} className={cx('group w-64 shrink-0 snap-start text-left sm:w-80', CARD_LIFT)}>
+            <div className={cx(CARD_IMAGE, 'aspect-video bg-surface')}>
               <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
               <span className="absolute inset-0 grid place-items-center">
                 <span className="grid size-12 place-items-center rounded-full bg-black/40 backdrop-blur-sm transition group-hover:bg-white group-hover:text-black">
@@ -180,8 +180,11 @@ function Trailers({ videos, onPlay }: { videos: Video[]; onPlay: (v: Video) => v
                 </span>
               </span>
             </div>
-            <div className="mt-2.5 line-clamp-2 text-body-sm font-medium text-pretty">{v.name}</div>
-            <div className="text-caption text-muted">{v.type}</div>
+            <div className="relative pt-2 pr-2.5 pb-2">
+              <div className="line-clamp-2 text-body-sm font-medium text-pretty text-white/90 transition-colors group-hover:text-white">{v.name}</div>
+              <div className="text-caption text-muted">{v.type}</div>
+              <CornerArc />
+            </div>
           </button>
         ))}
       </Scroller>
