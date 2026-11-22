@@ -60,7 +60,7 @@ export function TypeIcon({ type, className }: { type: MediaType; className?: str
 
 /** Age rating (PG-13, TV-MA…) as a small outlined tag. */
 export const CertBadge = ({ children }: { children: ReactNode }) => (
-  <span className="rounded-[5px] px-1.5 py-px text-xs leading-tight font-medium ring-1 ring-white/35">{children}</span>
+  <span className="inline-flex h-5 items-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide ring-1 ring-white/35 ring-inset">{children}</span>
 );
 
 /** "2025 · ★ 7.2" */
