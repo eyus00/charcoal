@@ -7,7 +7,7 @@ import { actions, useStore } from '../lib/store';
 import { cx, scrollBehavior } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
-import { LogoMark } from './Logo';
+import { LogoMark, Wordmark } from './Logo';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
 import { btn } from './Button';
@@ -170,11 +170,7 @@ function Rail() {
           </span>
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
-        {open && (
-          <Link to="/" className="text-lg font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
-            Charcoal
-          </Link>
-        )}
+
       </div>
       <nav className="flex flex-col gap-5" aria-label="Browse">
         <RailLink item={HOME} open={open} active={section === 'home'} />
@@ -309,15 +305,12 @@ function TopBar() {
     <Link
       to="/"
       className={cx(
-        'absolute top-0 left-4 z-30 flex h-[76px] items-center gap-2 text-xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
-        // The sidebar carries the logo on large screens.
-        'lg:hidden',
+        'absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
         open && 'max-md:hidden',
       )}
       aria-label="Charcoal home"
     >
-      <LogoMark className="size-8" />
-      Charcoal
+      <Wordmark />
     </Link>
     <header
       // Only the search field floats and sticks (as a pill, no bar behind it). The header itself

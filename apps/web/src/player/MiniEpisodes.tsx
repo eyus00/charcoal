@@ -61,7 +61,7 @@ export default function MiniEpisodes({
             <ChevronDown className={cx('size-4 text-muted transition-transform', picking && 'rotate-180')} />
           </button>
           {picking && (
-            <div role="listbox" aria-label="Seasons" className="toast-in absolute top-full left-0 z-20 mt-1 max-h-60 w-48 overflow-y-auto overscroll-contain rounded-xl bg-raised p-1 shadow-2xl ring-1 ring-white/10">
+            <div role="listbox" aria-label="Seasons" className="toast-in absolute top-full left-0 z-20 mt-1 max-h-60 w-36 overflow-y-auto overscroll-contain rounded-xl bg-raised p-1 shadow-2xl ring-1 ring-white/10">
               {seasons.map((s) => {
                 const on = s.season_number === season;
                 return (

@@ -266,6 +266,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           subtitle={subtitle}
           overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
           detailsUrl={detailsUrl}
+          onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
           meta={meta}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
@@ -298,7 +299,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         />
       ) : (
         <>
-          <div className="relative z-10 shrink-0">{makeHeader(<TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} />)}</div>
+          <div className="relative z-10 shrink-0">{makeHeader(<TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined} />)}</div>
           <JellyLoading backdrop={d?.backdrop_path} onSkip={() => pickServer(EMBEDS[0].id)} />
         </>
       )}
@@ -351,7 +352,7 @@ function Header({
     // Close and the title on the left, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
     <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      {pausedInfo ? <BigTitle onEpisodes={onEpisodes}>{pausedInfo}</BigTitle> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
+      {pausedInfo ? <div className="min-w-0 px-1">{pausedInfo}</div> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
       <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
@@ -378,27 +379,6 @@ function Header({
  * name (long names truncate; the full name is in the tooltip and the episode list). For TV the
  * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
-/** The big "what's playing" block (Jelly); for TV the whole block opens the episode list. */
-function BigTitle({ children, onEpisodes }: { children: React.ReactNode; onEpisodes?: () => void }) {
-  if (!onEpisodes) return <div className="min-w-0 px-1">{children}</div>;
-  return (
-    <div className="group/hub relative min-w-0">
-      <button
-        type="button"
-        onClick={onEpisodes}
-        aria-label="Episodes (E)"
-        className="absolute -inset-x-1 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
-      />
-      <div className="pointer-events-none relative px-1">{children}</div>
-      {/* Hidden while the title (its own "Open details" tooltip) is hovered. */}
-      <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 flex items-center gap-2 rounded-lg border border-transparent bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition group-hover/hub:opacity-100 group-focus-within/hub:opacity-100 group-has-[a:hover]/hub:opacity-0 group-has-[a:focus-visible]/hub:opacity-0">
-        Episodes
-        <Kbd>E</Kbd>
-      </span>
-    </div>
-  );
-}
-
 /** What's playing, top-left (embedded players): the title and the episode. */
 function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; onEpisodes?: () => void }) {
   const text = (

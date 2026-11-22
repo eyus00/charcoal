@@ -56,8 +56,10 @@ interface Props {
   /** Short facts for the pause card, e.g. "2010 · ★ 8.4 · 2h 28m". */
   meta?: string;
   poster?: string;
-  /** The title links here (the details page). */
+  /** The title block links here (the details page). */
   detailsUrl?: string;
+  /** TV: the episode line opens the episode list. */
+  onEpisodes?: () => void;
   resumeAt: number;
   /** The top bar. As a function it gets the paused-info block to show top-left while paused. */
   header: ReactNode | ((pausedInfo: ReactNode | null) => ReactNode);
@@ -102,7 +104,7 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -563,7 +565,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   // Paused (or not started): what's playing, top-left, like a TV's pause screen.
   // What's playing, top-left in the top bar: always there with the controls, and kept on screen
   // while paused.
-  const pausedInfo = <TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} />;
+  const pausedInfo = <TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />;
   const keepTop = !isPlaying && !exhausted && !casting;
 
   // ---------- actions ----------
@@ -1553,26 +1555,39 @@ function IconButton({
   );
 }
 
-/** What's playing, big, top-left of the player (and of the page while sources load). */
-export function TitleInfo({ title, subtitle, meta, detailsUrl }: { title: string; subtitle?: string; meta?: string; detailsUrl?: string }) {
+/**
+ * What's playing, big, top-left of the player (and of the page while sources load). The whole
+ * block opens the details page; on TV the episode line opens the episode list instead.
+ */
+export function TitleInfo({ title, subtitle, meta, detailsUrl, onEpisodes }: { title: string; subtitle?: string; meta?: string; detailsUrl?: string; onEpisodes?: () => void }) {
   return (
-    <div className="max-w-2xl py-1">
-      <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">
-        {detailsUrl ? (
-          <Link
-            to={detailsUrl}
-            aria-label={`${title}: details`}
-            className="group/tip pointer-events-auto relative z-10 decoration-white/40 underline-offset-4 hover:underline"
-          >
-            {title}
-            <Tip label="Open details" side="bottom" align="start" />
-          </Link>
-        ) : (
-          title
-        )}
-      </h2>
-      {subtitle && <p className="mt-0.5 text-sm text-white/85 md:text-base">{subtitle}</p>}
-      {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
+    <div className="group/info relative max-w-2xl py-1">
+      {detailsUrl && (
+        <Link to={detailsUrl} aria-label={`${title}: details`} className="pointer-events-auto absolute -inset-x-2 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.04]" />
+      )}
+      <div className="pointer-events-none relative">
+        <h2 className="text-xl leading-snug font-semibold text-balance decoration-white/40 underline-offset-4 md:text-3xl group-has-[a:hover]/info:underline">{title}</h2>
+        {subtitle &&
+          (onEpisodes ? (
+            <button
+              type="button"
+              onClick={onEpisodes}
+              aria-label={`Episodes, now playing ${subtitle} (E)`}
+              className="group/tip pointer-events-auto relative mt-0.5 text-left text-sm text-white/85 decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline md:text-base"
+            >
+              {subtitle}
+              <Tip label="Episodes" keys="E" side="bottom" align="start" />
+            </button>
+          ) : (
+            <p className="mt-0.5 text-sm text-white/85 md:text-base">{subtitle}</p>
+          ))}
+        {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
+      </div>
+      {detailsUrl && (
+        <span className="pointer-events-none absolute top-full left-0 z-50 mt-1 rounded-lg bg-raised px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-white/5 transition-opacity delay-100 group-has-[a:hover]/info:opacity-100">
+          Open details
+        </span>
+      )}
     </div>
   );
 }
