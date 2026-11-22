@@ -162,7 +162,7 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor }: { d: Details; type: 
         {d.genres.length > 0 && <p className="mt-1 text-xs text-white/60">{d.genres.map((g) => g.name).join(', ')}</p>}
         {d.overview && <p className="mt-2.5 line-clamp-4 text-caption leading-5 text-pretty text-white/75">{d.overview}</p>}
         <div className="mt-3.5 flex gap-2">
-          <Link to={`/watch/${type}/${d.id}`} className={cx(btn({ variant: 'primary' }), 'h-9 flex-1 text-sm')}>
+          <Link to={`/watch/${type}/${d.id}`} className={cx(btn({ variant: 'primary' }), 'h-9 px-5 text-sm')}>
             <Play className="size-3.5 fill-current" strokeWidth={0} /> Watch
           </Link>
           <BookmarkMenu
