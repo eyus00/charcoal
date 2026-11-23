@@ -5,7 +5,11 @@ import { Play, Star, X } from 'lucide-react';
 import BookmarkMenu from '../components/BookmarkMenu';
 import EpisodeSelector from '../components/EpisodeSelector';
 import Community from '../components/Community';
-import { PlayTitleButton, ShareButton } from '../components/TitleActions';
+import { PlayTitleButton } from '../components/TitleActions';
+import FollowButton from '../components/FollowButton';
+import { Frame, dateLabel } from '../components/AiringTile';
+import { Chip } from '../components/EpisodeTile';
+import { useIsFollowing } from '../lib/follows';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
@@ -13,7 +17,7 @@ import Modal from '../components/Modal';
 import { btn } from '../components/Button';
 import MediaCard, { CARD_IMAGE, CARD_LIFT, CertBadge, CornerArc } from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
-import { epLabel } from '../lib/episodes';
+import Img from '../components/Img';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video, certificationOf } from '../lib/tmdb';
 import { cx, formatRuntime, useKeys, useTitle } from '../lib/util';
@@ -35,12 +39,18 @@ export default function Details({ type }: { type: MediaType }) {
 /** Poster on phones, backdrop on wider screens — the browser downloads only one. */
 function Art({ d }: { d: D }) {
   const [loaded, setLoaded] = useState(false);
+  // Already in the cache (e.g. arriving from the details sheet): show it at once, no fade.
+  const img = useRef<HTMLImageElement>(null);
+  useLayoutEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth) setLoaded(true);
+  }, []);
   const fallback = imageUrl(d.poster_path ?? d.backdrop_path, d.poster_path ? 'poster' : 'backdrop', 780);
   if (!fallback) return null;
   return (
     <picture>
       {d.backdrop_path && <source media="(min-width: 768px)" srcSet={imageSrcSet(d.backdrop_path, 'backdrop')} sizes="100vw" />}
       <img
+        ref={img}
         src={fallback}
         srcSet={d.poster_path ? imageSrcSet(d.poster_path, 'poster') : undefined}
         sizes="100vw"
@@ -130,8 +140,12 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayTitleButton id={d.id} type={type} kbd onEpisodes={() => openEpisodes()} />
-              <BookmarkMenu variant="round" hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
-              <ShareButton title={title} />
+              <FollowButton type={type} id={d.id} title={title} />
+              <BookmarkMenu
+                variant="round"
+                hotkey
+                item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
+              />
             </div>
           </div>
         </div>
@@ -143,14 +157,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
       {trailer && <TrailerModal video={trailer} onClose={() => setTrailer(null)} />}
 
       {type === 'tv' && episodesParam !== null && (
-        <EpisodeSelector
-          show={d}
-          initialSeason={episodesParam ? Number(episodesParam) : undefined}
-          onSeasonChange={setEpisodesSeason}
-          selected={selectedEp}
-          onClose={closeEpisodes}
-          replace
-        />
+        <EpisodeSelector show={d} initialSeason={episodesParam ? Number(episodesParam) : undefined} onSeasonChange={setEpisodesSeason} selected={selectedEp} onClose={closeEpisodes} replace />
       )}
     </div>
   );
@@ -231,32 +238,45 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
   );
 }
 
-/** Small card for a scheduled new episode: when it airs, and which one. */
+/**
+ * The next episode, before it's out: the same release card as the Calendar (date pill, runtime,
+ * frame + label when it's special), with a "Next episode" caption. Opens the episode list there.
+ */
 function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season: number; episode: number }) => void; className?: string }) {
+  const following = useIsFollowing('tv', d.id);
   const next = d.next_episode_to_air;
   if (!next?.air_date) return null;
-  const date = new Date(next.air_date + 'T00:00:00');
-  const days = Math.round((date.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
-  if (days < 0) return null; // shown from today onwards
-  const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const name = next.name && !/^Episode \d+$/i.test(next.name) ? next.name : '';
+  const at = new Date(next.air_date + 'T00:00:00').getTime();
+  if (at < new Date(new Date().toDateString()).getTime()) return null; // shown from today onwards
+  const name = next.name && !/^(Episode \d+|TBA)$/i.test(next.name) ? next.name : '';
+  const label = next.episode_type === 'finale' || next.episode_type === 'mid_season' ? 'Finale' : next.episode_number === 1 ? (next.season_number <= 1 ? 'Premiere' : 'New season') : undefined;
   return (
-    // Opens the episode list with this episode highlighted.
     <button
       type="button"
       onClick={() => onOpen({ season: next.season_number, episode: next.episode_number })}
-      className={cx('flex w-64 items-center gap-3.5 rounded-2xl bg-raised/90 p-3.5 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 backdrop-blur-xl transition-colors hover:bg-raised', className)}
+      className={cx('block w-72 rounded-3xl bg-raised p-2.5 pt-3.5 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 transition-colors hover:bg-line sm:w-80', className)}
     >
-      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white py-1.5 text-black">
-        <span className="text-micro font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
-        <span className="text-lg leading-6 font-semibold tabular-nums">{date.getDate()}</span>
-      </span>
-      <span className="min-w-0">
-        <span className="block text-micro font-medium tracking-wider text-muted uppercase">New episode</span>
-        <span className="block truncate text-body-sm font-medium">{when}</span>
-        <span className="block truncate text-xs text-white/60">
-          {epLabel(next.season_number, next.episode_number)}
+      <Frame label={label} bg="bg-raised">
+        <div className="relative overflow-hidden rounded-2xl">
+          <Img path={next.still_path || d.backdrop_path} kind={next.still_path ? 'still' : 'backdrop'} sizes="320px" alt="" className="aspect-video" imgClassName="opacity-70" />
+          <span className="absolute top-2 left-2">
+            <Chip>{dateLabel(at)}</Chip>
+          </span>
+          {next.runtime ? (
+            <span className="absolute right-2 bottom-2">
+              <Chip>{formatRuntime(next.runtime)}</Chip>
+            </span>
+          ) : null}
+        </div>
+      </Frame>
+      <span className="block px-[6.5px] pt-2.5 pb-1">
+        <span className="block text-micro font-semibold tracking-wider text-muted uppercase">Next episode</span>
+        <span className="mt-0.5 block truncate text-body-sm font-medium">
+          E{next.episode_number}
           {name ? ` · ${name}` : ''}
+        </span>
+        <span className="block truncate text-caption text-muted">
+          Season {next.season_number} · {following ? 'you’ll get a reminder' : 'follow to get a reminder'}
         </span>
       </span>
     </button>
@@ -330,7 +350,9 @@ function Overview({ text, title }: { text: string; title: string }) {
           ) : (
             <>
               {shown}
-              <span aria-hidden className="text-white/60">… </span>
+              <span aria-hidden className="text-white/60">
+                …{' '}
+              </span>
               {/* Text link convention: brightens on hover, only the word itself. */}
               <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="Read the full overview" className="font-medium text-white/80 transition-colors hover:text-white">
                 more
@@ -347,27 +369,23 @@ function Overview({ text, title }: { text: string; title: string }) {
 function OverviewDialog({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
   return (
     <Modal label={`About ${title}`} onClose={onClose}>
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 p-4 md:p-8" onClick={onClose}>
-      {/* Same look as the episode list (header, round close button, divider); a centred popup everywhere. */}
-      <div
-        className="toast-in flex max-h-[80dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-transparent bg-surface shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold md:text-xl">Overview</h2>
-            <p className="truncate text-sm text-muted">{title}</p>
+      <div className="fixed inset-0 flex items-center justify-center bg-black/70 p-4 md:p-8" onClick={onClose}>
+        {/* Same look as the episode list (header, round close button, divider); a centred popup everywhere. */}
+        <div className="toast-in flex max-h-[80dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-transparent bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-lg font-semibold md:text-xl">Overview</h2>
+              <p className="truncate text-sm text-muted">{title}</p>
+            </div>
+            <button onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
+              <X className="size-5" />
+            </button>
           </div>
-          <button onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
-            <X className="size-5" />
-          </button>
-        </div>
-        <div className="overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7 md:pb-7">
-          <p className="text-body-sm leading-relaxed text-white/80">{text}</p>
+          <div className="overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7 md:pb-7">
+            <p className="text-body-sm leading-relaxed text-white/80">{text}</p>
+          </div>
         </div>
       </div>
-    </div>
     </Modal>
   );
 }
-

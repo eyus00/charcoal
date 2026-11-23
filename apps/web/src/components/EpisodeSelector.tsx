@@ -6,14 +6,17 @@ import Img from './Img';
 import Modal from './Modal';
 import { btn } from './Button';
 import { Chip } from './EpisodeTile';
+import BookmarkMenu from './BookmarkMenu';
+import FollowButton from './FollowButton';
+import { Frame, dateLabel } from './AiringTile';
 import Kbd from './Kbd';
 import { CARD_INFO } from './MediaCard';
 import { ErrorBox } from './Grid';
 import { Bone } from './Skeletons';
 import { allSeasons, epLabel, regularSeasons } from '../lib/episodes';
 import { percent, resumeTarget, useStore, type HistoryItem } from '../lib/store';
-import { q, titleOf, type Details } from '../lib/tmdb';
-import { airsLabel, cx, formatDate, formatRuntime, isFuture, isTypingTarget } from '../lib/util';
+import { q, titleOf, type Details, type Episode } from '../lib/tmdb';
+import { cx, formatDate, formatRuntime, isFuture, isTypingTarget } from '../lib/util';
 
 interface Props {
   show: Details;
@@ -46,6 +49,13 @@ const FILLER = [
   'Plot details for this one are still under wraps, check back after the next episode airs for more on what happens.',
 ];
 
+/** What's special about an upcoming episode (shown as the card's frame label). */
+function releaseLabel(ep: Episode) {
+  if (ep.episode_type === 'finale' || ep.episode_type === 'mid_season') return 'Finale';
+  if (ep.episode_number === 1) return ep.season_number <= 1 ? 'Premiere' : 'New season';
+  return undefined;
+}
+
 /** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
 const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
 
@@ -57,9 +67,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   const resume = resumeTarget(history, 'tv', show.id);
   const focus = selected ?? current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined);
   const first = regularSeasons(show)[0]?.season_number ?? seasons[0]?.season_number ?? 1;
-  const [season, setSeason] = useState(() =>
-    initialSeason !== undefined && seasons.some((s) => s.season_number === initialSeason) ? initialSeason : (focus?.season ?? first),
-  );
+  const [season, setSeason] = useState(() => (initialSeason !== undefined && seasons.some((s) => s.season_number === initialSeason) ? initialSeason : (focus?.season ?? first)));
   const { data, isPending, isError, refetch } = useQuery(q.season(show.id, season));
 
   const progress = useMemo(() => {
@@ -132,205 +140,235 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
 
   return (
     <Modal label={`${titleOf(show)} episodes`} onClose={onClose}>
-    <div className="fixed inset-0 flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
-      <div
-        className="toast-in flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-transparent bg-surface shadow-2xl md:h-[84dvh] md:max-w-5xl md:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold md:text-xl">Episodes</h2>
-            <p className="truncate text-sm text-muted">{titleOf(show)}</p>
-          </div>
-          <button onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
-            <X className="size-5" />
-          </button>
-        </div>
-
-        <div ref={tabs} className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="group" aria-label="Seasons">
-          {seasons.map((s) => (
-            <button
-              key={s.season_number}
-              aria-pressed={s.season_number === season}
-              onClick={() => pick(s.season_number)}
-              onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
-              className={cx(
-                'h-10 shrink-0 rounded-full px-4 text-sm whitespace-nowrap transition',
-                s.season_number === season ? 'bg-white font-medium text-black' : 'bg-raised text-white/80 hover:bg-line hover:text-white',
-              )}
-            >
-              {s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`}
+      <div className="fixed inset-0 flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
+        <div
+          className="toast-in flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-transparent bg-surface shadow-2xl md:h-[84dvh] md:max-w-5xl md:rounded-3xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold md:text-xl">{titleOf(show)}</h2>
+                <p className="truncate text-sm text-muted">Episodes</p>
+              </div>
+              {/* Follow and Watchlist right after the show's name, as on its page. */}
+              <FollowButton type="tv" id={show.id} title={titleOf(show)} size="md" className="ml-1" />
+              <BookmarkMenu
+                variant="round"
+                size="md"
+                item={{ id: show.id, mediaType: 'tv', title: titleOf(show), posterPath: show.poster_path, releaseDate: show.first_air_date, ratingScore: show.vote_average }}
+              />
+            </div>
+            <button onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
+              <X className="size-5" />
             </button>
-          ))}
-        </div>
-
-        <div ref={list} className="flex-1 overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7">
-          {isPending ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }, (_, i) => (
-                <div key={i}>
-                  <Bone className="aspect-video rounded-2xl" />
-                  <div className="h-[112px] pt-3">
-                    <Bone className="h-4 w-3/4" />
-                    <Bone className="mt-2 h-3 w-1/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : isError ? (
-            <ErrorBox onRetry={() => refetch()} message="Couldn’t load this season." />
-          ) : !data.episodes.length ? (
-            <p className="py-16 text-center text-muted">No episodes listed yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data.episodes.map((ep) => {
-                const h = progress.get(ep.episode_number);
-                const pct = percent(h);
-                const upcoming = isFuture(ep.air_date);
-                const isCurrent = current?.season === season && current.episode === ep.episode_number;
-                const isSelected = sel?.season === season && sel.episode === ep.episode_number;
-                const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
-                const body = (
-                  <>
-                    <div className={cx('relative overflow-hidden rounded-2xl', (isCurrent || isSelected) && 'ring-2 ring-white/70')}>
-                      {ep.still_path ? (
-                        <Img path={ep.still_path} kind="still" sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw" alt="" className="aspect-video" imgClassName={upcoming ? 'opacity-50' : undefined} />
-                      ) : (
-                        // No still yet (usually upcoming): a calm placeholder; the tag says when it airs.
-                        <div className="grid aspect-video place-items-center bg-white/[0.04]">
-                          <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
-                        </div>
-                      )}
-                      {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
-                      {!upcoming && (
-                        <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
-                          <span className="grid size-11 place-items-center rounded-full bg-white text-black">
-                            <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
-                          </span>
-                        </span>
-                      )}
-                      {(isCurrent || upcoming) && (
-                        <span className="absolute top-2.5 left-2.5">
-                          {isCurrent ? <Chip light>Now playing</Chip> : <Chip>{airsLabel(ep.air_date)}</Chip>}
-                        </span>
-                      )}
-                      {h?.isCompleted ? (
-                        <span className="absolute bottom-2.5 left-2.5">
-                          <Chip>
-                            <Check className="size-3.5" /> Watched
-                          </Chip>
-                        </span>
-                      ) : watched ? (
-                        <span className="absolute bottom-2.5 left-2.5">
-                          <Chip light>{formatRuntime(watched)}</Chip>
-                        </span>
-                      ) : null}
-                      {ep.runtime ? (
-                        <span className="absolute right-2.5 bottom-2.5">
-                          <Chip>{formatRuntime(ep.runtime)}</Chip>
-                        </span>
-                      ) : null}
-                      {pct > 0 && !h?.isCompleted && (
-                        <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
-                          <span className="block h-full bg-white" style={{ width: `${pct}%` }} />
-                        </span>
-                      )}
-                    </div>
-                    <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 pb-3')}>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                        <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
-                      </div>
-                      {!upcoming && ep.air_date && <div className="text-caption text-faint">{formatDate(ep.air_date)}</div>}
-                      {ep.overview ? (
-                        <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
-                      ) : (
-                        // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
-                        <div className="relative mt-1.5">
-                          <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
-                            {FILLER[ep.episode_number % FILLER.length]}
-                          </p>
-                          <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Coming soon' : 'No synopsis'}</span>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                );
-                return upcoming ? (
-                  <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl', isSelected && SELECTED)}>
-                    {body}
-                  </div>
-                ) : (
-                  <Link key={ep.id} data-ep={ep.episode_number} to={href(season, ep.episode_number)} replace={replace} onClick={onPick} className={cx('group flex flex-col rounded-2xl', isSelected && SELECTED)} aria-current={isCurrent || undefined}>
-                    {body}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className={cx('flex shrink-0 items-center gap-3 border-t border-line px-5 py-4 md:px-7', current && !prev && !next && 'hidden lg:flex')}>
-          <div className="hidden items-center gap-4 text-xs text-faint lg:flex">
-            {seasons.length > 1 && (
-              <span className="flex items-center gap-1.5">
-                <Kbd>←</Kbd>
-                <Kbd>→</Kbd> Season
-              </span>
-            )}
-            {current && prev && (
-              <span className="flex items-center gap-1.5">
-                <Kbd>Shift P</Kbd> Previous
-              </span>
-            )}
-            {current && next && (
-              <span className="flex items-center gap-1.5">
-                <Kbd>Shift N</Kbd> Next
-              </span>
-            )}
-            <span className="flex items-center gap-1.5">
-              <Kbd>Esc</Kbd> Close
-            </span>
           </div>
-          {/* Player: previous / next episode, where the details page has its play button. */}
-          {current && (prev || next) && (
-            <div className="ml-auto flex items-center gap-2.5">
-              <button
-                onClick={() => prev?.()}
-                disabled={!prev}
-                className={btn({ size: 'lg' })}
-              >
-                <SkipBack className="size-4 fill-current" />
-                Previous
-              </button>
-              <button
-                onClick={() => next?.()}
-                disabled={!next}
-                className={btn({ variant: 'primary', size: 'lg' })}
-              >
-                <SkipForward className="size-4 fill-current" />
-                Next
 
+          <div ref={tabs} className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-5 pt-1 pb-4 md:px-7" role="group" aria-label="Seasons">
+            {seasons.map((s) => (
+              <button
+                key={s.season_number}
+                aria-pressed={s.season_number === season}
+                onClick={() => pick(s.season_number)}
+                onPointerEnter={() => qc.prefetchQuery(q.season(show.id, s.season_number))}
+                className={cx(
+                  'h-10 shrink-0 rounded-full px-4 text-sm whitespace-nowrap transition',
+                  s.season_number === season ? 'bg-white font-medium text-black' : 'bg-raised text-white/80 hover:bg-line hover:text-white',
+                )}
+              >
+                {s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`}
               </button>
-            </div>
-          )}
-          {!current &&
-            (selUnaired && sel ? (
-              // The selected episode isn't out yet: nothing to play, just say when it will be.
-              <span className={cx(btn({ size: 'lg' }), 'pointer-events-none ml-auto cursor-default text-white/70')}>
-                <CalendarClock className="size-4" strokeWidth={1.5} />
-                {epLabel(sel.season, sel.episode)} · {airsLabel(selEp?.air_date).replace(/^Airs /, 'Out ')}
-              </span>
-            ) : (
-              <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
-                <Play className="size-4 fill-current" strokeWidth={0} />
-                {cta.label} {epLabel(cta.s, cta.e)}
-                {!current && <Kbd light className="ml-1">P</Kbd>}
-              </Link>
             ))}
+          </div>
+
+          <div ref={list} className="flex-1 overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7">
+            {isPending ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i}>
+                    <Bone className="aspect-video rounded-2xl" />
+                    <div className="h-[112px] pt-3">
+                      <Bone className="h-4 w-3/4" />
+                      <Bone className="mt-2 h-3 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : isError ? (
+              <ErrorBox onRetry={() => refetch()} message="Couldn’t load this season." />
+            ) : !data.episodes.length ? (
+              <p className="py-16 text-center text-muted">No episodes listed yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {data.episodes.map((ep) => {
+                  const h = progress.get(ep.episode_number);
+                  const pct = percent(h);
+                  const upcoming = isFuture(ep.air_date);
+                  const isCurrent = current?.season === season && current.episode === ep.episode_number;
+                  const isSelected = sel?.season === season && sel.episode === ep.episode_number;
+                  const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
+                  const body = (
+                    <>
+                      <Frame label={upcoming ? releaseLabel(ep) : undefined} bg="bg-surface">
+                        <div className={cx('relative overflow-hidden rounded-2xl', (isCurrent || isSelected) && 'ring-2 ring-white/70')}>
+                          {ep.still_path ? (
+                            <Img
+                              path={ep.still_path}
+                              kind="still"
+                              sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
+                              alt=""
+                              className="aspect-video"
+                              imgClassName={upcoming ? 'opacity-50' : undefined}
+                            />
+                          ) : (
+                            // No still yet (usually upcoming): a calm placeholder; the tag says when it airs.
+                            <div className="grid aspect-video place-items-center bg-white/[0.04]">
+                              <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
+                            </div>
+                          )}
+                          {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
+                          {!upcoming && (
+                            <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
+                              <span className="grid size-11 place-items-center rounded-full bg-white text-black">
+                                <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
+                              </span>
+                            </span>
+                          )}
+                          {(isCurrent || upcoming) && (
+                            <span className="absolute top-2.5 left-2.5">
+                              {isCurrent ? <Chip light>Now playing</Chip> : <Chip>{ep.air_date ? dateLabel(new Date(`${ep.air_date}T00:00:00`).getTime()) : 'Date TBA'}</Chip>}
+                            </span>
+                          )}
+                          {/* Not out yet: nothing to play, so its action is following the show. */}
+                          {upcoming && (
+                            <span className="absolute top-2 right-2">
+                              <FollowButton type="tv" id={show.id} title={titleOf(show)} variant="card" />
+                            </span>
+                          )}
+                          {h?.isCompleted ? (
+                            <span className="absolute bottom-2.5 left-2.5">
+                              <Chip>
+                                <Check className="size-3.5" /> Watched
+                              </Chip>
+                            </span>
+                          ) : null}
+                          {/* Length: time left while in progress (the bar shows how far), else the runtime. */}
+                          {watched && ep.runtime && ep.runtime > watched ? (
+                            <span className="absolute right-2.5 bottom-2.5">
+                              <Chip>{formatRuntime(ep.runtime - watched)} left</Chip>
+                            </span>
+                          ) : ep.runtime ? (
+                            <span className="absolute right-2.5 bottom-2.5">
+                              <Chip>{formatRuntime(ep.runtime)}</Chip>
+                            </span>
+                          ) : null}
+                          {pct > 0 && !h?.isCompleted && (
+                            <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
+                              <span className="block h-full bg-white" style={{ width: `${pct}%` }} />
+                            </span>
+                          )}
+                        </div>
+                      </Frame>
+                      <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 pb-3')}>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
+                          <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
+                        </div>
+                        {!upcoming && ep.air_date && <div className="text-caption text-faint">{formatDate(ep.air_date)}</div>}
+                        {ep.overview ? (
+                          <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
+                        ) : (
+                          // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
+                          <div className="relative mt-1.5">
+                            <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
+                              {FILLER[ep.episode_number % FILLER.length]}
+                            </p>
+                            <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Coming soon' : 'No synopsis'}</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                  return upcoming ? (
+                    <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl', isSelected && SELECTED)}>
+                      {body}
+                    </div>
+                  ) : (
+                    <Link
+                      key={ep.id}
+                      data-ep={ep.episode_number}
+                      to={href(season, ep.episode_number)}
+                      replace={replace}
+                      onClick={onPick}
+                      className={cx('group flex flex-col rounded-2xl', isSelected && SELECTED)}
+                      aria-current={isCurrent || undefined}
+                    >
+                      {body}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className={cx('flex shrink-0 items-center gap-3 border-t border-line px-5 py-4 md:px-7', current && !prev && !next && 'hidden lg:flex')}>
+            <div className="hidden items-center gap-4 text-xs text-faint lg:flex">
+              {seasons.length > 1 && (
+                <span className="flex items-center gap-1.5">
+                  <Kbd>←</Kbd>
+                  <Kbd>→</Kbd> Season
+                </span>
+              )}
+              {current && prev && (
+                <span className="flex items-center gap-1.5">
+                  <Kbd>Shift P</Kbd> Previous
+                </span>
+              )}
+              {current && next && (
+                <span className="flex items-center gap-1.5">
+                  <Kbd>Shift N</Kbd> Next
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <Kbd>Esc</Kbd> Close
+              </span>
+            </div>
+            {/* Player: previous / next episode, where the details page has its play button. */}
+            {current && (prev || next) && (
+              <div className="ml-auto flex items-center gap-2.5">
+                <button onClick={() => prev?.()} disabled={!prev} className={btn({ size: 'lg' })}>
+                  <SkipBack className="size-4 fill-current" />
+                  Previous
+                </button>
+                <button onClick={() => next?.()} disabled={!next} className={btn({ variant: 'primary', size: 'lg' })}>
+                  <SkipForward className="size-4 fill-current" />
+                  Next
+                </button>
+              </div>
+            )}
+            {!current &&
+              (selUnaired && sel ? (
+                // The selected episode isn't out yet: nothing to play, so the button follows the show.
+                <div className="ml-auto flex min-w-0 items-center gap-3">
+                  <span className="hidden min-w-0 truncate text-sm text-muted sm:block">
+                    {epLabel(sel.season, sel.episode)} · {selEp?.air_date ? dateLabel(new Date(`${selEp.air_date}T00:00:00`).getTime()) : 'Date TBA'}
+                  </span>
+                  <FollowButton type="tv" id={show.id} title={titleOf(show)} variant="wide" size="lg" />
+                </div>
+              ) : (
+                <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
+                  <Play className="size-4 fill-current" strokeWidth={0} />
+                  {cta.label} {epLabel(cta.s, cta.e)}
+                  {!current && (
+                    <Kbd light className="ml-1">
+                      P
+                    </Kbd>
+                  )}
+                </Link>
+              ))}
+          </div>
         </div>
       </div>
-    </div>
     </Modal>
   );
 }

@@ -46,27 +46,33 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
     <EpisodeTile
       to={watchUrl(h)}
       linkProps={peekProps(h.mediaType, h.id, { tap: false })}
-      titleLink={{ to: `/${h.mediaType}/${h.id}`, line: tv ? 'secondary' : 'primary', label: `${h.title}: details` }}
+      titleLink={{ to: `/${h.mediaType}/${h.id}`, line: 'primary', label: `${h.title}: details` }}
       type={h.mediaType}
       title={name ? `${h.title} · ${name}` : h.title}
       image={{ path: still ?? h.backdropPath ?? h.posterPath, kind: still ? 'still' : h.backdropPath ? 'backdrop' : 'poster', src: frame }}
       progress={watched ? Math.round(percent(h)) : 0}
-      topLeft={isNext ? <Chip light>Up next</Chip> : h.isCompleted ? <Chip><Check className="size-3.5" /> Watched</Chip> : null}
-      bottomLeft={watched ? <Chip light>{formatRuntime(watched)}</Chip> : null}
-      bottomRight={runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
-      primary={
+      topLeft={
+        isNext ? (
+          <Chip>Up next</Chip>
+        ) : h.isCompleted ? (
+          <Chip>
+            <Check className="size-3.5" /> Watched
+          </Chip>
+        ) : null
+      }
+      bottomRight={left ? <Chip>{formatRuntime(left)} left</Chip> : runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
+      // Line 1 is always the title; line 2 the episode (or "Movie").
+      primary={h.title}
+      secondary={
         tv ? (
-          <>
-            <span className="text-muted">
-              {epLabel(s, e)}
-            </span>
-            {name ? <> &nbsp;{name}</> : null}
-          </>
+          <span className="truncate">
+            {epLabel(s!, e!).replace(/^S(\d+)\s*E/, 'S$1 · E')}
+            {name ? <span className="text-muted"> &nbsp;{name}</span> : null}
+          </span>
         ) : (
-          h.title
+          'Movie'
         )
       }
-      secondary={tv ? h.title : left ? `${formatRuntime(left)} left` : ''}
     >
       <button
         onClick={() => {

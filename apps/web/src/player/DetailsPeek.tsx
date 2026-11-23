@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
 import { Maximize2, Star, X } from 'lucide-react';
@@ -8,9 +8,11 @@ import { CertBadge } from '../components/MediaCard';
 import { Tip } from '../components/Tip';
 import { btn } from '../components/Button';
 import BookmarkMenu from '../components/BookmarkMenu';
-import { PlayTitleButton, ShareButton } from '../components/TitleActions';
+import { PlayTitleButton } from '../components/TitleActions';
+import FollowButton from '../components/FollowButton';
 import { peek } from '../lib/peek';
-import { certificationOf, cleanList, titleOf, trailersOf, type Details, type MediaType } from '../lib/tmdb';
+import { certificationOf, titleOf, type Details, type MediaType } from '../lib/tmdb';
+import { imageSrcSet, imageUrl } from '../lib/images';
 import { cx, formatRuntime, isTypingTarget } from '../lib/util';
 
 /** year · ★ rating · age rating · length: the same order everywhere. */
@@ -116,7 +118,6 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
   const sheet = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
-  const top = useRef<HTMLDivElement>(null);
 
   // A plain overlay (not a native modal dialog) so the watchlist menu, which opens in its own
   // layer, still shows above it. Esc closes, focus moves in and comes back, the page doesn't scroll.
@@ -134,65 +135,78 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
     };
   }, []);
 
-  // Phones: the sheet opens at the height of its top part; what's below it (the details page's
-  // next sections) is already there. Drag up and it grows, revealing them, then becomes the full
-  // page (its code is loaded and its data cached, so it appears at once). Drag down to close.
+  // Phones: drag down to close; drag up and the sheet becomes the details page itself. Its banner
+  // grows (the info card stays at the bottom), the landscape image fades into the page's portrait
+  // poster, and at full height it's laid out exactly like the page's hero, which then replaces it.
+  // The page's code is preloaded and its data cached, so the swap is invisible.
+  const hero = useRef<HTMLDivElement>(null);
+  const info = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = sheet.current;
-    if (!el || matchMedia('(min-width: 640px)').matches) return;
+    const h0 = hero.current;
+    if (!el || !h0 || matchMedia('(min-width: 640px)').matches) return;
     void import('../pages/Details');
     const full = () => window.innerHeight;
-    const collapsed = Math.min(top.current?.offsetHeight ?? 0, full() * 0.9);
-    const canGrow = collapsed > 0 && collapsed < full() * 0.9 - 1;
-    if (canGrow) {
-      el.style.height = `${collapsed}px`;
-      el.style.overflow = 'hidden';
-    }
-    const reveal = (h: number) => el.style.setProperty('--reveal', String(Math.max(0, Math.min(1, (h - collapsed) / Math.max(1, full() - collapsed)))));
-    let start: { y: number; h: number; up: boolean } | null = null;
+    const collapsed = el.offsetHeight;
+    const heroBase = h0.offsetHeight;
+    el.style.height = `${collapsed}px`;
+    el.style.overflow = 'hidden';
+    // At full height the card sits where the page's does: its bottom 8svh + 24px above the screen's.
+    const pad = (r: number) => 40 + r * (window.innerHeight * 0.08 + 24 - 40);
+    const set = (h: number) => {
+      const r = Math.max(0, Math.min(1, (h - collapsed) / Math.max(1, full() - collapsed)));
+      el.style.height = `${h}px`;
+      if (info.current) info.current.style.paddingBottom = `${pad(r)}px`;
+      h0.style.height = `${heroBase + (h - collapsed) - (pad(r) - pad(0))}px`;
+      el.style.setProperty('--reveal', String(r));
+    };
+    let start: { y: number; h: number } | null = null;
     let dy = 0;
     const onStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1 || el.scrollTop > 0) return;
-      const y = e.touches[0].clientY;
-      start = { y, h: el.offsetHeight, up: canGrow || y - el.getBoundingClientRect().top < 220 || el.scrollHeight <= el.clientHeight + 1 };
+      if (e.touches.length !== 1) return;
+      start = { y: e.touches[0].clientY, h: el.offsetHeight };
       dy = 0;
-      el.style.transition = 'none';
+      el.style.transition = h0.style.transition = 'none';
+      if (info.current) info.current.style.transition = 'none';
     };
     const onMove = (e: TouchEvent) => {
       if (!start) return;
       dy = e.touches[0].clientY - start.y;
+      e.preventDefault();
       if (dy > 0) {
-        e.preventDefault();
         el.style.transform = `translateY(${dy}px)`;
-      } else if (start.up) {
-        e.preventDefault();
+      } else {
         el.style.transform = '';
         el.style.maxHeight = 'none';
-        const h = Math.min(full(), start.h - dy);
-        el.style.height = `${h}px`;
-        el.style.borderRadius = h >= full() - 2 ? '0' : '';
-        reveal(h);
-      } else start = null;
+        set(Math.min(full(), start.h - dy));
+        el.style.borderRadius = el.offsetHeight >= full() - 2 ? '0' : '';
+      }
     };
     const onEnd = () => {
       if (!start) return;
       start = null;
-      el.style.transition = 'transform 220ms ease, height 240ms cubic-bezier(0.22, 0.8, 0.2, 1), border-radius 240ms ease';
+      const ease = '260ms cubic-bezier(0.22, 0.8, 0.2, 1)';
+      el.style.transition = `transform 220ms ease, height ${ease}, border-radius ${ease}`;
+      h0.style.transition = `height ${ease}`;
+      if (info.current) info.current.style.transition = `padding ${ease}`;
       if (dy > 110) {
         el.style.transform = 'translateY(100%)';
         window.setTimeout(() => close.current(), 200);
-      } else if (dy < -70) {
+      } else if (dy < -60) {
         el.style.maxHeight = 'none';
-        el.style.height = `${full()}px`;
         el.style.borderRadius = '0';
-        reveal(full());
-        window.setTimeout(() => navigate(detailsUrl), 250);
+        set(full());
+        // In a transition: the sheet stays on screen until the page can render (no blank
+        // loading frame in between, even for a split second).
+        window.setTimeout(() => {
+          window.scrollTo(0, 0);
+          startTransition(() => navigate(detailsUrl));
+        }, 270);
       } else {
         el.style.transform = '';
-        el.style.height = canGrow ? `${collapsed}px` : '';
         el.style.maxHeight = '';
         el.style.borderRadius = '';
-        reveal(collapsed);
+        set(collapsed);
       }
     };
     el.addEventListener('touchstart', onStart, { passive: true });
@@ -207,6 +221,13 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
     };
   }, [detailsUrl, navigate]);
 
+  // What the phone details page shows behind its hero: the poster, same file and sizes (so it's
+  // already loaded when the page takes over).
+  const poster = imageUrl(d.poster_path ?? d.backdrop_path, d.poster_path ? 'poster' : 'backdrop', 780);
+  const posterSet = d.poster_path ? imageSrcSet(d.poster_path, 'poster') : undefined;
+  const fadeOut = { opacity: 'calc(1 - var(--reveal, 0))' } as React.CSSProperties;
+  const fadeIn = { opacity: 'var(--reveal, 0)' } as React.CSSProperties;
+
   return createPortal(
     // Phones: a sheet from the bottom; larger screens: a centred card.
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
@@ -216,87 +237,47 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
         aria-modal="true"
         aria-label={`${title}: details`}
         tabIndex={-1}
-        className="toast-in relative max-h-[90dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none sm:max-h-[88dvh] sm:max-w-3xl sm:rounded-3xl"
+        className="toast-in relative flex max-h-[90dvh] w-full flex-col overflow-y-auto overscroll-contain rounded-t-3xl bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none sm:block sm:max-h-[88dvh] sm:max-w-3xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle (phones). */}
-        <div aria-hidden className="absolute top-2 left-1/2 z-10 h-1 w-10 -translate-x-1/2 rounded-full bg-white/50 sm:hidden" />
+        <div aria-hidden style={fadeOut} className="absolute top-2 left-1/2 z-10 h-1 w-10 -translate-x-1/2 rounded-full bg-white/50 sm:hidden" />
 
-        <div ref={top}>
-          {/* The backdrop sits on top; the info card only overlaps its lower edge. */}
-          <div className="relative">
-            <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 640px) 768px, 100vw" alt="" className="aspect-video w-full sm:aspect-[16/8]" imgClassName="object-[70%_20%]" />
-            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/10 to-bg/20" />
+        {/* The banner. On phones it grows as the sheet is dragged up (see above). */}
+        <div ref={hero} className="relative aspect-video shrink-0 overflow-hidden sm:aspect-[16/8]">
+          <Img path={d.backdrop_path} kind="backdrop" sizes="(min-width: 640px) 768px, 100vw" alt="" className="absolute! inset-0 size-full" imgClassName="object-[70%_20%]" />
+          {poster && <img aria-hidden src={poster} srcSet={posterSet} sizes="100vw" alt="" decoding="async" style={fadeIn} className="absolute inset-0 size-full object-cover object-top sm:hidden" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/10 to-bg/20" style={fadeOut} />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/30 to-bg/50 sm:hidden" style={fadeIn} />
+        </div>
+
+        <div className="absolute top-3 right-3 z-10 flex gap-2" style={fadeOut}>
+          <div className="hidden sm:block">
+            <ExpandButton to={detailsUrl} />
           </div>
+          <button type="button" onClick={onClose} aria-label="Close" className={cx(btn({ icon: true }), 'group/tip relative bg-black/55! backdrop-blur-md hover:bg-black/75!')}>
+            <X className="size-4" />
+            <Tip label="Close" keys="Esc" side="bottom" align="end" />
+          </button>
+        </div>
 
-          <div className="absolute top-3 right-3 z-10 flex gap-2">
-            <div className="hidden sm:block">
-              <ExpandButton to={detailsUrl} />
-            </div>
-            <button type="button" onClick={onClose} aria-label="Close" className={cx(btn({ icon: true }), 'group/tip relative bg-black/55! backdrop-blur-md hover:bg-black/75!')}>
-              <X className="size-4" />
-              <Tip label="Close" keys="Esc" side="bottom" align="end" />
-            </button>
-          </div>
-
-          <div className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
-            <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
-              <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
-              <Facts d={d} type={type} className="mt-2 text-sm" />
-              {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
-              {d.overview && <p className="mt-4 line-clamp-5 text-body-sm leading-6 text-pretty text-white/80">{d.overview}</p>}
-              <div className="mt-5 flex flex-wrap items-center gap-2.5">
-                {play && <PlayTitleButton id={d.id} type={type} onEpisodes={() => onEpisodes?.()} />}
-                <BookmarkMenu variant="round" item={bookmarkItem(d, type)} />
-                <ShareButton title={title} path={detailsUrl} />
-              </div>
+        {/* The info card: overlaps the banner's lower edge; at full height it sits where the page's does. */}
+        <div ref={info} className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
+          <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
+            <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
+            <Facts d={d} type={type} className="mt-2 text-sm" />
+            {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
+            {d.overview && <p className="mt-4 line-clamp-3 text-body-sm leading-6 text-pretty text-white/80 sm:line-clamp-5">{d.overview}</p>}
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              {play && <PlayTitleButton id={d.id} type={type} onEpisodes={() => onEpisodes?.()} />}
+              <FollowButton type={type} id={d.id} title={title} />
+              <BookmarkMenu variant="round" item={bookmarkItem(d, type)} />
             </div>
           </div>
         </div>
-        <SheetMore d={d} type={type} />
       </div>
     </div>,
     document.body,
-  );
-}
-
-/**
- * Phones: the details page's next sections, under the sheet's fold. Dragging the sheet up reveals
- * them (fading in with `--reveal`), so it flows straight into the full page.
- */
-function SheetMore({ d, type }: { d: Details; type: MediaType }) {
-  const trailers = trailersOf(d).slice(0, 4);
-  const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 8);
-  if (!trailers.length && !recs.length) return null;
-  return (
-    <div aria-hidden className="space-y-8 px-4 pb-10 sm:hidden" style={{ opacity: 'var(--reveal, 0)', transform: 'translateY(calc((1 - var(--reveal, 0)) * 24px))' }}>
-      {trailers.length > 0 && (
-        <section>
-          <h3 className="mb-3 text-lg font-semibold tracking-tight">Trailers & videos</h3>
-          <div className="flex gap-3 overflow-hidden">
-            {trailers.map((v) => (
-              <div key={v.key} className="w-64 shrink-0">
-                <img src={`https://i.ytimg.com/vi/${v.key}/mqdefault.jpg`} alt="" loading="lazy" decoding="async" className="aspect-video w-full rounded-2xl bg-surface object-cover" />
-                <p className="mt-2 line-clamp-1 text-body-sm font-medium text-white/90">{v.name}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {recs.length > 0 && (
-        <section>
-          <h3 className="mb-3 text-lg font-semibold tracking-tight">More like this</h3>
-          <div className="flex gap-3 overflow-hidden">
-            {recs.map((m) => (
-              <div key={m.id} className="w-[156px] shrink-0">
-                <Img path={m.poster_path} kind="poster" sizes="156px" alt="" className="aspect-[2/3] rounded-2xl" />
-                <p className="mt-2 truncate text-body-sm font-medium text-white/90">{titleOf(m)}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
   );
 }
 
@@ -363,8 +344,8 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor, onEpisodes }: { d: Det
         {d.overview && <p className="mt-2.5 line-clamp-4 text-caption leading-5 text-pretty text-white/75">{d.overview}</p>}
         <div className="mt-3.5 flex items-center gap-2">
           <PlayTitleButton id={d.id} type={type} size="md" onEpisodes={() => onEpisodes?.()} />
+          <FollowButton type={type} id={d.id} title={title} size="md" className="size-9!" />
           <BookmarkMenu variant="round" size="md" className="shrink-0 [&>button]:size-9" item={bookmarkItem(d, type)} />
-          <ShareButton title={title} path={detailsUrl} size="md" />
         </div>
       </div>
     </div>,

@@ -18,13 +18,23 @@ import { trakt, traktSend, useTraktUser } from './trakt';
 import { tImg, type TEpisode, type TMedia } from './traktData';
 import { affinity, fromTrakt, quality, relevant, useTaste, type Taste } from './recommend';
 import { useFollows } from './follows';
-import { useStore } from './store';
 
 export const DAY = 86_400_000;
 export const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-export type Tag = 'Series premiere' | 'Season premiere' | 'Finale' | 'In theaters' | 'Streaming' | 'New episodes';
+/** What makes a release special: shown as a frame around the card's image with this label. */
+export type Label = 'Premiere' | 'New season' | 'Finale' | 'Series finale' | 'Full season' | 'Special' | 'New to streaming' | 'In theaters';
+
+export interface AiringEpisode {
+  season: number;
+  number: number;
+  /** Empty when the listed name is a placeholder ("Episode 5", "TBA", a time). */
+  name: string;
+  runtime?: number;
+  overview?: string;
+  image?: string;
+}
 
 export interface Airing {
   key: string;
@@ -32,8 +42,10 @@ export interface Airing {
   type: MediaType;
   id: number;
   title: string;
-  /** "S2 E5 · Name", or "S1 E1–8" for a season dropped at once. */
-  sub?: string;
+  /** Line 2: "S2 · E5", "S5 · E1–8 · 8 episodes", "Special 12" (films: none). */
+  se?: string;
+  /** The episode's name when there's just one (and it's a real name). */
+  epName?: string;
   season?: number;
   episode?: number;
   at: number;
@@ -41,17 +53,22 @@ export interface Airing {
   image?: string;
   poster?: string;
   network?: string;
+  /** Minutes; for several episodes, their total. */
   runtime?: number;
-  tag?: Tag;
+  label?: Label;
+  /** Every episode out that day (shows). */
+  episodes?: AiringEpisode[];
   yours: boolean;
   score: number;
 }
 
-type EpRow = { first_aired: string; episode: TEpisode & { episode_type?: string; runtime?: number }; show: TMedia };
+type EpRow = { first_aired: string; episode: TEpisode & { episode_type?: string; runtime?: number; overview?: string | null }; show: TMedia };
 type MovieRow = { released: string; movie: TMedia & { runtime?: number } };
 
-const epTag = (t?: string): Tag | undefined =>
-  t === 'series_premiere' ? 'Series premiere' : t === 'season_premiere' ? 'Season premiere' : t === 'season_finale' || t === 'series_finale' || t === 'mid_season_finale' ? 'Finale' : undefined;
+const epLabel = (t?: string): Label | undefined =>
+  t === 'series_premiere' ? 'Premiere' : t === 'season_premiere' ? 'New season' : t === 'series_finale' ? 'Series finale' : t === 'season_finale' || t === 'mid_season_finale' ? 'Finale' : undefined;
+/** Trakt lists placeholders as names: "Episode 5", "TBA", even air times. */
+export const realName = (n?: string | null) => (n && !/^(episode \d+|tba|tbd)$/i.test(n.trim()) && !/^\d{1,2}:\d\d/.test(n) ? n : '');
 
 interface Raw {
   eps: EpRow[];
@@ -85,11 +102,11 @@ async function fetchRaw(start: Date, days: number, langs: string[], signed: bool
 }
 
 /** Pick and rank a week (or any span) of releases for you. */
-function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<number>, listedMovies: Set<number>): Airing[] {
+function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<string>): Airing[] {
   const out: Airing[] = [];
   const mineShows = new Set(raw.mine.map((r) => r.show.ids.tmdb));
-  // Yours: shows you follow, watch or saved (and Trakt's list); movies on your watchlist.
-  const isYours = (type: MediaType, id: number) => (type === 'tv' ? mineShows.has(id) || followed.has(id) || taste.known.has(`tv-${id}`) : listedMovies.has(id));
+  // Yours: what you follow (and, connected to Trakt, the shows Trakt lists as yours).
+  const isYours = (type: MediaType, id: number) => followed.has(`${type}-${id}`) || (type === 'tv' && mineShows.has(id));
 
   // Episodes: one entry per show per day (a whole season dropped at once becomes "E1–8").
   const groups = new Map<string, EpRow[]>();
@@ -109,31 +126,42 @@ function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<number>, lis
     const id = show.ids.tmdb!;
     const yours = isYours('tv', id);
     const item = fromTrakt('tv', show);
-    const tag = g.map((r) => epTag(r.episode.episode_type)).find(Boolean) ?? (g.length > 2 ? 'New episodes' : undefined);
+    const last = g[g.length - 1];
+    const special = first.episode.season === 0;
+    const label: Label | undefined = special ? 'Special' : g.length >= 3 && first.episode.number === 1 ? 'Full season' : (epLabel(last.episode.episode_type) ?? epLabel(first.episode.episode_type));
     const votes = show.votes ?? 0;
     if (!yours) {
       if (!item || !relevant(item, taste)) continue;
       // A real audience; premieres of newer shows get a lower bar.
-      if (votes < (tag === 'Series premiere' || tag === 'Season premiere' ? 150 : 700)) continue;
+      if (votes < (label === 'Premiere' || label === 'New season' || label === 'Full season' ? 150 : 700)) continue;
     }
-    const last = g[g.length - 1];
-    const ep = (r: EpRow) => r.episode.number;
-    const sub =
-      g.length > 1
-        ? `S${first.episode.season} E${ep(first)}–${ep(last)}`
-        : `S${first.episode.season} E${ep(first)}${first.episode.title && !/^episode \d+$/i.test(first.episode.title) && !/^\d{1,2}:\d\d/.test(first.episode.title) ? ` · ${first.episode.title}` : ''}`;
+    const episodes: AiringEpisode[] = g.map((r) => ({
+      season: r.episode.season,
+      number: r.episode.number,
+      name: realName(r.episode.title),
+      runtime: r.episode.runtime ?? undefined,
+      overview: r.episode.overview ?? undefined,
+      image: tImg(r.episode.images?.screenshot, true) ?? tImg(show.images?.fanart, true),
+    }));
+    const runtime = episodes.reduce((n, e) => n + (e.runtime ?? 0), 0) || undefined;
+    const se = special
+      ? `Special ${first.episode.number}${g.length > 1 ? `–${last.episode.number}` : ''}`
+      : g.length > 1
+        ? `S${first.episode.season} · E${first.episode.number}–${last.episode.number} · ${g.length} episodes`
+        : `S${first.episode.season} · E${first.episode.number}`;
     const score =
       (yours ? 1 : 0) +
       0.5 * (Math.log1p(votes) / Math.log1p(maxVotes)) +
       (item ? 0.2 * affinity(item, taste) + 0.15 * quality(item) : 0) +
-      (tag === 'Series premiere' || tag === 'Season premiere' ? 0.15 : tag === 'Finale' ? 0.08 : 0);
+      (label === 'Premiere' || label === 'New season' || label === 'Full season' ? 0.15 : label === 'Finale' || label === 'Series finale' ? 0.08 : 0);
     out.push({
       key: `tv-${id}-${first.episode.season}-${first.episode.number}`,
       kind: 'episode',
       type: 'tv',
       id,
       title: show.title,
-      sub,
+      se,
+      epName: g.length === 1 ? episodes[0].name : '',
       season: first.episode.season,
       episode: first.episode.number,
       at: startOfDay(new Date(first.first_aired)).getTime(),
@@ -141,8 +169,9 @@ function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<number>, lis
       image: tImg(first.episode.images?.screenshot, true) ?? tImg(show.images?.fanart, true) ?? tImg(show.images?.thumb),
       poster: tImg(show.images?.poster),
       network: show.network ?? undefined,
-      runtime: first.episode.runtime ?? undefined,
-      tag,
+      runtime,
+      label,
+      episodes,
       yours,
       score,
     });
@@ -170,7 +199,8 @@ function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<number>, lis
       image: tImg(m.images?.fanart, true) ?? tImg(m.images?.thumb),
       poster: tImg(m.images?.poster),
       runtime: m.runtime ?? undefined,
-      tag: 'Streaming',
+      se: [m.year, m.rating ? `★ ${m.rating.toFixed(1)}` : ''].filter(Boolean).join(' · '),
+      label: 'New to streaming',
       yours,
       score: (yours ? 1 : 0) + 0.5 * (Math.log1p(m.votes ?? 0) / Math.log1p(maxMv)) + (item ? 0.2 * affinity(item, taste) + 0.15 * quality(item) : 0),
     });
@@ -191,7 +221,8 @@ function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<number>, lis
       allDay: true,
       image: m.backdrop_path ? `https://image.tmdb.org/t/p/w780${m.backdrop_path}` : undefined,
       poster: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : undefined,
-      tag: 'In theaters',
+      se: [(m.release_date ?? '').slice(0, 4), m.vote_average && (m.vote_count ?? 0) > 20 ? `★ ${m.vote_average.toFixed(1)}` : ''].filter(Boolean).join(' · '),
+      label: 'In theaters',
       yours,
       score: (yours ? 1 : 0) + 0.55 * (Math.log1p(m.popularity ?? 0) / Math.log1p(maxPop)) + 0.2 * affinity(m, taste),
     });
@@ -224,11 +255,6 @@ export function useSchedule(start: Date, days = 7, perDay = 8, enabled = true) {
     enabled,
   });
   const follows = useFollows();
-  const watchlist = useStore((st) => st.watchlist);
-  const items = useMemo(() => {
-    if (!raw.data) return [];
-    const listed = new Set(watchlist.filter((w) => w.mediaType === 'movie' && w.status !== 'completed').map((w) => w.id));
-    return pick(raw.data, taste, perDay, new Set(follows.map((f) => f.id)), listed);
-  }, [raw.data, taste, perDay, follows, watchlist]);
+  const items = useMemo(() => (raw.data ? pick(raw.data, taste, perDay, new Set(follows.map((f) => `${f.type}-${f.id}`))) : []), [raw.data, taste, perDay, follows]);
   return { items, isPending: raw.isPending, isError: raw.isError, refetch: raw.refetch };
 }

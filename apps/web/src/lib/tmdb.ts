@@ -60,6 +60,7 @@ export interface SeasonSummary {
 export interface EpisodeRef {
   season_number: number;
   episode_number: number;
+  episode_type?: string;
   air_date?: string;
   name?: string;
   still_path?: string | null;
@@ -119,6 +120,8 @@ export interface Episode {
   runtime: number | null;
   air_date: string | null;
   vote_average: number;
+  /** TMDB: 'standard' | 'finale' | 'mid_season'. */
+  episode_type?: string;
 }
 
 export interface Season {

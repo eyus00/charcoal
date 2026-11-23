@@ -25,9 +25,8 @@ const weekday = (t: number) => new Date(t).toLocaleDateString(undefined, { weekd
 const TILE_W = 'w-[240px] shrink-0 snap-start sm:w-[272px]';
 
 /**
- * What's coming out, a week at a time. "Your shows": shows you follow, watch or saved, and movies on
- * your watchlist (followed shows get reminders). "Explore": the notable rest (lib/schedule), where
- * you follow shows or add movies to To watch.
+ * What's coming out, a week at a time. "Your shows": what you follow (shows and films), with
+ * reminders. "Explore": the notable rest (lib/schedule), where the + on a card follows it.
  */
 export default function Calendar() {
   useTitle('Calendar');
@@ -130,7 +129,7 @@ export default function Calendar() {
             onClick={() =>
               downloadIcs(
                 `Charcoal ${range}`,
-                yours.map((a) => ({ key: a.key, title: a.title, body: a.sub, at: a.at, allDay: true, url: linkOf(a) })),
+                yours.map((a) => ({ key: a.key, title: a.title, body: a.se, at: a.at, allDay: true, url: linkOf(a) })),
               )
             }
             aria-label="Add this week to your calendar app"
@@ -154,7 +153,7 @@ export default function Calendar() {
           {section === 'yours' ? <CalendarDays className="mb-1 size-7 text-faint" /> : <Compass className="mb-1 size-7 text-faint" />}
           <p className="font-medium">{section === 'yours' ? 'Nothing from your shows this week' : 'Nothing notable this week'}</p>
           <p className="max-w-sm text-sm text-muted">
-            {section === 'yours' ? 'Follow shows in Explore, or add them to your watchlist, and their new episodes show up here with reminders.' : 'Try next week.'}
+            {section === 'yours' ? 'Follow shows and films (the + on any card, or on their page). New episodes and streaming days show up here, with a reminder.' : 'Try next week.'}
           </p>
           {section === 'yours' && (
             <button type="button" onClick={() => setSection('explore')} className={cx(btn({ variant: 'primary' }), 'mt-3')}>
@@ -175,7 +174,7 @@ export default function Calendar() {
             {isPending ? (
               Array.from({ length: 4 }, (_, i) => <AiringTileSkeleton key={i} />)
             ) : (byDay.get(selected) ?? []).length ? (
-              (byDay.get(selected) ?? []).map((a) => <AiringTile key={a.key} a={a} />)
+              (byDay.get(selected) ?? []).map((a) => <AiringTile key={a.key} a={a} details />)
             ) : (
               <p className="col-span-full py-16 text-center text-sm text-muted">Nothing on this day.</p>
             )}
@@ -204,7 +203,7 @@ function DayRow({ day, items, loading }: { day: number; items: Airing[]; loading
       ) : items.length ? (
         <Scroller label={new Date(day).toDateString()} bleed={false}>
           {items.map((a) => (
-            <AiringTile key={a.key} a={a} className={TILE_W} />
+            <AiringTile key={a.key} a={a} className={TILE_W} details />
           ))}
         </Scroller>
       ) : (

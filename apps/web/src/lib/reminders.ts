@@ -80,7 +80,7 @@ export function startReminderLoop(open: (url: string) => void) {
     for (const r of due) {
       if ('Notification' in window && Notification.permission === 'granted') {
         const n = new Notification(r.title, {
-          body: r.body ? `${r.body} · out now` : 'Out now',
+          body: r.body === 'Now streaming' ? 'Now streaming' : r.body ? `${r.body} · out now` : 'Out now',
           tag: r.key,
           icon: '/favicon.svg',
         });
@@ -89,7 +89,7 @@ export function startReminderLoop(open: (url: string) => void) {
           open(r.url);
         };
       }
-      toast(`${r.title}${r.body ? ` · ${r.body}` : ''} is out now`, {
+      toast(r.body === 'Now streaming' ? `${r.title} is now streaming` : `${r.title}${r.body ? ` · ${r.body}` : ''} is out now`, {
         label: 'Open',
         run: () => open(r.url),
       });
