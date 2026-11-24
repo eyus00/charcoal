@@ -107,7 +107,28 @@ type Track = { label: string; url?: string; text?: string; format?: string; head
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, onDetails, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({
+  data,
+  media,
+  title,
+  subtitle,
+  meta,
+  poster,
+  detailsUrl,
+  onEpisodes,
+  onDetails,
+  resumeAt,
+  header,
+  next,
+  prev,
+  episodes,
+  onProgress,
+  onExhausted,
+  searching,
+  onRefresh,
+  refreshing,
+  generation,
+}: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
@@ -127,7 +148,10 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   dataRef.current = data;
   const urlAt = (i: number) => dataRef.current.sources[i]?.url;
   const [selectedUrl, setSelectedUrl] = useState(() => data.sources[0]?.url);
-  const sourceIdx = Math.max(0, data.sources.findIndex((x) => x.url === selectedUrl));
+  const sourceIdx = Math.max(
+    0,
+    data.sources.findIndex((x) => x.url === selectedUrl),
+  );
   const setSourceIdx = useCallback((i: number) => setSelectedUrl(dataRef.current.sources[i]?.url), []);
   const failedUrls = useRef(new Set<string>());
   const failed = useRef({
@@ -178,9 +202,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     const vertical = lowerHalf ? { bottom: box.bottom - r.bottom } : { top: r.top - box.top };
     // Beside the menu when there's room, else just above the row.
     const style: React.CSSProperties =
-      pop.left - root.left >= W + 16
-        ? { width: W, right: box.right - pop.left + 8, ...vertical }
-        : { width: Math.min(W, pop.width - 12), right: box.right - r.right, bottom: box.bottom - r.top + 4 };
+      pop.left - root.left >= W + 16 ? { width: W, right: box.right - pop.left + 8, ...vertical } : { width: Math.min(W, pop.width - 12), right: box.right - r.right, bottom: box.bottom - r.top + 4 };
     setInfo({ url, style });
   };
   const setMenu = useCallback((m: Menu) => {
@@ -522,7 +544,10 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
         play();
       };
       // Direct files: have the extension allow the host first.
-      if (direct) allowStream(new URL(source.url).hostname, source.headers).catch(() => {}).finally(start);
+      if (direct)
+        allowStream(new URL(source.url).hostname, source.headers)
+          .catch(() => {})
+          .finally(start);
       else start();
     }
 
@@ -535,7 +560,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       v.removeAttribute('src');
       v.load(); // stop downloading
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url, direct]);
 
   // Apply persisted volume/speed (hold-to-speed overrides the speed while held).
@@ -767,8 +792,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   useEffect(() => {
     const v = video.current as (HTMLVideoElement & { webkitCurrentPlaybackTargetIsWireless?: boolean }) | null;
     if (!v || !('WebKitPlaybackTargetAvailabilityEvent' in window)) return;
-    const onAvail = (e: Event) =>
-      setAirplay((a) => ((e as Event & { availability?: string }).availability === 'available' ? (a === 'active' ? a : 'available') : a === 'active' ? a : 'none'));
+    const onAvail = (e: Event) => setAirplay((a) => ((e as Event & { availability?: string }).availability === 'available' ? (a === 'active' ? a : 'available') : a === 'active' ? a : 'none'));
     const onWireless = () => setAirplay(v.webkitCurrentPlaybackTargetIsWireless ? 'active' : 'available');
     v.addEventListener('webkitplaybacktargetavailabilitychanged', onAvail);
     v.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', onWireless);
@@ -1047,9 +1071,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
           2× <ChevronsRight className="size-4" />
         </div>
       )}
-      {notice && !held && (
-        <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">{notice}</div>
-      )}
+      {notice && !held && <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">{notice}</div>}
       {dragging && (
         <div className="pointer-events-none absolute inset-4 z-40 grid place-items-center rounded-3xl border-2 border-dashed border-white/40 bg-black/70 text-center">
           <div>
@@ -1068,9 +1090,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
             ) : (
               <AlertTriangle className="mx-auto size-10 text-warning" />
             )}
-            <p className="font-medium">
-              {refreshing ? 'Getting fresh links…' : searching ? 'None of these played. Looking for more sources…' : 'None of the sources would play.'}
-            </p>
+            <p className="font-medium">{refreshing ? 'Getting fresh links…' : searching ? 'None of these played. Looking for more sources…' : 'None of the sources would play.'}</p>
             <div className="flex justify-center gap-2">
               <button
                 onClick={() => {
@@ -1186,60 +1206,58 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                   {view === 'main' && (
                     <>
                       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                      <MenuItem selected={subIdx < 0} onClick={() => (chooseSub(-1), setMenu(null))}>
-                        Off
-                      </MenuItem>
-                      {tracks.map((s, i) => (
-                        <MenuItem key={(s.url ?? 'file') + s.label + i} selected={subIdx === i} onClick={() => (chooseSub(i), setMenu(null))}>
-                          <span className="flex-1 truncate">{s.label}</span>
-                          {s.text !== undefined && <span className="text-micro tracking-wider uppercase opacity-50">file</span>}
+                        <MenuItem selected={subIdx < 0} onClick={() => (chooseSub(-1), setMenu(null))}>
+                          Off
                         </MenuItem>
-                      ))}
+                        {tracks.map((s, i) => (
+                          <MenuItem key={(s.url ?? 'file') + s.label + i} selected={subIdx === i} onClick={() => (chooseSub(i), setMenu(null))}>
+                            <span className="flex-1 truncate">{s.label}</span>
+                            {s.text !== undefined && <span className="text-micro tracking-wider uppercase opacity-50">file</span>}
+                          </MenuItem>
+                        ))}
                       </div>
                       {/* Always visible below the list. */}
                       <div className="mt-1 shrink-0 border-t border-white/[0.08] pt-1">
-                      {subIdx >= 0 && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 text-sm">
-                          <span className="flex-1">
-                            Timing
-                            <span className="block text-xs text-muted tabular-nums">
-                              {delay === 0 ? 'In sync' : `${Math.abs(delay)}s ${delay > 0 ? 'later' : 'earlier'}`} · Z / X
+                        {subIdx >= 0 && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 text-sm">
+                            <span className="flex-1">
+                              Timing
+                              <span className="block text-xs text-muted tabular-nums">{delay === 0 ? 'In sync' : `${Math.abs(delay)}s ${delay > 0 ? 'later' : 'earlier'}`} · Z / X</span>
                             </span>
-                          </span>
-                          <StepButton label="Earlier (Z)" onClick={() => nudgeDelay(-0.5)}>
-                            <Minus className="size-4" />
-                          </StepButton>
-                          <StepButton label="Later (X)" onClick={() => nudgeDelay(0.5)}>
-                            <Plus className="size-4" />
-                          </StepButton>
-                        </div>
-                      )}
-                      {cues.length > 0 && (
-                        <button onClick={() => setView('transcript')} className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm transition-colors hover:bg-white/10">
-                          <span className="flex-1">
-                            Transcript
-                            <span className="block text-xs text-muted">Read along, jump to a line</span>
-                          </span>
-                          <ChevronRight className="size-4 shrink-0 text-muted" />
-                        </button>
-                      )}
-                      <div className="grid grid-cols-2 gap-1.5 pt-1">
-                        <Card
-                          icon={Palette}
-                          label="Style"
-                          value={
-                            <span className="flex items-center gap-1.5">
-                              {Math.round(settings.subSize * 100)}%,
-                              {/* Like the colour picker's selected swatch: a white ring around the colour. */}
-                              <span aria-label={subColorName(settings.subColor)} className="grid size-[18px] place-items-center rounded-full ring-[1.5px] ring-white">
-                                <span className="size-3 rounded-full" style={{ background: settings.subColor }} />
+                            <StepButton label="Earlier (Z)" onClick={() => nudgeDelay(-0.5)}>
+                              <Minus className="size-4" />
+                            </StepButton>
+                            <StepButton label="Later (X)" onClick={() => nudgeDelay(0.5)}>
+                              <Plus className="size-4" />
+                            </StepButton>
+                          </div>
+                        )}
+                        {cues.length > 0 && (
+                          <button onClick={() => setView('transcript')} className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm transition-colors hover:bg-white/10">
+                            <span className="flex-1">
+                              Transcript
+                              <span className="block text-xs text-muted">Read along, jump to a line</span>
+                            </span>
+                            <ChevronRight className="size-4 shrink-0 text-muted" />
+                          </button>
+                        )}
+                        <div className="grid grid-cols-2 gap-1.5 pt-1">
+                          <Card
+                            icon={Palette}
+                            label="Style"
+                            value={
+                              <span className="flex items-center gap-1.5">
+                                {Math.round(settings.subSize * 100)}%,
+                                {/* Like the colour picker's selected swatch: a white ring around the colour. */}
+                                <span aria-label={subColorName(settings.subColor)} className="grid size-[18px] place-items-center rounded-full ring-[1.5px] ring-white">
+                                  <span className="size-3 rounded-full" style={{ background: settings.subColor }} />
+                                </span>
                               </span>
-                            </span>
-                          }
-                          onClick={() => setView('style')}
-                        />
-                        <Card icon={FileUp} label="Load file" value="SRT, VTT" onClick={() => fileInput.current?.click()} />
-                      </div>
+                            }
+                            onClick={() => setView('style')}
+                          />
+                          <Card icon={FileUp} label="Load file" value="SRT, VTT" onClick={() => fileInput.current?.click()} />
+                        </div>
                       </div>
                     </>
                   )}
@@ -1449,19 +1467,18 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                           {sp === 1 ? 'Normal' : `${sp}×`}
                         </MenuItem>
                       ))}
-                      <p className="px-3 pt-1 pb-2 text-xs text-muted">
-                        {settings.holdToSpeed ? 'Tip: press and hold the video for 2×. ' : ''}&lt; and &gt; change speed.
-                      </p>
+                      <p className="px-3 pt-1 pb-2 text-xs text-muted">{settings.holdToSpeed ? 'Tip: press and hold the video for 2×. ' : ''}&lt; and &gt; change speed.</p>
                     </>
                   )}
                 </Popover>
               )}
-              {menu === 'settings' && view === 'source' && info && (() => {
-                const i = data.sources.findIndex((x) => x.url === info.url);
-                return i < 0 ? null : (
-                  <SourceInfo source={data.sources[i]} reason={failed.current.has(i) ? failReason.current.get(i) : undefined} style={info.style} />
-                );
-              })()}
+              {menu === 'settings' &&
+                view === 'source' &&
+                info &&
+                (() => {
+                  const i = data.sources.findIndex((x) => x.url === info.url);
+                  return i < 0 ? null : <SourceInfo source={data.sources[i]} reason={failed.current.has(i) ? failReason.current.get(i) : undefined} style={info.style} />;
+                })()}
             </div>
             {/* A TV can't add the headers direct (extension) streams need. */}
             {!direct && (cast.state === 'NOT_CONNECTED' || cast.state === 'CONNECTING' || casting) && (
@@ -1622,13 +1639,14 @@ export function TitleInfo({
               type="button"
               onClick={onEpisodes}
               aria-label={`Episodes, now playing ${subtitle} (E)`}
-              className="group/tip pointer-events-auto relative mt-0.5 text-left text-sm text-white/85 decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline md:text-base"
+              className="group/tip pointer-events-auto relative mt-0.5 block max-w-full text-left text-sm text-white/85 decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline md:text-base"
             >
-              {subtitle}
+              {/* One line, "…" if longer (the full name is in the episode list). */}
+              <span className="block truncate">{subtitle}</span>
               <Tip label="Episodes" keys="E" side="bottom" align="start" />
             </button>
           ) : (
-            <p className="mt-0.5 text-sm text-white/85 md:text-base">{subtitle}</p>
+            <p className="mt-0.5 truncate text-sm text-white/85 md:text-base">{subtitle}</p>
           ))}
         {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
       </div>
@@ -1817,9 +1835,7 @@ const ReportRow = ({ name, reason, wrap }: { name: string; reason?: string; wrap
   );
 };
 const Divider = () => <div className="mx-3 my-1.5 h-px bg-white/[0.08]" />;
-const Badge = ({ children }: { children: ReactNode }) => (
-  <span className="rounded px-1.5 py-px text-micro font-semibold tracking-wider opacity-70 ring-1 ring-current">{children}</span>
-);
+const Badge = ({ children }: { children: ReactNode }) => <span className="rounded px-1.5 py-px text-micro font-semibold tracking-wider opacity-70 ring-1 ring-current">{children}</span>;
 
 function BackHeader({ onBack, children }: { onBack: () => void; children: ReactNode }) {
   return (
@@ -1867,10 +1883,7 @@ function MenuItem({ selected, onClick, children }: { selected?: boolean; onClick
     <button
       onClick={onClick}
       aria-pressed={selected}
-      className={cx(
-        'flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors',
-        selected ? 'bg-white text-black' : 'hover:bg-white/10',
-      )}
+      className={cx('flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors', selected ? 'bg-white text-black' : 'hover:bg-white/10')}
     >
       {children}
       {selected && <Check className="ml-auto size-4 shrink-0" />}
@@ -1880,19 +1893,7 @@ function MenuItem({ selected, onClick, children }: { selected?: boolean; onClick
 
 const SEGMENT_NAME: Record<Segment['type'], string> = { intro: 'Intro', recap: 'Recap', credits: 'Credits', preview: 'Preview' };
 
-function SeekBar({
-  time,
-  duration,
-  buffered,
-  segments,
-  onSeek,
-}: {
-  time: number;
-  duration: number;
-  buffered: number;
-  segments: Segment[];
-  onSeek: (t: number) => void;
-}) {
+function SeekBar({ time, duration, buffered, segments, onSeek }: { time: number; duration: number; buffered: number; segments: Segment[]; onSeek: (t: number) => void }) {
   const bar = useRef<HTMLDivElement>(null);
   const [scrub, setScrub] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);

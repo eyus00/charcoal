@@ -494,8 +494,8 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
       >
         <Tip label="Choose a server" side="bottom" align="end" hidden={open} />
         {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
-        {/* Phones show the name only for Jelly (embeds: just the arrow, to save room). */}
-        <span className={cx('max-w-[7rem] truncate font-medium', current === 'jelly' ? 'inline' : 'hidden sm:inline')}>{name}</span>
+        {/* Phones: just the arrow (and Jelly's status dot), so the title gets the room. */}
+        <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
         <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
         <Kbd light={open}>S</Kbd>
       </button>

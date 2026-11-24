@@ -249,7 +249,7 @@ function Watchlist() {
                         )}
                       </div>
                       {list.length ? (
-                        <Scroller label={LIBRARY_LABEL[st]}>
+                        <Scroller label={LIBRARY_LABEL[st]} bleed={false}>
                           {list.slice(0, 20).map((w) => (
                             <LibraryCard key={w.mediaType + w.id} w={w} className={ROW_ITEM} />
                           ))}

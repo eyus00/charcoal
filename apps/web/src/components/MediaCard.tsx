@@ -75,7 +75,7 @@ export const CertBadge = ({ children }: { children: ReactNode }) => (
 /** "2025 · ★ 7.2" */
 export function Meta({ year, rating, extra, className }: { year?: string; rating?: number; extra?: ReactNode; className?: string }) {
   return (
-    <div className={cx('flex items-center gap-1.5 text-caption text-muted', className)}>
+    <div className={cx('flex min-h-[1lh] items-center gap-1.5 text-caption text-muted', className)}>
       {year && <span>{year}</span>}
       {year && rating ? <span className="text-faint">·</span> : null}
       {rating ? (

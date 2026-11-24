@@ -80,8 +80,9 @@
 
 /* Horizontal scrollers clip vertically too; give rings/shadows room without shifting layout. */
 @utility scroll-row {
-  padding-block: 8px;
-  margin-block: -8px;
+  /* Room above and below for frame labels and outlines (Calendar cards). */
+  padding-block: 16px;
+  margin-block: -16px;
 }
 
 /* Loading placeholder: the surface colour with a soft highlight sweeping across. */
@@ -188,10 +189,16 @@ video::cue {
   container-type: inline-size;
 }
 .row-item {
-  --row-k: 2.4;
+  /* Phones: one card and most of the next, big enough to read. */
+  --row-k: 1.75;
   width: calc((100cqi - var(--row-pad, 0px)) / var(--row-k) - 16px);
 }
-@container (min-width: 600px) {
+@container (min-width: 480px) {
+  .row-item {
+    --row-k: 2.4;
+  }
+}
+@container (min-width: 640px) {
   .row-item {
     --row-k: 3.4;
   }

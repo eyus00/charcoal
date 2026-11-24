@@ -67,12 +67,11 @@ function Shell() {
     const stop = startWatchlistSync();
     return () => void stop();
   }, []);
-  const onDetails = /^\/(movie|tv)\/\d+/.test(useLocation().pathname);
   return (
     <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[232px]' : 'lg:pl-[80px]')}>
       <ScrollRestoration />
       <Rail />
-      <div className={cx('relative min-w-0 px-4 md:px-8 lg:px-10 lg:pb-12', onDetails ? 'pb-10' : 'pb-24')}>
+      <div className={'relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12'}>
         <TopBar hideLogo={sidebarOpen} />
         <main>
           <Suspense fallback={<PageSkeleton />}>
@@ -81,7 +80,7 @@ function Shell() {
         </main>
       </div>
       {/* Phones: a title's page is full screen (as it grows out of the details sheet): no tab bar. */}
-      {!onDetails && <BottomBar />}
+      <BottomBar />
       <ScrollTop />
       <Hotkeys openSearch={() => searchCtl.open()} />
       <ReminderLoop />
@@ -396,6 +395,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   };
   // Type isn't counted: it's shown by the placeholder (and the page switch on results).
   const count = activeFilterCount(draft);
+  const atHome = useLocation().pathname === '/';
 
   return (
     <>
@@ -406,7 +406,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
           'absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
           // With the sidebar open, the wordmark moves into it.
           hideLogo && 'lg:hidden',
-          open && 'max-md:hidden',
+          // Phones: the wordmark is on Home only; other pages start with their own title.
+          (open || !atHome) && 'max-md:hidden',
         )}
         aria-label="Charcoal home"
       >

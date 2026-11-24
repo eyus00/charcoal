@@ -72,7 +72,7 @@ export const usePeek = () =>
     () => current,
   );
 
-/** Touch screens without hover (phones, tablets): a tap on a card opens the peek sheet first. */
+/** Touch screens without hover (phones, tablets): no previews there, cards just open. */
 const touchOnly = () => matchMedia('(hover: none) and (pointer: coarse)').matches;
 const canHover = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
 
@@ -87,10 +87,12 @@ export function peekProps(type: MediaType, id: number, opts: { hover?: boolean; 
     e.preventDefault();
     peek.open(type, id, 'medium');
   };
+  void tap;
   return {
-    onContextMenu: open,
+    // Phones and tablets: no preview at all; a tap goes straight to the page.
+    onContextMenu: (e: React.MouseEvent) => !touchOnly() && open(e),
     onClickCapture: (e: React.MouseEvent) => {
-      if (!e.shiftKey && !(tap && touchOnly())) return;
+      if (!e.shiftKey || touchOnly()) return;
       e.stopPropagation();
       open(e);
     },

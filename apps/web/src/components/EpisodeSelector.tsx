@@ -8,6 +8,7 @@ import { btn } from './Button';
 import { Chip } from './EpisodeTile';
 import LibraryButton from './LibraryButton';
 import { Dialog } from './Modal';
+import { useSwipeToClose } from '../lib/swipe';
 import { Frame, ReminderBell, dateLabel, seLabel } from './AiringTile';
 import Kbd from './Kbd';
 import { CARD_INFO } from './MediaCard';
@@ -129,6 +130,8 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   const qc = useQueryClient();
   const navigate = useNavigate();
   const history = useStore((s) => s.history);
+  const sheet = useRef<HTMLDivElement>(null);
+  useSwipeToClose(sheet, onClose, 767);
   const seasons = allSeasons(show);
   const resume = resumeTarget(history, 'tv', show.id);
   // Where it opens: an episode asked for (or playing), else where you left the list last time,
@@ -241,9 +244,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     <Modal label={`${titleOf(show)} episodes`} onClose={onClose}>
       <div className="fixed inset-0 flex items-end justify-center bg-black/70 md:items-center md:p-8" onClick={onClose}>
         <div
-          className="toast-in flex h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-transparent bg-surface shadow-2xl md:h-[84dvh] md:max-w-5xl md:rounded-3xl"
+          ref={sheet}
+          className="toast-in relative flex h-[94dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-transparent bg-surface shadow-2xl md:h-[84dvh] md:max-w-5xl md:rounded-3xl"
           onClick={(e) => e.stopPropagation()}
         >
+          <span aria-hidden className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 md:hidden" />
           <div className="flex items-center gap-3 px-5 pt-5 pb-4 md:px-7 md:pt-6">
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
               <div className="min-w-0">
@@ -281,13 +286,15 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
 
           <div ref={list} className="flex-1 overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7">
             {isPending ? (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                 {Array.from({ length: 6 }, (_, i) => (
-                  <div key={i}>
-                    <Bone className="aspect-video rounded-2xl" />
-                    <div className="h-[112px] pt-3">
+                  <div key={i} className="flex gap-3 py-2.5 sm:block sm:py-0">
+                    <Bone className="aspect-video w-[44%] shrink-0 rounded-2xl sm:w-auto" />
+                    <div className="flex-1 sm:h-[112px] sm:pt-3">
                       <Bone className="h-4 w-3/4" />
                       <Bone className="mt-2 h-3 w-1/3" />
+                      <Bone className="mt-3 h-3 w-full sm:hidden" />
+                      <Bone className="mt-1.5 h-3 w-4/5 sm:hidden" />
                     </div>
                   </div>
                 ))}
@@ -297,7 +304,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             ) : !data.episodes.length ? (
               <p className="py-16 text-center text-muted">No episodes listed yet.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                 {data.episodes.map((ep) => {
                   const h = progress.get(ep.episode_number);
                   const pct = percent(h);
@@ -307,79 +314,82 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                   const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
                   const body = (
                     <>
-                      <Frame label={upcoming ? releaseLabel(ep) : undefined} bg="bg-surface">
-                        <div className={cx('relative overflow-hidden rounded-2xl', isCurrent && !isSelected && 'ring-2 ring-white/70')}>
-                          {ep.still_path ? (
-                            <Img
-                              path={ep.still_path}
-                              kind="still"
-                              sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
-                              alt=""
-                              className="aspect-video"
-                              imgClassName={upcoming ? 'opacity-50' : undefined}
-                            />
-                          ) : (
-                            // No still yet (usually upcoming): a calm placeholder; the tag says when it airs.
-                            <div className="grid aspect-video place-items-center bg-white/[0.04]">
-                              <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
-                            </div>
-                          )}
-                          {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
-                          {!upcoming && (
-                            <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
-                              <span className="grid size-11 place-items-center rounded-full bg-white text-black">
-                                <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
-                              </span>
-                            </span>
-                          )}
-                          {isCurrent && (
-                            <span className="absolute top-2.5 left-2.5">
-                              <Chip light>Now playing</Chip>
-                            </span>
-                          )}
-                          {/* Not out yet: nothing to play; the bell reminds you of this one. */}
-                          {upcoming && ep.air_date && (
-                            <span className="absolute top-2 right-2">
-                              <ReminderBell
-                                a={{
-                                  key: `tv-${show.id}-${season}-${ep.episode_number}`,
-                                  kind: 'episode',
-                                  type: 'tv',
-                                  id: show.id,
-                                  title: titleOf(show),
-                                  at: new Date(`${ep.air_date}T00:00:00`).getTime(),
-                                  yours: false,
-                                  score: 0,
-                                }}
-                                ep={{ season, number: ep.episode_number, name: ep.name }}
+                      {/* Phones: a row (still left, text right), like the player's small picker; larger: a card. */}
+                      <div className="w-[44%] shrink-0 self-start pt-2.5 sm:w-auto sm:pt-0">
+                        <Frame label={upcoming ? releaseLabel(ep) : undefined} bg="bg-surface">
+                          <div className={cx('relative overflow-hidden rounded-2xl', isCurrent && !isSelected && 'ring-2 ring-white/70')}>
+                            {ep.still_path ? (
+                              <Img
+                                path={ep.still_path}
+                                kind="still"
+                                sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
+                                alt=""
+                                className="aspect-video"
+                                imgClassName={upcoming ? 'opacity-50' : undefined}
                               />
-                            </span>
-                          )}
-                          {/* Watched / how far you got (white, bottom-left), runtime (bottom-right): as in Continue watching. */}
-                          {h?.isCompleted ? (
-                            <span className="absolute bottom-2.5 left-2.5">
-                              <Chip>
-                                <Check className="size-3.5" /> Watched
-                              </Chip>
-                            </span>
-                          ) : watched ? (
-                            <span className="absolute bottom-2.5 left-2.5">
-                              <Chip light>{formatRuntime(watched)}</Chip>
-                            </span>
-                          ) : null}
-                          {ep.runtime ? (
-                            <span className="absolute right-2.5 bottom-2.5">
-                              <Chip>{formatRuntime(ep.runtime)}</Chip>
-                            </span>
-                          ) : null}
-                          {pct > 0 && !h?.isCompleted && (
-                            <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
-                              <span className="block h-full bg-white" style={{ width: `${pct}%` }} />
-                            </span>
-                          )}
-                        </div>
-                      </Frame>
-                      <div className={cx(CARD_INFO, 'min-h-[112px] flex-1 pb-3')}>
+                            ) : (
+                              // No still yet (usually upcoming): a calm placeholder; the tag says when it airs.
+                              <div className="grid aspect-video place-items-center bg-white/[0.04]">
+                                <CalendarClock className="size-6 text-faint" strokeWidth={1.5} />
+                              </div>
+                            )}
+                            {/* Play hint: in the player any card plays; on the title page only the selected one does. */}
+                            {!upcoming && (
+                              <span className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition group-hover:opacity-100">
+                                <span className="grid size-11 place-items-center rounded-full bg-white text-black">
+                                  <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
+                                </span>
+                              </span>
+                            )}
+                            {isCurrent && (
+                              <span className="absolute top-2.5 left-2.5">
+                                <Chip light>Now playing</Chip>
+                              </span>
+                            )}
+                            {/* Not out yet: nothing to play; the bell reminds you of this one. */}
+                            {upcoming && ep.air_date && (
+                              <span className="absolute top-2 right-2">
+                                <ReminderBell
+                                  a={{
+                                    key: `tv-${show.id}-${season}-${ep.episode_number}`,
+                                    kind: 'episode',
+                                    type: 'tv',
+                                    id: show.id,
+                                    title: titleOf(show),
+                                    at: new Date(`${ep.air_date}T00:00:00`).getTime(),
+                                    yours: false,
+                                    score: 0,
+                                  }}
+                                  ep={{ season, number: ep.episode_number, name: ep.name }}
+                                />
+                              </span>
+                            )}
+                            {/* Watched / how far you got (white, bottom-left), runtime (bottom-right): as in Continue watching. */}
+                            {h?.isCompleted ? (
+                              <span className="absolute bottom-2.5 left-2.5">
+                                <Chip>
+                                  <Check className="size-3.5" /> Watched
+                                </Chip>
+                              </span>
+                            ) : watched ? (
+                              <span className="absolute bottom-2.5 left-2.5">
+                                <Chip light>{formatRuntime(watched)}</Chip>
+                              </span>
+                            ) : null}
+                            {ep.runtime ? (
+                              <span className="absolute right-2.5 bottom-2.5">
+                                <Chip>{formatRuntime(ep.runtime)}</Chip>
+                              </span>
+                            ) : null}
+                            {pct > 0 && !h?.isCompleted && (
+                              <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/20">
+                                <span className="block h-full bg-white" style={{ width: `${pct}%` }} />
+                              </span>
+                            )}
+                          </div>
+                        </Frame>
+                      </div>
+                      <div className={cx(CARD_INFO, 'min-w-0 flex-1 pt-2.5 pb-3 sm:min-h-[112px] sm:pt-2')}>
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
                           <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
@@ -402,7 +412,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                     </>
                   );
                   return upcoming ? (
-                    <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex flex-col rounded-2xl', isSelected && SELECTED)}>
+                    <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex gap-3 rounded-2xl sm:flex-col sm:gap-0', isSelected && SELECTED)}>
                       {body}
                     </div>
                   ) : (
@@ -412,7 +422,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       to={href(season, ep.episode_number)}
                       replace={replace}
                       onClick={onPick}
-                      className={cx('group flex flex-col rounded-2xl', isSelected && SELECTED)}
+                      className={cx('group flex gap-3 rounded-2xl sm:flex-col sm:gap-0', isSelected && SELECTED)}
                       aria-current={isCurrent || undefined}
                     >
                       {body}

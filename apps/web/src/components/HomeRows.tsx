@@ -5,10 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import EpisodeTile, { TILE, TileSkeleton } from './EpisodeTile';
 import AiringTile, { AiringTileSkeleton } from './AiringTile';
 import { startOfDay, useSchedule } from '../lib/schedule';
-import { CARD_LIFT, Meta, usePrefetch } from './MediaCard';
-import { ROW_BLEED, ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
-import MediaCard from './MediaCard';
-import { CardSkeleton } from './Skeletons';
+import Img from './Img';
+import { CARD_IMAGE, CARD_LIFT, CornerArc, Meta, TypeIcon, usePrefetch } from './MediaCard';
+import { ROW_BLEED, RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
+import { Bone } from './Skeletons';
 import { cleanList, q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../lib/tmdb';
 import { cx, useInView } from '../lib/util';
 
@@ -210,6 +210,43 @@ export function AiringThisWeek() {
   );
 }
 
+// ---------- List cards: small poster on the left, title, synopsis and year · rating beside it ----------
+
+const LIST_CARD = cx('group flex w-[300px] shrink-0 snap-start sm:w-[336px]', CARD_LIFT);
+
+function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
+  return (
+    <Link to={`/${type}/${item.id}`} {...usePrefetch(type, item.id)} className={LIST_CARD}>
+      <div className={cx(CARD_IMAGE, 'w-[104px] shrink-0')}>
+        <Img path={item.poster_path} kind="poster" sizes="104px" alt="" className="aspect-[2/3]" />
+      </div>
+      <div className="relative flex min-w-0 flex-1 flex-col py-1 pr-2.5 pb-2 pl-4">
+        <div className="line-clamp-1 text-body-sm leading-[1.3] font-medium text-white/90 transition-colors group-hover:text-white" title={titleOf(item)}>
+          {titleOf(item)}
+        </div>
+        <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
+        <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
+        <CornerArc rise={false} />
+      </div>
+    </Link>
+  );
+}
+
+function ListCardSkeleton() {
+  return (
+    <div className="flex w-[300px] shrink-0 sm:w-[336px]">
+      <Bone className="aspect-[2/3] w-[104px] shrink-0 rounded-2xl" />
+      <div className="flex flex-1 flex-col py-1 pl-4">
+        <Bone className="h-4 w-3/4" />
+        <Bone className="mt-2.5 h-3 w-full" />
+        <Bone className="mt-1.5 h-3 w-11/12" />
+        <Bone className="mt-1.5 h-3 w-4/5" />
+        <Bone className="mt-auto h-3 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
 export function TopRated() {
   const taste = useTaste();
   const pick = useCallback((l: MediaItem[]) => refine(l, taste, 'movie', { popularity: 0.1 }), [taste]);
@@ -219,10 +256,10 @@ export function TopRated() {
       type="movie"
       refine={pick}
       query={q.list('movie', 'top_rated')}
-      skeleton={Array.from({ length: 7 }, (_, i) => (
-        <CardSkeleton key={i} className={ROW_ITEM} />
+      skeleton={Array.from({ length: 5 }, (_, i) => (
+        <ListCardSkeleton key={i} />
       ))}
-      render={(m) => <MediaCard key={m.id} item={m} type="movie" sizes={ROW_SIZES} className={ROW_ITEM} />}
+      render={(m) => <ListCard key={m.id} item={m} type="movie" />}
     />
   );
 }

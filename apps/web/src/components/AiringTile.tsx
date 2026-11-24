@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Bell, BellRing, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, BellRing, ChevronRight } from 'lucide-react';
+import { Dialog } from './Modal';
 import Img from './Img';
 import { Chip } from './EpisodeTile';
-import { CARD_IMAGE, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
+import { CARD_IMAGE, CARD_INFO, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
 import { Tip } from './Tip';
 import { toast } from './Toast';
 import { episodePeekProps, peekProps } from '../lib/peek';
@@ -32,14 +33,20 @@ export const linkOf = (a: Airing) => (a.type === 'tv' && a.season !== undefined 
 export const seLabel = (s: number, e: number) => (s === 0 ? `Special ${e}` : `S${s} E${e}`);
 
 /**
- * The frame special releases get: an outline around the image with the label set into its top
- * edge (PREMIERE, FINALE, NEW TO STREAMING…). Without a label the frame is invisible but keeps
- * its size, so framed and plain cards line up. `bg` is the colour behind the label.
+ * The frame special releases get: an outline drawn just outside the image, with the label set into
+ * its top edge (PREMIERE, FINALE, NEW TO STREAMING…). It takes no space, so framed and plain cards
+ * are the same size and line up. `bg` is the colour behind the label. It makes no stacking layer
+ * of its own: what's drawn behind the image (a stack's sheets) covers the outline, not the reverse.
  */
-export function Frame({ label, bg = 'bg-bg', fill, children }: { label?: string; bg?: string; fill?: boolean; children: React.ReactNode }) {
+export function Frame({ label, bg = 'bg-bg', children }: { label?: string; bg?: string; children: React.ReactNode }) {
   return (
-    <div className={cx('relative rounded-[22px] border-[1.5px] p-[5px]', label ? 'border-white/50' : 'border-transparent', fill && bg)}>
-      {label && <span className={cx('absolute -top-[9px] left-4 z-[2] px-1.5 text-[10.5px] leading-[15px] font-bold tracking-[0.14em] whitespace-nowrap text-white uppercase', bg)}>{label}</span>}
+    <div className="relative">
+      {label && (
+        <>
+          <span aria-hidden className="pointer-events-none absolute -inset-[6.5px] rounded-[22px] border-[1.5px] border-white/50" />
+          <span className={cx('absolute -top-[15.5px] left-2.5 z-[3] px-1.5 text-[10.5px] leading-[15px] font-bold tracking-[0.14em] whitespace-nowrap text-white uppercase', bg)}>{label}</span>
+        </>
+      )}
       {children}
     </div>
   );
@@ -144,7 +151,7 @@ function Card({
     <div className={cx('group relative', stack > 0 && 'mr-4', className)}>
       {/* The whole card is one link (or, for a stack, one button) under the content, so the show name can be a link too. */}
       {onClick ? (
-        <button type="button" onClick={onClick} {...hover} aria-expanded={false} aria-label={`${line1}, ${a.title}: show all ${stack + 1} episodes`} className={stretched} />
+        <button type="button" onClick={onClick} {...hover} aria-haspopup="dialog" aria-label={`${line1}, ${a.title}: show all ${stack + 1} episodes`} className={stretched} />
       ) : (
         <Link to={to ?? linkOf(a)} {...hover} aria-label={`${line1}, ${line2 ?? ''}`} className={stretched} />
       )}
@@ -155,7 +162,7 @@ function Card({
             <span
               key={`${e.season}-${e.number}`}
               aria-hidden
-              style={{ inset: i ? '24px -26px 24px 40px' : '12px -13px 12px 20px', zIndex: 1 - i }}
+              style={{ inset: i ? '24px -30px 24px 40px' : '12px -16px 12px 20px', zIndex: 1 - i }}
               className={cx(
                 'absolute overflow-hidden rounded-2xl bg-raised shadow-[-8px_0_16px_rgba(0,0,0,0.6)] ring-[1.5px] transition-transform duration-300 group-hover:translate-x-[3px]',
                 i ? 'ring-white/30' : 'ring-white/55',
@@ -164,8 +171,8 @@ function Card({
               <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.35]' : 'brightness-[0.55]'} />
             </span>
           ))}
-          <div className="relative z-[2]">
-            <Frame label={label} fill={stack > 0}>
+          <div>
+            <Frame label={label}>
               <div className={CARD_IMAGE}>
                 <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
                 {runtime ? (
@@ -191,7 +198,7 @@ function Card({
             </span>
           )}
         </div>
-        <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
+        <div className={CARD_INFO}>
           <div className={CARD_TITLE}>{line1}</div>
           {showDate && <div className="text-caption text-faint">{dateLabel(a.at, !tv)}</div>}
           <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
@@ -221,38 +228,29 @@ export default function AiringTile({ a, calendar, className }: { a: Airing; cale
   const [open, setOpen] = useState(false);
   const eps = a.episodes ?? [];
   if (a.kind !== 'episode' || eps.length < 2) return <Card a={a} ep={eps[0]} label={a.kind === 'episode' ? labelOf(a, 0, 1) : a.label} showDate={!calendar} className={className} />;
-  if (!open) return <Card a={a} ep={undefined} label={labelOf(a, 0, eps.length)} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />;
-  // Opened: the episodes side by side on a tray. The tray's backdrop hangs outside the cards
-  // (absolutely placed), so opening and closing never changes the row's height.
   return (
-    <div role="group" aria-label={`${a.title}, ${eps.length} episodes`} className="relative flex shrink-0 snap-start gap-3">
-      <span aria-hidden className="absolute inset-y-0 -right-1 -left-1.5 rounded-[24px] bg-white/[0.035] ring-1 ring-white/[0.07]" />
-      {eps.map((e, i) => (
-        <div key={`${e.season}-${e.number}`} className="fade-in relative" style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}>
-          <Card a={a} ep={e} label={labelOf(a, i, eps.length)} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={!calendar} className={className} />
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        className="group/tip relative my-[6.5px] grid w-10 shrink-0 place-items-center self-stretch rounded-2xl text-muted transition-colors hover:bg-white/[0.06] hover:text-white"
-        aria-label={`Stack ${a.title}’s episodes again`}
-      >
-        <ChevronLeft className="size-5" />
-        <Tip label="Stack them again" side="bottom" align="end" />
-      </button>
-    </div>
+    <>
+      <Card a={a} ep={undefined} label={labelOf(a, 0, eps.length)} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />
+      {/* Tapping a stack: its episodes in a pop-up (the row itself never changes). */}
+      {open && (
+        <Dialog title={a.title} subtitle={`${a.se} · ${eps.length} episodes · ${dateLabel(a.at)}`} onClose={() => setOpen(false)} wide>
+          <div className="grid grid-cols-1 gap-x-5 gap-y-7 pt-2 sm:grid-cols-2">
+            {eps.map((e, i) => (
+              <Card key={`${e.season}-${e.number}`} a={a} ep={e} label={labelOf(a, i, eps.length)} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={false} />
+            ))}
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }
 
 export function AiringTileSkeleton({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <div className="p-[6.5px]">
-        <div className="skeleton aspect-video rounded-2xl" />
-      </div>
-      <div className="skeleton mt-2 ml-[6.5px] h-3.5 w-3/4 rounded-md" />
-      <div className="skeleton mt-2 ml-[6.5px] h-3 w-1/2 rounded-md" />
+      <div className="skeleton aspect-video rounded-2xl" />
+      <div className="skeleton mt-2.5 h-3.5 w-3/4 rounded-md" />
+      <div className="skeleton mt-2 h-3 w-1/2 rounded-md" />
     </div>
   );
 }
