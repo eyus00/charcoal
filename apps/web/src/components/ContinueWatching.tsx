@@ -5,7 +5,7 @@ import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
 import { toast } from './Toast';
 import { actions, getState, percent, useStore, watchUrl, type HistoryItem } from '../lib/store';
 import { deleteFrames, frameKey, useFrame } from '../lib/frames';
-import { peekProps } from '../lib/peek';
+import { episodePeekProps, peekProps } from '../lib/peek';
 import { epLabel } from '../lib/episodes';
 import { q, type Episode } from '../lib/tmdb';
 import { formatRuntime } from '../lib/util';
@@ -34,7 +34,6 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
   const tv = h.mediaType === 'tv' && s !== undefined;
   const p = !isNext ? h.progress : undefined;
   const watched = p && !h.isCompleted ? mins(p.watched) : 0;
-  const left = p && !h.isCompleted ? mins(p.duration - p.watched) : 0;
   const runtime = p?.duration ? mins(p.duration) : ep?.runtime;
   const name = ep?.name ?? (isNext ? undefined : h.episodeTitle);
   const still = ep?.still_path;
@@ -45,8 +44,8 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
   return (
     <EpisodeTile
       to={watchUrl(h)}
-      linkProps={peekProps(h.mediaType, h.id, { tap: false })}
-      titleLink={{ to: `/${h.mediaType}/${h.id}`, line: 'primary', label: `${h.title}: details` }}
+      linkProps={tv ? episodePeekProps(h.id, s!, e!, { tap: false }) : peekProps(h.mediaType, h.id, { tap: false })}
+      titleLink={{ to: `/${h.mediaType}/${h.id}`, line: tv ? 'secondary' : 'primary', label: `${h.title}: details` }}
       type={h.mediaType}
       title={name ? `${h.title} · ${name}` : h.title}
       image={{ path: still ?? h.backdropPath ?? h.posterPath, kind: still ? 'still' : h.backdropPath ? 'backdrop' : 'poster', src: frame }}
@@ -60,19 +59,21 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           </Chip>
         ) : null
       }
-      bottomRight={left ? <Chip>{formatRuntime(left)} left</Chip> : runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
-      // Line 1 is always the title; line 2 the episode (or "Movie").
-      primary={h.title}
-      secondary={
+      // How far you got (white, bottom-left) and how long it is (bottom-right).
+      bottomLeft={watched ? <Chip light>{formatRuntime(watched)}</Chip> : null}
+      bottomRight={runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
+      // Shows: the episode is the headline, the show under it. Films: the title, then "Movie".
+      primary={
         tv ? (
-          <span className="truncate">
-            {epLabel(s!, e!).replace(/^S(\d+)\s*E/, 'S$1 · E')}
-            {name ? <span className="text-muted"> &nbsp;{name}</span> : null}
-          </span>
+          <>
+            {epLabel(s!, e!)}
+            {name ? <span className="text-white/90"> {name}</span> : null}
+          </>
         ) : (
-          'Movie'
+          h.title
         )
       }
+      secondary={tv ? h.title : 'Movie'}
     >
       <button
         onClick={() => {

@@ -6,9 +6,9 @@ import Img from './Img';
 import Modal from './Modal';
 import { btn } from './Button';
 import { Chip } from './EpisodeTile';
-import BookmarkMenu from './BookmarkMenu';
-import FollowButton from './FollowButton';
-import { Frame, dateLabel } from './AiringTile';
+import LibraryButton from './LibraryButton';
+import { Dialog } from './Modal';
+import { Frame, ReminderBell, dateLabel, seLabel } from './AiringTile';
 import Kbd from './Kbd';
 import { CARD_INFO } from './MediaCard';
 import { ErrorBox } from './Grid';
@@ -49,6 +49,72 @@ const FILLER = [
   'Plot details for this one are still under wraps, check back after the next episode airs for more on what happens.',
 ];
 
+/** Where you left a show's episode list (season, scroll), so it reopens there. */
+type Position = { season: number; scroll: number };
+const POS_KEY = 'charcoal:episode-positions';
+function readPosition(id: number): Position | undefined {
+  try {
+    return (JSON.parse(localStorage.getItem(POS_KEY) ?? '{}') as Record<string, Position>)[id];
+  } catch {
+    return undefined;
+  }
+}
+function savePosition(id: number, p: Position) {
+  try {
+    const all = JSON.parse(localStorage.getItem(POS_KEY) ?? '{}') as Record<string, Position & { at?: number }>;
+    all[id] = { ...p, at: Date.now() };
+    // Keep the 50 most recent shows.
+    const kept = Object.fromEntries(
+      Object.entries(all)
+        .sort((a, b) => (b[1].at ?? 0) - (a[1].at ?? 0))
+        .slice(0, 50),
+    );
+    localStorage.setItem(POS_KEY, JSON.stringify(kept));
+  } catch {
+    /* storage blocked */
+  }
+}
+
+/** An episode's synopsis: three lines, then "more" opens it whole in a popup. */
+function Synopsis({ text, title }: { text: string; title: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [clipped, setClipped] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setClipped(el.scrollHeight > el.clientHeight + 1);
+  }, [text]);
+  return (
+    <div className="mt-1.5">
+      <p ref={ref} className="line-clamp-3 text-caption leading-[1.4] text-pretty text-muted">
+        {text}
+      </p>
+      {clipped && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className="mt-0.5 text-caption font-medium text-white/80 transition-colors hover:text-white"
+        >
+          more
+        </button>
+      )}
+      {open && (
+        // The card around this is a link: clicks inside the popup must not reach it.
+        // (capture: cancel the link's own navigation before anything inside handles the click)
+        <span onClickCapture={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
+          <Dialog title={title} onClose={() => setOpen(false)}>
+            <p className="text-body-sm leading-6 text-pretty whitespace-pre-line text-white/85">{text}</p>
+          </Dialog>
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** What's special about an upcoming episode (shown as the card's frame label). */
 function releaseLabel(ep: Episode) {
   if (ep.episode_type === 'finale' || ep.episode_type === 'mid_season') return 'Finale';
@@ -65,9 +131,19 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   const history = useStore((s) => s.history);
   const seasons = allSeasons(show);
   const resume = resumeTarget(history, 'tv', show.id);
-  const focus = selected ?? current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined);
+  // Where it opens: an episode asked for (or playing), else where you left the list last time,
+  // else where you'd resume, else the latest release (not season 1 of a long-running show).
+  const remembered = useRef(readPosition(show.id)).current;
+  const latest = show.last_episode_to_air ? { season: show.last_episode_to_air.season_number, episode: show.last_episode_to_air.episode_number } : undefined;
+  const focus = selected ?? current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined) ?? (remembered ? undefined : latest);
   const first = regularSeasons(show)[0]?.season_number ?? seasons[0]?.season_number ?? 1;
-  const [season, setSeason] = useState(() => (initialSeason !== undefined && seasons.some((s) => s.season_number === initialSeason) ? initialSeason : (focus?.season ?? first)));
+  const [season, setSeason] = useState(() =>
+    initialSeason !== undefined && seasons.some((s) => s.season_number === initialSeason)
+      ? initialSeason
+      : !selected && !current && remembered && seasons.some((s) => s.season_number === remembered.season)
+        ? remembered.season
+        : (focus?.season ?? first),
+  );
   const { data, isPending, isError, refetch } = useQuery(q.season(show.id, season));
 
   const progress = useMemo(() => {
@@ -105,12 +181,34 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // bring the relevant episode into view once the season has loaded
+  // Bring the relevant episode into view once the season has loaded; or, reopening, where you were.
   const list = useRef<HTMLDivElement>(null);
+  const restored = useRef(false);
   useEffect(() => {
-    if (!data || focus?.season !== season) return;
+    if (!data) return;
+    if (!restored.current && !selected && !current && remembered?.season === season) {
+      restored.current = true;
+      list.current?.scrollTo({ top: remembered.scroll });
+      return;
+    }
+    restored.current = true;
+    if (focus?.season !== season) return;
     list.current?.querySelector(`[data-ep="${focus.episode}"]`)?.scrollIntoView({ block: 'center' });
   }, [data, season, focus?.season, focus?.episode]);
+  // Remember the season and scroll position for next time (per show).
+  // (Tracked as you scroll: by the time the list unmounts it's out of the page and reads 0.)
+  const seasonRef = useRef(season);
+  seasonRef.current = season;
+  const scrollRef = useRef(0);
+  useEffect(() => {
+    const el = list.current;
+    const onScroll = () => (scrollRef.current = el?.scrollTop ?? 0);
+    el?.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el?.removeEventListener('scroll', onScroll);
+      savePosition(show.id, { season: seasonRef.current, scroll: scrollRef.current });
+    };
+  }, [show.id]);
 
   // keep the selected season's tab visible (long-running shows have dozens)
   const tabs = useRef<HTMLDivElement>(null);
@@ -122,6 +220,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
     setSeason(n);
     onSeasonChange?.(n);
     list.current?.scrollTo({ top: 0 });
+    scrollRef.current = 0;
   };
   const href = (s: number, e: number) => `/watch/tv/${show.id}?season=${s}&episode=${e}`;
   // Title page: a click selects an episode (ring) and the footer button plays it; clicking the
@@ -151,11 +250,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 <h2 className="truncate text-lg font-semibold md:text-xl">{titleOf(show)}</h2>
                 <p className="truncate text-sm text-muted">Episodes</p>
               </div>
-              {/* Follow and Watchlist right after the show's name, as on its page. */}
-              <FollowButton type="tv" id={show.id} title={titleOf(show)} size="md" className="ml-1" />
-              <BookmarkMenu
-                variant="round"
+              {/* The library button right after the show's name, as on its page. */}
+              <LibraryButton
                 size="md"
+                className="ml-1"
                 item={{ id: show.id, mediaType: 'tv', title: titleOf(show), posterPath: show.poster_path, releaseDate: show.first_air_date, ratingScore: show.vote_average }}
               />
             </div>
@@ -234,30 +332,42 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                               </span>
                             </span>
                           )}
-                          {(isCurrent || upcoming) && (
+                          {isCurrent && (
                             <span className="absolute top-2.5 left-2.5">
-                              {isCurrent ? <Chip light>Now playing</Chip> : <Chip>{ep.air_date ? dateLabel(new Date(`${ep.air_date}T00:00:00`).getTime()) : 'Date TBA'}</Chip>}
+                              <Chip light>Now playing</Chip>
                             </span>
                           )}
-                          {/* Not out yet: nothing to play, so its action is following the show. */}
-                          {upcoming && (
+                          {/* Not out yet: nothing to play; the bell reminds you of this one. */}
+                          {upcoming && ep.air_date && (
                             <span className="absolute top-2 right-2">
-                              <FollowButton type="tv" id={show.id} title={titleOf(show)} variant="card" />
+                              <ReminderBell
+                                a={{
+                                  key: `tv-${show.id}-${season}-${ep.episode_number}`,
+                                  kind: 'episode',
+                                  type: 'tv',
+                                  id: show.id,
+                                  title: titleOf(show),
+                                  at: new Date(`${ep.air_date}T00:00:00`).getTime(),
+                                  yours: false,
+                                  score: 0,
+                                }}
+                                ep={{ season, number: ep.episode_number, name: ep.name }}
+                              />
                             </span>
                           )}
+                          {/* Watched / how far you got (white, bottom-left), runtime (bottom-right): as in Continue watching. */}
                           {h?.isCompleted ? (
                             <span className="absolute bottom-2.5 left-2.5">
                               <Chip>
                                 <Check className="size-3.5" /> Watched
                               </Chip>
                             </span>
-                          ) : null}
-                          {/* Length: time left while in progress (the bar shows how far), else the runtime. */}
-                          {watched && ep.runtime && ep.runtime > watched ? (
-                            <span className="absolute right-2.5 bottom-2.5">
-                              <Chip>{formatRuntime(ep.runtime - watched)} left</Chip>
+                          ) : watched ? (
+                            <span className="absolute bottom-2.5 left-2.5">
+                              <Chip light>{formatRuntime(watched)}</Chip>
                             </span>
-                          ) : ep.runtime ? (
+                          ) : null}
+                          {ep.runtime ? (
                             <span className="absolute right-2.5 bottom-2.5">
                               <Chip>{formatRuntime(ep.runtime)}</Chip>
                             </span>
@@ -274,9 +384,11 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                           <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
                           <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
                         </div>
-                        {!upcoming && ep.air_date && <div className="text-caption text-faint">{formatDate(ep.air_date)}</div>}
+                        <div className="text-caption text-faint">
+                          {upcoming ? (ep.air_date ? dateLabel(new Date(`${ep.air_date}T00:00:00`).getTime()) : 'Date TBA') : ep.air_date ? formatDate(ep.air_date) : ''}
+                        </div>
                         {ep.overview ? (
-                          <p className="mt-1.5 text-caption leading-[1.4] text-pretty text-muted">{ep.overview}</p>
+                          <Synopsis text={ep.overview} title={`${seLabel(season, ep.episode_number)} ${ep.name}`} />
                         ) : (
                           // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
                           <div className="relative mt-1.5">
@@ -348,12 +460,12 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             )}
             {!current &&
               (selUnaired && sel ? (
-                // The selected episode isn't out yet: nothing to play, so the button follows the show.
+                // The selected episode isn't out yet: nothing to play; say when, and offer the library.
                 <div className="ml-auto flex min-w-0 items-center gap-3">
-                  <span className="hidden min-w-0 truncate text-sm text-muted sm:block">
+                  <span className="min-w-0 truncate text-sm text-muted">
                     {epLabel(sel.season, sel.episode)} · {selEp?.air_date ? dateLabel(new Date(`${selEp.air_date}T00:00:00`).getTime()) : 'Date TBA'}
                   </span>
-                  <FollowButton type="tv" id={show.id} title={titleOf(show)} variant="wide" size="lg" />
+                  <LibraryButton item={{ id: show.id, mediaType: 'tv', title: titleOf(show), posterPath: show.poster_path, releaseDate: show.first_air_date, ratingScore: show.vote_average }} />
                 </div>
               ) : (
                 <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>

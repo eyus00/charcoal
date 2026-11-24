@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { EyeOff, Heart, MessageCircle, MessagesSquare, PenLine, Star, Trash2 } from 'lucide-react';
+import { Check, EyeOff, Heart, MessageCircle, MessagesSquare, PenLine, Star, Trash2 } from 'lucide-react';
 import { Tip } from './Tip';
 import { Dialog } from './Modal';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
@@ -24,6 +24,7 @@ import {
 import { q, type MediaType, type TmdbReview } from '../lib/tmdb';
 import { cx, useInView } from '../lib/util';
 import { fetchMyComments } from '../lib/traktData';
+import { setLocalRating, useLocalRating } from '../lib/ratings';
 
 /**
  * What people think: the Trakt community's rating and comments for this title (shared with
@@ -85,7 +86,9 @@ export default function Community({ type, id }: { type: MediaType; id: number })
   const [writing, setWriting] = useState(false);
   const [draft, setDraft] = useState({ text: '', spoiler: false });
   const [all, setAll] = useState(false);
-  const write = () => (user ? setWriting(true) : startTraktLogin());
+  const [aboutTrakt, setAboutTrakt] = useState(false);
+  // Comments live on Trakt: without it the button says why, and offers to connect.
+  const write = () => (user ? setWriting(true) : toast('Comments are posted on Trakt', { label: 'Connect Trakt', run: () => setAboutTrakt(true) }));
   const shown = [...mine, ...others];
   const { ref: rowRef, scroll } = useRowScroll();
   const onDeleted = (c: TraktComment) => {
@@ -119,17 +122,20 @@ export default function Community({ type, id }: { type: MediaType; id: number })
       {loading && <CommunitySkeleton />}
       {!loading && hasAnything && (
         <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-          <div className="space-y-3 self-start">
-            {t && <RatingSummary r={ratings.data} />}
-            {t && user && <YourRating t={t} />}
-          </div>
+          <div className="space-y-3 self-start">{t && <RatingCard r={ratings.data} t={t} type={type} id={id} user={user} />}</div>
           <div className="min-w-0">
             {/* One fixed-height toolbar: sort, and the button that opens the composer. */}
             <div className="mb-3 flex h-9 items-center gap-2">
               {shown.length > 0 && sortPills}
               {t && (
-                <button type="button" onClick={write} className={cx(btn(), 'ml-auto h-9 px-4 text-sm')}>
-                  <PenLine className="size-4" /> {user ? 'Write a comment' : 'Connect Trakt to comment'}
+                <button
+                  type="button"
+                  onClick={write}
+                  aria-label={user ? 'Comment' : 'Comment (needs Trakt)'}
+                  // Looks unavailable without Trakt, but still answers a tap (with how to get it).
+                  className={cx(btn(), 'ml-auto h-9 px-4 text-sm', !user && 'opacity-50 hover:bg-white/10')}
+                >
+                  <PenLine className="size-4" /> Comment
                 </button>
               )}
             </div>
@@ -176,7 +182,7 @@ export default function Community({ type, id }: { type: MediaType; id: number })
           <div className="sticky top-0 z-10 -mx-5 mb-3 flex items-center gap-2 bg-surface px-5 pb-3">
             {sortPills}
             <button type="button" onClick={write} className={cx(btn(), 'ml-auto h-9 px-4 text-sm')}>
-              <PenLine className="size-4" /> {user ? 'Write' : 'Connect Trakt'}
+              <PenLine className="size-4" /> Comment
             </button>
           </div>
           <div className="space-y-3">
@@ -194,6 +200,7 @@ export default function Community({ type, id }: { type: MediaType; id: number })
           )}
         </Dialog>
       )}
+      {aboutTrakt && <AboutTrakt onClose={() => setAboutTrakt(false)} />}
       {writing && t && user && (
         <Composer
           t={t}
@@ -219,67 +226,38 @@ const compact = (n: number) =>
     maximumFractionDigits: 1,
   }).format(n);
 
-function RatingSummary({ r }: { r?: { rating: number; votes: number; distribution: Record<string, number> } }) {
-  const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
-  return (
-    <div className="self-start rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
-      <div className="flex items-baseline gap-2">
-        <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
-        <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
-        <span className="text-sm text-muted">/ 10</span>
-      </div>
-      <p className="mt-1 text-xs text-muted">{r?.votes ? `${compact(r.votes)} ratings on Trakt` : 'No ratings on Trakt yet'}</p>
-      {/* Votes per score, 1 → 10. */}
-      {!!r?.votes && (
-        <>
-          <div className="mt-4 flex h-10 items-end gap-1 lg:h-14" aria-hidden>
-            {Array.from({ length: 10 }, (_, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-sm bg-white/70"
-                style={{
-                  height: `${Math.max(4, ((r.distribution[String(i + 1)] ?? 0) / max) * 100)}%`,
-                  opacity: 0.35 + (i / 9) * 0.65,
-                }}
-              />
-            ))}
-          </div>
-          <div className="mt-1 flex justify-between text-micro text-faint tabular-nums">
-            <span>1</span>
-            <span>10</span>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 /**
- * Your own 1–10 rating, saved to Trakt: a separate pill under the score. Saving makes the stars
- * shine in a row and shows a toast; picking your score again removes it (a tooltip says so).
+ * The score card: Trakt's rating and its spread, with your own rating as a white pill underneath.
+ * Your score shows on the graph as a white cap on its bar. Rating needs no account (it's saved in
+ * this browser); connected to Trakt it's sent there too. Picking your score again removes it.
  */
-function YourRating({ t }: { t: TraktTitle }) {
+function RatingCard({ r, t, type, id, user }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; t: TraktTitle; type: MediaType; id: number; user: TraktUser | null }) {
   const qc = useQueryClient();
-  const mine = useQuery(myRatingsQ(t.kind, true));
-  const saved = mine.data?.get(t.traktId) ?? 0;
+  const local = useLocalRating(type, id);
+  const remote = useQuery({ ...myRatingsQ(t.kind, !!user) });
+  const saved = (user ? remote.data?.get(t.traktId) : undefined) ?? local;
   const [hover, setHover] = useState(0);
   const [pending, setPending] = useState<number | null>(null);
   // Bumped on each save so the stars replay their shine.
   const [popKey, setPopKey] = useState(0);
   const shown = hover || (pending ?? saved);
+  const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
   const pick = async (n: number) => {
     const next = n === saved ? null : n;
     setPending(next ?? 0);
     setHover(0);
+    setLocalRating(type, id, next);
     try {
-      await rateTitle(t, next);
-      qc.setQueryData(myRatingsQ(t.kind, true).queryKey, (m: Map<number, number> | undefined) => {
-        const copy = new Map(m);
-        if (next) copy.set(t.traktId, next);
-        else copy.delete(t.traktId);
-        return copy;
-      });
-      qc.invalidateQueries({ queryKey: ['trakt', 'ratings', t.kind, t.slug] });
+      if (user) {
+        await rateTitle(t, next);
+        qc.setQueryData(myRatingsQ(t.kind, true).queryKey, (m: Map<number, number> | undefined) => {
+          const copy = new Map(m);
+          if (next) copy.set(t.traktId, next);
+          else copy.delete(t.traktId);
+          return copy;
+        });
+        qc.invalidateQueries({ queryKey: ['trakt', 'ratings', t.kind, t.slug] });
+      }
       if (next) setPopKey((k) => k + 1);
       toast(next ? `Rated ${next}/10` : 'Rating removed');
     } catch (e) {
@@ -289,10 +267,47 @@ function YourRating({ t }: { t: TraktTitle }) {
     }
   };
   return (
-    <div>
-      <p className="mb-1.5 px-1 text-xs text-muted">Your rating</p>
-      <div className="group/tip relative flex h-12 items-center rounded-full bg-white/[0.04] px-4 ring-1 ring-white/[0.06]">
-        <div className={cx('flex flex-1 justify-between transition-opacity', pending !== null && 'opacity-60')} role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)}>
+    <div className="self-start rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+      <div className="flex items-baseline gap-2">
+        <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
+        <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
+        <span className="text-sm text-muted">/ 10</span>
+      </div>
+      <p className="mt-1 text-xs text-muted">{r?.votes ? `${compact(r.votes)} ratings on Trakt` : 'No ratings on Trakt yet'}</p>
+      {/* Votes per score, 1 → 10; yours gets a white cap. */}
+      {!!r?.votes && (
+        <>
+          <div className="mt-4 flex h-10 items-end gap-1 lg:h-14" aria-hidden>
+            {Array.from({ length: 10 }, (_, i) => {
+              const yours = saved === i + 1;
+              return (
+                <div key={i} className="relative flex h-full flex-1 items-end">
+                  <div
+                    className={cx('w-full rounded-sm', yours ? 'bg-white' : 'bg-white/70')}
+                    style={{
+                      height: `${Math.max(4, ((r.distribution[String(i + 1)] ?? 0) / max) * 100)}%`,
+                      opacity: yours ? 1 : 0.35 + (i / 9) * 0.55,
+                    }}
+                  />
+                  {yours && <span key={popKey} className="pop absolute -top-2 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-white" />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-1 flex justify-between text-micro text-faint tabular-nums">
+            <span>1</span>
+            <span>10</span>
+          </div>
+        </>
+      )}
+      {/* Your rating: a white pill of stars. */}
+      <div className="group/tip relative mt-4">
+        <div
+          className={cx('flex h-11 items-center justify-between rounded-full bg-white px-3.5 transition-opacity', pending !== null && 'opacity-70')}
+          role="radiogroup"
+          aria-label="Your rating"
+          onPointerLeave={() => setHover(0)}
+        >
           {Array.from({ length: 10 }, (_, i) => {
             const on = i < shown;
             return (
@@ -305,25 +320,70 @@ function YourRating({ t }: { t: TraktTitle }) {
                 disabled={pending !== null}
                 onPointerEnter={() => setHover(i + 1)}
                 onClick={() => pick(i + 1)}
-                className="grid h-8 w-5 place-items-center"
+                className="grid h-8 w-4 place-items-center"
               >
                 <Star
                   className={cx(
-                    'size-[18px] transition-[color,transform] duration-150',
-                    on ? 'fill-current text-star' : 'text-white/25',
+                    'size-4 text-black transition-[opacity,transform] duration-150',
+                    on ? 'fill-current' : 'opacity-25',
                     hover === i + 1 && 'scale-125',
                     popKey > 0 && on && i < saved && 'pop',
                   )}
                   style={popKey > 0 ? { animationDelay: `${i * 35}ms` } : undefined}
-                  strokeWidth={on ? 0 : 1.5}
+                  strokeWidth={on ? 0 : 1.75}
                 />
               </button>
             );
           })}
         </div>
-        {saved > 0 && <Tip label="Tap your score again to remove it" side="bottom" />}
+        <Tip label={saved ? `Your rating: ${saved}/10 · tap it again to remove` : 'Rate it'} side="bottom" />
       </div>
     </div>
+  );
+}
+
+/** A reviewer's score, styled like the big one: ★ 8 /10. */
+function Score({ n }: { n: number }) {
+  return (
+    <span className="flex shrink-0 items-baseline gap-1" aria-label={`${n} out of 10`}>
+      <Star className="size-3.5 self-center fill-current text-star" strokeWidth={0} />
+      <span className="text-lg leading-none font-semibold tabular-nums">{n}</span>
+      <span className="text-xs text-muted">/ 10</span>
+    </span>
+  );
+}
+
+/** What connecting Trakt is and does, with the button to do it. */
+function AboutTrakt({ onClose }: { onClose: () => void }) {
+  return (
+    <Dialog
+      title="Connect Trakt"
+      subtitle="Free, and takes a minute"
+      onClose={onClose}
+      footer={
+        <div className="flex items-center gap-3">
+          <p className="min-w-0 flex-1 text-xs text-muted">You sign in on trakt.tv. Charcoal never sees your password, and the sign-in stays in this browser.</p>
+          <button type="button" onClick={() => startTraktLogin()} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm')}>
+            Connect Trakt
+          </button>
+        </div>
+      }
+    >
+      <p className="text-body-sm leading-6 text-white/85">Trakt is a free service that keeps track of what you watch, shared by many apps. The comments and ratings here come from its community.</p>
+      <ul className="mt-4 space-y-2.5 text-body-sm text-white/85">
+        {[
+          'Comment and reply to what others think, and like comments',
+          'Keep your ratings on Trakt, not just in this browser',
+          'Mark what you watch automatically (in the Jelly player)',
+          'Keep your library in step with your Trakt watchlist',
+        ].map((x) => (
+          <li key={x} className="flex gap-2.5">
+            <Check className="mt-1 size-4 shrink-0 text-success" />
+            {x}
+          </li>
+        ))}
+      </ul>
+    </Dialog>
   );
 }
 
@@ -560,12 +620,7 @@ function CommentHead({ c, pinned }: { c: TraktComment; pinned?: boolean }) {
           {c.review && <span className="ml-1.5 rounded-full bg-white/10 px-1.5 py-px text-micro text-white/80">Review</span>}
         </p>
       </div>
-      {c.user_rating ? (
-        <span className="flex shrink-0 items-center gap-1 text-sm font-medium">
-          <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
-          {c.user_rating}
-        </span>
-      ) : null}
+      {c.user_rating ? <Score n={c.user_rating} /> : null}
     </header>
   );
 }
@@ -681,12 +736,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
           <p className="truncate text-sm font-medium">{r.author}</p>
           <p className="text-xs text-faint">{ago(r.created_at)} · on TMDB</p>
         </div>
-        {r.author_details.rating ? (
-          <span className="flex shrink-0 items-center gap-1 text-sm font-medium">
-            <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
-            {r.author_details.rating}
-          </span>
-        ) : null}
+        {r.author_details.rating ? <Score n={r.author_details.rating} /> : null}
       </header>
       <Body text={r.content} spoiler={false} clamp lines={4} />
       {r.content.length > 220 && (
@@ -710,10 +760,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
 function CommunitySkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-      <div className="space-y-3">
-        <div className="skeleton h-44 rounded-3xl" />
-        <div className="skeleton h-12 rounded-full" />
-      </div>
+      <div className="skeleton h-64 rounded-3xl" />
       <div className="min-w-0">
         <div className="mb-3 h-9" />
         <div className="flex gap-4 overflow-hidden">

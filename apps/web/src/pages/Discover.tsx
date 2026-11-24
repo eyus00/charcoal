@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router';
-import { Compass, X } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router';
+import { CalendarDays, Compass, X } from 'lucide-react';
 import { FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
 import { useDiscover, useTextSearch, useTrendingPages } from '../lib/browse';
@@ -71,13 +71,14 @@ export default function Discover() {
               {t.label}
             </button>
           ))}
+          {/* What's coming out, as part of Discover. */}
+          <Link to="/calendar" className="flex h-10 items-center gap-1.5 rounded-full px-4 text-sm text-white/75 transition hover:text-white">
+            <CalendarDays className="size-4" /> <span className="hidden sm:inline">Release Calendar</span>
+            <span className="sm:hidden">Calendar</span>
+          </Link>
         </div>
         {hasActiveFilters(filters) && (
-          <button
-            onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })}
-            aria-label="Clear filters"
-            className={cx(btn(), 'ml-auto lg:ml-0')}
-          >
+          <button onClick={() => set({ genres: [], from: undefined, to: undefined, rating: 0 })} aria-label="Clear filters" className={cx(btn(), 'ml-auto lg:ml-0')}>
             <X className="size-4" strokeWidth={1.5} /> Clear
           </button>
         )}

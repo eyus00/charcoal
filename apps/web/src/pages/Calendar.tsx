@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, Compass } from 'lucide-react';
 import AiringTile, { AiringTileSkeleton, linkOf } from '../components/AiringTile';
 import { Scroller } from '../components/Row';
@@ -25,11 +26,11 @@ const weekday = (t: number) => new Date(t).toLocaleDateString(undefined, { weekd
 const TILE_W = 'w-[240px] shrink-0 snap-start sm:w-[272px]';
 
 /**
- * What's coming out, a week at a time. "Your shows": what you follow (shows and films), with
- * reminders. "Explore": the notable rest (lib/schedule), where the + on a card follows it.
+ * The Release Calendar: what's coming out, a week at a time. "Your shows": your library (♥), which
+ * notifies you. "Explore": the notable rest (lib/schedule); a card's bell sets a one-off reminder.
  */
 export default function Calendar() {
-  useTitle('Calendar');
+  useTitle('Release Calendar');
   const [view, setViewState] = useState<View>(readView);
   const setView = (v: View) => {
     setViewState(v);
@@ -63,7 +64,27 @@ export default function Calendar() {
   return (
     <div className="space-y-6 pb-10">
       <header className="flex flex-wrap items-end gap-4">
-        <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight md:text-3xl">Calendar</h1>
+        <div className="min-w-0 flex-1 space-y-4">
+          {/* Discover's switch: the calendar is one of its views. */}
+          <nav className="inline-flex rounded-full bg-surface p-1" aria-label="Discover">
+            {(
+              [
+                ['/discover', 'All'],
+                ['/discover?type=movie', 'Movies'],
+                ['/discover?type=tv', 'TV'],
+              ] as const
+            ).map(([to, label]) => (
+              <Link key={to} to={to} className="flex h-10 items-center rounded-full px-5 text-sm text-white/75 transition hover:text-white">
+                {label}
+              </Link>
+            ))}
+            <span aria-current="page" className="flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-medium text-black">
+              <CalendarDays className="size-4" /> <span className="hidden sm:inline">Release Calendar</span>
+              <span className="sm:hidden">Calendar</span>
+            </span>
+          </nav>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Release Calendar</h1>
+        </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
           <div className="flex flex-1 items-center rounded-full bg-surface p-1 sm:flex-none">
             <button
@@ -153,7 +174,7 @@ export default function Calendar() {
           {section === 'yours' ? <CalendarDays className="mb-1 size-7 text-faint" /> : <Compass className="mb-1 size-7 text-faint" />}
           <p className="font-medium">{section === 'yours' ? 'Nothing from your shows this week' : 'Nothing notable this week'}</p>
           <p className="max-w-sm text-sm text-muted">
-            {section === 'yours' ? 'Follow shows and films (the + on any card, or on their page). New episodes and streaming days show up here, with a reminder.' : 'Try next week.'}
+            {section === 'yours' ? 'Add shows and films to your library (the ♥ on their page). Their new episodes and streaming days show up here, with a reminder.' : 'Try next week.'}
           </p>
           {section === 'yours' && (
             <button type="button" onClick={() => setSection('explore')} className={cx(btn({ variant: 'primary' }), 'mt-3')}>
@@ -174,7 +195,7 @@ export default function Calendar() {
             {isPending ? (
               Array.from({ length: 4 }, (_, i) => <AiringTileSkeleton key={i} />)
             ) : (byDay.get(selected) ?? []).length ? (
-              (byDay.get(selected) ?? []).map((a) => <AiringTile key={a.key} a={a} details />)
+              (byDay.get(selected) ?? []).map((a) => <AiringTile key={a.key} a={a} calendar />)
             ) : (
               <p className="col-span-full py-16 text-center text-sm text-muted">Nothing on this day.</p>
             )}
@@ -203,7 +224,7 @@ function DayRow({ day, items, loading }: { day: number; items: Airing[]; loading
       ) : items.length ? (
         <Scroller label={new Date(day).toDateString()} bleed={false}>
           {items.map((a) => (
-            <AiringTile key={a.key} a={a} className={TILE_W} details />
+            <AiringTile key={a.key} a={a} className={TILE_W} calendar />
           ))}
         </Scroller>
       ) : (

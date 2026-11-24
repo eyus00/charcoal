@@ -1,25 +1,26 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Star, X } from 'lucide-react';
-import BookmarkMenu from '../components/BookmarkMenu';
+import { Play, X } from 'lucide-react';
 import EpisodeSelector from '../components/EpisodeSelector';
 import Community from '../components/Community';
 import { PlayTitleButton } from '../components/TitleActions';
-import FollowButton from '../components/FollowButton';
-import { Frame, dateLabel } from '../components/AiringTile';
+import LibraryButton from '../components/LibraryButton';
+import QualityTag from '../components/QualityTag';
+import { Facts } from '../player/DetailsPeek';
+import { Frame, dateLabel, seLabel } from '../components/AiringTile';
 import { Chip } from '../components/EpisodeTile';
-import { useIsFollowing } from '../lib/follows';
+import { useInLibrary } from '../lib/library';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
 import Modal from '../components/Modal';
 import { btn } from '../components/Button';
-import MediaCard, { CARD_IMAGE, CARD_LIFT, CertBadge, CornerArc } from '../components/MediaCard';
+import MediaCard, { CARD_IMAGE, CARD_LIFT, CornerArc } from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import Img from '../components/Img';
 import { imageSrcSet, imageUrl } from '../lib/images';
-import { cleanList, HttpError, q, titleOf, trailersOf, yearOf, type Details as D, type MediaItem, type MediaType, type Video, certificationOf } from '../lib/tmdb';
+import { cleanList, HttpError, q, titleOf, trailersOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
 import { cx, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
@@ -72,7 +73,6 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
   const trailers = trailersOf(d);
   const [trailer, setTrailer] = useState<Video | null>(null);
   const recs = cleanList(d.recommendations?.results.length ? d.recommendations.results : (d.similar?.results ?? []), type).slice(0, 20);
-  const length = type === 'movie' ? formatRuntime(d.runtime) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
 
   // Episode selector open state lives in the URL (?episodes=<season>[&ep=<n>]), so Back closes it.
   // `ep` highlights one episode and makes it the play button (Airing this week, new-episode card).
@@ -86,7 +86,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
     else next.delete('ep');
     setParams(next, { state: { modal: true }, preventScrollReset: true });
   };
-  // Desktop shortcuts: p = play / episodes, t = trailer (b = watchlist, bound by BookmarkMenu).
+  // Desktop shortcuts: p = play / episodes, t = trailer (l = library, bound by LibraryButton).
   useKeys({
     p: () => (type === 'tv' ? openEpisodes() : navigate(`/watch/movie/${d.id}`)),
     t: () => trailers[0] && setTrailer(trailers[0]),
@@ -118,34 +118,14 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           {/* The next-episode card sits above the info card. */}
           {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="mb-3" />}
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
-            <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
-              {[yearOf(d), d.vote_average > 0 ? 'rating' : '', certificationOf(d) ? 'cert' : '', length].filter(Boolean).map((x, i) => (
-                <span key={x} className="flex items-center gap-2">
-                  {i > 0 && <span className="text-white/35">·</span>}
-                  {x === 'cert' ? (
-                    <CertBadge>{certificationOf(d)}</CertBadge>
-                  ) : x === 'rating' ? (
-                    <span className="flex items-center gap-1 font-medium">
-                      <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
-                      {d.vote_average.toFixed(1)}
-                    </span>
-                  ) : (
-                    x
-                  )}
-                </span>
-              ))}
-            </div>
-            {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
+            {/* What quality is out there for it (WEB-DL, BluRay, CAM…), top-right of the card. */}
+            <QualityTag d={d} type={type} className="absolute top-5 right-5 md:top-7 md:right-7" />
+            <h1 className="pr-20 text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
+            <Facts d={d} type={type} genresClassName="mt-2 text-sm" className="mt-1.5 text-sm" />
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <PlayTitleButton id={d.id} type={type} kbd onEpisodes={() => openEpisodes()} />
-              <FollowButton type={type} id={d.id} title={title} />
-              <BookmarkMenu
-                variant="round"
-                hotkey
-                item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }}
-              />
+              <LibraryButton hotkey item={{ id: d.id, mediaType: type, title, posterPath: d.poster_path, releaseDate: d.release_date || d.first_air_date, ratingScore: d.vote_average }} />
             </div>
           </div>
         </div>
@@ -243,7 +223,7 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
  * frame + label when it's special), with a "Next episode" caption. Opens the episode list there.
  */
 function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season: number; episode: number }) => void; className?: string }) {
-  const following = useIsFollowing('tv', d.id);
+  const inLibrary = useInLibrary('tv', d.id);
   const next = d.next_episode_to_air;
   if (!next?.air_date) return null;
   const at = new Date(next.air_date + 'T00:00:00').getTime();
@@ -259,9 +239,6 @@ function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season
       <Frame label={label} bg="bg-raised">
         <div className="relative overflow-hidden rounded-2xl">
           <Img path={next.still_path || d.backdrop_path} kind={next.still_path ? 'still' : 'backdrop'} sizes="320px" alt="" className="aspect-video" imgClassName="opacity-70" />
-          <span className="absolute top-2 left-2">
-            <Chip>{dateLabel(at)}</Chip>
-          </span>
           {next.runtime ? (
             <span className="absolute right-2 bottom-2">
               <Chip>{formatRuntime(next.runtime)}</Chip>
@@ -272,12 +249,11 @@ function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season
       <span className="block px-[6.5px] pt-2.5 pb-1">
         <span className="block text-micro font-semibold tracking-wider text-muted uppercase">Next episode</span>
         <span className="mt-0.5 block truncate text-body-sm font-medium">
-          E{next.episode_number}
-          {name ? ` · ${name}` : ''}
+          {seLabel(next.season_number, next.episode_number)}
+          {name ? ` ${name}` : ''}
         </span>
-        <span className="block truncate text-caption text-muted">
-          Season {next.season_number} · {following ? 'you’ll get a reminder' : 'follow to get a reminder'}
-        </span>
+        <span className="block truncate text-caption text-muted">{dateLabel(at)}</span>
+        <span className="block truncate text-caption text-faint">{inLibrary ? 'In your library: you’ll be notified' : 'Add it to your library to be notified'}</span>
       </span>
     </button>
   );

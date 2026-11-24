@@ -30,6 +30,7 @@ export default function PeekHost() {
           onClose={peek.close}
           mini={target.mode === 'mini'}
           anchor={target.anchor}
+          episode={target.episode}
           onEpisodes={() => {
             peek.close();
             setEpisodesOf(data);

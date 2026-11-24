@@ -20,7 +20,7 @@ interface Props {
   to: string;
   type: MediaType;
   image: { path: string | null | undefined; kind: ImageKind; src?: string };
-  /** First line (e.g. "S2 · E5 Name" or a movie title). */
+  /** First line (e.g. "S2 E5 Name" or a movie title). */
   primary: ReactNode;
   /** Second line (e.g. the show name); the type icon sits at its right edge. */
   secondary: ReactNode;
@@ -46,7 +46,26 @@ interface Props {
 }
 
 /** Outlined landscape card: still image with corner chips, two text lines, type icon bottom-right. */
-export default function EpisodeTile({ to, type, image, primary, secondary, topLeft, bottomLeft, bottomRight, progress = 0, playable = true, shade, title, className, width = TILE, linkProps, titleLink, children, still }: Props) {
+export default function EpisodeTile({
+  to,
+  type,
+  image,
+  primary,
+  secondary,
+  topLeft,
+  bottomLeft,
+  bottomRight,
+  progress = 0,
+  playable = true,
+  shade,
+  title,
+  className,
+  width = TILE,
+  linkProps,
+  titleLink,
+  children,
+  still,
+}: Props) {
   const line = (which: 'primary' | 'secondary', content: ReactNode) =>
     titleLink?.line === which ? (
       <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline">
@@ -80,7 +99,9 @@ export default function EpisodeTile({ to, type, image, primary, secondary, topLe
           )}
         </div>
         <div className={CARD_INFO}>
-          <div className={CARD_TITLE} title={typeof primary === 'string' ? primary : undefined}>{line('primary', primary)}</div>
+          <div className={CARD_TITLE} title={typeof primary === 'string' ? primary : undefined}>
+            {line('primary', primary)}
+          </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
             <span className="min-w-0 truncate">{line('secondary', secondary)}</span>
             <TypeIcon type={type} />

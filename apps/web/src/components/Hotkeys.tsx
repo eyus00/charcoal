@@ -11,9 +11,9 @@ export const GO: Record<string, { to: string; label: string }> = {
   m: { to: '/discover?type=movie', label: 'Movies' },
   t: { to: '/discover?type=tv', label: 'TV shows' },
   d: { to: '/discover', label: 'Discover' },
-  c: { to: '/calendar', label: 'Calendar' },
+  c: { to: '/calendar', label: 'Release Calendar' },
   p: { to: '/profile', label: 'Profile' },
-  w: { to: '/profile#watchlist', label: 'Watchlist' },
+  l: { to: '/profile#library', label: 'Library' },
   s: { to: '/profile#settings', label: 'Settings' },
   y: { to: '/profile#history', label: 'History' },
 };
@@ -44,7 +44,7 @@ const SECTIONS: { title: string; keys: [string[], string][] }[] = [
     title: 'Title page',
     keys: [
       [['p'], 'Play / resume (episodes for TV)'],
-      [['b'], 'Add to / remove from watchlist'],
+      [['l'], 'Add to / remove from your library'],
       [['t'], 'Play trailer'],
     ],
   },

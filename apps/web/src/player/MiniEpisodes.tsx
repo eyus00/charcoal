@@ -20,9 +20,18 @@ export default function MiniEpisodes({
   onAll,
   onPrev,
   onNext,
+  currentLabel = 'Playing',
+  startAt = 'center',
+  compact,
 }: {
   show: Details;
   current: { season: number; episode: number };
+  /** The tag on the current episode. */
+  currentLabel?: string;
+  /** Where the current episode sits when the list opens (peek: at the top, the next one under it). */
+  startAt?: 'center' | 'start';
+  /** Narrower stills (the hover peek). */
+  compact?: boolean;
   onPick: (season: number, episode: number) => void;
   onAll: () => void;
   onPrev?: () => void;
@@ -39,17 +48,14 @@ export default function MiniEpisodes({
 
   // Open on the playing episode, with its season's tab in view.
   useEffect(() => {
-    list.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'center' });
+    list.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: startAt });
   }, [data]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 px-1 pb-2">
         {/* Season picker: a small dropdown. */}
-        <div
-          className="relative min-w-0 flex-1"
-          onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setPicking(false)}
-        >
+        <div className="relative min-w-0 flex-1" onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setPicking(false)}>
           <button
             type="button"
             aria-haspopup="listbox"
@@ -61,7 +67,11 @@ export default function MiniEpisodes({
             <ChevronDown className={cx('size-4 text-muted transition-transform', picking && 'rotate-180')} />
           </button>
           {picking && (
-            <div role="listbox" aria-label="Seasons" className="toast-in absolute top-full left-0 z-20 mt-1 max-h-60 w-36 overflow-y-auto overscroll-contain rounded-xl bg-raised p-1 shadow-2xl ring-1 ring-white/10">
+            <div
+              role="listbox"
+              aria-label="Seasons"
+              className="toast-in absolute top-full left-0 z-20 mt-1 max-h-60 w-36 overflow-y-auto overscroll-contain rounded-xl bg-raised p-1 shadow-2xl ring-1 ring-white/10"
+            >
               {seasons.map((s) => {
                 const on = s.season_number === season;
                 return (
@@ -107,14 +117,11 @@ export default function MiniEpisodes({
               aria-current={playing}
               disabled={upcoming}
               onClick={() => onPick(season, ep.episode_number)}
-              className={cx(
-                'flex w-full gap-3 rounded-xl p-1.5 text-left transition-colors disabled:opacity-45',
-                playing ? 'bg-white/[0.06]' : 'enabled:hover:bg-white/[0.06]',
-              )}
+              className={cx('flex w-full gap-3 rounded-xl p-1.5 text-left transition-colors disabled:opacity-45', playing ? 'bg-white/[0.06]' : 'enabled:hover:bg-white/[0.06]')}
             >
-              <span className={cx('relative w-40 shrink-0 self-start overflow-hidden rounded-lg bg-white/5', playing && 'ring-2 ring-white')}>
+              <span className={cx('relative shrink-0 self-start overflow-hidden rounded-lg bg-white/5', compact ? 'w-32' : 'w-40', playing && 'ring-2 ring-white')}>
                 <Img path={ep.still_path} kind="still" sizes="160px" alt="" className="aspect-video" />
-                {playing && <span className="absolute top-1 left-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">Playing</span>}
+                {playing && <span className="absolute top-1 left-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">{currentLabel}</span>}
                 {h?.isCompleted ? (
                   <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">
                     <Check className="size-3" /> Watched
@@ -136,9 +143,7 @@ export default function MiniEpisodes({
                   <span className="mr-1.5 text-faint tabular-nums">{ep.episode_number}</span>
                   {ep.name}
                 </span>
-                <span className="block text-xs text-faint">
-                  {upcoming ? (ep.air_date ? `Airs ${formatDate(ep.air_date)}` : 'Coming soon') : ep.air_date ? formatDate(ep.air_date) : ''}
-                </span>
+                <span className="block text-xs text-faint">{upcoming ? (ep.air_date ? `Airs ${formatDate(ep.air_date)}` : 'Coming soon') : ep.air_date ? formatDate(ep.air_date) : ''}</span>
                 {ep.overview && <span className="mt-1 line-clamp-2 text-xs leading-snug text-muted">{ep.overview}</span>}
               </span>
             </button>

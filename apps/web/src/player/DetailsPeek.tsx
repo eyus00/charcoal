@@ -4,44 +4,43 @@ import { Link, useNavigate } from 'react-router';
 import { Maximize2, Star, X } from 'lucide-react';
 import Img from '../components/Img';
 import Kbd from '../components/Kbd';
-import { CertBadge } from '../components/MediaCard';
 import { Tip } from '../components/Tip';
 import { btn } from '../components/Button';
-import BookmarkMenu from '../components/BookmarkMenu';
 import { PlayTitleButton } from '../components/TitleActions';
-import FollowButton from '../components/FollowButton';
-import { peek } from '../lib/peek';
-import { certificationOf, titleOf, type Details, type MediaType } from '../lib/tmdb';
+import LibraryButton from '../components/LibraryButton';
+import MiniEpisodes from './MiniEpisodes';
+import { peek, type PeekEpisode } from '../lib/peek';
+import { titleOf, type Details, type MediaType } from '../lib/tmdb';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { cx, formatRuntime, isTypingTarget } from '../lib/util';
 
-/** year · ★ rating · age rating · length: the same order everywhere. */
-function Facts({ d, type, className }: { d: Details; type: MediaType; className?: string }) {
+/** Genres, then year · ★ rating · length: the same as the details page (no age rating). */
+export function Facts({ d, type, className, genresClassName }: { d: Details; type: MediaType; className?: string; genresClassName?: string }) {
   const year = (d.release_date || d.first_air_date || '').slice(0, 4);
-  const cert = certificationOf(d);
   const length = type === 'movie' ? formatRuntime(d.runtime ?? 0) : d.number_of_seasons ? `${d.number_of_seasons} season${d.number_of_seasons === 1 ? '' : 's'}` : '';
   return (
-    <div className={cx('flex flex-wrap items-center gap-x-2 gap-y-1 text-white/80', className)}>
-      {[year, d.vote_average > 0 ? 'rating' : '', cert ? 'cert' : '', length].filter(Boolean).map((t, i) => (
-        <span key={i} className="flex items-center gap-2">
-          {i > 0 && <span className="text-white/35">·</span>}
-          {t === 'cert' ? (
-            <CertBadge>{cert}</CertBadge>
-          ) : t === 'rating' ? (
-            <span className="flex items-center gap-1 font-medium">
-              <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
-              {d.vote_average.toFixed(1)}
-            </span>
-          ) : (
-            t
-          )}
-        </span>
-      ))}
-    </div>
+    <>
+      {d.genres.length > 0 && <p className={cx('text-white/70', genresClassName)}>{d.genres.map((g) => g.name).join(', ')}</p>}
+      <div className={cx('flex flex-wrap items-center gap-x-2 gap-y-1 text-white/80', className)}>
+        {[year, d.vote_average > 0 ? 'rating' : '', length].filter(Boolean).map((t, i) => (
+          <span key={i} className="flex items-center gap-2">
+            {i > 0 && <span className="text-white/35">·</span>}
+            {t === 'rating' ? (
+              <span className="flex items-center gap-1 font-medium">
+                <Star className="size-3.5 fill-current text-star" strokeWidth={0} />
+                {d.vote_average.toFixed(1)}
+              </span>
+            ) : (
+              t
+            )}
+          </span>
+        ))}
+      </div>
+    </>
   );
 }
 
-const bookmarkItem = (d: Details, type: MediaType) => ({
+const libraryItem = (d: Details, type: MediaType) => ({
   id: d.id,
   mediaType: type,
   title: titleOf(d),
@@ -70,10 +69,13 @@ function ExpandButton({ to, small }: { to: string; small?: boolean }) {
     <Link
       to={to}
       aria-label="Open the full details page (D)"
-      className={cx('group/tip relative flex items-center gap-1.5 rounded-full bg-black/55 pr-1.5 text-white backdrop-blur-md transition-colors hover:bg-black/75', small ? 'h-8 pl-2.5' : 'h-10 pl-3')}
+      className={cx(
+        'group/tip relative flex shrink-0 items-center gap-1.5 rounded-full bg-black/55 pl-1.5 text-white backdrop-blur-md transition-colors hover:bg-black/75',
+        small ? 'h-8 pr-2.5' : 'h-10 pr-3',
+      )}
     >
-      <Maximize2 className={small ? 'size-3.5' : 'size-4'} />
       <Kbd className="bg-white/15 text-white/80 ring-0">D</Kbd>
+      <Maximize2 className={small ? 'size-3.5' : 'size-4'} />
       <Tip label="Open full page" side="bottom" align="end" />
     </Link>
   );
@@ -96,6 +98,7 @@ export default function DetailsPeek({
   anchor,
   play = true,
   onEpisodes,
+  episode,
 }: {
   d: Details;
   type: MediaType;
@@ -105,10 +108,12 @@ export default function DetailsPeek({
   anchor?: DOMRect;
   play?: boolean;
   onEpisodes?: () => void;
+  /** From an episode card: the mini peek lists the show's episodes beside it, this one first. */
+  episode?: PeekEpisode;
 }) {
   useDetailsKey(detailsUrl);
   const wide = typeof window !== 'undefined' && window.innerWidth >= 640;
-  if (mini && anchor && wide) return <SidePeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} anchor={anchor} onEpisodes={onEpisodes} />;
+  if (mini && anchor && wide) return <SidePeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} anchor={anchor} onEpisodes={onEpisodes} episode={type === 'tv' ? episode : undefined} />;
   return <MediumPeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} play={play} onEpisodes={onEpisodes} />;
 }
 
@@ -265,13 +270,11 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
         <div ref={info} className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
           <div className="max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
-            <Facts d={d} type={type} className="mt-2 text-sm" />
-            {d.genres.length > 0 && <p className="mt-1.5 text-sm text-white/70">{d.genres.map((g) => g.name).join(', ')}</p>}
+            <Facts d={d} type={type} genresClassName="mt-2 text-sm" className="mt-1.5 text-sm" />
             {d.overview && <p className="mt-4 line-clamp-3 text-body-sm leading-6 text-pretty text-white/80 sm:line-clamp-5">{d.overview}</p>}
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {play && <PlayTitleButton id={d.id} type={type} onEpisodes={() => onEpisodes?.()} />}
-              <FollowButton type={type} id={d.id} title={title} />
-              <BookmarkMenu variant="round" item={bookmarkItem(d, type)} />
+              <LibraryButton item={libraryItem(d, type)} />
             </div>
           </div>
         </div>
@@ -282,41 +285,74 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
 }
 
 const W = 340;
+const EW = 330;
+const GAP = 12;
 
-/** The mini peek: pinned beside the card it came from; stays while the pointer is on it. */
-function SidePeek({ d, type, detailsUrl, onClose, anchor, onEpisodes }: { d: Details; type: MediaType; detailsUrl: string; onClose: () => void; anchor: DOMRect; onEpisodes?: () => void }) {
+/**
+ * The mini peek: pinned beside the card it came from; stays while the pointer is on it. From an
+ * episode card it carries the show's episode list too (the player's small picker), that episode
+ * first. Placed to the card's right if there's room, else its left, else centred; re-measured
+ * as its content loads so it never runs off screen.
+ */
+function SidePeek({
+  d,
+  type,
+  detailsUrl,
+  onClose,
+  anchor,
+  onEpisodes,
+  episode,
+}: {
+  d: Details;
+  type: MediaType;
+  detailsUrl: string;
+  onClose: () => void;
+  anchor: DOMRect;
+  onEpisodes?: () => void;
+  episode?: PeekEpisode;
+}) {
   const title = titleOf(d);
+  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
+  const info = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<React.CSSProperties>({ left: -9999, top: 0 });
+  const [infoH, setInfoH] = useState(0);
+  const withEpisodes = !!episode && typeof window !== 'undefined' && window.innerWidth >= W + EW + GAP * 3;
+  const total = W + (withEpisodes ? GAP + EW : 0);
 
-  // Beside the card: to its right if there's room, else to its left; kept on screen.
   useLayoutEffect(() => {
-    const h = ref.current?.offsetHeight ?? 420;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const gap = 12;
-    const left = anchor.right + gap + W <= vw - gap ? anchor.right + gap : anchor.left - gap - W >= gap ? anchor.left - gap - W : Math.max(gap, Math.min(anchor.left, vw - W - gap));
-    const top = Math.max(gap, Math.min(anchor.top, vh - h - gap));
-    setPos({ left, top });
-  }, [anchor]);
+    const place = () => {
+      const h = Math.min(ref.current?.offsetHeight ?? 420, window.innerHeight - GAP * 2);
+      setInfoH(info.current?.offsetHeight ?? 0);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const left = anchor.right + GAP + total <= vw - GAP ? anchor.right + GAP : anchor.left - GAP - total >= GAP ? anchor.left - GAP - total : Math.max(GAP, (vw - total) / 2);
+      const top = Math.max(GAP, Math.min(anchor.top, vh - h - GAP));
+      setPos({ left, top });
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    if (info.current) ro.observe(info.current);
+    return () => ro.disconnect();
+  }, [anchor, total]);
 
   // Close on a press outside it (not its watchlist menu), Escape, scroll or resize.
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       const t = e.target as Element;
-      if (!ref.current?.contains(t) && !t.closest?.('[role=menu]')) onClose();
+      if (!ref.current?.contains(t) && !t.closest?.('[role=menu],[role=listbox]')) onClose();
     };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('[role=menu]') && onClose();
-    const shut = () => !document.querySelector('[role=menu]') && onClose();
+    const shut = (e: Event) => !ref.current?.contains(e.target as Node) && !document.querySelector('[role=menu]') && onClose();
     document.addEventListener('pointerdown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('scroll', shut, { passive: true, capture: true });
-    window.addEventListener('resize', shut);
+    window.addEventListener('resize', onClose);
     return () => {
       document.removeEventListener('pointerdown', onDown);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', shut, { capture: true });
-      window.removeEventListener('resize', shut);
+      window.removeEventListener('resize', onClose);
     };
   }, [onClose]);
 
@@ -325,29 +361,42 @@ function SidePeek({ d, type, detailsUrl, onClose, anchor, onEpisodes }: { d: Det
       ref={ref}
       role="dialog"
       aria-label={`${title}: details`}
-      style={{ ...pos, width: W }}
+      style={{ ...pos, width: total }}
       onPointerEnter={() => peek.hold()}
       onPointerLeave={(e) => e.pointerType === 'mouse' && !document.querySelector('[role=menu]') && peek.release()}
-      className="toast-in fixed z-[60] overflow-hidden rounded-3xl bg-raised shadow-2xl ring-1 shadow-black/60 ring-white/10"
+      className="toast-in fixed z-[60] flex max-h-[calc(100dvh-24px)] items-start gap-3"
     >
-      <div className="relative">
-        <Img path={d.backdrop_path} kind="backdrop" sizes="340px" alt="" className="aspect-video w-full" imgClassName="object-[70%_20%]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/10 to-transparent" />
-        <div className="absolute top-2.5 right-2.5">
-          <ExpandButton to={detailsUrl} small />
+      <div ref={info} style={{ width: W }} className="max-h-[calc(100dvh-24px)] shrink-0 overflow-y-auto overscroll-contain rounded-3xl bg-raised shadow-2xl ring-1 shadow-black/60 ring-white/10">
+        <div className="relative">
+          <Img path={d.backdrop_path} kind="backdrop" sizes="340px" alt="" className="aspect-video w-full" imgClassName="object-[70%_20%]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/10 to-transparent" />
+          <div className="absolute top-2.5 right-2.5">
+            <ExpandButton to={detailsUrl} small />
+          </div>
+        </div>
+        <div className="relative -mt-6 px-4 pb-4">
+          <h2 className="text-xl leading-tight font-semibold tracking-tight text-balance">{title}</h2>
+          <Facts d={d} type={type} genresClassName="mt-1.5 text-xs" className="mt-1 text-xs" />
+          {d.overview && <p className="mt-2.5 line-clamp-4 text-caption leading-5 text-pretty text-white/75">{d.overview}</p>}
+          <div className="mt-3.5 flex items-center gap-2">
+            <PlayTitleButton id={d.id} type={type} size="md" onEpisodes={() => onEpisodes?.()} />
+            <LibraryButton item={libraryItem(d, type)} size="md" className="size-9!" />
+          </div>
         </div>
       </div>
-      <div className="relative -mt-6 px-4 pb-4">
-        <h2 className="text-xl leading-tight font-semibold tracking-tight text-balance">{title}</h2>
-        <Facts d={d} type={type} className="mt-1.5 text-xs" />
-        {d.genres.length > 0 && <p className="mt-1 text-xs text-white/60">{d.genres.map((g) => g.name).join(', ')}</p>}
-        {d.overview && <p className="mt-2.5 line-clamp-4 text-caption leading-5 text-pretty text-white/75">{d.overview}</p>}
-        <div className="mt-3.5 flex items-center gap-2">
-          <PlayTitleButton id={d.id} type={type} size="md" onEpisodes={() => onEpisodes?.()} />
-          <FollowButton type={type} id={d.id} title={title} size="md" className="size-9!" />
-          <BookmarkMenu variant="round" size="md" className="shrink-0 [&>button]:size-9" item={bookmarkItem(d, type)} />
+      {withEpisodes && episode && (
+        <div style={{ width: EW, height: Math.max(infoH, 360) }} className="flex shrink-0 flex-col rounded-3xl bg-raised p-2.5 shadow-2xl ring-1 shadow-black/60 ring-white/10">
+          <MiniEpisodes
+            show={d}
+            current={episode}
+            currentLabel="This one"
+            startAt="start"
+            compact
+            onPick={(s, e) => navigate(`/watch/tv/${d.id}?season=${s}&episode=${e}`)}
+            onAll={() => onEpisodes?.()}
+          />
         </div>
-      </div>
+      )}
     </div>,
     document.body,
   );

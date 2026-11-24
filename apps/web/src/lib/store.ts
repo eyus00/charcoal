@@ -5,7 +5,10 @@ import type { MediaType } from './tmdb';
 
 export type WatchStatus = 'watching' | 'planned' | 'completed';
 
-export interface EpisodeKey { season: number; episode: number }
+export interface EpisodeKey {
+  season: number;
+  episode: number;
+}
 
 export interface HistoryItem {
   id: number;
@@ -200,7 +203,11 @@ export const subscribeStore = (l: () => void) => {
 
 /** Select a slice. Selectors must return existing references (no new objects/arrays). */
 export function useStore<T>(selector: (s: State) => T): T {
-  return useSyncExternalStore(subscribeStore, () => selector(state), () => selector(state));
+  return useSyncExternalStore(
+    subscribeStore,
+    () => selector(state),
+    () => selector(state),
+  );
 }
 export const getState = () => state;
 
@@ -214,11 +221,9 @@ export function findProgress(history: HistoryItem[], mediaType: MediaType, id: n
 }
 
 /** Most recent history entry for a title (any episode). History is kept newest-first. */
-export const latestFor = (history: HistoryItem[], mediaType: MediaType, id: number) =>
-  history.find((h) => h.id === id && h.mediaType === mediaType);
+export const latestFor = (history: HistoryItem[], mediaType: MediaType, id: number) => history.find((h) => h.id === id && h.mediaType === mediaType);
 
-export const percent = (h?: HistoryItem) =>
-  h?.progress && h.progress.duration > 0 ? Math.min(100, (h.progress.watched / h.progress.duration) * 100) : 0;
+export const percent = (h?: HistoryItem) => (h?.progress && h.progress.duration > 0 ? Math.min(100, (h.progress.watched / h.progress.duration) * 100) : 0);
 
 /** Where "Play/Resume" should go for a title. */
 export function resumeTarget(history: HistoryItem[], mediaType: MediaType, id: number) {
@@ -273,15 +278,25 @@ export const actions = {
       const next: HistoryItem = { ...prev, ...item, progress, isCompleted: isCompleted || (!item.progress && !!prev?.isCompleted), lastWatched: Date.now() };
       const history = [next, ...s.history.filter((h) => !sameEntry(h, item))].slice(0, MAX_HISTORY);
 
-      // "Watching" is never picked by hand: titles in the watchlist move to it once you're 10 % in,
-      // and to "Watched" when a movie, or a show's last episode, is finished.
+      // Statuses are never picked by hand: titles move to "Watching" once you're 10 % in, and to
+      // "Watched" when a movie, or a show's last episode, is finished.
       const lastEpisode = item.mediaType === 'tv' && item.nextEpisode === null;
       const watchlist = s.watchlist.map((w) => {
         if (w.id !== item.id || w.mediaType !== item.mediaType) return w;
-        const status: WatchStatus =
-          isCompleted && (item.mediaType === 'movie' || lastEpisode) ? 'completed' : ratio > 0.1 || isCompleted ? 'watching' : w.status;
+        const status: WatchStatus = isCompleted && (item.mediaType === 'movie' || lastEpisode) ? 'completed' : ratio > 0.1 || isCompleted ? 'watching' : w.status;
         return status === w.status ? w : { ...w, status };
       });
+      // Everything you watch joins your library (♥) on its own, so it doubles as your history.
+      if ((ratio > 0.1 || isCompleted) && !watchlist.some((w) => w.id === item.id && w.mediaType === item.mediaType)) {
+        watchlist.unshift({
+          id: item.id,
+          mediaType: item.mediaType,
+          title: item.title,
+          posterPath: item.posterPath,
+          addedAt: Date.now(),
+          status: isCompleted && (item.mediaType === 'movie' || lastEpisode) ? 'completed' : 'watching',
+        });
+      }
       return { ...s, history, watchlist };
     });
   },
@@ -326,17 +341,13 @@ export const actions = {
   importData(json: string): { history: number; watchlist: number } {
     const parsed = JSON.parse(json);
     // Accept our own export or a raw old-app localStorage dump.
-    const incoming = sanitize(
-      parsed?.state ? { history: parsed.state.watchHistory, watchlist: parsed.state.watchlist } : parsed,
-    );
+    const incoming = sanitize(parsed?.state ? { history: parsed.state.watchHistory, watchlist: parsed.state.watchlist } : parsed);
     setState((s) => {
       const history = [...incoming.history, ...s.history]
         .sort((a, b) => b.lastWatched - a.lastWatched)
         .filter((h, i, arr) => arr.findIndex((x) => sameEntry(x, h)) === i)
         .slice(0, MAX_HISTORY);
-      const watchlist = [...incoming.watchlist, ...s.watchlist].filter(
-        (w, i, arr) => arr.findIndex((x) => x.id === w.id && x.mediaType === w.mediaType) === i,
-      );
+      const watchlist = [...incoming.watchlist, ...s.watchlist].filter((w, i, arr) => arr.findIndex((x) => x.id === w.id && x.mediaType === w.mediaType) === i);
       return { ...s, history, watchlist };
     });
     persist();

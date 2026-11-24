@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
-import { Bookmark, Download, Film, Trash2, Upload, X } from 'lucide-react';
-import { StatusDot, StatusTag } from '../components/BookmarkMenu';
+import { Download, Film, Trash2, Upload, X, Heart } from 'lucide-react';
+import { StatusDot, StatusTag } from '../components/LibraryStatus';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
 import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
@@ -47,7 +47,7 @@ export default function Profile() {
       { k: 'Titles watched', v: titles.length },
       { k: 'Episodes & movies', v: history.length },
       { k: 'Hours watched', v: Math.round(secs / 360) / 10 },
-      { k: 'In watchlist', v: watchlist.length },
+      { k: 'In your library', v: watchlist.length },
     ];
   }, [history, titles.length, watchlist.length]);
 
@@ -61,7 +61,7 @@ export default function Profile() {
   const [tab, setTabState] = useState<Tab>(fromUrl);
   useEffect(() => {
     if (hash === '#settings') setTabState('settings');
-    else if (hash === '#history' || hash === '#watchlist') setTabState('library');
+    else if (hash === '#history' || hash === '#watchlist' || hash === '#library') setTabState('library');
   }, [hash]);
   useEffect(() => {
     const t = params.get('tab');
@@ -115,7 +115,7 @@ export default function Profile() {
               </>
             )}
           </div>
-          <div id="watchlist" className={cx(PANEL, 'scroll-mt-4')}>
+          <div id="library" className={cx(PANEL, 'scroll-mt-4')}>
             <Watchlist />
           </div>
         </>
@@ -130,7 +130,7 @@ export default function Profile() {
   );
 }
 
-// ---------- watchlist ----------
+// ---------- library (♥) ----------
 
 const FILTERS: {
   id: string;
@@ -139,7 +139,7 @@ const FILTERS: {
   type?: 'movie' | 'tv';
 }[] = [
   { id: 'watching', label: 'Watching', status: 'watching' },
-  { id: 'planned', label: 'To watch', status: 'planned' },
+  { id: 'planned', label: 'Unwatched', status: 'planned' },
   { id: 'completed', label: 'Watched', status: 'completed' },
   { id: 'movie', label: 'Movies', type: 'movie' },
   { id: 'tv', label: 'TV shows', type: 'tv' },
@@ -163,9 +163,13 @@ function Watchlist() {
 
   return (
     <section>
-      <SectionHeader title="Watchlist" action={<span className="text-sm text-muted">{plural(watchlist.length, 'item', 'items')}</span>} />
+      <SectionHeader title="Library" action={<span className="text-sm text-muted">{plural(watchlist.length, 'item', 'items')}</span>} />
       {!watchlist.length ? (
-        <EmptyCard icon={Bookmark} title="Your watchlist is empty" body="Use the bookmark button on any movie or show to save it here." />
+        <EmptyCard
+          icon={Heart}
+          title="Your library is empty"
+          body="Tap ♥ on any movie or show to keep it here. Everything you watch is added on its own, and titles here notify you about new episodes."
+        />
       ) : (
         <>
           <div className="mb-6 flex flex-wrap gap-2.5">
@@ -201,16 +205,16 @@ function Watchlist() {
                         onClick={() => {
                           const before = getState().watchlist;
                           actions.removeBookmark(w.mediaType, w.id);
-                          toast(`Removed “${w.title}” from your watchlist`, {
+                          toast(`Removed “${w.title}” from your library`, {
                             label: 'Undo',
                             run: () => actions.restore({ watchlist: before }),
                           });
                         }}
-                        aria-label={`Remove ${w.title} from watchlist`}
+                        aria-label={`Remove ${w.title} from your library`}
                         className="group/tip relative grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
                       >
                         <X className="size-3.5" />
-                        <Tip label="Remove from watchlist" side="bottom" align="end" />
+                        <Tip label="Remove from your library" side="bottom" align="end" />
                       </button>
                     </div>
                   }
@@ -406,7 +410,7 @@ function SettingsSection() {
 
         <div className={cx(card, 'space-y-3 md:col-span-2')}>
           <h3 className="font-medium">Your data</h3>
-          <p className="text-sm text-muted">History and watchlist are stored only in this browser. Back them up or move them to another device.</p>
+          <p className="text-sm text-muted">History and library are stored only in this browser. Back them up or move them to another device.</p>
           <div className="flex flex-wrap gap-2">
             <button onClick={download} className={btn()}>
               <Download className="size-4" strokeWidth={1.5} /> Export
@@ -442,7 +446,7 @@ function SettingsSection() {
                   const r = actions.importData(await f.text());
                   setMsg({
                     ok: true,
-                    text: `Imported ${plural(r.history, 'history entry', 'history entries')} and ${plural(r.watchlist, 'watchlist item', 'watchlist items')}.`,
+                    text: `Imported ${plural(r.history, 'history entry', 'history entries')} and ${plural(r.watchlist, 'library item', 'library items')}.`,
                   });
                 } catch {
                   setMsg({
@@ -637,8 +641,8 @@ function TraktCard({ className }: { className: string }) {
             onChange={(v) => actions.updateSettings({ traktScrobble: v })}
           />
           <Toggle
-            label="Sync your watchlist"
-            hint="“To watch” here and your Trakt watchlist stay in step"
+            label="Sync with your Trakt watchlist"
+            hint="Unwatched titles in your library and your Trakt watchlist stay in step"
             on={settings.traktSyncWatchlist}
             onChange={(v) => actions.updateSettings({ traktSyncWatchlist: v })}
           />

@@ -12,8 +12,10 @@ import { useSyncExternalStore } from 'react';
 import type { MediaType } from './tmdb';
 
 export type PeekMode = 'mini' | 'medium';
+/** An episode card's episode: the mini peek then shows the episode list beside the title. */
+export type PeekEpisode = { season: number; episode: number };
 /** `anchor`: the card it came from, so the mini peek can sit beside it. */
-export type PeekTarget = { type: MediaType; id: number; mode: PeekMode; anchor?: DOMRect } | null;
+export type PeekTarget = { type: MediaType; id: number; mode: PeekMode; anchor?: DOMRect; episode?: PeekEpisode } | null;
 
 const HOVER_MS = 700;
 /** Moving from one card to the next while a mini peek is open switches faster. */
@@ -27,10 +29,10 @@ let hoverTimer = 0;
 let leaveTimer = 0;
 
 export const peek = {
-  open(type: MediaType, id: number, mode: PeekMode = 'medium', anchor?: DOMRect) {
+  open(type: MediaType, id: number, mode: PeekMode = 'medium', anchor?: DOMRect, episode?: PeekEpisode) {
     window.clearTimeout(hoverTimer);
     window.clearTimeout(leaveTimer);
-    current = { type, id, mode, anchor };
+    current = { type, id, mode, anchor, episode };
     emit();
   },
   close() {
@@ -51,15 +53,12 @@ export const peek = {
     window.clearTimeout(leaveTimer);
     leaveTimer = window.setTimeout(() => current?.mode === 'mini' && peek.close(), LEAVE_MS);
   },
-  hover(type: MediaType, id: number, el: HTMLElement) {
+  hover(type: MediaType, id: number, el: HTMLElement, episode?: PeekEpisode) {
     window.clearTimeout(leaveTimer);
     window.clearTimeout(hoverTimer);
     if (current?.mode === 'medium') return;
-    if (current && current.type === type && current.id === id) return;
-    hoverTimer = window.setTimeout(
-      () => el.isConnected && peek.open(type, id, 'mini', el.getBoundingClientRect()),
-      current?.mode === 'mini' ? SWITCH_MS : HOVER_MS,
-    );
+    if (current && current.type === type && current.id === id && current.episode?.season === episode?.season && current.episode?.episode === episode?.episode) return;
+    hoverTimer = window.setTimeout(() => el.isConnected && peek.open(type, id, 'mini', el.getBoundingClientRect(), episode), current?.mode === 'mini' ? SWITCH_MS : HOVER_MS);
   },
   cancelHover() {
     window.clearTimeout(hoverTimer);
@@ -81,8 +80,8 @@ const canHover = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
  * - `hover: false`: no mini peek on hover (the Home banner).
  * - `tap: false`: a tap still follows the link on touch screens (Continue watching resumes).
  */
-export function peekProps(type: MediaType, id: number, opts: { hover?: boolean; tap?: boolean } = {}) {
-  const { hover = true, tap = true } = opts;
+export function peekProps(type: MediaType, id: number, opts: { hover?: boolean; tap?: boolean; episode?: PeekEpisode } = {}) {
+  const { hover = true, tap = true, episode } = opts;
   const open = (e: React.MouseEvent) => {
     e.preventDefault();
     peek.open(type, id, 'medium');
@@ -95,7 +94,7 @@ export function peekProps(type: MediaType, id: number, opts: { hover?: boolean; 
       open(e);
     },
     onPointerEnter: (e: React.PointerEvent) => {
-      if (hover && e.pointerType === 'mouse' && canHover()) peek.hover(type, id, e.currentTarget as HTMLElement);
+      if (hover && e.pointerType === 'mouse' && canHover()) peek.hover(type, id, e.currentTarget as HTMLElement, episode);
     },
     onPointerLeave: (e: React.PointerEvent) => {
       if (e.pointerType === 'mouse') peek.release();
@@ -104,3 +103,6 @@ export function peekProps(type: MediaType, id: number, opts: { hover?: boolean; 
     onPointerDown: () => peek.cancelHover(),
   };
 }
+
+/** peekProps for an episode card: the mini peek also lists the show's episodes, this one first. */
+export const episodePeekProps = (id: number, season: number, episode: number, opts: { hover?: boolean; tap?: boolean } = {}) => peekProps('tv', id, { ...opts, episode: { season, episode } });

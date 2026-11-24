@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Film, Pause, Play, Star, Tv } from 'lucide-react';
-import BookmarkMenu from '../components/BookmarkMenu';
+import LibraryButton from '../components/LibraryButton';
 import { peekProps } from '../lib/peek';
 import ContinueWatching from '../components/ContinueWatching';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
@@ -18,8 +18,7 @@ import { continueWatching, useStore } from '../lib/store';
 import { cleanList, titleOf, typeOf, yearOf, type MediaItem } from '../lib/tmdb';
 import { cx, useKeys, useTitle } from '../lib/util';
 import { useDiscover } from '../lib/browse';
-import { itemKey, refine, topWatched, useTaste, useTrending } from '../lib/recommend';
-import { FireTag } from '../components/MediaCard';
+import { refine, useTaste, useTrending } from '../lib/recommend';
 import { Tip } from '../components/Tip';
 
 export default function Home() {
@@ -301,8 +300,7 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
             <Link to={`/watch/${type}/${item.id}`} className={btn({ variant: 'primary', size: 'lg' })}>
               <Play className="size-4 fill-current" strokeWidth={0} /> Watch now
             </Link>
-            <BookmarkMenu
-              variant="round"
+            <LibraryButton
               item={{
                 id: item.id,
                 mediaType: type,
@@ -329,7 +327,6 @@ function Browse() {
   const { ref, scroll } = useRowScroll();
   const trending = useTrending();
   const taste = useTaste();
-  const fire = useMemo(() => topWatched(trending.items.slice(0, 20)), [trending.items]);
   const discover = useDiscover({ ...EMPTY_FILTERS, genres: [cat] }, cat !== 'trending');
   // Genre tabs: TMDB's popular titles in that genre, filtered and re-ranked for you.
   const items = useMemo(
@@ -368,7 +365,7 @@ function Browse() {
       ) : (
         <Scroller label="Titles" scrollRef={ref}>
           {items.map((m) => (
-            <MediaCard key={typeOf(m) + m.id} item={m} sizes={ROW_SIZES} className={ROW_ITEM} badge={cat === 'trending' && fire.has(itemKey(m)) ? <FireTag {...fire.get(itemKey(m))!} /> : undefined} />
+            <MediaCard key={typeOf(m) + m.id} item={m} sizes={ROW_SIZES} className={ROW_ITEM} />
           ))}
           <Link
             to={cat === 'trending' ? '/discover' : `/discover?genres=${cat}`}

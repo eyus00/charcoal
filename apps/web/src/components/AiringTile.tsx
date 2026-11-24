@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronDown } from 'lucide-react';
+import { Bell, BellRing, ChevronLeft } from 'lucide-react';
 import Img from './Img';
 import { Chip } from './EpisodeTile';
-import FollowButton from './FollowButton';
 import { CARD_IMAGE, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
-import { Dialog } from './Modal';
-import { peekProps } from '../lib/peek';
-import { DAY, startOfDay, type Airing } from '../lib/schedule';
+import { Tip } from './Tip';
+import { toast } from './Toast';
+import { episodePeekProps, peekProps } from '../lib/peek';
+import { useInLibrary } from '../lib/library';
+import { toggleReminder, useReminders, type Reminder } from '../lib/reminders';
+import { DAY, startOfDay, type Airing, type AiringEpisode } from '../lib/schedule';
 import { cx, formatRuntime } from '../lib/util';
 
 const fullDate = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
-/** The date pill: "Airs today", "Airs tomorrow", "Airs 26 Nov 2026", "Aired yesterday"; films "Out …". */
+/** "Airs today", "Airs tomorrow", "Airs Nov 26, 2026", "Aired yesterday"; films "Out …". */
 export function dateLabel(at: number, film = false) {
   const d = startOfDay(new Date(at)).getTime();
   const today = startOfDay(new Date()).getTime();
@@ -24,18 +26,10 @@ export function dateLabel(at: number, film = false) {
   return `${verb} ${fullDate(d)}`;
 }
 
-/** "Today", "Tomorrow", "Thursday" or "Nov 30" (day headings). */
-export function dayName(at: number, long = true) {
-  const d = startOfDay(new Date(at)).getTime();
-  const today = startOfDay(new Date()).getTime();
-  if (d === today) return 'Today';
-  if (d === today + DAY) return 'Tomorrow';
-  if (d === today - DAY) return 'Yesterday';
-  if (d > today && d < today + 7 * DAY) return new Date(d).toLocaleDateString(undefined, { weekday: long ? 'long' : 'short' });
-  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
 export const linkOf = (a: Airing) => (a.type === 'tv' && a.season !== undefined ? `/tv/${a.id}?episodes=${a.season}&ep=${a.episode}` : `/${a.type}/${a.id}`);
+
+/** "S1 E2", or "Special 3" for season 0. */
+export const seLabel = (s: number, e: number) => (s === 0 ? `Special ${e}` : `S${s} E${e}`);
 
 /**
  * The frame special releases get: an outline around the image with the label set into its top
@@ -52,93 +46,153 @@ export function Frame({ label, bg = 'bg-bg', children }: { label?: string; bg?: 
 }
 
 /**
- * A release (new episode / film) as a card, the same everywhere: frame + label when special, the
- * date pill, runtime, Follow. Several episodes the same day: one card with their total runtime and
- * a button listing them all in a popup (so nothing on the page resizes). `details`: offer that
- * button for a single episode too (Calendar).
+ * The bell: a reminder for this one release. Titles in your library notify you anyway, so for them
+ * it's already on. With a mouse it shows on hover (and stays when on); on touch it's always there.
  */
-export default function AiringTile({ a, details, className }: { a: Airing; details?: boolean; className?: string }) {
-  const [open, setOpen] = useState(false);
-  const eps = a.episodes ?? [];
-  const showEps = a.kind === 'episode' && (eps.length > 1 || (details && eps.length === 1));
+export function ReminderBell({ a, ep }: { a: Airing; ep?: AiringEpisode }) {
+  const reminders = useReminders();
+  const library = useInLibrary(a.type, a.id);
+  const key = ep ? `tv-${a.id}-${ep.season}-${ep.number}` : a.key;
+  const own = reminders.some((r) => r.key === key);
+  const on = library || own;
+  const past = startOfDay(new Date(a.at)).getTime() + DAY <= Date.now();
+  if (past) return null;
+  const reminder: Reminder = {
+    key,
+    title: a.title,
+    body: ep ? `${seLabel(ep.season, ep.number)}${ep.name ? ` ${ep.name}` : ''}` : undefined,
+    at: a.at,
+    allDay: true,
+    url: ep ? `/tv/${a.id}?episodes=${ep.season}&ep=${ep.number}` : linkOf(a),
+  };
   return (
-    <div className={cx('group relative', className)}>
-      <Link to={linkOf(a)} {...peekProps(a.type, a.id)} aria-label={`${a.title}${a.se ? `, ${a.se}` : ''}`} className="absolute inset-x-0 top-0 bottom-10 z-0 rounded-2xl" />
-      <div className="pointer-events-none relative">
-        <Frame label={a.label}>
-          <div className={CARD_IMAGE}>
-            <Img path={null} src={a.image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
-            <span className="absolute top-2 left-2">
-              <Chip>{a.at ? dateLabel(a.at, a.kind === 'movie') : 'Date TBA'}</Chip>
-            </span>
-            {a.runtime ? (
-              <span className="absolute right-2 bottom-2">
-                <Chip>{formatRuntime(a.runtime)}</Chip>
-              </span>
-            ) : null}
-            <span className="pointer-events-auto absolute top-2 right-2">
-              <FollowButton type={a.type} id={a.id} title={a.title} variant="card" />
-            </span>
-          </div>
-        </Frame>
-        <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
-          <div className={CARD_TITLE}>{a.title}</div>
-          <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
-            {a.se && <span className="shrink-0">{a.se}</span>}
-            {a.epName && <span className="min-w-0 truncate">{a.epName}</span>}
-            <TypeIcon type={a.type} />
-          </div>
-          <CornerArc />
-        </div>
-      </div>
-      {showEps && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-haspopup="dialog"
-          className="relative ml-[6.5px] flex h-8 items-center gap-1.5 rounded-full bg-white/[0.06] px-3 text-sm text-white/85 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          {eps.length > 1 ? `${eps.length} episodes` : 'Episode details'}
-          <ChevronDown className="size-4" />
-        </button>
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (library && !own) return toast(`You’ll be notified: “${a.title}” is in your library`);
+        toggleReminder(reminder);
+      }}
+      aria-pressed={on}
+      aria-label={on ? 'Reminder on' : 'Remind me'}
+      className={cx(
+        'group/tip relative grid size-9 place-items-center rounded-full backdrop-blur-sm transition-[background-color,opacity]',
+        on
+          ? 'bg-white text-black'
+          : 'bg-black/60 text-white hover:bg-black/80 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100',
       )}
-      {open && <EpisodesDialog a={a} onClose={() => setOpen(false)} />}
-    </div>
+    >
+      {on ? <BellRing className="size-4" /> : <Bell className="size-4" />}
+      <Tip label={library ? 'In your library: you’ll be notified' : own ? 'Reminder on · click to remove' : 'Remind me (adds it to your calendar)'} side="bottom" align="end" />
+    </button>
   );
 }
 
-/** Every episode of a release, in a popup: still, "E1 · Name", runtime, synopsis. */
-function EpisodesDialog({ a, onClose }: { a: Airing; onClose: () => void }) {
-  const eps = a.episodes ?? [];
-  const season = eps[0]?.season;
-  return (
-    <Dialog
-      title={`${a.title}${season ? ` · Season ${season}` : ''}`}
-      subtitle={[eps.length > 1 ? `${eps.length} episodes` : null, a.runtime ? formatRuntime(a.runtime) : null, dateLabel(a.at)].filter(Boolean).join(' · ')}
-      onClose={onClose}
-      wide
-    >
-      <div className="space-y-1">
-        {eps.map((e) => (
-          <Link
-            key={`${e.season}-${e.number}`}
-            to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`}
-            onClick={onClose}
-            className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-start gap-3.5 rounded-2xl p-2 transition-colors hover:bg-white/[0.04] sm:grid-cols-[10rem_minmax(0,1fr)]"
-          >
-            <Img path={null} src={e.image ?? a.image} kind="still" sizes="160px" alt="" className="aspect-video rounded-xl" />
-            <div className="min-w-0">
-              <p className="truncate text-body-sm font-medium text-white/90">
-                E{e.number}
-                {e.name ? ` · ${e.name}` : ''}
-              </p>
-              {e.runtime ? <p className="text-xs text-faint">{formatRuntime(e.runtime)}</p> : null}
-              <p className="mt-1 line-clamp-2 text-caption leading-5 text-muted">{e.overview || 'No synopsis yet.'}</p>
-            </div>
-          </Link>
-        ))}
+/** One card: image (frame, runtime, bell), then two lines and, outside the Calendar, the date. */
+function Card({
+  a,
+  ep,
+  to,
+  showDate,
+  className,
+  onClick,
+  stack = 0,
+}: {
+  a: Airing;
+  ep?: AiringEpisode;
+  to?: string;
+  showDate: boolean;
+  className?: string;
+  onClick?: () => void;
+  /** Cards stacked behind this one (several episodes the same day). */
+  stack?: number;
+}) {
+  const tv = a.type === 'tv';
+  const first = ep ?? a.episodes?.[0];
+  // Shows: the episode is the headline, the show under it. Films: the title, then year · rating.
+  const line1 = tv && first ? `${seLabel(first.season, first.number)}${first.name ? ` ${first.name}` : ''}` : a.title;
+  const line2 = tv ? a.title : a.se;
+  const runtime = ep ? ep.runtime : stack ? a.episodes?.[0]?.runtime : a.runtime;
+  const image = ep?.image ?? a.image;
+  // A stack's tap fans it out (not the touch-screen peek).
+  const hover = tv && first ? episodePeekProps(a.id, first.season, first.number, { tap: !onClick }) : peekProps(a.type, a.id, { tap: !onClick });
+  const body = (
+    <>
+      <div className="relative">
+        {/* The rest of the stack, peeking out on the right. */}
+        {stack > 0 && (
+          <>
+            <span aria-hidden className="absolute inset-y-[14px] -right-[14px] left-[14px] rounded-2xl bg-white/[0.06] ring-1 ring-white/10" />
+            {stack > 1 && <span aria-hidden className="absolute inset-y-[22px] -right-[26px] left-[26px] rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]" />}
+          </>
+        )}
+        <Frame label={a.label}>
+          <div className={CARD_IMAGE}>
+            <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
+            {stack > 0 && (
+              <span className="absolute bottom-2 left-2">
+                <Chip light>{stack + 1} episodes</Chip>
+              </span>
+            )}
+            {runtime ? (
+              <span className="absolute right-2 bottom-2">
+                <Chip>{formatRuntime(runtime)}</Chip>
+              </span>
+            ) : null}
+            <span className="absolute top-2 right-2 z-10">
+              <ReminderBell a={a} ep={ep} />
+            </span>
+          </div>
+        </Frame>
       </div>
-    </Dialog>
+      <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
+        <div className={CARD_TITLE}>{line1}</div>
+        <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
+          <span className="min-w-0 truncate">{line2}</span>
+          <TypeIcon type={a.type} />
+        </div>
+        {showDate && <div className="text-caption text-faint">{dateLabel(a.at, !tv)}</div>}
+        <CornerArc />
+      </div>
+    </>
+  );
+  return onClick ? (
+    <button type="button" onClick={onClick} {...hover} aria-label={`${a.title}: show all ${stack + 1} episodes`} className={cx('group relative block text-left', className)}>
+      {body}
+    </button>
+  ) : (
+    <Link to={to ?? linkOf(a)} {...hover} aria-label={`${line1}, ${line2 ?? ''}`} className={cx('group relative block', className)}>
+      {body}
+    </Link>
+  );
+}
+
+/**
+ * A release (new episode / film) as a card, the same everywhere. Several episodes the same day: a
+ * stack (the rest peek out on the right); tapping it fans them out as cards in the row, with a
+ * button at the end to fold them back. `calendar`: under a day heading, so no date line.
+ */
+export default function AiringTile({ a, calendar, className }: { a: Airing; calendar?: boolean; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const eps = a.episodes ?? [];
+  if (a.kind !== 'episode' || eps.length < 2) return <Card a={a} ep={eps[0]} showDate={!calendar} className={className} />;
+  if (!open) return <Card a={a} showDate={!calendar} className={className} stack={Math.min(eps.length - 1, 2)} onClick={() => setOpen(true)} />;
+  return (
+    <>
+      {eps.map((e) => (
+        <Card key={`${e.season}-${e.number}`} a={a} ep={e} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={!calendar} className={className} />
+      ))}
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="group/tip relative grid aspect-[9/16] w-12 shrink-0 place-items-center self-start rounded-2xl bg-white/[0.04] text-muted ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.08] hover:text-white"
+        aria-label="Fold the episodes back"
+      >
+        <ChevronLeft className="size-5" />
+        <Tip label="Fold back" side="bottom" />
+      </button>
+    </>
   );
 }
 

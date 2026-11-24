@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, Bookmark, CalendarDays, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
+import { ArrowUp, CalendarDays, Heart, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
 import { actions, useStore } from '../lib/store';
@@ -10,7 +10,7 @@ import { PageSkeleton } from './Skeletons';
 import { Wordmark } from './Logo';
 import PeekHost from './PeekHost';
 import { startReminderLoop } from '../lib/reminders';
-import { useFollowReminders } from '../lib/follows';
+import { migrateLibrary, useLibraryReminders } from '../lib/library';
 import { startWatchlistSync, syncWatchlistOnStart } from '../lib/trakt';
 import Hotkeys, { MOD, hotkeysCtl } from './Hotkeys';
 import Kbd from './Kbd';
@@ -43,17 +43,19 @@ export default function Layout({ bare = false }: { bare?: boolean }) {
 function ReminderLoop() {
   const navigate = useNavigate();
   useEffect(() => startReminderLoop((url) => navigate(url)), [navigate]);
-  // Followed shows' next episodes get reminders; checked a moment after load, off the first paint.
+  // Once: what you've watched (and old follows) join the library.
+  useEffect(() => migrateLibrary(), []);
+  // Your library's next episodes / streaming days get reminders; checked a moment after load, off the first paint.
   const [later, setLater] = useState(false);
   useEffect(() => {
     const t = window.setTimeout(() => setLater(true), 4000);
     return () => window.clearTimeout(t);
   }, []);
-  return later ? <FollowReminders /> : null;
+  return later ? <LibraryReminders /> : null;
 }
 
-function FollowReminders() {
-  useFollowReminders();
+function LibraryReminders() {
+  useLibraryReminders();
   return null;
 }
 
@@ -65,11 +67,12 @@ function Shell() {
     const stop = startWatchlistSync();
     return () => void stop();
   }, []);
+  const onDetails = /^\/(movie|tv)\/\d+/.test(useLocation().pathname);
   return (
     <div className={cx('relative min-h-dvh transition-[padding] duration-300 ease-out', sidebarOpen ? 'lg:pl-[232px]' : 'lg:pl-[80px]')}>
       <ScrollRestoration />
       <Rail />
-      <div className="relative min-w-0 px-4 pb-24 md:px-8 lg:px-10 lg:pb-12">
+      <div className={cx('relative min-w-0 px-4 md:px-8 lg:px-10 lg:pb-12', onDetails ? 'pb-10' : 'pb-24')}>
         <TopBar hideLogo={sidebarOpen} />
         <main>
           <Suspense fallback={<PageSkeleton />}>
@@ -77,7 +80,8 @@ function Shell() {
           </Suspense>
         </main>
       </div>
-      <BottomBar />
+      {/* Phones: a title's page is full screen (as it grows out of the details sheet): no tab bar. */}
+      {!onDetails && <BottomBar />}
       <ScrollTop />
       <Hotkeys openSearch={() => searchCtl.open()} />
       <ReminderLoop />
@@ -140,14 +144,14 @@ const DISCOVER: RailGroup = {
       id: 'tv',
       keys: 'G T',
     },
+    {
+      to: '/calendar',
+      label: 'Release Calendar',
+      icon: CalendarDays,
+      id: 'calendar',
+      keys: 'G C',
+    },
   ],
-};
-const CALENDAR: RailItem = {
-  to: '/calendar',
-  label: 'Calendar',
-  icon: CalendarDays,
-  id: 'calendar',
-  keys: 'G C',
 };
 const PROFILE: RailGroup = {
   to: '/profile',
@@ -164,11 +168,11 @@ const PROFILE: RailGroup = {
       keys: 'G Y',
     },
     {
-      to: '/profile#watchlist',
-      label: 'Watchlist',
-      icon: Bookmark,
-      id: 'profile#watchlist',
-      keys: 'G W',
+      to: '/profile#library',
+      label: 'Library',
+      icon: Heart,
+      id: 'profile#library',
+      keys: 'G L',
     },
     {
       to: '/profile#settings',
@@ -266,7 +270,6 @@ function Rail() {
       <nav className="flex flex-col gap-5" aria-label="Browse">
         <RailLink item={HOME} open={open} active={section === 'home'} />
         <RailGroupBox group={DISCOVER} section={section} open={open} />
-        <RailLink item={CALENDAR} open={open} active={section === 'calendar'} />
       </nav>
       <nav className="mt-auto flex flex-col gap-3" aria-label="Your library">
         <RailGroupBox group={PROFILE} section={section} open={open} />

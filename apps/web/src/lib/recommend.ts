@@ -302,17 +302,6 @@ export function useTrending() {
   return { items: ranked, isPending, isError };
 }
 
-/** The keys of the 3 titles with the most people watching, mapped to their rank (1–3). */
-export function topWatched(list: Ranked[]) {
-  return new Map(
-    [...list]
-      .filter((r) => r.watchers)
-      .sort((a, b) => b.watchers! - a.watchers!)
-      .slice(0, 3)
-      .map((r, i) => [itemKey(r.item), { rank: i + 1, watchers: r.watchers! }] as const),
-  );
-}
-
 /** Filter + rank any TMDB list (genre rows, airing, in theaters…) for you. */
 export function refine(items: MediaItem[], taste: Taste, type?: MediaType, opts: { popularity?: number } = {}) {
   const maxP = Math.max(1, ...items.map((m) => m.popularity ?? 0));

@@ -7,7 +7,6 @@ import { q, titleOf, typeOf, yearOf, type MediaItem, type MediaType } from '../l
 import { cx } from '../lib/util';
 import { useIsWatched } from '../lib/watched';
 import { peekProps } from '../lib/peek';
-import { Tip } from './Tip';
 
 /** Prefetch details after a short hover so opening a title feels instant. */
 export function usePrefetch(type: MediaType, id: number) {
@@ -108,18 +107,6 @@ function WatchedMark({ type, id }: { type: MediaType; id: number }) {
     <span title="Watched" className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm">
       <Check className="size-3.5" strokeWidth={2.5} />
       <span className="sr-only">Watched</span>
-    </span>
-  );
-}
-
-/** The 3 titles the most people are watching right now: "🔥 #1", with the count on hover. */
-export function FireTag({ rank, watchers }: { rank: number; watchers: number }) {
-  const n = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(watchers);
-  return (
-    <span className="group/tip relative flex items-center gap-1 rounded-full bg-black/65 py-1 pr-2.5 pl-2 text-xs font-semibold tabular-nums backdrop-blur-sm">
-      <span aria-hidden>🔥</span>#{rank}
-      <span className="sr-only">most watched, {n} watching now</span>
-      <Tip label={`${n} watching now on Trakt`} side="bottom" align="start" />
     </span>
   );
 }

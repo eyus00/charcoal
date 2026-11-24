@@ -17,7 +17,7 @@ import { tmdb, type MediaItem, type MediaType, type Page } from './tmdb';
 import { trakt, traktSend, useTraktUser } from './trakt';
 import { tImg, type TEpisode, type TMedia } from './traktData';
 import { affinity, fromTrakt, quality, relevant, useTaste, type Taste } from './recommend';
-import { useFollows } from './follows';
+import { useStore } from './store';
 
 export const DAY = 86_400_000;
 export const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -42,7 +42,7 @@ export interface Airing {
   type: MediaType;
   id: number;
   title: string;
-  /** Line 2: "S2 · E5", "S5 · E1–8 · 8 episodes", "Special 12" (films: none). */
+  /** Line 2: "S2 E5", "S5 E1–8", "Special 12" (films: year · rating). */
   se?: string;
   /** The episode's name when there's just one (and it's a real name). */
   epName?: string;
@@ -102,11 +102,11 @@ async function fetchRaw(start: Date, days: number, langs: string[], signed: bool
 }
 
 /** Pick and rank a week (or any span) of releases for you. */
-function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<string>): Airing[] {
+function pick(raw: Raw, taste: Taste, perDay: number, library: Set<string>): Airing[] {
   const out: Airing[] = [];
   const mineShows = new Set(raw.mine.map((r) => r.show.ids.tmdb));
-  // Yours: what you follow (and, connected to Trakt, the shows Trakt lists as yours).
-  const isYours = (type: MediaType, id: number) => followed.has(`${type}-${id}`) || (type === 'tv' && mineShows.has(id));
+  // Yours: your library (and, connected to Trakt, the shows Trakt lists as yours).
+  const isYours = (type: MediaType, id: number) => library.has(`${type}-${id}`) || (type === 'tv' && mineShows.has(id));
 
   // Episodes: one entry per show per day (a whole season dropped at once becomes "E1–8").
   const groups = new Map<string, EpRow[]>();
@@ -147,8 +147,8 @@ function pick(raw: Raw, taste: Taste, perDay: number, followed: Set<string>): Ai
     const se = special
       ? `Special ${first.episode.number}${g.length > 1 ? `–${last.episode.number}` : ''}`
       : g.length > 1
-        ? `S${first.episode.season} · E${first.episode.number}–${last.episode.number} · ${g.length} episodes`
-        : `S${first.episode.season} · E${first.episode.number}`;
+        ? `S${first.episode.season} E${first.episode.number}–${last.episode.number}`
+        : `S${first.episode.season} E${first.episode.number}`;
     const score =
       (yours ? 1 : 0) +
       0.5 * (Math.log1p(votes) / Math.log1p(maxVotes)) +
@@ -254,7 +254,8 @@ export function useSchedule(start: Date, days = 7, perDay = 8, enabled = true) {
     staleTime: 30 * 60_000,
     enabled,
   });
-  const follows = useFollows();
-  const items = useMemo(() => (raw.data ? pick(raw.data, taste, perDay, new Set(follows.map((f) => `${f.type}-${f.id}`))) : []), [raw.data, taste, perDay, follows]);
+  // "Yours" = your library.
+  const library = useStore((st) => st.watchlist);
+  const items = useMemo(() => (raw.data ? pick(raw.data, taste, perDay, new Set(library.map((w) => `${w.mediaType}-${w.id}`))) : []), [raw.data, taste, perDay, library]);
   return { items, isPending: raw.isPending, isError: raw.isError, refetch: raw.refetch };
 }

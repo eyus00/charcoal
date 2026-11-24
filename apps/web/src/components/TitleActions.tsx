@@ -7,11 +7,11 @@ import { toast } from './Toast';
 import { epLabel } from '../lib/episodes';
 import { findProgress, percent, resumeTarget, useStore } from '../lib/store';
 import type { MediaType } from '../lib/tmdb';
-import { cx, formatClock } from '../lib/util';
+import { cx } from '../lib/util';
 
 /**
  * The title's main button, everywhere it appears (details page, peeks):
- * - movie: plays, or resumes where you stopped ("Resume 41:12");
+ * - movie: plays, or resumes where you stopped ("Resume", with a progress bar in the button);
  * - TV: opens the episode list (its footer resumes / plays), labelled with what's next
  *   ("Resume S1 E3", "Play S2 E1").
  */
@@ -32,26 +32,36 @@ export function PlayTitleButton({
   className?: string;
 }) {
   const history = useStore((s) => s.history);
-  const cls = cx(btn({ variant: 'primary', size }), size === 'md' && 'h-9 px-4 text-sm', className);
+  const cls = cx(btn({ variant: 'primary', size }), 'relative overflow-hidden', size === 'md' && 'h-9 px-4 text-sm', className);
   const icon = <Play className={size === 'md' ? 'size-3.5 fill-current' : 'size-4 fill-current'} strokeWidth={0} />;
+  // How far you got, as a thin bar along the button's bottom edge.
+  const bar = (pct: number) =>
+    pct > 1 && pct < 100 ? (
+      <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-black/15">
+        <span className="block h-full bg-black/70" style={{ width: `${pct}%` }} />
+      </span>
+    ) : null;
   if (type === 'movie') {
     const p = findProgress(history, 'movie', id);
     const resumable = p && !p.isCompleted && percent(p) > 1;
     return (
-      <Link to={`/watch/movie/${id}`} className={cls}>
+      <Link to={`/watch/movie/${id}`} className={cls} aria-label={resumable ? `Resume, ${Math.round(percent(p))}% watched` : undefined}>
         {icon}
-        {resumable ? `Resume ${formatClock(p.progress!.watched)}` : size === 'md' ? 'Watch' : 'Watch now'}
+        {resumable ? 'Resume' : size === 'md' ? 'Watch' : 'Watch now'}
         {kbd && <Kbd light>P</Kbd>}
+        {resumable && bar(percent(p))}
       </Link>
     );
   }
   const r = resumeTarget(history, 'tv', id);
   const label = r?.season !== undefined ? `${r.isNext ? 'Play' : 'Resume'} ${epLabel(r.season, r.episode)}` : size === 'md' ? 'Watch' : 'Watch now';
+  const pct = r && !r.isNext ? percent(r.item) : 0;
   return (
     <button type="button" onClick={onEpisodes} className={cls} aria-haspopup="dialog">
       {icon}
       {label}
       {kbd && <Kbd light>P</Kbd>}
+      {bar(pct)}
     </button>
   );
 }
