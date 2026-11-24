@@ -1,62 +1,62 @@
+/**
+ * @charcoal/providers: the first-party provider pack.
+ *
+ * Everything here is written against @charcoal/provider-sdk: each provider is a module with a
+ * manifest (identity and capabilities), its addresses live in ./domains.ts, and the same modules
+ * run on the server, in the page through a bridge, or anywhere else a transport exists. Nothing in
+ * this pack knows which runtime it is in.
+ */
+import { defineRuleProvider, type DomainConfig, type LoadedProvider, type ProviderModule, type Stage } from '@charcoal/provider-sdk';
+import { DEFAULT_DOMAINS } from './domains.js';
+import { castle } from './providers/castle.js';
+import { febbox } from './providers/febbox.js';
+import { vixsrc } from './providers/vixsrc.js';
+import { cinesuManifest, cinesuRules } from './rules/cinesu.js';
+
 export * from './types.js';
 export { nativeFetcher, getJson } from './fetch.js';
-import { castle } from './providers/castle.js';
-import { vixsrc } from './providers/vixsrc.js';
-import { febbox } from './providers/febbox.js';
+export { DEFAULT_DOMAINS } from './domains.js';
 export { checkFebboxToken } from './providers/febbox.js';
-export { loadFallbackProviders, primesrc } from './streamviva.js';
-import { NotFoundError, type Media, type Provider, type ScrapeContext, type ScrapeResult } from './types.js';
-
-/** Every provider, best first. */
-export const providers: Provider[] = [febbox, castle, vixsrc].sort((a, b) => b.rank - a.rank);
+import { loadFallbackProviders } from './streamviva.js';
+export { loadFallbackProviders };
+export { primesrc, STREAMVIVA_VERSION } from './streamviva.js';
+export { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 export { castle, febbox, vixsrc };
 
-export interface ProviderOutcome {
-  provider: Pick<Provider, 'id' | 'name'>;
-  result?: ScrapeResult;
-  /** 'notfound' = the title isn't on this source; 'error' = the source failed. */
-  status: 'ok' | 'notfound' | 'error';
-  error?: string;
-  ms: number;
+/** A provider declared as data: its manifest and its rules. */
+export const RULE_PROVIDERS = [{ manifest: cinesuManifest, rules: cinesuRules, stage: 'canary' as Stage }];
+
+/** First-party code providers, with the stage each ships in. */
+export const CODE_PROVIDERS: { module: ProviderModule; stage: Stage }[] = [
+  { module: febbox, stage: 'stable' },
+  { module: castle, stage: 'stable' },
+  { module: vixsrc, stage: 'stable' },
+];
+
+export interface PackOptions {
+  /** Domain configs that replace the shipped defaults (from a newer registry). */
+  domains?: Record<string, DomainConfig>;
+  /** Include the vendored StreamViva sources (loaded lazily; they are large). */
+  fallback?: boolean;
 }
 
-/**
- * Runs providers in parallel (each with its own time limit) and reports how each did.
- * `only` limits it to some provider ids.
- */
-export async function scrapeAll(
-  media: Media,
-  ctx: ScrapeContext,
-  {
-    only,
-    timeoutMs = 20_000,
-    onResult,
-    list: from = providers,
-  }: { only?: string[]; timeoutMs?: number; onResult?: (o: ProviderOutcome) => void; list?: Provider[] } = {},
-): Promise<ProviderOutcome[]> {
-  const list = from.filter((p) => p.supports.includes(media.type) && (!only || only.includes(p.id)) && (!p.requires || ctx.settings?.[p.requires]));
-  return Promise.all(
-    list.map(async (p) => {
-      const started = Date.now();
-      const ctrl = new AbortController();
-      const onAbort = () => ctrl.abort();
-      ctx.signal?.addEventListener('abort', onAbort);
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-      let outcome: ProviderOutcome;
-      try {
-        const result = await Promise.race([
-          p.scrape(media, { ...ctx, signal: ctrl.signal }),
-          new Promise<never>((_, reject) => ctrl.signal.addEventListener('abort', () => reject(new Error(`${p.name} took too long`)))),
-        ]);
-        outcome = { provider: p, result, status: result.streams.length ? 'ok' : 'notfound', ms: Date.now() - started };
-      } catch (e) {
-        outcome = { provider: p, status: e instanceof NotFoundError ? 'notfound' : 'error', error: (e as Error)?.message, ms: Date.now() - started };
-      } finally {
-        clearTimeout(timer);
-        ctx.signal?.removeEventListener('abort', onAbort);
-      }
-      onResult?.(outcome);
-      return outcome;
-    }),
-  );
+/** The pack as the engine wants it: every module with its stage and its domain config. */
+export async function loadPack(opts: PackOptions = {}): Promise<LoadedProvider[]> {
+  const domains = { ...DEFAULT_DOMAINS, ...opts.domains };
+  const out: LoadedProvider[] = [
+    ...CODE_PROVIDERS.map(({ module, stage }) => ({ module, stage, domains: domains[module.manifest.id] })),
+    ...RULE_PROVIDERS.map(({ manifest, rules, stage }) => ({ module: defineRuleProvider(manifest, rules), stage, domains: domains[manifest.id] })),
+  ];
+  // The engine behind these is large; streamviva.ts only downloads it when this is called.
+  if (opts.fallback) out.push(...(await loadFallbackProviders()).map((module) => ({ module, stage: 'stable' as Stage })));
+  return out;
+}
+
+/** Just the first-party modules, without the lazy fallback (synchronous). */
+export function loadCorePack(domainOverrides: Record<string, DomainConfig> = {}): LoadedProvider[] {
+  const domains = { ...DEFAULT_DOMAINS, ...domainOverrides };
+  return [
+    ...CODE_PROVIDERS.map(({ module, stage }) => ({ module, stage, domains: domains[module.manifest.id] })),
+    ...RULE_PROVIDERS.map(({ manifest, rules, stage }) => ({ module: defineRuleProvider(manifest, rules), stage, domains: domains[manifest.id] })),
+  ];
 }

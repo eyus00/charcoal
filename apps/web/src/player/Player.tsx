@@ -102,7 +102,7 @@ function upstreamHost(url: string): string {
 }
 
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
-type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string> };
+type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string>; bridged?: boolean };
 
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
@@ -189,9 +189,11 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   }, []);
 
   const source = data.sources[sourceIdx];
-  /** Streams found through Charcoal Helper load straight from the host (the extension adds headers). */
-  const direct = data.via === 'extension';
-  useEffect(() => (direct ? () => releaseStreams() : undefined), [direct]);
+  /** A bridged source loads straight from its host: Charcoal Helper (or the app) adds the headers.
+   *  Decided per source: one list can mix bridged, plain and relayed sources. */
+  const direct = !!source?.bridged;
+  const anyBridged = data.sources.some((s) => s.bridged);
+  useEffect(() => (anyBridged ? () => releaseStreams() : undefined), [anyBridged]);
 
   // ---------- notices ----------
   const noticeTimer = useRef<number>(undefined);
@@ -218,8 +220,8 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     if (!t) return setCues([]);
     if (t.text !== undefined) return setCues(parseCaptions(t.text));
     let stale = false;
-    // Direct (extension) subtitles may need headers and aren't readable cross-site: the extension fetches them.
-    const load = direct
+    // Bridged subtitles may need headers and aren't readable cross-site: the bridge fetches them.
+    const load = t.bridged
       ? extensionFetcher(t.url!, { headers: t.headers }).then((r) => (r.ok ? r.body : Promise.reject(new Error(String(r.status)))))
       : fetch(t.url!).then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))));
     load
@@ -232,7 +234,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     return () => {
       stale = true;
     };
-  }, [subIdx, tracks, flash, direct]);
+  }, [subIdx, tracks, flash]);
 
   const chooseSub = useCallback(
     (i: number, label?: string) => {
@@ -416,6 +418,12 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   useEffect(() => {
     const v = video.current;
     if (!v || !source) return;
+    // A link past its expiry would only fail slowly: skip it now (when every link has expired, the
+    // player searches again by itself and gets fresh ones).
+    if (source.expiresAt && source.expiresAt <= Date.now()) {
+      failRef.current('link expired');
+      return;
+    }
     let cancelled = false;
     let netRetry = false;
     let mediaRetry = false;
@@ -1974,6 +1982,7 @@ function describeFailure(why: string): string {
   if (/manifest/i.test(why)) return 'Couldn’t load the playlist';
   if (/frag/i.test(why)) return 'Couldn’t load the video pieces';
   if (/startup timeout/.test(why)) return 'Took too long to start';
+  if (/link expired/.test(why)) return 'Its link expired';
   if (/media error|bufferAppend|codec/i.test(why)) return 'This browser can’t play its format';
   return why;
 }
@@ -2003,7 +2012,7 @@ function sortSubtitles(list: JellySubtitle[]): Track[] {
   const pref = languageName(getState().settings.audioLang).toLowerCase();
   const tracks = list
     .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url))
-    .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers }))
+    .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers, bridged: s.bridged }))
     .sort((a, b) => Number(b.label.toLowerCase().startsWith(pref)) - Number(a.label.toLowerCase().startsWith(pref)) || a.label.localeCompare(b.label));
   const count = new Map<string, number>();
   return tracks.map((t) => {

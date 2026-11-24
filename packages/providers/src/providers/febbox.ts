@@ -10,13 +10,12 @@
  *
  * The token is only ever sent to febbox.com (from the viewer's browser through the extension).
  */
-import { NotFoundError, type Fetcher, type Provider, type Stream } from '../types.js';
+import { defineProvider, NotFoundError, ProviderError, type Fetcher, type RawStream } from '@charcoal/provider-sdk';
+import { DEFAULT_DOMAINS } from '../domains.js';
 
-const SHOWBOX = 'https://www.showbox.media';
-const FEBBOX = 'https://www.febbox.com';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 const PAGE_HEADERS = { 'User-Agent': UA, 'Accept-Language': 'en' };
-const VIDEO_HEADERS = { Referer: `${FEBBOX}/` };
+const videoHeaders = (febbox: string) => ({ Referer: `${febbox}/` });
 
 const slug = (s: string) =>
   s
@@ -48,8 +47,8 @@ async function json<T>(fetcher: Fetcher, url: string, signal?: AbortSignal, head
 }
 
 /** ShowBox page path for the title, from its website search. */
-async function findPage(fetcher: Fetcher, title: string, year: number | undefined, type: 'movie' | 'tv', signal?: AbortSignal) {
-  const res = await fetcher(`${SHOWBOX}/search?keyword=${encodeURIComponent(title)}`, { headers: PAGE_HEADERS, signal });
+async function findPage(fetcher: Fetcher, showbox: string, title: string, year: number | undefined, type: 'movie' | 'tv', signal?: AbortSignal) {
+  const res = await fetcher(`${showbox}/search?keyword=${encodeURIComponent(title)}`, { headers: PAGE_HEADERS, signal });
   if (!res.ok) throw new Error(`Febbox: ShowBox search returned ${res.status}`);
   const prefix = type === 'movie' ? '/movie/m-' : '/tv/t-';
   const paths = [...new Set([...res.body.matchAll(/href="(\/(?:movie|tv)\/[mt]-[^"]+)"/g)].map((m) => m[1]))].filter((p) => p.startsWith(prefix));
@@ -77,8 +76,8 @@ function parseSize(text = ''): number | undefined {
 }
 
 /** Playable links for one file, from the quality list (needs the viewer's token). */
-async function qualities(fetcher: Fetcher, file: FebFile, shareKey: string, token: string, signal?: AbortSignal): Promise<Link[]> {
-  const res = await fetcher(`${FEBBOX}/console/video_quality_list?fid=${file.fid}&share_key=${shareKey}`, {
+async function qualities(fetcher: Fetcher, febbox: string, file: FebFile, shareKey: string, token: string, signal?: AbortSignal): Promise<Link[]> {
+  const res = await fetcher(`${febbox}/console/video_quality_list?fid=${file.fid}&share_key=${shareKey}`, {
     headers: { ...PAGE_HEADERS, Cookie: `ui=${token}`, 'X-Requested-With': 'XMLHttpRequest' },
     signal,
   });
@@ -90,7 +89,7 @@ async function qualities(fetcher: Fetcher, file: FebFile, shareKey: string, toke
   }
   // Not logged in: {"code":-1,"msg":"Please login","login_required":1}, or the login page itself.
   if (!data || data.login_required) {
-    throw new Error('Febbox: the token wasn’t accepted (log in to febbox.com again and copy a fresh "ui" cookie)');
+    throw new ProviderError('AUTH_REQUIRED', 'Febbox: the token wasn’t accepted (log in to febbox.com again and copy a fresh "ui" cookie)');
   }
   const html = data.html ?? '';
   const out: Link[] = [];
@@ -118,7 +117,8 @@ const TYPICAL_BPS: Record<number, number> = { 2160: 16e6, 1440: 9e6, 1080: 5.5e6
  * each quality, so the player starts at the best one the connection and screen can take and steps
  * down instead of stalling. If a quality's own URL is itself a master playlist, its variant is used.
  */
-async function adaptive(fetcher: Fetcher, links: Link[], runtimeMin: number | undefined, signal?: AbortSignal) {
+async function adaptive(fetcher: Fetcher, febbox: string, links: Link[], runtimeMin: number | undefined, signal?: AbortSignal) {
+  const VIDEO_HEADERS = videoHeaders(febbox);
   const variants = (
     await Promise.all(
       links.map(async (l, idx) => {
@@ -193,21 +193,39 @@ function describe(f: FebFile, withSize = true): string {
   return parts.join(' · ');
 }
 
-export const febbox: Provider = {
-  id: 'febbox',
-  name: 'Febbox',
-  rank: 300,
-  supports: ['movie', 'tv'],
-  requires: 'febboxToken',
-  async scrape(media, { fetch, signal, settings }) {
-    const token = cleanToken(settings?.febboxToken ?? '');
-    if (!token) throw new NotFoundError('Febbox: no token set');
+export const febbox = defineProvider({
+  manifest: {
+    id: 'febbox',
+    name: 'Febbox',
+    version: '1.1.0',
+    description: 'Original files (often 4K) from the viewer’s own Febbox account, found through ShowBox.',
+    kinds: ['movie', 'tv'],
+    lookup: ['title'],
+    // Only ever where the viewer's own token lives: their browser, their app, or their own server.
+    runtimes: ['extension', 'app', 'server'],
+    requires: { features: ['forbidden-headers', 'cookies'], setting: 'febboxToken' },
+    domainRoles: ['showbox', 'febbox'],
+    followDiscovered: true,
+    output: { types: ['hls', 'mp4'] },
+    rank: 300,
+    config: {
+      febboxToken: { type: 'string', secret: true, description: 'The viewer’s Febbox "ui" cookie value' },
+      febboxMaxHeight: { type: 'number', description: 'Highest quality to use (height), to save the account’s traffic' },
+    },
+  },
+  async getSources(media, { fetch, signal, settings, domain }) {
+    if (media.kind !== 'movie' && media.kind !== 'tv') throw new NotFoundError('Febbox: movies and shows only');
+    const SHOWBOX = domain('showbox');
+    const FEBBOX = domain('febbox');
+    const VIDEO_HEADERS = videoHeaders(FEBBOX);
+    const token = cleanToken(String(settings.febboxToken ?? ''));
+    if (!token) throw new ProviderError('AUTH_REQUIRED', 'Febbox: no token set');
 
-    const path = await findPage(fetch, media.title, media.year, media.type, signal);
+    const path = await findPage(fetch, SHOWBOX, media.title, media.year, media.kind, signal);
     if (!path) throw new NotFoundError('Febbox: not on ShowBox');
     const page = await fetch(SHOWBOX + path, { headers: PAGE_HEADERS, signal });
     const ids = page.body.match(/share_link'[\s\S]{0,200}?'id':\s*(\d+),\s*'type':\s*(\d)/);
-    if (!ids) throw new Error('Febbox: no ShowBox id on the title page');
+    if (!ids) throw new ProviderError('SELECTOR_MISSING', 'Febbox: no ShowBox id on the title page', { step: 'share_link id' });
 
     const share = await json<{ data?: { link?: string } }>(fetch, `${SHOWBOX}/index/share_link?id=${ids[1]}&type=${ids[2]}`, signal);
     const shareKey = share.data?.link?.split('/').pop();
@@ -221,7 +239,7 @@ export const febbox: Provider = {
       ).then((r) => r.data?.file_list ?? []);
 
     let files = await list();
-    if (media.type === 'tv') {
+    if (media.kind === 'tv') {
       const folder = files.find((f) => f.is_dir && f.file_name?.toLowerCase() === `season ${media.season}`);
       if (!folder) throw new NotFoundError(`Febbox: no season ${media.season}`);
       const ep = new RegExp(`s0*${media.season}e0*${media.episode}(?!\\d)`, 'i');
@@ -230,14 +248,14 @@ export const febbox: Provider = {
     files = files.filter((f) => !f.is_dir && /\.(mp4|mkv|m4v)$/i.test(f.file_name)).slice(0, 4);
     if (!files.length) throw new NotFoundError('Febbox: no video file');
 
-    const max = settings?.febboxMaxHeight || Infinity;
+    const max = Number(settings.febboxMaxHeight) || Infinity;
     const perFile = await Promise.all(
       files.map(async (f) => {
-        const links = await qualities(fetch, f, shareKey, token, signal);
-        const out: Stream[] = [];
+        const links = await qualities(fetch, FEBBOX, f, shareKey, token, signal);
+        const out: RawStream[] = [];
         // Febbox's own conversions (HLS) as one adaptive stream, capped by the data-saver setting.
         const hls = links.filter((l) => isHls(l.url) && l.quality !== 'original' && (Number(l.quality) || 0) <= max);
-        const a = hls.length ? await adaptive(fetch, hls, media.runtime, signal) : null;
+        const a = hls.length ? await adaptive(fetch, FEBBOX, hls, media.runtime, signal) : null;
         if (a) {
           out.push({
             url: a.url,
@@ -263,12 +281,12 @@ export const febbox: Provider = {
     if (!streams.length) throw new NotFoundError('Febbox: no playable links');
     return { streams, captions: [] };
   },
-};
+});
 
 /** Checks a token against a known public share (Inception). 'unknown' if Febbox changed. */
-export async function checkFebboxToken(fetcher: Fetcher, token: string): Promise<'ok' | 'invalid' | 'unknown'> {
+export async function checkFebboxToken(fetcher: Fetcher, token: string, febboxOrigin = DEFAULT_DOMAINS.febbox.roles.febbox.active): Promise<'ok' | 'invalid' | 'unknown'> {
   try {
-    const links = await qualities(fetcher, { fid: 2605016, file_name: 'Inception.2010.1080p.mp4' }, 'Bp1Hw1MK', cleanToken(token));
+    const links = await qualities(fetcher, febboxOrigin, { fid: 2605016, file_name: 'Inception.2010.1080p.mp4' }, 'Bp1Hw1MK', cleanToken(token));
     return links.length ? 'ok' : 'unknown';
   } catch (e) {
     return /token wasn’t accepted/.test((e as Error).message) ? 'invalid' : 'unknown';

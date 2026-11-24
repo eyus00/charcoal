@@ -7,9 +7,8 @@ import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
-import { detectExtension } from '../lib/extension';
-import { fetchFallbackViaExtension, fetchViaExtension } from '../lib/direct';
-import { EMBEDS, embedById, fetchJelly, sortSources, type Target } from '../lib/servers';
+import { useSources } from '../lib/resolver';
+import { EMBEDS, embedById, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
 import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
@@ -98,91 +97,28 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     return p?.progress && !p.isCompleted && p.progress.watched < p.progress.duration - 30 ? p.progress.watched : 0;
   }, [restart, type, id, season, episode]);
 
-  const jelly = useQuery({
-    queryKey: ['jelly', settings.serverUrl, settings.useExtension, !!settings.febboxToken, settings.febboxMaxHeight, type, id, season, episode],
-    queryFn: async ({ signal }) => {
-      // Charcoal Helper installed: find and play from this browser; the server is the fallback.
-      if (settings.useExtension && d && (await detectExtension())?.hasPermission) {
-        try {
-          return await fetchViaExtension(target, d, signal, ep?.id);
-        } catch (e) {
-          if (signal.aborted) throw e;
-          console.warn('[helper]', (e as Error).message, '- asking the server');
-        }
-      }
-      return fetchJelly(target, signal);
-    },
-    enabled: server === 'jelly',
-    // One quiet retry: a slow-to-wake extension or a network blip shouldn't end on an embed.
-    retry: 1,
-    retryDelay: 1500,
-    // Links carry expiring tokens: reuse a result only briefly.
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 5,
-    // Never search again behind the viewer's back (it would restart playback): only on request.
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
-
-  // The fallback (StreamViva's sources, PrimeSrc) through Charcoal Helper: starts once our own
-  // answer is in, so it never delays playback; its sources are added to the end of the list.
-  const helper = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(), staleTime: 60_000, enabled: settings.useExtension });
-  const fallbackOn = server === 'jelly' && settings.useExtension && !!helper.data?.hasPermission && !!d;
-  // Starts when our answer is in, or after a few seconds at most (so a title only the fallback has
-  // doesn't wait for every slower step first).
-  const [fallbackGo, setFallbackGo] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setFallbackGo(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
-  const fallback = useQuery({
-    queryKey: ['fallback', type, id, season, episode],
-    queryFn: ({ signal }) => fetchFallbackViaExtension(target, d!, signal, ep?.id),
-    enabled: fallbackOn && (fallbackGo || jelly.isSuccess || jelly.isError),
-    retry: false,
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 5,
-    // Never search again behind the viewer's back (it would restart playback): only on request.
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
+  // One search, wherever the sources come from: providers that can run in this browser (through
+  // Charcoal Helper or the app) run here, the rest on the viewer's own server or Charcoal's, and
+  // everything arrives as one ranked list that grows while providers are still answering.
+  const found = useSources(target, d, ep?.id, server === 'jelly');
+  const streams = found.data;
   // Search again with fresh links (the player calls it once by itself before giving up).
-  const refreshSources = useCallback(() => {
-    jelly.refetch();
-    if (fallbackOn) fallback.refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fallbackOn]);
-  const fallbackPending = fallbackOn && !fallback.isSuccess && !fallback.isError;
-
-  const streams = useMemo(() => {
-    const extra = fallback.data;
-    if (!jelly.data) {
-      return extra?.sources.length ? { responseId: 'fallback', expiresAt: '', via: 'extension' as const, ...extra } : undefined;
-    }
-    if (!extra) return jelly.data;
-    return {
-      ...jelly.data,
-      // One ranked list (the player keeps its place by URL, so re-sorting is safe).
-      sources: sortSources([...jelly.data.sources, ...extra.sources.filter((s) => !jelly.data.sources.some((j) => j.url === s.url))]),
-      subtitles: [...jelly.data.subtitles, ...extra.subtitles.filter((s) => !jelly.data.subtitles.some((j) => j.url === s.url))],
-      report: [...(jelly.data.report ?? []), ...extra.report],
-    };
-  }, [jelly.data, fallback.data]);
+  const refreshSources = found.refetch;
   // Their own server didn't work, so the hosted one answered: say so once.
-  const ownError = jelly.data?.ownError;
+  const ownError = streams?.ownError;
   useEffect(() => {
     if (ownError) toast(`Your server didn’t work (${ownError.replace(/\.$/, '')}), so Charcoal’s server is being used`);
   }, [ownError]);
 
-  // Jelly found nothing → fall back to the first embed (without changing the saved preference).
+  // Nothing playable anywhere: use an embed server (without changing the saved preference). This
+  // happens as soon as every provider has answered; there is no blind retry in between.
   useEffect(() => {
-    // Nothing anywhere (and the fallback, if running, found nothing either): use an embed server.
-    if (server === 'jelly' && jelly.isError && !fallbackPending && !fallback.data?.sources.length) {
-      console.warn('Jelly:', jelly.error.message);
+    if (server === 'jelly' && found.error && !found.searching) {
+      console.warn('Jelly:', found.error.message);
       setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
       setServer(EMBEDS[0].id);
     }
-  }, [server, jelly.isError, jelly.error, fallbackPending, fallback.data]);
+  }, [server, found.error, found.searching]);
 
   const record = useCallback(
     (watched: number, duration: number, ended?: boolean) => {
@@ -207,7 +143,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   const pickServer = (s: string, confirmed = false) => {
     if (s !== 'jelly' && server === 'jelly' && !confirmed && !getState().settings.embedNoticeOff) return setEmbedAsk(s);
     setEmbedAsk(null);
-    if (s === 'jelly' && jelly.isError) jelly.refetch();
+    if (s === 'jelly' && found.error) found.refetch();
     setServer(s);
     setFallbackNote(null);
     actions.updateSettings({ server: s });
@@ -236,7 +172,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       detailsUrl={detailsUrl}
       onClose={leave}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
-      serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={jelly.isError ? 'failed' : jelly.isFetching ? 'loading' : jelly.data ? 'ok' : 'idle'} />}
+      serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={found.error ? 'failed' : found.data ? 'ok' : found.searching ? 'loading' : 'idle'} />}
     />
   );
   const header = makeHeader();
@@ -292,9 +228,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
               : undefined
           }
           onProgress={record}
-          searching={fallbackPending}
-          refreshing={jelly.isFetching}
-          generation={jelly.dataUpdatedAt}
+          searching={found.searching}
+          refreshing={found.refreshing}
+          generation={found.generation}
           onRefresh={refreshSources}
           onExhausted={() => {
             setFallbackNote(`Jelly’s sources wouldn’t play. Switched to ${EMBEDS[0].name}.`);

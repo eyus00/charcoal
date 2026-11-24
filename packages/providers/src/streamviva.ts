@@ -11,8 +11,10 @@
  *
  * The engine is loaded lazily (it's large), only when the fallback runs.
  */
-import type { Caption, Fetcher, Media, Provider, ScrapeResult, Stream } from './types.js';
-import { NotFoundError } from './types.js';
+import { defineProvider, NotFoundError, ProviderError, type Caption, type EpisodeMedia, type Fetcher, type MovieMedia, type ProviderModule, type RawStream } from '@charcoal/provider-sdk';
+
+type Stream = RawStream;
+type ScrapeResult = { streams: RawStream[]; captions: Caption[] };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Engine = typeof import('@charcoal/streamviva');
@@ -92,9 +94,9 @@ async function engineFor(f: Fetcher) {
 
 // ---------- conversions ----------
 
-function toSvMedia(m: Media): any {
-  const common = { title: m.title, releaseYear: m.year ?? 0, tmdbId: m.tmdbId, imdbId: m.imdbId };
-  return m.type === 'movie'
+function toSvMedia(m: MovieMedia | EpisodeMedia): any {
+  const common = { title: m.title, releaseYear: m.year ?? 0, tmdbId: m.ids.tmdb ?? '', imdbId: m.ids.imdb };
+  return m.kind === 'movie'
     ? { type: 'movie', ...common }
     : {
         type: 'show',
@@ -154,16 +156,46 @@ async function resolveEmbeds(ctl: any, embeds: { embedId: string; url: string }[
 
 // ---------- providers ----------
 
-function fromSource(src: { id: string; name: string; rank: number; scrapeMovie?: unknown; scrapeShow?: unknown }): Provider {
+/** The id of the vendored engine build, used as the version of every provider it supplies. */
+export const STREAMVIVA_VERSION = '3.2.0';
+
+/**
+ * Manifest shared by everything the vendored engine supplies. Its hosts aren't declared one by one
+ * (the engine decides what to fetch), so the network policy is 'open': still traced, capped and
+ * kept off private addresses, but not held to an allow-list.
+ */
+const packManifest = (id: string, name: string, rank: number, kinds: ('movie' | 'tv')[], languages?: string[]) => ({
+  id,
+  name,
+  version: STREAMVIVA_VERSION,
+  description: 'From the vendored StreamViva engine (movie-web lineage).',
+  kinds,
+  languages,
+  lookup: ['tmdb', 'imdb', 'title'] as ('tmdb' | 'imdb' | 'title')[],
+  runtimes: ['extension', 'app', 'server'] as ('extension' | 'app' | 'server')[],
+  requires: { features: ['forbidden-headers'] as 'forbidden-headers'[] },
+  domainRoles: [],
+  network: 'open' as const,
+  output: { types: ['hls', 'mp4', 'mkv'] as ('hls' | 'mp4' | 'mkv')[] },
+  limits: { timeoutMs: 30_000, maxRequests: 80 },
+  rank,
+  license: 'MIT',
+  origin: 'loak7993-code/streamviva-providers',
+});
+
+function fromSource(src: { id: string; name: string; rank: number; scrapeMovie?: unknown; scrapeShow?: unknown }): ProviderModule {
   const language = SITE_LANGUAGE[src.id];
-  return {
-    id: `sv-${src.id}`,
-    name: src.name,
+  return defineProvider({
     // Below all of ours, in StreamViva's own order.
-    rank: Math.min(99, Math.round(src.rank / 10)),
-    supports: [...(src.scrapeMovie ? (['movie'] as const) : []), ...(src.scrapeShow ? (['tv'] as const) : [])],
-    fallback: 'streamviva',
-    async scrape(media, ctx) {
+    manifest: packManifest(
+      `sv-${src.id.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      src.name,
+      Math.min(99, Math.round(src.rank / 10)),
+      [...(src.scrapeMovie ? (['movie'] as const) : []), ...(src.scrapeShow ? (['tv'] as const) : [])],
+      language ? [language.code] : undefined,
+    ),
+    async getSources(media, ctx) {
+      if (media.kind !== 'movie' && media.kind !== 'tv') throw new NotFoundError(`${src.name}: movies and shows only`);
       const { ctl } = await engineFor(ctx.fetch);
       let res: any;
       try {
@@ -171,6 +203,7 @@ function fromSource(src: { id: string; name: string; rank: number; scrapeMovie?:
       } catch (e) {
         const m = (e as Error)?.message ?? String(e);
         // StreamViva wraps "not found" as "Couldn't find a stream: …".
+        if (e instanceof ProviderError) throw e; // already classified by the fetch layer (refused, bot check, …)
         if (/couldn.t find|not found|no .*found/i.test(m)) throw new NotFoundError(`${src.name}: ${m.replace(/^Couldn't find a stream: /, '')}`);
         throw new Error(`${src.name}: ${m}`);
       }
@@ -183,7 +216,7 @@ function fromSource(src: { id: string; name: string; rank: number; scrapeMovie?:
       }
       return { streams, captions: [...captions, ...out.captions] };
     },
-  };
+  });
 }
 
 /** PrimeSrc server names → StreamViva resolver ids. */
@@ -201,18 +234,15 @@ const PRIMESRC_HOSTS: Record<string, string> = {
 };
 
 /** PrimeSrc: lists which file hosts have the title; StreamViva's resolvers get the video out. */
-export const primesrc: Provider = {
-  id: 'primesrc',
-  name: 'PrimeSrc',
-  rank: 100,
-  supports: ['movie', 'tv'],
-  fallback: 'streamviva',
-  async scrape(media, ctx) {
+export const primesrc: ProviderModule = defineProvider({
+  manifest: packManifest('primesrc', 'PrimeSrc', 90, ['movie', 'tv']),
+  async getSources(media, ctx) {
+    if (media.kind !== 'movie' && media.kind !== 'tv') throw new NotFoundError('PrimeSrc: movies and shows only');
     const api = 'https://primesrc.me/api/v1';
     const q =
-      media.type === 'movie'
-        ? `tmdb=${media.tmdbId}&type=movie`
-        : `tmdb=${media.tmdbId}&season=${media.season}&episode=${media.episode}&type=tv`;
+      media.kind === 'movie'
+        ? `tmdb=${media.ids.tmdb}&type=movie`
+        : `tmdb=${media.ids.tmdb}&season=${media.season}&episode=${media.episode}&type=tv`;
     const res = await ctx.fetch(`${api}/s?${q}`, { headers: { Accept: 'application/json' }, signal: ctx.signal });
     if (!res.ok) throw new Error(`PrimeSrc: list returned ${res.status}`);
     const servers = ((JSON.parse(res.body) as { servers?: { name?: string; key?: string }[] }).servers ?? []).filter(
@@ -242,12 +272,12 @@ export const primesrc: Provider = {
     if (!out.streams.length) throw new Error(`PrimeSrc: ${errors.slice(0, 2).join('; ') || 'no stream'}`);
     return out;
   },
-};
+});
 
 /** All fallback providers: every enabled StreamViva source except frame-only and known-dead ones. */
-export async function loadFallbackProviders(): Promise<Provider[]> {
+export async function loadFallbackProviders(): Promise<ProviderModule[]> {
   const sv = await loadEngine();
   const sources = sv.getBuiltinSources().filter((s: any) => !IFRAME_ONLY.test(s.id) && !DEAD[s.id]);
   // PrimeSrc isn't included: its links sit behind a Cloudflare bot check, from home connections too.
-  return sources.map((s: any) => fromSource(s)).sort((a, b) => b.rank - a.rank);
+  return sources.map((s: any) => fromSource(s)).sort((a, b) => (b.manifest.rank ?? 0) - (a.manifest.rank ?? 0));
 }

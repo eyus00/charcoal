@@ -384,6 +384,12 @@ function SettingsSection() {
             onChange={(v) => actions.updateSettings({ showDiagnostics: v })}
           />
           <Toggle
+            label="Help keep sources working"
+            hint="Tells Charcoal’s server how each source did here (its name, result and timing; never what you watched)"
+            on={settings.shareHealth}
+            onChange={(v) => actions.updateSettings({ shareHealth: v })}
+          />
+          <Toggle
             label="Warn before switching to an embed"
             hint="Embedded players are other sites, with their own ads"
             on={!settings.embedNoticeOff}

@@ -4,9 +4,17 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { knownThirdPartyProxies } from './thirdPartyProxies.js';
 import { streamPatterns } from './streamPatterns.js';
-import { jellyProxyService } from './proxy.js';
-import { BenchedError, checkBench, record, report } from './health.js';
-import { sharedProviders } from './shared.js';
+import { isPrivateAddress, jellyProxyService, proxyRequest } from './proxy.js';
+import { BenchedError, lookupTitle, platformProviders } from './shared.js';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { lookup as dnsLookup } from 'node:dns/promises';
+import { describeRuntime, diagnose, Engine, fetchTransport, HealthStore, summarize, type CanaryTitles, type HealthRecord } from '@charcoal/provider-sdk';
+import { Catalog } from './platform/catalog.js';
+import { Overlay } from './platform/overlay.js';
+import { legacyModule, platformId } from './platform/legacy.js';
+import { registerApi } from './platform/api.js';
+import { signRelayUrl } from './platform/relay.js';
+import { registerRelay } from './platform/relay-routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,13 +116,46 @@ async function dropBlocked(result: SourceResult, label: string): Promise<SourceR
     return { ...result, sources };
 }
 
+/** Where the platform keeps its small state files (health snapshot, control-plane overrides). Unset = memory only. */
+const DATA_DIR = process.env.DATA_DIR || undefined;
+
+/** Settings for providers that need them, from this server's own environment (never from a client). */
+const SERVER_SETTINGS: Record<string, unknown> | undefined = process.env.FEBBOX_TOKEN?.trim()
+    ? { febboxToken: process.env.FEBBOX_TOKEN.trim().replace(/^ui=/, ''), febboxMaxHeight: Number(process.env.FEBBOX_MAX_HEIGHT) || undefined }
+    : undefined;
+
+/** Known titles the monitor checks providers with. */
+const CANARIES: CanaryTitles = {
+    movie: [{ kind: 'movie', ids: { tmdb: '27205', imdb: 'tt1375666' }, title: 'Inception', year: 2010, runtime: 148 }],
+    tv: [{ kind: 'tv', ids: { tmdb: '1396', imdb: 'tt0903747' }, title: 'Breaking Bad', year: 2008, season: 2, episode: 3 }]
+};
+
+const dnsCache = new Map<string, { ok: boolean; until: number }>();
+/** False when a host name resolves to a private or internal address (a provider must never reach one). */
+async function resolvesPublic(hostname: string): Promise<boolean> {
+    if (process.env.PROXY_ALLOW_PRIVATE === 'true') return true;
+    const hit = dnsCache.get(hostname);
+    if (hit && hit.until > Date.now()) return hit.ok;
+    let ok = true;
+    try {
+        const addrs = await dnsLookup(hostname, { all: true });
+        ok = addrs.length > 0 && addrs.every((a) => !isPrivateAddress(a.address));
+    } catch {
+        // Not resolving isn't a policy matter; the request itself will report the DNS failure.
+        ok = true;
+    }
+    dnsCache.set(hostname, { ok, until: Date.now() + 60_000 });
+    if (dnsCache.size > 5000) dnsCache.clear();
+    return ok;
+}
+
 async function main() {
     if (!process.env.TMDB_API_KEY) console.warn('[Jelly] TMDB_API_KEY not set, using the default public key');
     if (!PUBLIC_URL) console.warn('[Jelly] PUBLIC_URL not set; stream URLs will point at localhost');
 
     const server = new OMSSServer({
         name: 'Jelly',
-        version: '1.1.0',
+        version: '2.0.0',
 
         // Network
         host: process.env.HOST ?? '0.0.0.0',
@@ -154,7 +195,7 @@ async function main() {
 
         cors: {
             origin: process.env.CORS_ORIGIN ?? '*',
-            methods: ['GET', 'OPTIONS'],
+            methods: ['GET', 'POST', 'OPTIONS'],
             allowedHeaders: ['Content-Type', 'Authorization', 'Range'],
             exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length', 'ETag', 'X-Upstream-Status'],
             preflightContinue: false,
@@ -162,25 +203,83 @@ async function main() {
         }
     });
 
+    // ---------- the provider platform ----------
+
+    // Health: per provider and runtime, kept across restarts when DATA_DIR is set.
+    const health = new HealthStore({
+        failuresToOpen: Number(process.env.HEALTH_FAILS_TO_BENCH ?? 3),
+        baseCooldownMs: Number(process.env.HEALTH_COOLDOWN_MS ?? 5 * 60_000)
+    });
+    const healthFile = DATA_DIR ? path.join(DATA_DIR, 'health.json') : undefined;
+    if (healthFile && existsSync(healthFile)) {
+        try {
+            health.load(JSON.parse(readFileSync(healthFile, 'utf8')) as HealthRecord[]);
+        } catch (e) {
+            console.warn(`[Jelly] couldn't read ${healthFile}: ${(e as Error).message}`);
+        }
+    }
+    const overlay = new Overlay(DATA_DIR ? path.join(DATA_DIR, 'overlay.json') : undefined);
+
+    // Legacy server-only classes: discovered by the framework as before, and also given to the
+    // platform (with their ORIGINAL methods, before the /v1 wrapper below replaces them).
     const registry = server.getRegistry();
     await registry.discoverProviders(path.join(__dirname, './providers/'));
-    // Providers shared with the website (packages/providers).
-    for (const p of await sharedProviders()) registry.register(p);
+    const legacy = registry.getProviders().filter((p) => p.enabled);
+    const legacyModules = legacy.map((p) => legacyModule(p, { getMovieSources: p.getMovieSources.bind(p), getTVSources: p.getTVSources.bind(p) }));
+
+    const catalog = await Catalog.create({
+        legacy: legacyModules,
+        overlay,
+        health,
+        fallback: process.env.STREAMVIVA !== 'false',
+        publicUrl: PUBLIC_URL,
+        mirrors: (process.env.REGISTRY_MIRRORS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+        signingKey: process.env.REGISTRY_PRIVATE_KEY ? { keyId: process.env.REGISTRY_KEY_ID ?? 'default', privateKey: process.env.REGISTRY_PRIVATE_KEY } : undefined
+    });
+    const problems = catalog.problems();
+    if (problems.length) console.warn(`[Jelly] the provider registry has problems:\n  ${problems.join('\n  ')}`);
+
+    // A server on a home connection says so (EGRESS=user): providers that only work from a
+    // viewer's own network are then worth running here too.
+    const runtime = describeRuntime('server', { egress: process.env.EGRESS === 'user' ? 'user' : 'datacenter', label: process.env.EGRESS === 'user' ? 'your own server' : 'Charcoal’s server' });
+    const engine = new Engine({
+        providers: () => catalog.providers(),
+        runtime,
+        transport: fetchTransport,
+        health,
+        // Per-device settings exist on a server only when its owner put them in its environment.
+        settings: SERVER_SETTINGS,
+        resolveCheck: resolvesPublic,
+        strictNetwork: process.env.STRICT_PROVIDER_NETWORK === 'true',
+        providerTimeoutMs: PROVIDER_TIMEOUT_MS,
+        log: process.env.PLATFORM_LOG === 'true' ? (e) => console.log(JSON.stringify({ at: new Date(e.at).toISOString(), event: e.event, provider: e.provider, ...e.data })) : undefined
+    });
+
+    // Platform providers on /v1 too (older clients): everything that isn't a legacy class.
+    const legacyIds = new Set(legacyModules.map((m) => m.manifest.id));
+    const platformIds = catalog.providers().map((p) => p.module.manifest.id).filter((id) => !legacyIds.has(id));
+    for (const p of platformProviders(platformIds, (id) => catalog.find(id), engine)) registry.register(p);
 
     for (const provider of registry.getProviders()) {
         const getMovie = provider.getMovieSources.bind(provider);
         const getTV = provider.getTVSources.bind(provider);
-        const check = (r: SourceResult) => (VALIDATE_SEGMENTS ? dropBlocked(r, provider.name) : r);
-        // Timeout, then health bookkeeping: a provider that keeps failing sits out for a while.
+        const isLegacy = legacy.includes(provider);
+        const id = platformId(provider.id);
+        const sign = (r: SourceResult): SourceResult => ({ ...r, sources: r.sources.map((s) => ({ ...s, url: signRelayUrl(s.url) })), subtitles: r.subtitles.map((s) => ({ ...s, url: signRelayUrl(s.url) })) });
+        const check = async (r: SourceResult) => sign(VALIDATE_SEGMENTS ? await dropBlocked(r, provider.name) : r);
+        // Legacy classes get their timeout and health bookkeeping here; platform providers already
+        // had both inside the engine.
         const run = async (call: () => Promise<SourceResult>) => {
-            checkBench(provider.id, provider.name);
+            if (!isLegacy) return check(await call());
+            const gate = health.allow(id, 'server');
+            if (!gate.allowed) throw new BenchedError(`${provider.name} is resting for ${Math.ceil((gate.retryInMs ?? 0) / 1000)}s after repeated failures`);
             const started = Date.now();
             try {
                 const r = await check(await withTimeout(call(), provider.name));
-                record(provider.id, provider.name, r.sources.length ? 'success' : 'empty', Date.now() - started);
+                health.record(id, 'server', { kind: r.sources.length ? 'ok' : 'empty' }, Date.now() - started);
                 return r;
             } catch (e) {
-                if (!(e instanceof BenchedError)) record(provider.id, provider.name, 'failure', Date.now() - started, (e as Error)?.message);
+                health.record(id, 'server', { kind: 'failure', diagnosis: diagnose(/timed out/.test((e as Error)?.message ?? '') ? Object.assign(new Error((e as Error).message), { name: 'TimeoutError' }) : e) }, Date.now() - started);
                 throw e;
             }
         };
@@ -188,16 +287,45 @@ async function main() {
         provider.getTVSources = (media) => run(() => getTV(media));
     }
 
-    // Our own stream proxy replaces the framework's (see proxy.ts). The framework's controller
-    // decodes `data` a second time after Fastify already did, which breaks URLs containing "%";
-    // encoding it once more first makes that second decode harmless.
+    // Our own stream proxy replaces the framework's (see proxy.ts); the relay's signature check
+    // and the /v2/relay route are in platform/relay-routes.ts.
     (server as unknown as { proxyController: { proxyService: unknown } }).proxyController.proxyService = jellyProxyService;
     const app = server.getInstance();
-    app.addHook('onRequest', async (request) => {
-        const q = request.query as Record<string, string> | undefined;
-        if (request.url.startsWith('/v1/proxy') && typeof q?.data === 'string') q.data = encodeURIComponent(q.data);
+    registerRelay(app, { proxy: proxyRequest });
+
+    // The old health table, in its old shape, from the new store (the website's settings page reads it).
+    app.get('/v1/providers/health', async () => ({
+        generatedAt: new Date().toISOString(),
+        providers: summarize(health)
+            .filter((h) => h.runtime === 'server')
+            .map((h) => ({
+                id: h.provider,
+                name: catalog.find(h.provider)?.module.manifest.name ?? h.provider,
+                status: h.status === 'benched' ? 'benched' : h.status === 'degraded' || h.status === 'needs-update' ? 'failing' : h.ok ? 'ok' : 'unknown',
+                success: h.ok,
+                empty: h.empty,
+                failure: h.failed,
+                failuresInARow: 0,
+                benchedForSeconds: h.benchedForSeconds,
+                averageMs: h.averageMs,
+                lastError: h.lastFailure?.message,
+                lastOutcomeAt: h.lastFailureAt ?? h.lastSuccessAt
+            }))
+    }));
+
+    const platform = registerApi({
+        app,
+        engine,
+        catalog,
+        overlay,
+        health,
+        transport: fetchTransport,
+        lookup: lookupTitle,
+        publicUrl: PUBLIC_URL ?? `http://localhost:${Number(process.env.PORT ?? 8080)}`,
+        canaries: CANARIES,
+        adminToken: process.env.ADMIN_TOKEN || undefined,
+        autoFailoverTtlMs: Number(process.env.AUTO_DOMAIN_FAILOVER_MINUTES ?? 0) * 60_000
     });
-    app.get('/v1/providers/health', async () => report());
 
     // Chrome asks before an https site may reach a server on the viewer's own computer or network
     // (Private Network Access); answering yes lets a locally run server be used from Charcoal.
@@ -207,6 +335,37 @@ async function main() {
     });
 
     await server.start();
+
+    // ---------- monitoring ----------
+
+    if (healthFile) {
+        const save = () => {
+            try {
+                mkdirSync(path.dirname(healthFile), { recursive: true });
+                writeFileSync(`${healthFile}.tmp`, JSON.stringify(health.snapshot()));
+                renameSync(`${healthFile}.tmp`, healthFile);
+            } catch (e) {
+                console.warn(`[Jelly] couldn't save health: ${(e as Error).message}`);
+            }
+        };
+        setInterval(save, 60_000).unref();
+        process.once('SIGTERM', () => (save(), process.exit(0)));
+    }
+    // Scheduled canary + recovery: checks every provider with known titles, classifies what is
+    // wrong, and restores what works again. 0 turns it off.
+    const monitorMinutes = Number(process.env.MONITOR_INTERVAL_MINUTES ?? 30);
+    if (monitorMinutes > 0) {
+        const tick = () =>
+            platform
+                .recover('monitor')
+                .then((actions) => {
+                    const notable = actions.filter((a) => a.action !== 'healthy');
+                    if (notable.length) console.log(`[Jelly] monitor: ${notable.map((a) => `${a.provider}=${a.action}`).join(', ')}`);
+                })
+                .catch((e) => console.warn(`[Jelly] monitor failed: ${(e as Error).message}`));
+        setTimeout(tick, 60_000).unref();
+        setInterval(tick, monitorMinutes * 60_000).unref();
+    }
 }
 
 main().catch((error) => {

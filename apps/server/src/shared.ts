@@ -1,119 +1,114 @@
 /**
- * Providers from packages/providers (shared with the website) wrapped as OMSS providers, so the
- * framework treats them like the ones in src/providers/.
+ * Platform providers (the provider pack, rule packs, the fallback pack) presented to the OMSS
+ * framework, so the /v1 endpoints keep serving them to older clients. Each one runs through the
+ * platform engine: same network policy, budget, diagnostics and health as on /v2.
  */
 import { BaseProvider } from '@omss/framework';
 import type { ProviderCapabilities, ProviderMediaObject, ProviderResult, Source, Subtitle } from '@omss/framework';
-import { loadFallbackProviders, nativeFetcher, NotFoundError, providers, type Media, type Provider } from '@charcoal/providers';
-
-/** Settings for providers that need them, from this server's own environment. */
-const SERVER_SETTINGS = {
-    febboxToken: process.env.FEBBOX_TOKEN?.trim().replace(/^ui=/, '') || undefined,
-    febboxMaxHeight: Number(process.env.FEBBOX_MAX_HEIGHT) || undefined,
-};
+import type { Engine, EpisodeMedia, LoadedProvider, Media, MovieMedia } from '@charcoal/provider-sdk';
 
 const TMDB_KEY = process.env.TMDB_API_KEY || '50404130561567acf3e0725aeb09ec5d';
-const showNames = new Map<string, Promise<string | null>>();
+const titles = new Map<string, Promise<{ title: string; year?: number; imdb?: string } | null>>();
+
+/** Title, year and IMDb id of a movie or show from TMDB (cached). */
+export function lookupTitle(kind: 'movie' | 'tv', tmdbId: string): Promise<{ title: string; year?: number; imdb?: string } | null> {
+  const key = `${kind}:${tmdbId}`;
+  if (!titles.has(key)) {
+    const p = fetch(`https://api.themoviedb.org/3/${kind}/${tmdbId}?api_key=${TMDB_KEY}&append_to_response=external_ids`, { signal: AbortSignal.timeout(8000) })
+      .then((r) => (r.ok ? (r.json() as Promise<{ title?: string; name?: string; release_date?: string; first_air_date?: string; imdb_id?: string; external_ids?: { imdb_id?: string } }>) : null))
+      .then((j) => {
+        const title = j?.title ?? j?.name;
+        if (!j || !title) return null;
+        return { title, year: Number((j.release_date ?? j.first_air_date ?? '').slice(0, 4)) || undefined, imdb: j.imdb_id ?? j.external_ids?.imdb_id ?? undefined };
+      })
+      .catch(() => null);
+    titles.set(key, p);
+    // A failed lookup isn't remembered.
+    p.then((v) => v === null && titles.delete(key));
+    if (titles.size > 2000) titles.clear();
+  }
+  return titles.get(key)!;
+}
 
 /** For TV the framework passes the EPISODE name as `title`; providers need the show's. */
-function showName(tmdbId: string): Promise<string | null> {
-    if (!showNames.has(tmdbId)) {
-        const p = fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_KEY}`)
-            .then((r) => (r.ok ? (r.json() as Promise<{ name?: string }>) : null))
-            .then((j) => j?.name ?? null)
-            .catch(() => null);
-        showNames.set(tmdbId, p);
-        if (showNames.size > 2000) showNames.clear();
-    }
-    return showNames.get(tmdbId)!;
+async function toMedia(m: ProviderMediaObject): Promise<MovieMedia | EpisodeMedia | null> {
+  const year = Number(m.releaseYear) || undefined;
+  const ids = { tmdb: m.tmdbId, ...(m.imdbId ? { imdb: m.imdbId } : {}) };
+  if (m.type === 'movie') return m.title ? { kind: 'movie', ids, title: m.title, year } : null;
+  const show = await lookupTitle('tv', m.tmdbId);
+  if (!show) return null;
+  return { kind: 'tv', ids, title: show.title, year: show.year ?? year, season: Number(m.s), episode: Number(m.e) };
 }
 
-async function toMedia(m: ProviderMediaObject): Promise<Media | null> {
-    const title = m.type === 'tv' ? await showName(m.tmdbId) : m.title;
-    if (!title) return null;
-    return {
-        type: m.type,
-        tmdbId: m.tmdbId,
-        imdbId: m.imdbId || undefined,
-        title,
-        year: Number(m.releaseYear) || undefined,
-        season: m.type === 'tv' ? Number(m.s) : undefined,
-        episode: m.type === 'tv' ? Number(m.e) : undefined,
+export class BenchedError extends Error {}
+
+function adapt(id: string, find: (id: string) => LoadedProvider | undefined, engine: Engine): BaseProvider | null {
+  const first = find(id);
+  if (!first) return null;
+  const manifest = first.module.manifest;
+  class Platform extends BaseProvider {
+    readonly id = manifest.id;
+    readonly name = manifest.name;
+    readonly enabled = true;
+    readonly BASE_URL = '';
+    readonly HEADERS = {};
+    readonly capabilities: ProviderCapabilities = {
+      supportedContentTypes: [...(manifest.kinds.includes('movie') ? (['movies'] as const) : []), ...(manifest.kinds.includes('tv') ? (['tv'] as const) : [])],
     };
-}
-
-function adapt(p: Provider): BaseProvider {
-    class Shared extends BaseProvider {
-        readonly id = p.id;
-        readonly name = p.name;
-        readonly enabled = true;
-        readonly BASE_URL = '';
-        readonly HEADERS = {};
-        readonly capabilities: ProviderCapabilities = {
-            supportedContentTypes: p.supports.map((t) => (t === 'movie' ? 'movies' : 'tv')),
-        };
-        getMovieSources(media: ProviderMediaObject) {
-            return this.run(media);
-        }
-        getTVSources(media: ProviderMediaObject) {
-            return this.run(media);
-        }
-        private async run(m: ProviderMediaObject): Promise<ProviderResult> {
-            const media = await toMedia(m);
-            if (!media) return this.empty('Couldn’t look up the title');
-            try {
-                const r = await p.scrape(media, { fetch: nativeFetcher, settings: SERVER_SETTINGS });
-                const sources: Source[] = r.streams.map((s) => ({
-                    url: s.url.startsWith('data:') ? this.proxyDataPlaylist(s.url, s.headers) : this.createProxyUrl(s.url, s.headers),
-                    type: s.type,
-                    quality: s.quality,
-                    audioTracks: [{ language: s.languageCode ?? 'und', label: s.language ?? 'Original' }],
-                    provider: { id: p.id, name: p.name },
-                }));
-                const subtitles: Subtitle[] = r.captions.map((c) => ({
-                    url: c.headers ? this.createProxyUrl(c.url, c.headers) : c.url,
-                    label: c.label,
-                    format: c.format,
-                }));
-                return { sources, subtitles, diagnostics: [] };
-            } catch (e) {
-                // "Not on this source" is a normal empty answer; anything else is a failure (and counts
-                // against the provider's health).
-                if (e instanceof NotFoundError) return this.empty(e.message);
-                throw e;
-            }
-        }
-        /** A playlist built in memory (Febbox's adaptive list): its variant URLs go through the proxy. */
-        private proxyDataPlaylist(dataUrl: string, headers: Record<string, string>): string {
-            const text = Buffer.from(dataUrl.split(',')[1] ?? '', 'base64').toString('utf8');
-            const out = text
-                .split('\n')
-                .map((l) =>
-                    l.startsWith('#EXT-X-MEDIA:')
-                        ? l.replace(/URI="([^"]+)"/, (_m, u: string) => `URI="${this.createProxyUrl(u, headers)}"`)
-                        : l.trim() && !l.startsWith('#')
-                          ? this.createProxyUrl(l.trim(), headers)
-                          : l,
-                )
-                .join('\n');
-            return `data:application/vnd.apple.mpegurl;base64,${Buffer.from(out).toString('base64')}`;
-        }
-        private empty(message: string): ProviderResult {
-            return { sources: [], subtitles: [], diagnostics: [{ code: 'PROVIDER_ERROR', message: `${p.name}: ${message}`, field: '', severity: 'error' }] };
-        }
+    getMovieSources(media: ProviderMediaObject) {
+      return this.run(media);
     }
-    return new Shared();
+    getTVSources(media: ProviderMediaObject) {
+      return this.run(media);
+    }
+    private async run(m: ProviderMediaObject): Promise<ProviderResult> {
+      // Looked up per request: stage, rank and domains can change while the server runs.
+      const loaded = find(id);
+      if (!loaded || loaded.stage !== 'stable') return this.empty(loaded ? `not enabled (${loaded.stage})` : 'removed');
+      // The engine's own gate: runtime fit, network policy, and the provider's circuit breaker.
+      const probe: Media = m.type === 'movie' ? { kind: 'movie', ids: { tmdb: m.tmdbId }, title: '-' } : { kind: 'tv', ids: { tmdb: m.tmdbId }, title: '-', season: 1, episode: 1 };
+      const fit = engine.plan({ media: probe, only: [id] });
+      if (!fit.run.length) {
+        const why = fit.skipped[0]?.reason ?? 'can’t run on this server';
+        if (/resting/.test(why)) throw new BenchedError(`${manifest.name} is ${why}`);
+        return this.empty(why);
+      }
+      const media = await toMedia(m);
+      if (!media) return this.empty('Couldn’t look up the title');
+      const r = await engine.runProvider(loaded, media, undefined, ['hls', 'mp4', 'mkv', 'dash', 'webm']);
+      if (r.outcome === 'error') throw new Error(r.message ?? r.code);
+      if (r.outcome === 'empty') return this.empty(r.message ?? 'Doesn’t have this title');
+      const sources: Source[] = r.streams.map((s) => ({
+        url: s.url.startsWith('data:') ? this.proxyDataPlaylist(s.url, s.headers) : this.createProxyUrl(s.url, s.headers),
+        type: s.type as Source['type'],
+        quality: s.quality,
+        audioTracks: s.audio.map((a) => ({ language: a.lang, label: a.label ?? (a.lang === 'und' ? 'Original' : a.lang) })),
+        provider: { id: manifest.id, name: manifest.name },
+      }));
+      const subtitles: Subtitle[] = r.captions.map((c) => ({ url: c.headers ? this.createProxyUrl(c.url, c.headers) : c.url, label: c.label, format: c.format }));
+      return { sources, subtitles, diagnostics: [] };
+    }
+    /** A playlist built in memory (Febbox's adaptive list): its variant URLs go through the proxy. */
+    private proxyDataPlaylist(dataUrl: string, headers: Record<string, string>): string {
+      const text = Buffer.from(dataUrl.split(',')[1] ?? '', 'base64').toString('utf8');
+      const out = text
+        .split('\n')
+        .map((l) => (l.startsWith('#EXT-X-MEDIA:') ? l.replace(/URI="([^"]+)"/, (_m, u: string) => `URI="${this.createProxyUrl(u, headers)}"`) : l.trim() && !l.startsWith('#') ? this.createProxyUrl(l.trim(), headers) : l))
+        .join('\n');
+      return `data:application/vnd.apple.mpegurl;base64,${Buffer.from(out).toString('base64')}`;
+    }
+    private empty(message: string): ProviderResult {
+      return { sources: [], subtitles: [], diagnostics: [{ code: 'PROVIDER_ERROR', message: `${manifest.name}: ${message}`, field: '', severity: 'error' }] };
+    }
+  }
+  return new Platform();
 }
 
 /**
- * Our shared providers, plus the StreamViva fallback ones (set STREAMVIVA=false to leave those out).
- * Providers that need a viewer's own login (Febbox) only run in the viewer's browser; the server
- * never gets those tokens. On a data-centre host the fallback ones mostly fail and provider health
- * benches them; on a server at home they can work.
+ * OMSS providers for every platform provider that isn't a legacy class (those are already in the
+ * framework's registry). Canary-stage providers are registered too but answer "not enabled" until
+ * they are promoted, so a promotion needs no restart.
  */
-export async function sharedProviders(): Promise<BaseProvider[]> {
-    const fallback = process.env.STREAMVIVA === 'false' ? [] : await loadFallbackProviders();
-    // A provider that needs a setting runs only when the server has it (e.g. FEBBOX_TOKEN on a server
-    // at home): the website never sends a viewer's token to a server.
-    return [...providers, ...fallback].filter((p) => !p.requires || SERVER_SETTINGS[p.requires]).map(adapt);
+export function platformProviders(ids: string[], find: (id: string) => LoadedProvider | undefined, engine: Engine): BaseProvider[] {
+  return ids.map((id) => adapt(id, find, engine)).filter((p): p is BaseProvider => !!p);
 }

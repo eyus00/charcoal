@@ -5,20 +5,19 @@
  * season details, then ask for the video. Responses are AES-128-CBC encrypted with that key (plus
  * a fixed suffix) and decrypted here.
  */
+import { defineProvider, NotFoundError, type Caption, type Fetcher, type Media, type RawStream } from '@charcoal/provider-sdk';
 import { aesCbcDecrypt, base64ToBytes } from '../crypto.js';
-import { NotFoundError, type Caption, type Fetcher, type Media, type Provider, type Stream } from '../types.js';
 
-const API = 'https://api.hlowb.com';
 const PKG = 'com.external.castle';
 const QUERY = 'channel=IndiaA&clientType=1&lang=en-US';
 const KEY_SUFFIX = 'T!BgJB';
 
-const API_HEADERS = {
+const apiHeaders = (api: string) => ({
   'User-Agent': 'okhttp/4.9.3',
   Accept: 'application/json',
   'Accept-Language': 'en-US,en;q=0.9',
-  Referer: API,
-};
+  Referer: api,
+});
 const PLAYBACK_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
   Accept: '*/*',
@@ -59,9 +58,11 @@ async function decrypt(cipherB64: string, securityKey: string): Promise<string> 
   return aesCbcDecrypt(base64ToBytes(cipherB64), key, key);
 }
 
-function client(fetcher: Fetcher, signal?: AbortSignal) {
+/** `api` is the origin currently configured for the provider's "api" domain role. */
+function client(fetcher: Fetcher, api: string, signal?: AbortSignal) {
+  const API_HEADERS = apiHeaders(api);
   const call = async (key: string, path: string, init: { method?: 'POST'; body?: string } = {}): Promise<unknown> => {
-    const res = await fetcher(API + path, {
+    const res = await fetcher(api + path, {
       method: init.method ?? 'GET',
       headers: { ...API_HEADERS, ...(init.body ? { 'Content-Type': 'application/json' } : {}) },
       body: init.body,
@@ -80,7 +81,7 @@ function client(fetcher: Fetcher, signal?: AbortSignal) {
 
   return {
     async securityKey(): Promise<string> {
-      const res = await fetcher(`${API}/v0.1/system/getSecurityKey/1?${QUERY}`, { headers: API_HEADERS, signal });
+      const res = await fetcher(`${api}/v0.1/system/getSecurityKey/1?${QUERY}`, { headers: API_HEADERS, signal });
       const json = JSON.parse(res.body) as { code?: number; data?: string };
       if (json.code !== 200 || !json.data) throw new Error('Castle: no security key');
       return json.data;
@@ -109,19 +110,31 @@ function client(fetcher: Fetcher, signal?: AbortSignal) {
   };
 }
 
-export const castle: Provider = {
-  id: 'castle',
-  name: 'Castle',
-  rank: 200,
-  supports: ['movie', 'tv'],
-  async scrape(media, { fetch, signal }) {
-    const api = client(fetch, signal);
+export const castle = defineProvider({
+  manifest: {
+    id: 'castle',
+    name: 'Castle',
+    version: '1.1.0',
+    description: 'The Castle app’s film API: HLS up to 1080p, several audio languages.',
+    kinds: ['movie', 'tv'],
+    languages: ['en', 'hi', 'ta', 'te', 'ml', 'kn'],
+    lookup: ['title'],
+    runtimes: ['server', 'edge', 'extension', 'app'],
+    requires: { features: ['forbidden-headers'] },
+    domainRoles: ['api'],
+    output: { types: ['hls', 'mp4'] },
+    rank: 200,
+    license: 'GPL-3.0',
+    origin: 'nuvio-providers (castle.js)',
+  },
+  async getSources(media, { fetch, signal, domain }) {
+    const api = client(fetch, domain('api'), signal);
     const key = await api.securityKey();
     let movieId = await api.findId(key, media);
     if (!movieId) throw new NotFoundError('Castle: no match for this title');
 
     let details = await api.details(key, movieId);
-    if (media.type === 'tv') {
+    if (media.kind === 'tv') {
       // Each season is its own "movie" on Castle.
       const season = details.seasons?.find((s) => s.number === media.season);
       if (season?.movieId && String(season.movieId) !== movieId) {
@@ -130,10 +143,10 @@ export const castle: Provider = {
       }
     }
     const episodes = details.episodes ?? [];
-    const episode = media.type === 'tv' ? episodes.find((e) => e.number === media.episode) : episodes[0];
+    const episode = media.kind === 'tv' ? episodes.find((e) => e.number === media.episode) : episodes[0];
     if (!episode) throw new NotFoundError('Castle: episode not found');
 
-    const streams: Stream[] = [];
+    const streams: RawStream[] = [];
     const captions: Caption[] = [];
     const add = (video: Video, language: string, languageCode?: string) => {
       for (const entry of video.videos?.length ? video.videos : [{}]) {
@@ -164,7 +177,7 @@ export const castle: Provider = {
     }
     if (!streams.length) throw new NotFoundError('Castle: no video');
 
-    streams.sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0));
+    streams.sort((a, b) => (parseInt(b.quality ?? '') || 0) - (parseInt(a.quality ?? '') || 0));
     return { streams, captions };
   },
-};
+});

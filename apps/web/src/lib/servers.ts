@@ -14,8 +14,16 @@ export interface JellySource {
   quality: string;
   audioTracks?: { language: string; label: string }[];
   provider: { id: string; name: string };
-  /** Direct (extension) streams only: headers the host expects; the extension adds them. */
+  /** Stable id of the stream (the same after a re-search with fresh tokens). */
+  id?: string;
+  /** Bridged streams only: headers the host expects; the bridge adds them. */
   headers?: Record<string, string>;
+  /** Loaded straight from the host through the bridge (Charcoal Helper or the app), not through a relay. */
+  bridged?: boolean;
+  /** How it reaches the player: from its origin, through the bridge, or through the server's relay. */
+  delivery?: 'direct' | 'headers' | 'relay' | 'frame';
+  /** Epoch ms after which its link must be fetched again. */
+  expiresAt?: number;
   /** Short file description (e.g. "BluRay · x265 · 1.4 GB"). */
   note?: string;
   /** Size in bytes at this source's top quality, when known. */
@@ -23,7 +31,7 @@ export interface JellySource {
   /** Adaptive streams built from several qualities: each one and its size. */
   levels?: { quality: string; size?: number }[];
 }
-export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string> }
+export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string>; /** Fetched through the bridge. */ bridged?: boolean }
 export interface JellyResponse {
   responseId: string;
   expiresAt: string;
@@ -39,6 +47,10 @@ export interface ProviderReport {
   reason?: string;
   /** Shown folded under one row with this name (e.g. the StreamViva fallback sources). */
   group?: string;
+  /** Where it ran: in this browser (through the bridge) or on a server. */
+  where?: 'local' | 'remote';
+  /** The classified failure, when it failed (see @charcoal/provider-sdk FailureCode). */
+  code?: string;
 }
 
 export interface Target { type: MediaType; id: number; season?: number; episode?: number }

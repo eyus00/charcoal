@@ -22,6 +22,7 @@
 import { Readable } from 'node:stream';
 import { lookup } from 'node:dns/promises';
 import net from 'node:net';
+import { relayQuery } from './platform/relay.js';
 
 type Target = { url: string; headers?: Record<string, string> };
 type Base = { contentType: string; statusCode: number; headers: Record<string, string> };
@@ -158,9 +159,8 @@ const looksLikeHtml = (buf: Uint8Array) => {
 
 // ---------- playlist rewriting ----------
 
-/** Relative proxy URL (resolves against whichever proxy served the playlist). */
-export const proxyPath = (url: string, headers?: Record<string, string>) =>
-    `/v1/proxy?data=${encodeURIComponent(JSON.stringify(headers && Object.keys(headers).length ? { url, headers } : { url }))}`;
+/** Relative, signed proxy URL (resolves against whichever proxy served the playlist). */
+export const proxyPath = (url: string, headers?: Record<string, string>) => `/v1/proxy?${relayQuery(url, headers)}`;
 
 const URI_ATTR = /URI=(?:"([^"]*)"|'([^']*)'|([^,\s"']+))/gi;
 

@@ -86,6 +86,9 @@ export interface Settings {
   febboxMaxHeight: number;
   /** Show where sources came from and why others had none (for troubleshooting). */
   showDiagnostics: boolean;
+  /** Tell Charcoal's server how sources did in this browser (source name, result and timing only;
+   *  never what was watched), so broken ones are noticed and fixed sooner. */
+  shareHealth: boolean;
 }
 
 export interface State {
@@ -126,6 +129,7 @@ const defaultSettings: Settings = {
   febboxToken: '',
   febboxMaxHeight: 0,
   showDiagnostics: false,
+  shareHealth: true,
   audioLang: (typeof navigator !== 'undefined' && navigator.language?.slice(0, 2).toLowerCase()) || 'en',
 };
 
