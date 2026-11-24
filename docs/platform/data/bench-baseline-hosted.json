@@ -1,0 +1,9148 @@
+{
+ "schema": 1,
+ "label": "baseline-hosted",
+ "mode": "live",
+ "startedAt": "2026-11-24T20:03:12.001Z",
+ "finishedAt": "2026-11-24T20:08:17.747Z",
+ "commit": "fd7ce76",
+ "target": {
+  "kind": "v1",
+  "label": "https://jelly.up.railway.app",
+  "egress": "unknown",
+  "providers": [
+   {
+    "id": "sv-animekai",
+    "name": "AnimeKai 🔥"
+   },
+   {
+    "id": "sv-animetsu",
+    "name": "Animetsu"
+   },
+   {
+    "id": "castle",
+    "name": "Castle"
+   },
+   {
+    "id": "sv-cinehdplus",
+    "name": "CineHDPlus (Latino)"
+   },
+   {
+    "id": "CineSu",
+    "name": "CineSu"
+   },
+   {
+    "id": "sv-cuevana3",
+    "name": "Cuevana3"
+   },
+   {
+    "id": "fsharetv",
+    "name": "FshareTV"
+   },
+   {
+    "id": "sv-fsonline",
+    "name": "FSOnline"
+   },
+   {
+    "id": "sv-hdrezka",
+    "name": "HDRezka"
+   },
+   {
+    "id": "Icefy",
+    "name": "Icefy"
+   },
+   {
+    "id": "sv-insertunit",
+    "name": "Insertunit"
+   },
+   {
+    "id": "sv-lookmovie",
+    "name": "LookMovie"
+   },
+   {
+    "id": "streammafia",
+    "name": "MafiaEmbed"
+   },
+   {
+    "id": "Peachify",
+    "name": "Peachify"
+   },
+   {
+    "id": "sv-pelisplushd",
+    "name": "PelisPlusHD"
+   },
+   {
+    "id": "popr",
+    "name": "Popr"
+   },
+   {
+    "id": "sv-rgshows",
+    "name": "RGShows"
+   },
+   {
+    "id": "sv-ridomovies",
+    "name": "RidoMovies"
+   },
+   {
+    "id": "tulnex",
+    "name": "Tulnex"
+   },
+   {
+    "id": "Videasy",
+    "name": "Videasy"
+   },
+   {
+    "id": "vidnest",
+    "name": "VidNest"
+   },
+   {
+    "id": "vidrock",
+    "name": "VidRock"
+   },
+   {
+    "id": "vidsrc",
+    "name": "VidSrc"
+   },
+   {
+    "id": "vidzee",
+    "name": "VidZee"
+   },
+   {
+    "id": "vixsrc",
+    "name": "VixSrc"
+   },
+   {
+    "id": "sv-watchanimeworld",
+    "name": "WatchAnimeWorld"
+   },
+   {
+    "id": "sv-wecima",
+    "name": "Wecima (Arabic)"
+   },
+   {
+    "id": "sv-zoechip",
+    "name": "ZoeChip"
+   },
+   {
+    "id": "sv-zunime",
+    "name": "Zunime"
+   }
+  ]
+ },
+ "checkedFrom": {
+  "egress": "datacenter",
+  "note": "streams tried through the hosted server's relay, from a cloud sandbox, 2026-11-24"
+ },
+ "playbackChecked": true,
+ "titles": [
+  {
+   "key": "casablanca",
+   "category": "western-movie",
+   "language": "en",
+   "year": 1942,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 15666,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 15663,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "the-godfather",
+   "category": "western-movie",
+   "language": "en",
+   "year": 1972,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 19813,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 19812,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "the-matrix",
+   "category": "western-movie",
+   "language": "en",
+   "year": 1999,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 15601,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 15598,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "inception",
+   "category": "western-movie",
+   "language": "en",
+   "year": 2010,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 15204,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 15204,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "interstellar",
+   "category": "western-movie",
+   "language": "en",
+   "year": 2014,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 15515,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 15515,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "oppenheimer",
+   "category": "western-movie",
+   "language": "en",
+   "year": 2023,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10506,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10505,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "dune-part-two",
+   "category": "western-movie",
+   "language": "en",
+   "year": 2024,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 16374,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 16373,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "breaking-bad",
+   "category": "western-tv",
+   "language": "en",
+   "year": 2008,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 1745,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 1745,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "game-of-thrones",
+   "category": "western-tv",
+   "language": "en",
+   "year": 2011,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 2975,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 2974,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "the-office",
+   "category": "western-tv",
+   "language": "en",
+   "year": 2005,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 1574,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 1574,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "stranger-things",
+   "category": "western-tv",
+   "language": "en",
+   "year": 2016,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 1265,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 1265,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "the-last-of-us",
+   "category": "western-tv",
+   "language": "en",
+   "year": 2023,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 4909,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 4909,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "severance",
+   "category": "western-tv",
+   "language": "en",
+   "year": 2022,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 2302,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 2301,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "spirited-away",
+   "category": "anime",
+   "language": "ja",
+   "year": 2001,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 6586,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 6585,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "your-name",
+   "category": "anime",
+   "language": "ja",
+   "year": 2016,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 5726,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 5726,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "attack-on-titan",
+   "category": "anime",
+   "language": "ja",
+   "year": 2013,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 1952,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 1952,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "demon-slayer",
+   "category": "anime",
+   "language": "ja",
+   "year": 2019,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 2996,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 2996,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "one-piece",
+   "category": "anime",
+   "language": "ja",
+   "year": 1999,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 2416,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 2416,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "jujutsu-kaisen",
+   "category": "anime",
+   "language": "ja",
+   "year": 2020,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 1622,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 1622,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "3-idiots",
+   "category": "indian",
+   "language": "hi",
+   "year": 2009,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 7779,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 7778,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "dangal",
+   "category": "indian",
+   "language": "hi",
+   "year": 2016,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10757,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10757,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "lagaan",
+   "category": "indian",
+   "language": "hi",
+   "year": 2001,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 11093,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 11093,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "rrr",
+   "category": "indian",
+   "language": "te",
+   "year": 2022,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10835,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "baahubali-2",
+   "category": "indian",
+   "language": "te",
+   "year": 2017,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10784,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10783,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "vikram",
+   "category": "indian",
+   "language": "ta",
+   "year": 2022,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10822,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10822,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "drishyam",
+   "category": "indian",
+   "language": "ml",
+   "year": 2013,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10833,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10833,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "kgf-chapter-2",
+   "category": "indian",
+   "language": "kn",
+   "year": 2022,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10889,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10889,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "sacred-games",
+   "category": "indian",
+   "language": "hi",
+   "year": 2018,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10846,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10846,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "parasite",
+   "category": "international",
+   "language": "ko",
+   "year": 2019,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 11064,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 11064,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "squid-game",
+   "category": "international",
+   "language": "ko",
+   "year": 2021,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10956,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10955,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "money-heist",
+   "category": "international",
+   "language": "es",
+   "year": 2017,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10816,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10816,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "amelie",
+   "category": "international",
+   "language": "fr",
+   "year": 2001,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 11134,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 11133,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "dark",
+   "category": "international",
+   "language": "de",
+   "year": 2017,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10870,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10869,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  },
+  {
+   "key": "city-of-god",
+   "category": "international",
+   "language": "pt",
+   "year": 2002,
+   "providersQueried": 29,
+   "providersResponding": 29,
+   "providersWithResults": 0,
+   "providersSkipped": 0,
+   "discovered": 0,
+   "unique": 0,
+   "verified": 0,
+   "unchecked": 0,
+   "playbackTried": 0,
+   "started": 0,
+   "totalMs": 10969,
+   "failures": {},
+   "providers": [
+    {
+     "id": "sv-animekai",
+     "name": "AnimeKai 🔥",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-animetsu",
+     "name": "Animetsu",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "castle",
+     "name": "Castle",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cinehdplus",
+     "name": "CineHDPlus (Latino)",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "CineSu",
+     "name": "CineSu",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-cuevana3",
+     "name": "Cuevana3",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "fsharetv",
+     "name": "FshareTV",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-fsonline",
+     "name": "FSOnline",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-hdrezka",
+     "name": "HDRezka",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Icefy",
+     "name": "Icefy",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-insertunit",
+     "name": "Insertunit",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-lookmovie",
+     "name": "LookMovie",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "streammafia",
+     "name": "MafiaEmbed",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Peachify",
+     "name": "Peachify",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-pelisplushd",
+     "name": "PelisPlusHD",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "popr",
+     "name": "Popr",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-rgshows",
+     "name": "RGShows",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-ridomovies",
+     "name": "RidoMovies",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "tulnex",
+     "name": "Tulnex",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "Videasy",
+     "name": "Videasy",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidnest",
+     "name": "VidNest",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidrock",
+     "name": "VidRock",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidsrc",
+     "name": "VidSrc",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vidzee",
+     "name": "VidZee",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "vixsrc",
+     "name": "VixSrc",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-watchanimeworld",
+     "name": "WatchAnimeWorld",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-wecima",
+     "name": "Wecima (Arabic)",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zoechip",
+     "name": "ZoeChip",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    },
+    {
+     "id": "sv-zunime",
+     "name": "Zunime",
+     "outcome": "empty",
+     "ms": 10969,
+     "streams": 0,
+     "captions": 0
+    }
+   ],
+   "streams": []
+  }
+ ],
+ "summary": {
+  "titles": 34,
+  "providersRegistered": 29,
+  "providersEverReturning": 0,
+  "providersNeverResponding": 0,
+  "titlesWithAnyStream": 0,
+  "titlesWithVerified": 0,
+  "titlesWithPlayback": 0,
+  "discovered": 0,
+  "unique": 0,
+  "verified": 0,
+  "started": 0,
+  "playbackTried": 0,
+  "meanProviderMs": 8976,
+  "failures": {},
+  "byCategory": {
+   "western-movie": {
+    "titles": 7,
+    "withVerified": 0,
+    "withPlayback": 0,
+    "unique": 0,
+    "verified": 0,
+    "started": 0
+   },
+   "western-tv": {
+    "titles": 6,
+    "withVerified": 0,
+    "withPlayback": 0,
+    "unique": 0,
+    "verified": 0,
+    "started": 0
+   },
+   "anime": {
+    "titles": 6,
+    "withVerified": 0,
+    "withPlayback": 0,
+    "unique": 0,
+    "verified": 0,
+    "started": 0
+   },
+   "indian": {
+    "titles": 9,
+    "withVerified": 0,
+    "withPlayback": 0,
+    "unique": 0,
+    "verified": 0,
+    "started": 0
+   },
+   "international": {
+    "titles": 6,
+    "withVerified": 0,
+    "withPlayback": 0,
+    "unique": 0,
+    "verified": 0,
+    "started": 0
+   }
+  },
+  "byProvider": {
+   "sv-animekai": {
+    "name": "AnimeKai 🔥",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-animetsu": {
+    "name": "Animetsu",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "castle": {
+    "name": "Castle",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-cinehdplus": {
+    "name": "CineHDPlus (Latino)",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "CineSu": {
+    "name": "CineSu",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-cuevana3": {
+    "name": "Cuevana3",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "fsharetv": {
+    "name": "FshareTV",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-fsonline": {
+    "name": "FSOnline",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-hdrezka": {
+    "name": "HDRezka",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "Icefy": {
+    "name": "Icefy",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-insertunit": {
+    "name": "Insertunit",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-lookmovie": {
+    "name": "LookMovie",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "streammafia": {
+    "name": "MafiaEmbed",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "Peachify": {
+    "name": "Peachify",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-pelisplushd": {
+    "name": "PelisPlusHD",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "popr": {
+    "name": "Popr",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-rgshows": {
+    "name": "RGShows",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-ridomovies": {
+    "name": "RidoMovies",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "tulnex": {
+    "name": "Tulnex",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "Videasy": {
+    "name": "Videasy",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "vidnest": {
+    "name": "VidNest",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "vidrock": {
+    "name": "VidRock",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "vidsrc": {
+    "name": "VidSrc",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "vidzee": {
+    "name": "VidZee",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "vixsrc": {
+    "name": "VixSrc",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-watchanimeworld": {
+    "name": "WatchAnimeWorld",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-wecima": {
+    "name": "Wecima (Arabic)",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-zoechip": {
+    "name": "ZoeChip",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   },
+   "sv-zunime": {
+    "name": "Zunime",
+    "ok": 0,
+    "empty": 34,
+    "error": 0,
+    "skipped": 0,
+    "streams": 0,
+    "verified": 0,
+    "started": 0,
+    "meanMs": 8976,
+    "codes": {}
+   }
+  }
+ }
+}
