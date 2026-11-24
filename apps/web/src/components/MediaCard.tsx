@@ -104,7 +104,7 @@ interface Props {
 function WatchedMark({ type, id }: { type: MediaType; id: number }) {
   if (!useIsWatched(type, id)) return null;
   return (
-    <span title="Watched" className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm">
+    <span title="Watched" className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/75">
       <Check className="size-3.5" strokeWidth={2.5} />
       <span className="sr-only">Watched</span>
     </span>

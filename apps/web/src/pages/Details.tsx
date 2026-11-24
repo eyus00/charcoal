@@ -132,7 +132,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
       </section>
 
       {trailers.length > 0 && <Trailers videos={trailers} onPlay={setTrailer} />}
-      <Community type={type} id={d.id} />
+      <Community type={type} id={d.id} name={title} />
       {recs.length > 0 && <MoreLikeThis items={recs} type={type} />}
       {trailer && <TrailerModal video={trailer} onClose={() => setTrailer(null)} />}
 

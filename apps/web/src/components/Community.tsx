@@ -30,7 +30,7 @@ import { setLocalRating, useLocalRating } from '../lib/ratings';
  * What people think: the Trakt community's rating and comments for this title (shared with
  * every app that uses Trakt), with TMDB's reviews when Trakt has none. Loads when scrolled near.
  */
-export default function Community({ type, id }: { type: MediaType; id: number }) {
+export default function Community({ type, id, name }: { type: MediaType; id: number; /** The title's name, for the reviews popup's header. */ name?: string }) {
   const [ref, inView] = useInView<HTMLElement>('600px');
   const title = useQuery({ ...traktQ.title(type, id), enabled: inView });
   const t = title.data;
@@ -122,7 +122,10 @@ export default function Community({ type, id }: { type: MediaType; id: number })
       {loading && <CommunitySkeleton />}
       {!loading && hasAnything && (
         <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-          <div className="space-y-3 self-start">{t && <RatingCard r={ratings.data} t={t} type={type} id={id} user={user} />}</div>
+          <div className="flex flex-col gap-3">
+            {t && <SummaryWithMine r={ratings.data} t={t} type={type} id={id} user={user} />}
+            {t && <YourRating t={t} type={type} id={id} user={user} />}
+          </div>
           <div className="min-w-0">
             {/* One fixed-height toolbar: sort, and the button that opens the composer. */}
             <div className="mb-3 flex h-9 items-center gap-2">
@@ -174,8 +177,8 @@ export default function Community({ type, id }: { type: MediaType; id: number })
       )}
       {all && t && (
         <Dialog
-          title="What people think"
-          subtitle={ratings.data?.votes ? `★ ${ratings.data.rating.toFixed(1)} from ${compact(ratings.data.votes)} ratings on Trakt` : 'Comments on Trakt'}
+          title={name ?? 'What people think'}
+          subtitle={`What people think${ratings.data?.votes ? ` · ★ ${ratings.data.rating.toFixed(1)} from ${compact(ratings.data.votes)} ratings on Trakt` : ''}`}
           onClose={() => setAll(false)}
           wide
         >
@@ -226,26 +229,80 @@ const compact = (n: number) =>
     maximumFractionDigits: 1,
   }).format(n);
 
-/**
- * The score card: Trakt's rating and its spread, with your own rating as a white pill underneath.
- * Your score shows on the graph as a white cap on its bar. Rating needs no account (it's saved in
- * this browser); connected to Trakt it's sent there too. Picking your score again removes it.
- */
-function RatingCard({ r, t, type, id, user }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; t: TraktTitle; type: MediaType; id: number; user: TraktUser | null }) {
-  const qc = useQueryClient();
+/** Trakt's score and its spread (1 → 10); your own score gets a white cap on its bar. */
+function RatingSummary({ r, mine = 0 }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; mine?: number }) {
+  const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
+  return (
+    <div className="flex flex-1 flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+      <div className="flex items-baseline gap-2">
+        <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
+        <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
+        <span className="text-sm text-muted">/ 10</span>
+      </div>
+      <p className="mt-1 text-xs text-muted">{r?.votes ? `${compact(r.votes)} ratings on Trakt` : 'No ratings on Trakt yet'}</p>
+      {!!r?.votes && (
+        <div className="mt-auto pt-4">
+          <div className="flex h-12 items-end gap-1 lg:h-14" aria-hidden>
+            {Array.from({ length: 10 }, (_, i) => {
+              const yours = mine === i + 1;
+              return (
+                <div key={i} className="relative flex h-full flex-1 items-end">
+                  <div
+                    className={cx('w-full rounded-sm', yours ? 'bg-white' : 'bg-white/70')}
+                    style={{ height: `${Math.max(4, ((r.distribution[String(i + 1)] ?? 0) / max) * 100)}%`, opacity: yours ? 1 : 0.35 + (i / 9) * 0.55 }}
+                  />
+                  {yours && <Star className="pop absolute -top-4 left-1/2 size-3 -translate-x-1/2 fill-current text-white" strokeWidth={0} />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-1 flex justify-between text-micro text-faint tabular-nums">
+            <span>1</span>
+            <span>10</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SummaryWithMine({
+  r,
+  t,
+  type,
+  id,
+  user,
+}: {
+  r?: { rating: number; votes: number; distribution: Record<string, number> };
+  t: TraktTitle;
+  type: MediaType;
+  id: number;
+  user: TraktUser | null;
+}) {
+  return <RatingSummary r={r} mine={useMyScore(t, type, id, user)} />;
+}
+
+/** Your saved score: Trakt's when connected and set there, else this browser's. */
+function useMyScore(t: TraktTitle, type: MediaType, id: number, user: TraktUser | null) {
   const local = useLocalRating(type, id);
   const remote = useQuery({ ...myRatingsQ(t.kind, !!user) });
-  const saved = (user ? remote.data?.get(t.traktId) : undefined) ?? local;
+  return (user ? remote.data?.get(t.traktId) : undefined) ?? local;
+}
+
+/**
+ * Your rating, under the score card: the numbers 1–10. Hovering one shows a star above it; your
+ * pick is a white pill with a star on top. No account needed (saved in this browser; sent to Trakt
+ * when connected). Picking your score again removes it.
+ */
+function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id: number; user: TraktUser | null }) {
+  const qc = useQueryClient();
+  const saved = useMyScore(t, type, id, user);
   const [hover, setHover] = useState(0);
   const [pending, setPending] = useState<number | null>(null);
-  // Bumped on each save so the stars replay their shine.
-  const [popKey, setPopKey] = useState(0);
-  const shown = hover || (pending ?? saved);
-  const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
+  const mine = pending ?? saved;
   const pick = async (n: number) => {
     const next = n === saved ? null : n;
     setPending(next ?? 0);
-    setHover(0);
     setLocalRating(type, id, next);
     try {
       if (user) {
@@ -258,7 +315,6 @@ function RatingCard({ r, t, type, id, user }: { r?: { rating: number; votes: num
         });
         qc.invalidateQueries({ queryKey: ['trakt', 'ratings', t.kind, t.slug] });
       }
-      if (next) setPopKey((k) => k + 1);
       toast(next ? `Rated ${next}/10` : 'Rating removed');
     } catch (e) {
       toast((e as Error).message);
@@ -267,77 +323,47 @@ function RatingCard({ r, t, type, id, user }: { r?: { rating: number; votes: num
     }
   };
   return (
-    <div className="self-start rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
-      <div className="flex items-baseline gap-2">
-        <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
-        <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
-        <span className="text-sm text-muted">/ 10</span>
-      </div>
-      <p className="mt-1 text-xs text-muted">{r?.votes ? `${compact(r.votes)} ratings on Trakt` : 'No ratings on Trakt yet'}</p>
-      {/* Votes per score, 1 → 10; yours gets a white cap. */}
-      {!!r?.votes && (
-        <>
-          <div className="mt-4 flex h-10 items-end gap-1 lg:h-14" aria-hidden>
-            {Array.from({ length: 10 }, (_, i) => {
-              const yours = saved === i + 1;
-              return (
-                <div key={i} className="relative flex h-full flex-1 items-end">
-                  <div
-                    className={cx('w-full rounded-sm', yours ? 'bg-white' : 'bg-white/70')}
-                    style={{
-                      height: `${Math.max(4, ((r.distribution[String(i + 1)] ?? 0) / max) * 100)}%`,
-                      opacity: yours ? 1 : 0.35 + (i / 9) * 0.55,
-                    }}
-                  />
-                  {yours && <span key={popKey} className="pop absolute -top-2 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-white" />}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-1 flex justify-between text-micro text-faint tabular-nums">
-            <span>1</span>
-            <span>10</span>
-          </div>
-        </>
-      )}
-      {/* Your rating: a white pill of stars. */}
-      <div className="group/tip relative mt-4">
-        <div
-          className={cx('flex h-11 items-center justify-between rounded-full bg-white px-3.5 transition-opacity', pending !== null && 'opacity-70')}
-          role="radiogroup"
-          aria-label="Your rating"
-          onPointerLeave={() => setHover(0)}
-        >
-          {Array.from({ length: 10 }, (_, i) => {
-            const on = i < shown;
-            return (
-              <button
-                key={`${i}-${popKey}`}
-                type="button"
-                role="radio"
-                aria-checked={saved === i + 1}
-                aria-label={`${i + 1} out of 10`}
-                disabled={pending !== null}
-                onPointerEnter={() => setHover(i + 1)}
-                onClick={() => pick(i + 1)}
-                className="grid h-8 w-4 place-items-center"
+    <div className="group/tip relative">
+      <div
+        role="radiogroup"
+        aria-label="Your rating"
+        onPointerLeave={() => setHover(0)}
+        className="grid h-16 grid-cols-10 items-end gap-0.5 rounded-[22px] bg-white/[0.04] px-1.5 pb-2.5 ring-1 ring-white/[0.06]"
+      >
+        {Array.from({ length: 10 }, (_, i) => {
+          const n = i + 1;
+          const on = mine === n;
+          const lit = on || hover === n;
+          return (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={`${n} out of 10`}
+              disabled={pending !== null}
+              onPointerEnter={() => setHover(n)}
+              onClick={() => pick(n)}
+              className="flex min-w-0 flex-col items-center gap-1"
+            >
+              <Star
+                key={on ? `on-${n}` : n}
+                className={cx('size-3 transition-opacity duration-150', lit ? 'opacity-100' : 'opacity-0', on ? 'pop fill-current text-white' : 'fill-current text-white/60')}
+                strokeWidth={0}
+              />
+              <span
+                className={cx(
+                  'grid aspect-square w-full max-w-7 place-items-center rounded-full text-[13px] tabular-nums transition-colors',
+                  on ? 'bg-white font-semibold text-black' : hover === n ? 'bg-white/10 text-white' : 'text-white/70',
+                )}
               >
-                <Star
-                  className={cx(
-                    'size-4 text-black transition-[opacity,transform] duration-150',
-                    on ? 'fill-current' : 'opacity-25',
-                    hover === i + 1 && 'scale-125',
-                    popKey > 0 && on && i < saved && 'pop',
-                  )}
-                  style={popKey > 0 ? { animationDelay: `${i * 35}ms` } : undefined}
-                  strokeWidth={on ? 0 : 1.75}
-                />
-              </button>
-            );
-          })}
-        </div>
-        <Tip label={saved ? `Your rating: ${saved}/10 · tap it again to remove` : 'Rate it'} side="bottom" />
+                {n}
+              </span>
+            </button>
+          );
+        })}
       </div>
+      <Tip label={saved ? `Your rating: ${saved}/10 · pick it again to remove` : 'Your rating'} side="bottom" />
     </div>
   );
 }
@@ -757,15 +783,50 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
   );
 }
 
+/** Shaped like the real thing: score card (number, line, bars), rating pill, toolbar, comment cards. */
 function CommunitySkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-      <div className="skeleton h-64 rounded-3xl" />
+      <div className="flex flex-col gap-3">
+        <div className="flex h-[200px] flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+          <div className="skeleton h-9 w-28 rounded-lg" />
+          <div className="skeleton mt-2 h-3 w-32 rounded" />
+          <div className="mt-auto flex h-12 items-end gap-1">
+            {[8, 8, 8, 8, 10, 14, 30, 60, 50, 90].map((h, i) => (
+              <div key={i} className="skeleton flex-1 rounded-sm" style={{ height: `${h}%` }} />
+            ))}
+          </div>
+        </div>
+        <div className="skeleton h-16 rounded-[22px]" />
+      </div>
       <div className="min-w-0">
-        <div className="mb-3 h-9" />
+        <div className="mb-3 flex h-9 items-center gap-2">
+          <div className="skeleton h-8 w-14 rounded-full" />
+          <div className="skeleton h-8 w-20 rounded-full" />
+          <div className="skeleton ml-auto h-9 w-28 rounded-full" />
+        </div>
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="skeleton h-[232px] w-[300px] shrink-0 rounded-2xl sm:w-[340px]" />
+            <div key={i} className="flex h-[232px] w-[300px] shrink-0 flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
+              <div className="flex items-center gap-3">
+                <div className="skeleton size-9 rounded-full" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="skeleton h-3.5 w-28 rounded" />
+                  <div className="skeleton h-3 w-16 rounded" />
+                </div>
+                <div className="skeleton h-5 w-12 rounded" />
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="skeleton h-3.5 w-full rounded" />
+                <div className="skeleton h-3.5 w-full rounded" />
+                <div className="skeleton h-3.5 w-11/12 rounded" />
+                <div className="skeleton h-3.5 w-2/3 rounded" />
+              </div>
+              <div className="mt-auto flex gap-4">
+                <div className="skeleton h-3.5 w-10 rounded" />
+                <div className="skeleton h-3.5 w-8 rounded" />
+              </div>
+            </div>
           ))}
         </div>
       </div>

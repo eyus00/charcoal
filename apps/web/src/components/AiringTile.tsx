@@ -77,10 +77,10 @@ export function ReminderBell({ a, ep }: { a: Airing; ep?: AiringEpisode }) {
       aria-pressed={on}
       aria-label={on ? 'Reminder on' : 'Remind me'}
       className={cx(
-        'group/tip relative grid size-9 place-items-center rounded-full backdrop-blur-sm transition-[background-color,opacity]',
+        'group/tip relative grid size-9 place-items-center rounded-full transition-[background-color,opacity]',
         on
           ? 'bg-white text-black'
-          : 'bg-black/60 text-white hover:bg-black/80 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100',
+          : 'bg-black/75 text-white hover:bg-black/90 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100',
       )}
     >
       {on ? <BellRing className="size-4" /> : <Bell className="size-4" />}
@@ -97,7 +97,8 @@ function Card({
   showDate,
   className,
   onClick,
-  stack = 0,
+  stacked,
+  label = a.label,
 }: {
   a: Airing;
   ep?: AiringEpisode;
@@ -105,46 +106,51 @@ function Card({
   showDate: boolean;
   className?: string;
   onClick?: () => void;
-  /** Cards stacked behind this one (several episodes the same day). */
-  stack?: number;
+  /** The rest of the day's episodes, drawn as sheets behind this card. */
+  stacked?: AiringEpisode[];
+  label?: string;
 }) {
   const tv = a.type === 'tv';
   const first = ep ?? a.episodes?.[0];
+  const stack = stacked?.length ?? 0;
   // Shows: the episode is the headline, the show under it. Films: the title, then year · rating.
-  const line1 = tv && first ? `${seLabel(first.season, first.number)}${first.name ? ` ${first.name}` : ''}` : a.title;
+  const line1 = stack ? `${a.se} · ${stack + 1} episodes` : tv && first ? `${seLabel(first.season, first.number)}${first.name ? ` ${first.name}` : ''}` : a.title;
   const line2 = tv ? a.title : a.se;
-  const runtime = ep ? ep.runtime : stack ? a.episodes?.[0]?.runtime : a.runtime;
+  const runtime = ep ? ep.runtime : a.runtime;
   const image = ep?.image ?? a.image;
   // A stack's tap fans it out (not the touch-screen peek).
   const hover = tv && first ? episodePeekProps(a.id, first.season, first.number, { tap: !onClick }) : peekProps(a.type, a.id, { tap: !onClick });
   const body = (
     <>
       <div className="relative">
-        {/* The rest of the stack, peeking out on the right. */}
-        {stack > 0 && (
-          <>
-            <span aria-hidden className="absolute inset-y-[14px] -right-[14px] left-[14px] rounded-2xl bg-white/[0.06] ring-1 ring-white/10" />
-            {stack > 1 && <span aria-hidden className="absolute inset-y-[22px] -right-[26px] left-[26px] rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]" />}
-          </>
-        )}
-        <Frame label={a.label}>
-          <div className={CARD_IMAGE}>
-            <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
-            {stack > 0 && (
-              <span className="absolute bottom-2 left-2">
-                <Chip light>{stack + 1} episodes</Chip>
-              </span>
-            )}
-            {runtime ? (
-              <span className="absolute right-2 bottom-2">
-                <Chip>{formatRuntime(runtime)}</Chip>
-              </span>
-            ) : null}
-            <span className="absolute top-2 right-2 z-10">
-              <ReminderBell a={a} ep={ep} />
-            </span>
-          </div>
-        </Frame>
+        {/* The rest of the stack: sheets behind the card, stepping out to the right. */}
+        {stacked?.slice(0, 2).map((e, i) => (
+          <span
+            key={`${e.season}-${e.number}`}
+            aria-hidden
+            style={{ inset: i ? '24px -26px 24px 40px' : '12px -13px 12px 20px', zIndex: 1 - i }}
+            className="absolute overflow-hidden rounded-2xl bg-raised shadow-[-6px_0_14px_rgba(0,0,0,0.55)] ring-1 ring-white/15 transition-transform duration-300 group-hover:translate-x-[3px]"
+          >
+            <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.35]' : 'brightness-[0.55]'} />
+          </span>
+        ))}
+        <div className="relative z-[2]">
+          <Frame label={label}>
+            <div className={CARD_IMAGE}>
+              <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
+              {runtime ? (
+                <span className="absolute right-2 bottom-2">
+                  <Chip>{formatRuntime(runtime)}</Chip>
+                </span>
+              ) : null}
+              {!stack && (
+                <span className="absolute top-2 right-2 z-10">
+                  <ReminderBell a={a} ep={ep} />
+                </span>
+              )}
+            </div>
+          </Frame>
+        </div>
       </div>
       <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
         <div className={CARD_TITLE}>{line1}</div>
@@ -157,8 +163,16 @@ function Card({
       </div>
     </>
   );
+  // A stack keeps room on its right for the sheets (so they're never clipped at the row's end).
   return onClick ? (
-    <button type="button" onClick={onClick} {...hover} aria-label={`${a.title}: show all ${stack + 1} episodes`} className={cx('group relative block text-left', className)}>
+    <button
+      type="button"
+      onClick={onClick}
+      {...hover}
+      aria-expanded={false}
+      aria-label={`${a.title} ${a.se}: show all ${stack + 1} episodes`}
+      className={cx('group relative mr-4 block text-left', className)}
+    >
       {body}
     </button>
   ) : (
@@ -169,30 +183,31 @@ function Card({
 }
 
 /**
- * A release (new episode / film) as a card, the same everywhere. Several episodes the same day: a
- * stack (the rest peek out on the right); tapping it fans them out as cards in the row, with a
- * button at the end to fold them back. `calendar`: under a day heading, so no date line.
+ * A release (new episode / film) as a card, the same everywhere. Several episodes of a show the
+ * same day are always one stack: the card with the others as sheets behind it. Tapping it fans
+ * them out, grouped in one tray with a button at its end to fold them back.
+ * `calendar`: under a day heading, so no date line.
  */
 export default function AiringTile({ a, calendar, className }: { a: Airing; calendar?: boolean; className?: string }) {
   const [open, setOpen] = useState(false);
   const eps = a.episodes ?? [];
   if (a.kind !== 'episode' || eps.length < 2) return <Card a={a} ep={eps[0]} showDate={!calendar} className={className} />;
-  if (!open) return <Card a={a} showDate={!calendar} className={className} stack={Math.min(eps.length - 1, 2)} onClick={() => setOpen(true)} />;
+  if (!open) return <Card a={a} ep={undefined} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />;
   return (
-    <>
-      {eps.map((e) => (
-        <Card key={`${e.season}-${e.number}`} a={a} ep={e} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={!calendar} className={className} />
+    <div role="group" aria-label={`${a.title}, ${eps.length} episodes`} className="flex shrink-0 snap-start gap-3 rounded-[26px] bg-white/[0.035] p-1.5 pr-2 ring-1 ring-white/[0.07]">
+      {eps.map((e, i) => (
+        <Card key={`${e.season}-${e.number}`} a={a} ep={e} label={i ? undefined : a.label} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={!calendar} className={className} />
       ))}
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="group/tip relative grid aspect-[9/16] w-12 shrink-0 place-items-center self-start rounded-2xl bg-white/[0.04] text-muted ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.08] hover:text-white"
-        aria-label="Fold the episodes back"
+        className="group/tip relative my-[6.5px] grid w-10 shrink-0 place-items-center self-stretch rounded-2xl text-muted transition-colors hover:bg-white/[0.06] hover:text-white"
+        aria-label={`Stack ${a.title}’s episodes again`}
       >
         <ChevronLeft className="size-5" />
-        <Tip label="Fold back" side="bottom" />
+        <Tip label="Stack them again" side="bottom" align="end" />
       </button>
-    </>
+    </div>
   );
 }
 

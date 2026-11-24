@@ -64,7 +64,7 @@ export function FriendCard({
       <div className={CARD_IMAGE}>
         <Img path={null} src={image} kind="still" sizes="288px" alt="" className="aspect-video" />
         {!self && (
-          <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-black/60 py-1 pr-2.5 pl-1 text-xs backdrop-blur-sm">
+          <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-black/75 py-1 pr-2.5 pl-1 text-xs">
             {avatar ? (
               <img src={avatar} alt="" className="size-5 rounded-full object-cover" />
             ) : (

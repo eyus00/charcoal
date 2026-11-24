@@ -3,7 +3,7 @@ import { useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import DetailsPeek from '../player/DetailsPeek';
 import EpisodeSelector from './EpisodeSelector';
-import { peek, usePeek } from '../lib/peek';
+import { peek, usePeek, type PeekEpisode } from '../lib/peek';
 import { q, type Details } from '../lib/tmdb';
 
 /**
@@ -13,7 +13,7 @@ import { q, type Details } from '../lib/tmdb';
 export default function PeekHost() {
   const target = usePeek();
   const { pathname } = useLocation();
-  const [episodesOf, setEpisodesOf] = useState<Details | null>(null);
+  const [episodesOf, setEpisodesOf] = useState<{ show: Details; selected?: PeekEpisode } | null>(null);
   useEffect(() => {
     peek.close();
     setEpisodesOf(null);
@@ -31,13 +31,13 @@ export default function PeekHost() {
           mini={target.mode === 'mini'}
           anchor={target.anchor}
           episode={target.episode}
-          onEpisodes={() => {
+          onEpisodes={(selected) => {
             peek.close();
-            setEpisodesOf(data);
+            setEpisodesOf({ show: data, selected: selected ? { season: selected.season, episode: selected.episode } : undefined });
           }}
         />
       )}
-      {episodesOf && <EpisodeSelector show={episodesOf} onClose={() => setEpisodesOf(null)} />}
+      {episodesOf && <EpisodeSelector show={episodesOf.show} selected={episodesOf.selected} onClose={() => setEpisodesOf(null)} />}
     </>
   );
 }

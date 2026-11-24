@@ -144,13 +144,6 @@ const DISCOVER: RailGroup = {
       id: 'tv',
       keys: 'G T',
     },
-    {
-      to: '/calendar',
-      label: 'Release Calendar',
-      icon: CalendarDays,
-      id: 'calendar',
-      keys: 'G C',
-    },
   ],
 };
 const PROFILE: RailGroup = {
@@ -173,6 +166,13 @@ const PROFILE: RailGroup = {
       icon: Heart,
       id: 'profile#library',
       keys: 'G L',
+    },
+    {
+      to: '/calendar',
+      label: 'Release Calendar',
+      icon: CalendarDays,
+      id: 'calendar',
+      keys: 'G C',
     },
     {
       to: '/profile#settings',

@@ -3,15 +3,16 @@ import { Link, useLocation, useSearchParams } from 'react-router';
 import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
 import { Download, Film, Trash2, Upload, X, Heart } from 'lucide-react';
 import { StatusDot, StatusTag } from '../components/LibraryStatus';
+import { LIBRARY_LABEL } from '../lib/library';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
-import { Pill, ROW_SIZES, SectionHeader } from '../components/Row';
+import { ROW_SIZES, SectionHeader } from '../components/Row';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
 import { detectExtension, extensionFetcher } from '../lib/extension';
 import { checkFebboxToken } from '@charcoal/providers';
 import { SubtitleStyleControls } from '../player/captions';
-import { actions, getState, historyByTitle, useStore, type WatchStatus } from '../lib/store';
+import { actions, getState, historyByTitle, useStore, type WatchStatus, type WatchlistItem } from '../lib/store';
 import { toast } from '../components/Toast';
 import { startTraktLogin, syncWatchlistNow, traktSignOut, useTraktUser } from '../lib/trakt';
 import { importLetterboxd } from '../lib/letterboxd';
@@ -132,38 +133,55 @@ export default function Profile() {
 
 // ---------- library (♥) ----------
 
-const FILTERS: {
-  id: string;
-  label: string;
-  status?: WatchStatus;
-  type?: 'movie' | 'tv';
-}[] = [
-  { id: 'watching', label: 'Watching', status: 'watching' },
-  { id: 'planned', label: 'Unwatched', status: 'planned' },
-  { id: 'completed', label: 'Watched', status: 'completed' },
-  { id: 'movie', label: 'Movies', type: 'movie' },
-  { id: 'tv', label: 'TV shows', type: 'tv' },
+type View = 'all' | WatchStatus;
+const VIEWS: { id: View; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'watching', label: 'Watching' },
+  { id: 'planned', label: 'To watch' },
+  { id: 'completed', label: 'Watched' },
 ];
+const COLUMNS: WatchStatus[] = ['watching', 'planned', 'completed'];
 
+/** A library card: poster, status tag, a remove button on hover. */
+function LibraryCard({ w, sizes, className }: { w: WatchlistItem; sizes: string; className?: string }) {
+  return (
+    <MediaCard
+      sizes={sizes}
+      className={className}
+      type={w.mediaType}
+      item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
+      badge={<StatusTag status={w.status} />}
+      overlay={
+        <div className="absolute top-2 right-2 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+          <button
+            onClick={() => {
+              const before = getState().watchlist;
+              actions.removeBookmark(w.mediaType, w.id);
+              toast(`Removed “${w.title}” from your library`, { label: 'Undo', run: () => actions.restore({ watchlist: before }) });
+            }}
+            aria-label={`Remove ${w.title} from your library`}
+            className="group/tip relative grid size-6 place-items-center rounded-full bg-black/60 hover:bg-black/80"
+          >
+            <X className="size-3.5" />
+            <Tip label="Remove from your library" side="bottom" align="end" />
+          </button>
+        </div>
+      }
+    />
+  );
+}
+
+/**
+ * The library (♥): All shows three columns (Watching, To watch, Watched); picking one shows just
+ * that, as a grid. Statuses are set as you watch.
+ */
 function Watchlist() {
   const watchlist = useStore((s) => s.watchlist);
-  const [active, setActive] = useState<Set<string>>(new Set());
-  const toggle = (id: string) =>
-    setActive((a) => {
-      const n = new Set(a);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  const items = useMemo(() => {
-    const statuses = FILTERS.filter((f) => f.status && active.has(f.id)).map((f) => f.status);
-    const types = FILTERS.filter((f) => f.type && active.has(f.id)).map((f) => f.type);
-    return watchlist.filter((w) => (!statuses.length || statuses.includes(w.status)) && (!types.length || types.includes(w.mediaType)));
-  }, [watchlist, active]);
-
+  const [view, setView] = useState<View>('all');
+  const of = (st: WatchStatus) => watchlist.filter((w) => w.status === st);
   return (
     <section>
-      <SectionHeader title="Library" action={<span className="text-sm text-muted">{plural(watchlist.length, 'item', 'items')}</span>} />
+      <SectionHeader title="Library" action={<span className="text-sm text-muted">{plural(watchlist.length, 'title', 'titles')}</span>} />
       {!watchlist.length ? (
         <EmptyCard
           icon={Heart}
@@ -172,53 +190,56 @@ function Watchlist() {
         />
       ) : (
         <>
-          <div className="mb-6 flex flex-wrap gap-2.5">
-            {FILTERS.map((f) => (
-              <Pill key={f.id} on={active.has(f.id)} onClick={() => toggle(f.id)} className="flex items-center gap-2">
-                {f.status && <StatusDot status={f.status} />}
-                {f.label}
-              </Pill>
-            ))}
+          <div className="no-scrollbar mb-6 flex overflow-x-auto">
+            <div className="inline-flex shrink-0 rounded-full bg-surface p-1" role="tablist" aria-label="Library">
+              {VIEWS.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v.id}
+                  onClick={() => setView(v.id)}
+                  className={cx(
+                    'flex h-10 items-center gap-2 rounded-full px-5 text-sm whitespace-nowrap transition',
+                    view === v.id ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white',
+                  )}
+                >
+                  {v.id !== 'all' && <StatusDot status={v.id} />}
+                  {v.label}
+                </button>
+              ))}
+            </div>
           </div>
-          {!items.length ? (
-            <EmptyCard title="No items match these filters" />
+          {view === 'all' ? (
+            <div className="grid gap-4 lg:grid-cols-3">
+              {COLUMNS.map((st) => {
+                const list = of(st);
+                return (
+                  <div key={st} className="min-w-0 rounded-3xl bg-white/[0.03] p-3 ring-1 ring-white/[0.05]">
+                    <button type="button" onClick={() => setView(st)} className="mb-3 flex w-full items-center gap-2 px-1 text-left text-sm font-medium transition-colors hover:text-white">
+                      <StatusDot status={st} />
+                      {LIBRARY_LABEL[st]}
+                      <span className="text-faint tabular-nums">{list.length}</span>
+                    </button>
+                    {list.length ? (
+                      <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3">
+                        {list.map((w) => (
+                          <LibraryCard key={w.mediaType + w.id} w={w} sizes="(min-width: 1280px) 9vw, (min-width: 1024px) 13vw, 25vw" />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-1 pb-2 text-sm text-faint">Nothing here yet.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : !of(view).length ? (
+            <EmptyCard title={`Nothing in ${LIBRARY_LABEL[view]} yet`} />
           ) : (
             <div className={CARD_GRID}>
-              {items.map((w) => (
-                <MediaCard
-                  key={w.mediaType + w.id}
-                  sizes={ROW_SIZES}
-                  type={w.mediaType}
-                  item={{
-                    id: w.id,
-                    title: w.title,
-                    poster_path: w.posterPath,
-                    backdrop_path: null,
-                    overview: '',
-                    vote_average: w.ratingScore ?? 0,
-                    release_date: w.releaseDate,
-                  }}
-                  badge={<StatusTag status={w.status} />}
-                  overlay={
-                    <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
-                      <button
-                        onClick={() => {
-                          const before = getState().watchlist;
-                          actions.removeBookmark(w.mediaType, w.id);
-                          toast(`Removed “${w.title}” from your library`, {
-                            label: 'Undo',
-                            run: () => actions.restore({ watchlist: before }),
-                          });
-                        }}
-                        aria-label={`Remove ${w.title} from your library`}
-                        className="group/tip relative grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80"
-                      >
-                        <X className="size-3.5" />
-                        <Tip label="Remove from your library" side="bottom" align="end" />
-                      </button>
-                    </div>
-                  }
-                />
+              {of(view).map((w) => (
+                <LibraryCard key={w.mediaType + w.id} w={w} sizes={ROW_SIZES} />
               ))}
             </div>
           )}
