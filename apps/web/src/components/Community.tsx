@@ -241,17 +241,19 @@ function RatingSummary({ r, mine = 0 }: { r?: { rating: number; votes: number; d
       </div>
       <p className="mt-1 text-xs text-muted">{r?.votes ? `${compact(r.votes)} ratings on Trakt` : 'No ratings on Trakt yet'}</p>
       {!!r?.votes && (
-        <div className="mt-auto pt-4">
+        <div className={cx('mt-auto', mine ? 'pt-8' : 'pt-4')}>
           <div className="flex h-12 items-end gap-1 lg:h-14" aria-hidden>
             {Array.from({ length: 10 }, (_, i) => {
               const yours = mine === i + 1;
               return (
                 <div key={i} className="relative flex h-full flex-1 items-end">
                   <div
-                    className={cx('w-full rounded-sm', yours ? 'bg-white' : 'bg-white/70')}
+                    className={cx('relative w-full rounded-sm', yours ? 'bg-white' : 'bg-white/70')}
                     style={{ height: `${Math.max(4, ((r.distribution[String(i + 1)] ?? 0) / max) * 100)}%`, opacity: yours ? 1 : 0.35 + (i / 9) * 0.55 }}
-                  />
-                  {yours && <Star className="pop absolute -top-4 left-1/2 size-3 -translate-x-1/2 fill-current text-white" strokeWidth={0} />}
+                  >
+                    {/* Your score, big, on top of its bar. */}
+                    {yours && <span className="pop absolute bottom-full left-1/2 mb-1 -translate-x-1/2 text-xl leading-none font-semibold text-white tabular-nums">{i + 1}</span>}
+                  </div>
                 </div>
               );
             })}
@@ -328,7 +330,7 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
         role="radiogroup"
         aria-label="Your rating"
         onPointerLeave={() => setHover(0)}
-        className="grid h-16 grid-cols-10 items-end gap-0.5 rounded-[22px] bg-white/[0.04] px-1.5 pb-2.5 ring-1 ring-white/[0.06]"
+        className="flex h-16 items-end justify-center gap-px rounded-[22px] bg-white/[0.04] px-2 pb-2.5 ring-1 ring-white/[0.06]"
       >
         {Array.from({ length: 10 }, (_, i) => {
           const n = i + 1;
@@ -344,7 +346,7 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
               disabled={pending !== null}
               onPointerEnter={() => setHover(n)}
               onClick={() => pick(n)}
-              className="flex min-w-0 flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1"
             >
               <Star
                 key={on ? `on-${n}` : n}
@@ -353,7 +355,7 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
               />
               <span
                 className={cx(
-                  'grid aspect-square w-full max-w-7 place-items-center rounded-full text-[13px] tabular-nums transition-colors',
+                  'grid h-8 w-[22px] place-items-center rounded-[5px] text-[13px] tabular-nums transition-colors',
                   on ? 'bg-white font-semibold text-black' : hover === n ? 'bg-white/10 text-white' : 'text-white/70',
                 )}
               >
