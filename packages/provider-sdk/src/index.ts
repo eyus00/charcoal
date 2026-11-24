@@ -21,5 +21,7 @@ export * from './engine.js';
 export * from './rules.js';
 export * from './registry.js';
 export * from './recovery.js';
+export * from './validate.js';
+export * from './browser.js';
 export * from './define.js';
 export * as extract from './extract/index.js';

@@ -68,14 +68,17 @@ export interface NetworkPolicy {
   maxBodyChars: number;
 }
 
-export const DEFAULT_LIMITS = { maxRequests: 40, maxBodyChars: 8 * 1024 * 1024, maxDiscoveredHosts: 64 };
+export const DEFAULT_LIMITS = { maxRequests: 40, maxBodyChars: 8 * 1024 * 1024, maxDiscoveredHosts: 64, maxDiscoveryDepth: 3 };
 
 const URL_IN_TEXT = /https?:\/\/[a-z0-9.-]+(?::\d+)?/gi;
+/** `src="//host/path"`: an address without a scheme, as markup writes them. */
+const SCHEMELESS_IN_TEXT = /["'(=\s]\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?=[/"'?:\s)])/gi;
 
 /** Enforces a NetworkPolicy and counts requests for one run. */
 export class PolicyGuard {
   private requests = 0;
-  private readonly discovered = new Set<string>();
+  /** Discovered host → how many hops from a declared host it was found (1 = named by a declared host). */
+  private readonly discovered = new Map<string, number>();
   constructor(
     readonly policy: NetworkPolicy,
     /** Extra check a runtime can add (the server resolves DNS and refuses private answers). */
@@ -86,7 +89,7 @@ export class PolicyGuard {
     return this.requests;
   }
   get discoveredHosts(): string[] {
-    return [...this.discovered];
+    return [...this.discovered.keys()];
   }
 
   /** Whether the host is one the policy names (as opposed to one it merely discovered). */
@@ -117,24 +120,44 @@ export class PolicyGuard {
     return u;
   }
 
-  /** Remembers hosts named in a response from a declared host, so a later GET to them is allowed. */
+  /**
+   * Remembers hosts named in a response, so a later GET to them is allowed. A declared host's
+   * response opens the hosts it names; so does a discovered host's, up to a few hops (an embed page
+   * names a player page, which names a playlist), and never beyond the cap on hosts.
+   */
   noteResponse(fromHost: string, body: string) {
-    if (!this.policy.followDiscovered || !this.isDeclared(fromHost)) return;
+    if (!this.policy.followDiscovered) return;
+    const from = fromHost.toLowerCase();
+    const depth = this.isDeclared(from) ? 1 : (this.discovered.get(from) ?? Infinity) + 1;
+    if (depth > DEFAULT_LIMITS.maxDiscoveryDepth) return;
+    this.noteText(body, depth);
+  }
+
+  /** Addresses a provider decoded itself (an encrypted answer): treated like ones named by a declared host. */
+  noteDecoded(text: string) {
+    if (this.policy.followDiscovered) this.noteText(text, 1);
+  }
+
+  private noteText(body: string, depth: number) {
     // JSON often escapes slashes ("https:\/\/cdn…").
-    const text = body.length > 400_000 ? body.slice(0, 400_000) : body;
-    for (const m of text.replace(/\\\//g, '/').matchAll(URL_IN_TEXT)) {
-      if (this.discovered.size >= DEFAULT_LIMITS.maxDiscoveredHosts) return;
+    const text = (body.length > 400_000 ? body.slice(0, 400_000) : body).replace(/\\\//g, '/');
+    const add = (host: string) => {
+      const h = host.toLowerCase();
+      if (this.discovered.size >= DEFAULT_LIMITS.maxDiscoveredHosts && !this.discovered.has(h)) return;
+      if (isPublicHost(h) && (this.discovered.get(h) ?? Infinity) > depth) this.discovered.set(h, depth);
+    };
+    for (const m of text.matchAll(URL_IN_TEXT)) {
       try {
-        const h = new URL(m[0]).hostname.toLowerCase();
-        if (isPublicHost(h)) this.discovered.add(h);
+        add(new URL(m[0]).hostname);
       } catch {
         /* not a URL after all */
       }
     }
+    for (const m of text.matchAll(SCHEMELESS_IN_TEXT)) add(m[1]);
   }
 
   /** Lets the engine allow a redirect target or a host a provider derived from allowed data. */
   noteHost(hostname: string) {
-    if (this.policy.followDiscovered && isPublicHost(hostname) && this.discovered.size < DEFAULT_LIMITS.maxDiscoveredHosts) this.discovered.add(hostname.toLowerCase());
+    if (this.policy.followDiscovered && isPublicHost(hostname) && this.discovered.size < DEFAULT_LIMITS.maxDiscoveredHosts) this.discovered.set(hostname.toLowerCase(), 1);
   }
 }

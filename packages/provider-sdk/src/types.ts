@@ -156,6 +156,42 @@ export interface Stream extends Omit<RawStream, 'quality' | 'audio' | 'headers' 
   /** Ranking score and why (filled by the ranker). */
   score?: number;
   reasons?: string[];
+  /**
+   * Whether anyone has checked that the URL answers with media. Absent = discovered only: an
+   * extraction returned it and nothing has tried it yet.
+   */
+  verification?: Verification;
+}
+
+/**
+ * The result of trying a discovered stream.
+ * - verified  a manifest parsed and a first piece of media answered (or, for a file, its header did)
+ * - failed    it did not answer with media (see `code`)
+ * - unchecked it could not be tried from here (a frame, a link bound to another address)
+ */
+export interface Verification {
+  state: 'verified' | 'failed' | 'unchecked';
+  /** How far the check got: nothing, the manifest, a media segment, a file header, or real playback in a player. */
+  level: 'none' | 'manifest' | 'segment' | 'header' | 'playback';
+  /** Failure code when state is 'failed' (same vocabulary as provider failures). */
+  code?: string;
+  message?: string;
+  /** Which runtime checked it, and when (epoch ms). */
+  by: RuntimeKind;
+  at: number;
+  ms: number;
+  detail?: {
+    container?: string;
+    contentType?: string;
+    variants?: number;
+    maxHeight?: number;
+    live?: boolean;
+    encryption?: string;
+    audioLanguages?: string[];
+    subtitleLanguages?: string[];
+    codecs?: string[];
+    size?: number;
+  };
 }
 
 // ---------- the network ----------
@@ -165,6 +201,13 @@ export interface FetchOptions {
   headers?: Record<string, string>;
   body?: string;
   signal?: AbortSignal;
+  /**
+   * Stop reading the response after about this many bytes (probing a large file without
+   * downloading it). A transport that cannot stream ignores it and returns the whole body.
+   */
+  maxBytes?: number;
+  /** Return the body as a binary string (one character per byte) instead of decoded text. */
+  binary?: boolean;
 }
 
 export interface FetchResponse {
@@ -278,9 +321,25 @@ export interface ProviderManifest {
   rank?: number;
   config?: Record<string, ConfigField>;
   dependencies?: { sdk?: string; providers?: string[] };
+  /** For a service the viewer has an account with: where their own session comes from, and how its absence shows. */
+  auth?: ProviderAuth;
   license?: string;
   /** Where the logic was adapted from, if anywhere. */
   origin?: string;
+}
+
+/**
+ * Authorised access with the viewer's own account. The session is something the viewer supplies on
+ * their own device (cookies exported from their logged-in browser); it is a per-device setting,
+ * never sent to a shared server, and nothing here logs in on anyone's behalf.
+ */
+export interface ProviderAuth {
+  /** The per-device setting holding the session: a list of cookies, or a Playwright storage state. */
+  setting: string;
+  /** Substring of the address the site sends signed-out visitors to. Landing there = no valid session. */
+  loginUrl?: string;
+  /** A CSS selector that is only present for signed-out visitors. */
+  signedOutSelector?: string;
 }
 
 export interface KeyValueStore {
@@ -302,6 +361,14 @@ export interface ProviderContext {
   /** Scratch space scoped to this provider (session keys, looked-up ids). */
   store: KeyValueStore;
   log(event: string, data?: Record<string, unknown>): void;
+  /**
+   * Tells the network policy about addresses the provider decoded itself (an encrypted answer names
+   * a playlist host the policy could not see). They are treated like addresses found in a response:
+   * GET only, public hosts only, capped. Has no effect unless the manifest sets `followDiscovered`.
+   */
+  discovered(text: string): void;
+  /** A real browser, in runtimes that have one (`js-render`). Declare the feature to be planned only there. */
+  browser?: import('./browser.js').BrowserSession;
 }
 
 export interface ProviderModule {

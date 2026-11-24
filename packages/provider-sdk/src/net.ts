@@ -14,8 +14,41 @@ export const fetchTransport: Fetcher = async (url, o = {}) => {
   const res = await fetch(url, { method: o.method ?? 'GET', headers: o.headers, body: o.body, signal: o.signal, redirect: 'follow' });
   const headers: Record<string, string> = {};
   res.headers.forEach((v, k) => (headers[k] = v));
-  return { status: res.status, ok: res.ok, url: res.url || url, headers, body: await res.text() };
+  const meta = { status: res.status, ok: res.ok, url: res.url || url, headers };
+  if (!o.maxBytes && !o.binary) return { ...meta, body: await res.text() };
+  return { ...meta, body: await readCapped(res, o.maxBytes ?? Infinity, o.binary === true) };
 };
+
+/** Reads at most about `maxBytes` of a response, then stops the download. */
+async function readCapped(res: Response, maxBytes: number, binary: boolean): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return '';
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    // Cancelling is what stops the transfer; a server that ignored our Range would otherwise send the whole file.
+    await reader.cancel().catch(() => undefined);
+  }
+  const all = new Uint8Array(Math.min(total, maxBytes === Infinity ? total : Math.max(maxBytes, 0)));
+  let offset = 0;
+  for (const c of chunks) {
+    if (offset >= all.length) break;
+    const part = c.subarray(0, all.length - offset);
+    all.set(part, offset);
+    offset += part.length;
+  }
+  if (!binary) return new TextDecoder().decode(all);
+  let out = '';
+  for (let i = 0; i < all.length; i += 8192) out += String.fromCharCode(...all.subarray(i, i + 8192));
+  return out;
+}
 
 export interface InstrumentOptions {
   guard: PolicyGuard;

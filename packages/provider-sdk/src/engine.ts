@@ -18,6 +18,7 @@ import { instrumentFetch } from './net.js';
 import { normalizeResult } from './normalize.js';
 import { DEFAULT_LIMITS, PolicyGuard } from './policy.js';
 import { canRun } from './runtime.js';
+import type { BrowserWorkerLike } from './browser.js';
 import type { Caption, Fetcher, KeyValueStore, Media, ProviderModule, RuntimeDescriptor, Stream, StreamType } from './types.js';
 
 export type Stage = 'stable' | 'canary' | 'disabled';
@@ -87,6 +88,8 @@ export interface EngineOptions {
   resolveCheck?: (hostname: string) => Promise<boolean>;
   /** Origins known to be down right now, per provider and role (from domain health checks). */
   avoidOrigins?: (providerId: string) => Record<string, string[]>;
+  /** A browser worker, for providers that need page JavaScript. Used only when the runtime has `js-render`. */
+  browser?: BrowserWorkerLike;
   /** Run canary-stage providers too (canary clients and tests). */
   includeCanary?: boolean;
   /** Refuse providers whose network policy isn't 'declared'. */
@@ -347,15 +350,22 @@ export class Engine {
     }, budget);
 
     const defaults = Object.fromEntries(Object.entries(m.config ?? {}).filter(([, f]) => f.default !== undefined).map(([k, f]) => [k, f.default]));
+    const settings = { ...defaults, ...p.config, ...this.opts.settings };
+    const browser =
+      this.opts.browser && runtime.features.includes('js-render')
+        ? this.opts.browser.session({ providerId: m.id, guard, domains, signal: ctrl.signal, trace, settings, auth: m.auth, budgetMs: budget, log: (event, data) => this.log(event, m.id, data) })
+        : undefined;
     const ctx = {
       fetch: instrumentFetch(this.opts.transport, { guard, domains, signal: ctrl.signal, trace, timeoutMs: this.opts.requestTimeoutMs }),
       signal: ctrl.signal,
       runtime,
-      settings: { ...defaults, ...p.config, ...this.opts.settings },
+      settings,
+      browser,
       domain: (role: string) => domains.origin(role),
       url: (role: string, path: string) => domains.url(role, path),
       store: this.store(m.id),
       log: (event: string, data?: Record<string, unknown>) => this.log(event, m.id, data),
+      discovered: (text: string) => guard.noteDecoded(String(text)),
     };
 
     const finish = (o: Omit<ProviderOutcome, 'provider' | 'ms' | 'requests' | 'failovers'>, d?: Diagnosis): ProviderOutcome => {
@@ -394,6 +404,8 @@ export class Engine {
       clearTimeout(timer);
       outer?.removeEventListener('abort', onOuter);
       ctrl.abort(); // stop anything the provider left running
+      // Its browser pages go with it, whatever happened.
+      if (browser) void browser.dispose().catch(() => undefined);
     }
   }
 }

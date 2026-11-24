@@ -62,7 +62,24 @@ export interface SetStep extends When {
   value: string;
 }
 
-export type RuleStep = FetchStep | ExtractStep | RequireStep | SetStep;
+export interface RenderStep extends When {
+  /** URL template of a page to open in a browser (needs the `js-render` feature). */
+  render: string;
+  /** Variable the rendered document is stored in (usable by extract steps like a fetched page). */
+  as: string;
+  /** A CSS selector to wait for, or "media" to wait until the page asks for a playlist or file. */
+  waitFor?: string;
+  /** A CSS selector to click once the page is ready (a play button), before waiting for media. */
+  click?: string;
+  /** Variable that receives the list of media addresses the page asked for (playlists, manifests, files). */
+  capture?: string;
+  /** Variable that receives the list of caption addresses the page asked for. */
+  captureCaptions?: string;
+  timeoutMs?: number;
+  optional?: boolean;
+}
+
+export type RuleStep = FetchStep | ExtractStep | RequireStep | SetStep | RenderStep;
 
 export interface EmitRule extends When {
   /** A list variable to emit one stream per item of; inside, {{item}} is the current one. */
@@ -93,6 +110,7 @@ export interface RulePack {
 }
 
 const MAX_STEPS = 40;
+const RESERVED = new Set(['media', 'domain', 'settings', 'item']);
 const MAX_PATTERN = 400;
 /** A group that repeats something that itself repeats: the classic way to make a regex take forever. */
 const NESTED_QUANTIFIER = /\((?:[^()\\]|\\.)*[+*](?:[^()\\]|\\.)*\)\s*[+*{]/;
@@ -112,6 +130,10 @@ export function validateRulePack(pack: RulePack, manifest?: ProviderManifest): s
   const defined = new Set<string>();
   (pack.steps ?? []).forEach((s, i) => {
     const at = `step ${i + 1}:`;
+    // These names always mean the title, the addresses, the settings and the current list item.
+    for (const name of ['as' in s ? s.as : undefined, 'set' in s ? s.set : undefined, 'capture' in s ? s.capture : undefined, 'captureCaptions' in s ? s.captureCaptions : undefined]) {
+      if (name && RESERVED.has(name)) e.push(`${at} "${name}" is a reserved name`);
+    }
     if ('fetch' in s) {
       if (!s.as) e.push(`${at} fetch needs "as"`);
       if (!/^\{\{domain\.[a-z0-9_-]+\}\}|^https?:\/\//i.test(s.fetch)) e.push(`${at} fetch must start with a {{domain.role}} or an absolute URL`);
@@ -135,6 +157,14 @@ export function validateRulePack(pack: RulePack, manifest?: ProviderManifest): s
     } else if ('set' in s) {
       if (!s.set) e.push(`${at} set needs a name`);
       defined.add(s.set);
+    } else if ('render' in s) {
+      if (!s.as) e.push(`${at} render needs "as"`);
+      if (!/^\{\{domain\.[a-z0-9_-]+\}\}|^https?:\/\//i.test(s.render)) e.push(`${at} render must start with a {{domain.role}} or an absolute URL`);
+      for (const role of templateRoles(s.render)) if (manifest && !manifest.domainRoles.includes(role)) e.push(`${at} uses domain role "${role}", which the manifest doesn't declare`);
+      if (manifest && !manifest.requires?.features?.includes('js-render')) e.push(`${at} render needs the manifest to require the "js-render" feature`);
+      defined.add(s.as);
+      if (s.capture) defined.add(s.capture);
+      if (s.captureCaptions) defined.add(s.captureCaptions);
     } else if (!('require' in s)) e.push(`${at} is not a known step`);
   });
   return e;
@@ -274,6 +304,28 @@ export async function runRulePack(pack: RulePack, manifest: ProviderManifest, me
         if (!step.optional || (e instanceof ProviderError && e.code === 'CANCELLED')) throw e;
         vars[step.as] = undefined;
       }
+    } else if ('render' in step) {
+      if (!ctx.browser) throw new ProviderError('UNSUPPORTED_RUNTIME', `${manifest.name}: needs a browser, and this runtime has none`);
+      const url = text(renderTemplate(step.render, scope()));
+      try {
+        const page = await ctx.browser.open(url, { waitFor: step.click || step.waitFor === 'media' || !step.waitFor ? 'load' : { selector: step.waitFor }, timeoutMs: step.timeoutMs });
+        try {
+          if (page.status === 404 || page.status === 410) throw new ProviderError('NOT_FOUND');
+          if (step.click) await page.click(step.click, { timeoutMs: step.timeoutMs, frames: true });
+          if (step.waitFor === 'media') await page.waitFor({ media: true }, step.timeoutMs);
+          vars[step.as] = { status: page.status, ok: true, url: page.url, headers: {}, body: await page.html() };
+          const seen = page.media();
+          if (step.capture) vars[step.capture] = seen.filter((m) => m.type !== 'captions').map((m) => m.url);
+          if (step.captureCaptions) vars[step.captureCaptions] = seen.filter((m) => m.type === 'captions').map((m) => m.url);
+          // Remember what each address needs sent with it, for the emit rules.
+          for (const m of seen) (vars.__mediaHeaders as Record<string, Record<string, string>> | undefined ?? (vars.__mediaHeaders = {} as Record<string, Record<string, string>>))[m.url] = m.headers;
+        } finally {
+          await page.close();
+        }
+      } catch (e) {
+        if (!step.optional || (e instanceof ProviderError && e.code === 'CANCELLED')) throw e;
+        vars[step.as] = undefined;
+      }
     } else if ('extract' in step) {
       const source = vars[step.from];
       if (source === undefined) {
@@ -308,7 +360,7 @@ export async function runRulePack(pack: RulePack, manifest: ProviderManifest, me
         quality: opt(rule.quality),
         language: opt(rule.language),
         note: opt(rule.note),
-        headers: Object.fromEntries(Object.entries(rule.headers ?? {}).map(([k, v]) => [k, text(renderTemplate(v, s))])),
+        headers: { ...((vars.__mediaHeaders as Record<string, Record<string, string>> | undefined)?.[url] ?? {}), ...Object.fromEntries(Object.entries(rule.headers ?? {}).map(([k, v]) => [k, text(renderTemplate(v, s))])) },
       });
     }
   }
