@@ -1,8 +1,13 @@
 /**
  * Charcoal Helper (background). Only Charcoal's own pages can talk to it (see ALLOWED and the
- * content script's "matches"). It offers three things:
+ * content script's "matches"). It is an optional capability module: the website works without it
+ * and uses whatever it offers when it is there.
  *
- *  hello          → { version, hasPermission }
+ * Protocol 2 (protocol 1 pages keep working: they ignore the extra fields):
+ *
+ *  hello          → { version, protocol, kind, capabilities, hasPermission }
+ *                   The page says which protocol it speaks; both sides use the lower one.
+ *  status         → { version, protocol, activeRules, requests: { ok, failed }, since }
  *  request        → fetch a URL from this browser (the viewer's own connection) with the headers a
  *                   streaming site expects, and return the text. Used by Charcoal's scrapers.
  *  allowStream    → let Charcoal's video player load one host's playlists and segments: adds the
@@ -29,6 +34,19 @@ const COOKIE_HOSTS = ['febbox.com'];
 const cookieAllowed = (host) => COOKIE_HOSTS.some((d) => host === d || host.endsWith(`.${d}`));
 const MAX_BODY = 15 * 1024 * 1024;
 const TIMEOUT_MS = 20000;
+
+/** The newest protocol this build speaks, and what it can do (the page plans around these). */
+const PROTOCOL = 2;
+const CAPABILITIES = ['request', 'allowStream', 'releaseStreams', 'cookies', 'status'];
+const counters = { ok: 0, failed: 0, since: Date.now() };
+
+/** An error with a code the page can act on: TIMEOUT, NETWORK, NOT_ALLOWED, TOO_LARGE, BAD_REQUEST. */
+class HelperError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+}
 
 const dnr = chrome.declarativeNetRequest;
 
@@ -96,14 +114,22 @@ function baseDomain(host) {
 
 // ---------- handlers ----------
 
-async function hello() {
+async function hello(payload) {
   const hasPermission = await chrome.permissions.contains({ origins: ['<all_urls>'] });
-  return { version: chrome.runtime.getManifest().version, hasPermission };
+  // Speak the highest protocol both sides know (a page that doesn't say speaks 1).
+  const theirs = Number.isInteger(payload?.protocol) && payload.protocol >= 1 ? payload.protocol : 1;
+  return { version: chrome.runtime.getManifest().version, protocol: Math.min(PROTOCOL, theirs), kind: 'extension', capabilities: CAPABILITIES, hasPermission };
+}
+
+async function status() {
+  const rules = await dnr.getSessionRules();
+  return { version: chrome.runtime.getManifest().version, protocol: PROTOCOL, activeRules: rules.length, requests: { ok: counters.ok, failed: counters.failed }, since: counters.since };
 }
 
 async function request({ url, method = 'GET', headers, body }) {
-  if (!isPublicUrl(url)) throw new Error('Address not allowed');
-  if (!['GET', 'POST', 'HEAD'].includes(method)) throw new Error('Method not allowed');
+  if (typeof url !== 'string') throw new HelperError('BAD_REQUEST', 'No address given');
+  if (!isPublicUrl(url)) throw new HelperError('NOT_ALLOWED', 'Address not allowed');
+  if (!['GET', 'POST', 'HEAD'].includes(method)) throw new HelperError('NOT_ALLOWED', 'Method not allowed');
   const host = new URL(url).hostname;
   const h = cleanHeaders(headers, host);
   const special = ruleHeaders(h);
@@ -136,7 +162,7 @@ async function request({ url, method = 'GET', headers, body }) {
         size += value.length;
         if (size > MAX_BODY) {
           reader.cancel();
-          throw new Error('Response too large');
+          throw new HelperError('TOO_LARGE', 'Response too large');
         }
         chunks.push(value);
       }
@@ -144,9 +170,12 @@ async function request({ url, method = 'GET', headers, body }) {
     const text = new TextDecoder().decode(chunks.length === 1 ? chunks[0] : new Uint8Array(await new Blob(chunks).arrayBuffer()));
     const outHeaders = {};
     res.headers.forEach((v, k) => k !== 'set-cookie' && (outHeaders[k] = v));
+    counters.ok++;
     return { status: res.status, ok: res.ok, url: res.url, headers: outHeaders, body: text };
   } catch (e) {
-    throw new Error(ctrl.signal.aborted ? 'The site took too long to answer' : `Couldn’t reach the site (${e.message})`);
+    counters.failed++;
+    if (e instanceof HelperError) throw e;
+    throw ctrl.signal.aborted ? new HelperError('TIMEOUT', 'The site took too long to answer') : new HelperError('NETWORK', `Couldn’t reach the site (${e.message})`);
   } finally {
     clearTimeout(timer);
     if (special.length) dnr.updateSessionRules({ removeRuleIds: [id] }).catch(() => {});
@@ -156,8 +185,8 @@ async function request({ url, method = 'GET', headers, body }) {
 
 async function allowStream({ host, headers }, sender) {
   const tabId = sender.tab?.id;
-  if (tabId === undefined || tabId < 0) throw new Error('No tab');
-  if (!isPublicUrl(`https://${host}/`)) throw new Error('Address not allowed');
+  if (tabId === undefined || tabId < 0) throw new HelperError('BAD_REQUEST', 'No tab');
+  if (typeof host !== 'string' || !isPublicUrl(`https://${host}/`)) throw new HelperError('NOT_ALLOWED', 'Address not allowed');
   const origin = new URL(sender.url).origin;
   const domain = baseDomain(host);
   const perTab = streamRules.get(tabId) ?? new Map();
@@ -201,7 +230,7 @@ async function releaseStreams(_payload, sender) {
   return {};
 }
 
-const HANDLERS = { hello, request, allowStream, releaseStreams };
+const HANDLERS = { hello, status, request, allowStream, releaseStreams };
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const origin = (() => {
@@ -213,12 +242,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   })();
   const fn = HANDLERS[msg?.type];
   if (!fn || sender.id !== chrome.runtime.id || !isAllowedOrigin(origin)) {
-    sendResponse({ ok: false, error: 'Not allowed' });
+    sendResponse({ ok: false, error: 'Not allowed', code: 'NOT_ALLOWED' });
     return false;
   }
   Promise.resolve()
     .then(() => fn(msg.payload ?? {}, sender))
-    .then((result) => sendResponse({ ok: true, result }), (e) => sendResponse({ ok: false, error: String(e?.message ?? e) }));
+    .then((result) => sendResponse({ ok: true, result }), (e) => sendResponse({ ok: false, error: String(e?.message ?? e), code: e?.code ?? 'UNKNOWN' }));
   return true; // answer asynchronously
 });
 
