@@ -8,7 +8,7 @@ import { isPrivateAddress, jellyProxyService, proxyRequest } from './proxy.js';
 import { BenchedError, lookupTitle, platformProviders } from './shared.js';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { lookup as dnsLookup } from 'node:dns/promises';
-import { describeRuntime, diagnose, Engine, fetchTransport, HealthStore, summarize, type CanaryTitles, type HealthRecord } from '@charcoal/provider-sdk';
+import { describeRuntime, diagnose, Engine, fetchTransport, HealthStore, summarize, type BrowserWorkerHealth, type BrowserWorkerLike, type CanaryTitles, type HealthRecord } from '@charcoal/provider-sdk';
 import { Catalog } from './platform/catalog.js';
 import { Overlay } from './platform/overlay.js';
 import { legacyModule, platformId } from './platform/legacy.js';
@@ -241,7 +241,33 @@ async function main() {
 
     // A server on a home connection says so (EGRESS=user): providers that only work from a
     // viewer's own network are then worth running here too.
-    const runtime = describeRuntime('server', { egress: process.env.EGRESS === 'user' ? 'user' : 'datacenter', label: process.env.EGRESS === 'user' ? 'your own server' : 'Charcoal’s server' });
+    // A browser worker for providers that need page JavaScript, only where the operator asked for
+    // one: BROWSER_WORKER=local launches Chromium in this container, BROWSER_WS_ENDPOINT uses a
+    // browser running in its own. Without either, the runtime simply has no `js-render` feature.
+    let browser: (BrowserWorkerLike & { close(): Promise<void>; probe(): Promise<{ ok: boolean; ms: number; detail?: string }> }) | undefined;
+    if (process.env.BROWSER_WORKER === 'local' || process.env.BROWSER_WS_ENDPOINT) {
+        try {
+            const { createBrowserWorker, fileSessionStore } = await import('@charcoal/browser-runtime');
+            browser = createBrowserWorker({
+                connect: process.env.BROWSER_WS_ENDPOINT ? { wsEndpoint: process.env.BROWSER_WS_ENDPOINT, protocol: process.env.BROWSER_WS_PROTOCOL === 'cdp' ? 'cdp' : 'playwright' } : undefined,
+                executablePath: process.env.BROWSER_EXECUTABLE || undefined,
+                maxSessions: Number(process.env.BROWSER_MAX_SESSIONS ?? 2),
+                sessions: DATA_DIR ? fileSessionStore(path.join(DATA_DIR, 'browser-sessions')) : undefined,
+                resolveCheck: resolvesPublic
+            });
+            const probe = await browser.probe();
+            if (!probe.ok) {
+                console.warn(`[Jelly] the browser worker did not start (${probe.detail}); providers that need a browser will be skipped`);
+                await browser.close();
+                browser = undefined;
+            }
+        } catch (e) {
+            console.warn(`[Jelly] no browser worker: ${(e as Error).message}`);
+            browser = undefined;
+        }
+    }
+    const base = describeRuntime('server', { egress: process.env.EGRESS === 'user' ? 'user' : 'datacenter', label: process.env.EGRESS === 'user' ? 'your own server' : 'Charcoal’s server' });
+    const runtime = browser ? { ...base, features: [...base.features, 'js-render' as const] } : base;
     const engine = new Engine({
         providers: () => catalog.providers(),
         runtime,
@@ -250,6 +276,7 @@ async function main() {
         // Per-device settings exist on a server only when its owner put them in its environment.
         settings: SERVER_SETTINGS,
         resolveCheck: resolvesPublic,
+        browser,
         strictNetwork: process.env.STRICT_PROVIDER_NETWORK === 'true',
         providerTimeoutMs: PROVIDER_TIMEOUT_MS,
         log: process.env.PLATFORM_LOG === 'true' ? (e) => console.log(JSON.stringify({ at: new Date(e.at).toISOString(), event: e.event, provider: e.provider, ...e.data })) : undefined
@@ -324,6 +351,7 @@ async function main() {
         publicUrl: PUBLIC_URL ?? `http://localhost:${Number(process.env.PORT ?? 8080)}`,
         canaries: CANARIES,
         adminToken: process.env.ADMIN_TOKEN || undefined,
+        browserHealth: browser ? (): BrowserWorkerHealth => browser!.health() : undefined,
         autoFailoverTtlMs: Number(process.env.AUTO_DOMAIN_FAILOVER_MINUTES ?? 0) * 60_000,
         limits: { sourcesPerMinute: Number(process.env.RATE_LIMIT_SOURCES_PER_MINUTE ?? 60), sourcesBurst: Number(process.env.RATE_LIMIT_SOURCES_BURST ?? 20) }
     });
@@ -350,8 +378,8 @@ async function main() {
             }
         };
         setInterval(save, 60_000).unref();
-        process.once('SIGTERM', () => (save(), process.exit(0)));
-    }
+        process.once('SIGTERM', () => (save(), void browser?.close().finally(() => process.exit(0))));
+    } else if (browser) process.once('SIGTERM', () => void browser!.close().finally(() => process.exit(0)));
     // Scheduled canary + recovery: checks every provider with known titles, classifies what is
     // wrong, and restores what works again. 0 turns it off.
     const monitorMinutes = Number(process.env.MONITOR_INTERVAL_MINUTES ?? 30);

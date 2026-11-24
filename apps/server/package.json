@@ -15,7 +15,8 @@
     "crypto-js": "^4.2.0",
     "tsx": "^4.19.1",
     "@charcoal/providers": "*",
-    "@charcoal/provider-sdk": "*"
+    "@charcoal/provider-sdk": "*",
+    "@charcoal/browser-runtime": "*"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",

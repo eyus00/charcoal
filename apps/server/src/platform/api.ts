@@ -23,6 +23,7 @@ import {
   type CanaryTitles,
   type Engine,
   type EngineEvent,
+  type BrowserWorkerHealth,
   type FailureCode,
   type Fetcher,
   type Media,
@@ -162,6 +163,8 @@ export interface ApiOptions {
   /** Known titles for canaries and recovery. */
   canaries: CanaryTitles;
   adminToken?: string;
+  /** State of the browser worker, when this server has one. */
+  browserHealth?: () => BrowserWorkerHealth;
   /** Lets automatic recovery put a validated alternate domain in force for this long (0 = propose only). */
   autoFailoverTtlMs?: number;
   /** Per client address. `sourcesBurst` is how many may arrive at once before the per-minute rate applies. */
@@ -232,6 +235,8 @@ export function registerApi(o: ApiOptions): Platform {
       generatedAt: new Date().toISOString(),
       runtime: engine.runtime.kind,
       egress: engine.runtime.egress,
+      features: engine.runtime.features,
+      browser: o.browserHealth?.(),
       providers: summarize(health),
       fleet: summarize(fleet),
       proposals: Object.entries(overlay.proposals()).map(([provider, p]) => ({ provider, role: p.role, from: p.from, to: p.to })),
