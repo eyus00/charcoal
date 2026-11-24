@@ -50,6 +50,8 @@ export interface ProviderOutcome {
   failovers?: { role: string; from: string; to: string; reason: FailureCode }[];
   /** Raw streams the normaliser refused, and why. */
   rejected?: string[];
+  /** The address each domain role ended the run on, and whether it was one on trial. */
+  origins?: { role: string; origin: string; candidate: boolean }[];
 }
 
 export type EngineEvent =
@@ -104,6 +106,10 @@ export interface EngineOptions {
   /** How long a run that found nothing is reused. */
   negativeCacheTtlMs?: number;
   now?: () => number;
+  /** 0…1 source for trial shares (injected in tests). */
+  random?: () => number;
+  /** Called with every recorded outcome (domain trials and watches are settled from it). */
+  onOutcome?: (provider: LoadedProvider, outcome: ProviderOutcome) => void;
   log?: (entry: EngineLogEntry) => void;
 }
 
@@ -325,7 +331,8 @@ export class Engine {
     const started = this.now();
     const trace: RequestTrace[] = [];
     const domainConfig = domainsOverride ?? p.domains;
-    const domains = new DomainResolver(domainConfig, this.opts.avoidOrigins?.(m.id));
+    // An address on trial takes its share of ordinary runs; a run with an explicit config (a canary, a validation) never does.
+    const domains = new DomainResolver(domainConfig, this.opts.avoidOrigins?.(m.id), domainsOverride ? 1 : (this.opts.random ?? Math.random)());
     const network = m.network ?? 'declared';
     const guard = new PolicyGuard(
       {
@@ -362,6 +369,7 @@ export class Engine {
       settings,
       browser,
       domain: (role: string) => domains.origin(role),
+      domainSetting: (role: string, key: string) => domains.setting(role, key),
       url: (role: string, path: string) => domains.url(role, path),
       store: this.store(m.id),
       log: (event: string, data?: Record<string, unknown>) => this.log(event, m.id, data),
@@ -376,7 +384,15 @@ export class Engine {
         else if (d) this.opts.health.record(m.id, runtime.kind, { kind: 'failure', diagnosis: d }, ms, m.version);
       }
       this.log('provider.result', m.id, { outcome: o.outcome, code: o.code, ms, requests: trace.length, streams: o.streams.length });
-      return { provider: info, ms, requests: trace.length, failovers: domains.failovers.length ? [...domains.failovers] : undefined, ...o };
+      const outcome: ProviderOutcome = { provider: info, ms, requests: trace.length, failovers: domains.failovers.length ? [...domains.failovers] : undefined, origins: domainConfig ? domains.used() : undefined, ...o };
+      if (record && !domainsOverride) {
+        try {
+          this.opts.onOutcome?.(p, outcome);
+        } catch {
+          /* bookkeeping must never fail a run */
+        }
+      }
+      return outcome;
     };
 
     try {

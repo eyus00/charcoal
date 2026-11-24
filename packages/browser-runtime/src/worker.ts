@@ -29,6 +29,7 @@ import {
   isSegmentRequest,
   looksLikeChallenge,
   ProviderError,
+  sameSite,
   type BrowserOpenOptions,
   type BrowserPage,
   type BrowserRun,
@@ -469,7 +470,8 @@ export class BrowserWorker implements BrowserWorkerLike {
         // Redirects are followed by the browser without the interceptor being asked. Where the page
         // ended up must still be somewhere the provider's policy allows, or nothing is read from it.
         const landed = new URL(page.url()).hostname;
-        if (landed !== target.hostname && !run.guard.isDeclared(landed) && !run.guard.discoveredHosts.includes(landed.toLowerCase())) {
+        if (landed !== target.hostname && sameSite(landed, target.hostname)) run.guard.noteHost(landed);
+        if (landed !== target.hostname && !sameSite(landed, target.hostname) && !run.guard.isDeclared(landed) && !run.guard.discoveredHosts.includes(landed.toLowerCase())) {
           worker.stats.policyBlocks++;
           await page.goto('about:blank').catch(() => undefined);
           const code: FailureCode = role ? 'REDIRECTED' : 'POLICY';

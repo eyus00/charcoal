@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import Fastify from 'fastify';
 import { defineProvider, describeRuntime, Engine, generateRegistryKey, getJson, HealthStore, NotFoundError, validateRegistry, verifyRegistry, type EngineEvent, type ProviderModule } from '@charcoal/provider-sdk';
 import { domainsFor, mockTransport, simulate, TITLES, type MockRoute } from '@charcoal/provider-sdk/testing';
-import { BadRequest, mediaFromQuery, RateLimiter, registerApi, type WireStream } from './api.js';
+import { domainFeedback, BadRequest, mediaFromQuery, RateLimiter, registerApi, type WireStream } from './api.js';
 import { Catalog } from './catalog.js';
 import { legacyModule, platformId } from './legacy.js';
 import { Overlay } from './overlay.js';
@@ -115,7 +115,7 @@ async function harness(routes: Record<string, MockRoute>, opts: { adminToken?: s
   const overlay = new Overlay();
   const key = opts.signing ? await generateRegistryKey('test') : undefined;
   const catalog = await Catalog.create({ legacy: opts.modules ?? [fake('alpha'), fake('beta'), fake('gamma')], overlay, health, fallback: false, publicUrl: 'https://resolver.test', signingKey: key });
-  const engine = new Engine({ providers: () => catalog.providers(), runtime: describeRuntime('server'), transport, health, waveDelayMs: 30, requestTimeoutMs: 300, providerTimeoutMs: 1000, cacheTtlMs: 0, negativeCacheTtlMs: 0 });
+  const engine = new Engine({ providers: () => catalog.providers(), runtime: describeRuntime('server'), transport, health, waveDelayMs: 30, requestTimeoutMs: 300, providerTimeoutMs: 1000, cacheTtlMs: 0, negativeCacheTtlMs: 0, onOutcome: domainFeedback(catalog, overlay) });
   const app = Fastify();
   const relayed: string[] = [];
   registerRelay(app as never, { requireSignature: true, proxy: async (t) => (relayed.push(t.url), { data: Buffer.from('#EXTM3U\n'), contentType: 'application/vnd.apple.mpegurl', statusCode: 200, headers: {} }) });
@@ -317,4 +317,53 @@ test('monitoring and recovery through the API: a dead address with a working con
   // And an operator can still undo it.
   const back = await h2.app.inject({ method: 'POST', url: '/v2/admin/providers/homes/domains/rollback', headers: { authorization: 'Bearer t0ken-t0ken' }, payload: { reason: 'prefer the old one' } });
   assert.equal(JSON.parse(back.body).domains.roles.site.active, 'https://old.homes.example.com');
+});
+
+test('control plane: a new address is put on trial, promoted by clean runs, and rolled back by itself when it then fails', async () => {
+  const moving = defineProvider({
+    manifest: { id: 'moving', name: 'Moving', version: '1.0.0', kinds: ['movie'], lookup: ['tmdb'], runtimes: ['server'], domainRoles: ['site'], followDiscovered: true, output: { types: ['hls'] } },
+    async getSources(media, ctx) {
+      const d = await getJson<{ url: string }>(ctx.fetch, ctx.url('site', `/api/movie/${media.ids.tmdb}`), { signal: ctx.signal });
+      return { streams: [{ url: d.url, type: 'hls' }] };
+    },
+  });
+  const routes: Record<string, MockRoute> = {
+    'https://old.moving.example.com/api/movie/27205': stream('old'),
+    'https://new.moving.example.org/': simulate.html('ok'),
+    'https://new.moving.example.org/api/movie/27205': stream('new'),
+  };
+  const h = await harness(routes, { adminToken: 't0ken-t0ken', modules: [moving] });
+  h.overlay.setDomains('moving', domainsFor('moving', { site: 'https://old.moving.example.com' }), undefined, { provider: 'moving', at: 'x', by: 'setup', action: 'create', fromVersion: 0, toVersion: 1 });
+  const auth = { authorization: 'Bearer t0ken-t0ken' };
+  const post = (path: string, payload: object) => h.app.inject({ method: 'POST', url: path, headers: auth, payload });
+  const play = async () => (await h.sources('kind=movie&tmdb=27205&title=Inception&only=moving')).results[0];
+
+  // An address that does not serve the API cannot even start a trial.
+  assert.equal((await post('/v2/admin/providers/moving/domains/stage', { role: 'site', origin: 'https://parked.example.net' })).statusCode, 422);
+  assert.equal((await h.app.inject({ method: 'POST', url: '/v2/admin/providers/moving/domains/stage', payload: { role: 'site', origin: 'https://new.moving.example.org' } })).statusCode, 401);
+
+  const staged = await post('/v2/admin/providers/moving/domains/stage', { role: 'site', origin: 'https://new.moving.example.org', share: 1, by: 'ops', reason: 'site announced a move' });
+  assert.equal(staged.statusCode, 200, staged.body);
+  assert.equal(h.catalog.domains('moving')!.roles.site.active, 'https://old.moving.example.com', 'the address in use is unchanged while the trial runs');
+  assert.equal(h.catalog.domains('moving')!.roles.site.candidate?.origin, 'https://new.moving.example.org');
+
+  // Five clean runs on the candidate promote it; nobody had to do anything.
+  for (let i = 0; i < 5; i++) assert.match((await play()).streams[0].url, /cdn\.new\./);
+  const promoted = h.catalog.domains('moving')!;
+  assert.deepEqual([promoted.roles.site.active, promoted.roles.site.alternates, promoted.roles.site.candidate], ['https://new.moving.example.org', ['https://old.moving.example.com'], undefined]);
+
+  // The new address then breaks: three failed runs inside the watch window bring the old one back.
+  // (In-run fail-over already keeps viewers served from the alternate; the config follows.)
+  h.transport.routes['https://new.moving.example.org/api/movie/27205'] = simulate.serverError(500);
+  for (let i = 0; i < 3; i++) assert.equal((await play()).outcome, 'error');
+  const back = h.catalog.domains('moving')!;
+  assert.equal(back.roles.site.active, 'https://old.moving.example.com');
+  assert.match((await play()).streams[0].url, /cdn\.old\./);
+  const actions = h.overlay.audit(20).map((a) => (a.detail as { action?: string } | undefined)?.action).filter(Boolean);
+  for (const a of ['stage-candidate', 'promote-candidate', 'auto-rollback']) assert.ok(actions.includes(a), `${a} is in the audit trail (${actions.join(', ')})`);
+
+  // Diagnosis of a provider's addresses, from the server.
+  const d = JSON.parse((await h.app.inject({ method: 'GET', url: '/v2/admin/providers/moving/diagnose', headers: auth })).body) as { addresses: { host: string; position: string; verdict: string }[] };
+  assert.deepEqual(d.addresses.map((a) => [a.position, a.host]), [['active', 'old.moving.example.com'], ['alternate', 'new.moving.example.org']]);
+  assert.equal((await h.app.inject({ method: 'GET', url: '/v2/admin/providers/moving/diagnose' })).statusCode, 401);
 });

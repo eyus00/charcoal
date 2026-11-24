@@ -5,7 +5,7 @@
  * (they decide what a 404 means); the trace is what diagnostics are built from.
  */
 import { classifyStatus, classifyTransport, FAILURES, ProviderError, type FailureCode, type RequestTrace } from './errors.js';
-import type { DomainResolver } from './domains.js';
+import { sameSite, type DomainResolver } from './domains.js';
 import type { PolicyGuard } from './policy.js';
 import type { Fetcher, FetchOptions, FetchResponse } from './types.js';
 
@@ -149,7 +149,9 @@ export function instrumentFetch(transport: Fetcher, opts: InstrumentOptions): Fe
       } catch {
         /* keep the requested host */
       }
-      if (finalHost !== u.hostname && !guard.isDeclared(finalHost) && !guard.discoveredHosts.includes(finalHost.toLowerCase())) {
+      // "example.com" answering as "www.example.com" (or the reverse) is the same site, not a move.
+      if (finalHost !== u.hostname && sameSite(finalHost, u.hostname)) guard.noteHost(finalHost);
+      if (finalHost !== u.hostname && !sameSite(finalHost, u.hostname) && !guard.isDeclared(finalHost) && !guard.discoveredHosts.includes(finalHost.toLowerCase())) {
         // One of the provider's own addresses sending us elsewhere means it has moved: that is a
         // matter for its domain config (after validation), not something to follow blindly.
         if (role) {

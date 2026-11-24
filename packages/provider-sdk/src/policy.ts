@@ -79,6 +79,8 @@ export class PolicyGuard {
   private requests = 0;
   /** Discovered host → how many hops from a declared host it was found (1 = named by a declared host). */
   private readonly discovered = new Map<string, number>();
+  /** The www / non-www twin of a declared host, once the site has answered under it. */
+  private readonly sameSiteHosts = new Set<string>();
   constructor(
     readonly policy: NetworkPolicy,
     /** Extra check a runtime can add (the server resolves DNS and refuses private answers). */
@@ -94,7 +96,7 @@ export class PolicyGuard {
 
   /** Whether the host is one the policy names (as opposed to one it merely discovered). */
   isDeclared(hostname: string): boolean {
-    return !!this.policy.open || this.policy.allow.some((p) => hostMatches(hostname, p));
+    return !!this.policy.open || this.policy.allow.some((p) => hostMatches(hostname, p)) || this.sameSiteHosts.has(hostname.toLowerCase());
   }
 
   /** Throws ProviderError('POLICY') when the request isn't allowed. Counts it when it is. */
@@ -158,6 +160,7 @@ export class PolicyGuard {
 
   /** Lets the engine allow a redirect target or a host a provider derived from allowed data. */
   noteHost(hostname: string) {
+    if (isPublicHost(hostname) && this.discovered.size < DEFAULT_LIMITS.maxDiscoveredHosts) this.sameSiteHosts.add(hostname.toLowerCase());
     if (this.policy.followDiscovered && isPublicHost(hostname) && this.discovered.size < DEFAULT_LIMITS.maxDiscoveredHosts) this.discovered.set(hostname.toLowerCase(), 1);
   }
 }

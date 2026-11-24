@@ -24,5 +24,6 @@ export * from './recovery.js';
 export * from './validate.js';
 export * from './browser.js';
 export * from './match.js';
+export * from './diagnose-domain.js';
 export * from './define.js';
 export * as extract from './extract/index.js';

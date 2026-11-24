@@ -29,6 +29,32 @@ export interface DomainRole {
   /** Hosts that are the same site under another name (allowed for requests, never chosen). */
   aliases?: string[];
   health?: DomainHealthCheck;
+  /**
+   * Values that belong to the address rather than to the extraction (an API version, a path
+   * prefix, a channel name). `perOrigin` overrides them for one address, so a mirror that differs in
+   * a detail does not need its own provider.
+   */
+  settings?: Record<string, string>;
+  perOrigin?: Record<string, Record<string, string>>;
+  /** An address on trial: it has passed validation and serves a share of runs until it has proved itself. */
+  candidate?: DomainCandidate;
+  /** Set when the active address was changed: failures during this window put the previous one back. */
+  watch?: DomainWatch;
+}
+
+export interface DomainCandidate {
+  origin: string;
+  since: string;
+  /** Fraction of runs that use it (0…1). */
+  share: number;
+  ok: number;
+  failed: number;
+}
+
+export interface DomainWatch {
+  previous: string;
+  until: string;
+  failed: number;
 }
 
 export interface DomainConfig {
@@ -43,7 +69,7 @@ export interface DomainAuditEntry {
   provider: string;
   at: string;
   by: string;
-  action: 'create' | 'switch-active' | 'add-alternate' | 'remove-alternate' | 'rollback' | 'edit';
+  action: 'create' | 'switch-active' | 'add-alternate' | 'remove-alternate' | 'rollback' | 'edit' | 'stage-candidate' | 'promote-candidate' | 'drop-candidate' | 'auto-rollback';
   role?: string;
   from?: string;
   to?: string;
@@ -71,6 +97,9 @@ export function normalizeOrigin(value: string): string {
 
 export const hostOf = (origin: string) => new URL(origin).hostname.toLowerCase();
 
+/** Whether two host names are the same site with and without "www.". */
+export const sameSite = (a: string, b: string) => a.toLowerCase().replace(/^www\./, '') === b.toLowerCase().replace(/^www\./, '');
+
 /** Problems with a config, as sentences. Empty when it is valid. */
 export function validateDomainConfig(config: DomainConfig, requiredRoles: string[] = []): string[] {
   const errors: string[] = [];
@@ -88,6 +117,13 @@ export function validateDomainConfig(config: DomainConfig, requiredRoles: string
     if (new Set(all.map((o) => String(o).toLowerCase())).size !== all.length) errors.push(`${name}: the same origin is listed twice`);
     for (const a of role.aliases ?? []) if (!/^[a-z0-9.-]+$/i.test(a) || !isPublicHost(a)) errors.push(`${name}: alias "${a}" is not a public host name`);
     if (role.health?.path && !role.health.path.startsWith('/')) errors.push(`${name}: health path must start with "/"`);
+    if (role.candidate) {
+      const c = role.candidate;
+      if (typeof c.origin !== 'string' || !ORIGIN.test(c.origin) || !isPublicHost(hostOf(c.origin))) errors.push(`${name}: candidate "${c.origin}" is not a public origin`);
+      else if (all.map((o) => String(o).toLowerCase()).includes(c.origin.toLowerCase())) errors.push(`${name}: the candidate is already configured`);
+      if (!(c.share > 0 && c.share <= 1)) errors.push(`${name}: candidate share must be between 0 and 1`);
+    }
+    for (const origin of Object.keys(role.perOrigin ?? {})) if (!ORIGIN.test(origin)) errors.push(`${name}: per-origin settings are keyed by origin, not "${origin}"`);
   }
   return errors;
 }
@@ -99,6 +135,7 @@ export function hostsOf(config: DomainConfig | undefined): string[] {
   for (const role of Object.values(config.roles)) {
     for (const o of [role.active, ...(role.alternates ?? [])]) out.add(hostOf(o));
     for (const a of role.aliases ?? []) out.add(a.toLowerCase());
+    if (role.candidate) out.add(hostOf(role.candidate.origin));
   }
   return [...out];
 }
@@ -113,18 +150,40 @@ export class DomainResolver {
   private readonly current = new Map<string, string>();
   private readonly dead = new Map<string, Set<string>>();
   readonly failovers: { role: string; from: string; to: string; reason: FailureCode }[] = [];
+  /** Roles for which this run uses the address on trial. */
+  readonly onCandidate = new Set<string>();
 
   constructor(
     readonly config: DomainConfig | undefined,
     /** Origins to avoid from the start (known to be down right now), per role. */
     avoid: Record<string, string[]> = {},
+    /** 0…1, drawn once per run: a role's candidate is used when it is below the candidate's share. */
+    roll = 1,
   ) {
     for (const [name, role] of Object.entries(config?.roles ?? {})) {
       const skip = new Set((avoid[name] ?? []).map((o) => o.toLowerCase()));
       const candidates = [role.active, ...(role.alternates ?? [])].map((o) => o.toLowerCase());
       this.current.set(name, candidates.find((o) => !skip.has(o)) ?? candidates[0]);
       this.dead.set(name, new Set());
+      if (role.candidate && roll < role.candidate.share) {
+        this.current.set(name, role.candidate.origin.toLowerCase());
+        this.onCandidate.add(name);
+      }
     }
+  }
+
+  /** A value that belongs to the role's address (see DomainRole.settings), for the address in use. */
+  setting(role: string, key: string): string | undefined {
+    const r = this.config?.roles[role];
+    const origin = this.current.get(role);
+    if (!r || !origin) return undefined;
+    const per = Object.entries(r.perOrigin ?? {}).find(([o]) => o.toLowerCase() === origin)?.[1];
+    return per?.[key] ?? r.settings?.[key];
+  }
+
+  /** The address each role ended the run on. */
+  used(): { role: string; origin: string; candidate: boolean }[] {
+    return [...this.current].map(([role, origin]) => ({ role, origin, candidate: this.onCandidate.has(role) && origin === this.config?.roles[role]?.candidate?.origin.toLowerCase() }));
   }
 
   origin(role: string): string {
@@ -141,7 +200,7 @@ export class DomainResolver {
   roleOf(hostname: string): string | undefined {
     const h = hostname.toLowerCase();
     for (const [name, role] of Object.entries(this.config?.roles ?? {})) {
-      if ([role.active, ...(role.alternates ?? [])].some((o) => hostOf(o) === h) || (role.aliases ?? []).some((a) => a.toLowerCase() === h)) return name;
+      if ([role.active, ...(role.alternates ?? []), ...(role.candidate ? [role.candidate.origin] : [])].some((o) => hostOf(o) === h) || (role.aliases ?? []).some((a) => a.toLowerCase() === h)) return name;
     }
     return undefined;
   }
@@ -218,6 +277,10 @@ export async function checkDomains(config: DomainConfig, fetcher: Fetcher, timeo
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
+/** How long a changed address is watched, and the thresholds of a trial. */
+export const WATCH_MS = 30 * 60_000;
+export const TRIAL = { share: 0.2, promoteAfter: 5, dropAfter: 3, rollbackAfter: 3 };
+
 /**
  * A new config version with `origin` as the role's active address (the old active becomes the
  * first alternate). Pure: nothing is published. Throws when the result wouldn't be valid.
@@ -231,6 +294,9 @@ export function switchActive(config: DomainConfig, role: string, origin: string,
   if (previous === target) return config;
   r.alternates = [previous, ...(r.alternates ?? []).map((o) => o.toLowerCase()).filter((o) => o !== target && o !== previous)];
   r.active = target;
+  if (r.candidate?.origin.toLowerCase() === target) delete r.candidate;
+  // For a while after a change, failures put the previous address back (see recordDomainOutcome).
+  r.watch = { previous, until: new Date(now.getTime() + WATCH_MS).toISOString(), failed: 0 };
   next.version = config.version + 1;
   next.updatedAt = now.toISOString();
   const errors = validateDomainConfig(next);
@@ -298,4 +364,97 @@ export function rollbackDomain(current: DomainConfig, previous: DomainConfig, by
     config,
     audit: { provider: current.provider, at: now.toISOString(), by, action: 'rollback', fromVersion: current.version, toVersion: config.version, reason: reason ?? `Back to the content of version ${previous.version}` },
   };
+}
+
+// ---------- staged promotion and automatic rollback ----------
+
+/**
+ * Puts an address on trial for a role. It is validated first (the endpoint check, and the caller's
+ * real extraction probe when given); a candidate that fails is not recorded. Once on trial it
+ * serves a share of runs, and `recordDomainOutcome` decides its fate from what those runs do.
+ */
+export async function stageDomain(
+  config: DomainConfig,
+  change: { role: string; origin: string; by: string; reason?: string; share?: number },
+  fetcher: Fetcher,
+  probe?: (candidate: DomainConfig) => Promise<{ ok: boolean; detail?: string }>,
+  now = new Date(),
+): Promise<DomainChangeResult> {
+  const role = config.roles[change.role];
+  if (!role) throw new Error(`Unknown role "${change.role}"`);
+  const target = normalizeOrigin(change.origin);
+  if (!isPublicHost(hostOf(target))) throw new Error(`"${target}" is a private or internal address`);
+  if ([role.active, ...(role.alternates ?? [])].some((o) => o.toLowerCase() === target)) throw new Error(`"${target}" is already configured for ${change.role}`);
+  const checks = [await checkOrigin(target, change.role, 'alternate', role.health, fetcher)];
+  let ok = checks[0].ok;
+  if (ok && probe) ok = (await probe(switchActive(config, change.role, target, now))).ok;
+  const next = clone(config);
+  if (ok) {
+    next.roles[change.role].candidate = { origin: target, since: now.toISOString(), share: change.share ?? TRIAL.share, ok: 0, failed: 0 };
+    next.version = config.version + 1;
+    next.updatedAt = now.toISOString();
+  }
+  return {
+    accepted: ok,
+    config: ok ? next : config,
+    audit: { provider: config.provider, at: now.toISOString(), by: change.by, action: 'stage-candidate', role: change.role, from: role.active, to: target, fromVersion: config.version, toVersion: ok ? next.version : config.version, reason: change.reason, validation: { ok, checks } },
+  };
+}
+
+export interface DomainOutcomeResult {
+  config: DomainConfig;
+  /** What the outcome led to, if anything. */
+  action?: 'promoted' | 'dropped' | 'rolled-back';
+  audit?: DomainAuditEntry;
+}
+
+/**
+ * Feeds one run's outcome into a role's trial or watch. `failed` means a failure that says
+ * something about the address or the site (not "this title isn't here", not a cancelled run).
+ *
+ * - On trial, used by this run: enough clean runs promote the candidate (the old address stays as
+ *   an alternate); a few failures drop it. Nothing else changes while a trial is undecided.
+ * - Recently changed, not on trial: failures inside the watch window put the previous address back.
+ */
+export function recordDomainOutcome(config: DomainConfig, use: { role: string; candidate: boolean }, outcome: 'ok' | 'failed', now = new Date()): DomainOutcomeResult {
+  const role = config.roles[use.role];
+  if (!role) return { config };
+  const entry = (action: DomainAuditEntry['action'], from: string, to: string, next: DomainConfig, reason: string): DomainAuditEntry => ({ provider: config.provider, at: now.toISOString(), by: 'auto', action, role: use.role, from, to, fromVersion: config.version, toVersion: next.version, reason });
+
+  if (use.candidate && role.candidate) {
+    const next = clone(config);
+    const c = next.roles[use.role].candidate!;
+    if (outcome === 'ok') c.ok++;
+    else c.failed++;
+    if (c.failed >= TRIAL.dropAfter) {
+      delete next.roles[use.role].candidate;
+      next.version = config.version + 1;
+      next.updatedAt = now.toISOString();
+      return { config: next, action: 'dropped', audit: entry('drop-candidate', c.origin, role.active, next, `${c.failed} failed runs on trial (${c.ok} clean)`) };
+    }
+    if (c.ok >= TRIAL.promoteAfter && c.failed === 0) {
+      const promoted = switchActive(next, use.role, c.origin, now);
+      return { config: promoted, action: 'promoted', audit: entry('promote-candidate', role.active, c.origin, promoted, `${c.ok} clean runs on trial`) };
+    }
+    return { config: next };
+  }
+
+  if (!use.candidate && role.watch) {
+    if (new Date(role.watch.until).getTime() <= now.getTime()) {
+      const next = clone(config);
+      delete next.roles[use.role].watch;
+      return { config: next };
+    }
+    const next = clone(config);
+    const w = next.roles[use.role].watch!;
+    w.failed = outcome === 'ok' ? 0 : w.failed + 1;
+    if (w.failed >= TRIAL.rollbackAfter) {
+      const back = switchActive(next, use.role, w.previous, now);
+      // The address that was just abandoned is not watched in turn: one automatic step, then a person decides.
+      delete back.roles[use.role].watch;
+      return { config: back, action: 'rolled-back', audit: entry('auto-rollback', role.active, w.previous, back, `${w.failed} failed runs in a row after the change`) };
+    }
+    return { config: next };
+  }
+  return { config };
 }

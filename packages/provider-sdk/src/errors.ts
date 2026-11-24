@@ -124,7 +124,8 @@ export class NotFoundError extends ProviderError {
   }
 }
 
-const CHALLENGE_BODY = /just a moment\.\.\.|attention required!|cf-chl-|challenge-platform|checking your browser|verify you are human|captcha-delivery|_incapsula_resource|ddos-guard/i;
+// "Attention Required!" is Cloudflare's block page (a refusal, not a check a browser could pass): it is ACCESS_DENIED.
+const CHALLENGE_BODY = /just a moment\.\.\.|cf-chl-|challenge-platform|checking your browser|verify you are human|captcha-delivery|_incapsula_resource|ddos-guard/i;
 
 /** True when a response is a bot-check interstitial rather than content. */
 export function looksLikeChallenge(status: number, headers: Record<string, string>, body: string): boolean {

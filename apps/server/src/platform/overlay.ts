@@ -119,6 +119,16 @@ export class Overlay {
     this.save();
   }
 
+  /**
+   * Stores the running counts of a trial or a watch (see recordDomainOutcome) without making it a
+   * change: no audit entry, no history, no new overlay revision.
+   */
+  touchDomains(id: string, config: DomainConfig) {
+    const o = (this.state.providers[id] ??= {});
+    o.domains = config;
+    this.save();
+  }
+
   /** Back to the config that was in force before the last change. Returns it, or undefined when there is no history. */
   rollbackDomains(id: string, current: DomainConfig, by: string, reason?: string): DomainConfig | undefined {
     const o = this.state.providers[id];

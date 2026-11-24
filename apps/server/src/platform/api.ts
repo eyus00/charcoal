@@ -16,8 +16,11 @@ import type { OMSSServer } from '@omss/framework';
 import {
   FAILURES,
   HealthStore,
+  diagnoseDomains,
   promoteDomain,
+  recordDomainOutcome,
   runCanary,
+  stageDomain,
   runRecovery,
   summarize,
   type CanaryTitles,
@@ -26,7 +29,9 @@ import {
   type BrowserWorkerHealth,
   type FailureCode,
   type Fetcher,
+  type LoadedProvider,
   type Media,
+  type ProviderOutcome,
   type RecoveryAction,
   type RuntimeKind,
   type Stage,
@@ -173,6 +178,31 @@ export interface ApiOptions {
 
 const RUNTIME_KINDS = new Set<RuntimeKind>(['server', 'edge', 'extension', 'app', 'browser', 'frame', 'remote']);
 const STAGES = new Set<Stage>(['stable', 'canary', 'disabled']);
+
+/** Failures that say nothing about an address: the title is missing, the run was stopped, the viewer must act. */
+const NOT_THE_ADDRESS = new Set(['NOT_FOUND', 'CANCELLED', 'AUTH_REQUIRED', 'UNSUPPORTED_RUNTIME', 'RATE_LIMITED']);
+
+/**
+ * Settles domain trials and watches from a run's outcome: a candidate address is promoted after
+ * clean runs or dropped after failures, and a recently changed address is rolled back when runs
+ * keep failing. Give it to the engine as `onOutcome`.
+ */
+export function domainFeedback(catalog: Catalog, overlay: Overlay, log: (line: string) => void = () => undefined) {
+  return (p: LoadedProvider, outcome: ProviderOutcome) => {
+    const id = p.module.manifest.id;
+    if (outcome.outcome === 'error' && NOT_THE_ADDRESS.has(outcome.code ?? '')) return;
+    for (const use of outcome.origins ?? []) {
+      const current = catalog.domains(id);
+      const role = current?.roles[use.role];
+      if (!current || !role || (!role.candidate && !role.watch)) continue;
+      const r = recordDomainOutcome(current, use, outcome.outcome === 'error' ? 'failed' : 'ok');
+      if (r.audit) {
+        overlay.setDomains(id, r.config, current, r.audit);
+        log(`${id}: ${r.audit.action} ${r.audit.from} → ${r.audit.to} (${r.audit.reason})`);
+      } else if (r.config !== current) overlay.touchDomains(id, r.config);
+    }
+  };
+}
 
 export interface Platform {
   /** Runs canaries then recovery once; applies or records proposals. Used by the monitor and the admin endpoint. */
@@ -350,6 +380,40 @@ export function registerApi(o: ApiOptions): Platform {
       } catch (e) {
         return reply.code(400).send({ error: { code: 'INVALID_PARAMETER', message: (e as Error).message } });
       }
+    });
+
+    // Put a new address on trial: validated like a promotion, then given a share of real runs.
+    // Clean runs promote it by themselves; failures drop it. The address in use does not change meanwhile.
+    app.post('/v2/admin/providers/:id/domains/stage', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      if (!known(id, reply)) return;
+      const b = (request.body ?? {}) as { role?: unknown; origin?: unknown; reason?: unknown; by?: unknown; share?: unknown };
+      const current = catalog.domains(id);
+      const role = text(b.role, 40);
+      const origin = text(b.origin, 200);
+      if (!current || !role || !origin) return reply.code(400).send({ error: { code: 'INVALID_PARAMETER', message: 'role and origin are required, and the provider must use domain roles' } });
+      const share = typeof b.share === 'number' && b.share > 0 && b.share <= 1 ? b.share : undefined;
+      try {
+        const result = await stageDomain(current, { role, origin, by: text(b.by, 40) ?? 'admin', reason: text(b.reason), share }, o.transport, async (candidate) => {
+          const canary = await runCanary(engine, o.canaries, { only: [id], record: false, domains: () => candidate });
+          return { ok: canary.length === 0 || canary[0].passed };
+        });
+        if (!result.accepted) return reply.code(422).send({ accepted: false, audit: result.audit });
+        overlay.setDomains(id, result.config, current, result.audit);
+        return { accepted: true, domains: result.config, audit: result.audit };
+      } catch (e) {
+        return reply.code(400).send({ error: { code: 'INVALID_PARAMETER', message: (e as Error).message } });
+      }
+    });
+
+    // What is wrong with a provider's addresses, seen from this server: DNS (over HTTPS), the
+    // answer, redirects, browser checks.
+    app.get('/v2/admin/providers/:id/diagnose', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      if (!known(id, reply)) return;
+      const current = catalog.domains(id);
+      if (!current) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'This provider has no domain config' } });
+      return { provider: id, version: current.version, checkedFrom: engine.runtime.egress, addresses: await diagnoseDomains(current, o.transport) };
     });
 
     app.post('/v2/admin/providers/:id/domains/rollback', async (request, reply) => {

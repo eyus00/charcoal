@@ -110,7 +110,7 @@ export interface RulePack {
 }
 
 const MAX_STEPS = 40;
-const RESERVED = new Set(['media', 'domain', 'settings', 'item']);
+const RESERVED = new Set(['media', 'domain', 'domainSetting', 'settings', 'item']);
 const MAX_PATTERN = 400;
 /** A group that repeats something that itself repeats: the classic way to make a regex take forever. */
 const NESTED_QUANTIFIER = /\((?:[^()\\]|\\.)*[+*](?:[^()\\]|\\.)*\)\s*[+*{]/;
@@ -281,7 +281,9 @@ function runExtract(step: ExtractStep, source: unknown): unknown {
 function scopeFor(media: Media, ctx: ProviderContext, vars: Scope, roles: string[]): Scope {
   const domain: Record<string, string> = {};
   for (const r of roles) domain[r] = ctx.domain(r);
-  return { ...vars, media, domain, settings: ctx.settings };
+  // {{domainSetting.site.apiVersion}}: values that belong to the address in use.
+  const domainSetting = new Proxy({}, { get: (_t, role) => new Proxy({}, { get: (_u, key) => (typeof role === 'string' && typeof key === 'string' ? ctx.domainSetting(role, key) : undefined) }) });
+  return { ...vars, media, domain, domainSetting, settings: ctx.settings };
 }
 
 /** Interprets a rule pack for one title. */

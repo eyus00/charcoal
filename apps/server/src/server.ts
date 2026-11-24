@@ -12,7 +12,7 @@ import { describeRuntime, diagnose, Engine, fetchTransport, HealthStore, summari
 import { Catalog } from './platform/catalog.js';
 import { Overlay } from './platform/overlay.js';
 import { legacyModule, platformId } from './platform/legacy.js';
-import { registerApi } from './platform/api.js';
+import { domainFeedback, registerApi } from './platform/api.js';
 import { signRelayUrl } from './platform/relay.js';
 import { registerRelay } from './platform/relay-routes.js';
 
@@ -277,6 +277,8 @@ async function main() {
         settings: SERVER_SETTINGS,
         resolveCheck: resolvesPublic,
         browser,
+        // Domain trials and post-change watches are settled from what real runs do.
+        onOutcome: domainFeedback(catalog, overlay, (line) => console.log(`[Jelly] domains: ${line}`)),
         strictNetwork: process.env.STRICT_PROVIDER_NETWORK === 'true',
         providerTimeoutMs: PROVIDER_TIMEOUT_MS,
         log: process.env.PLATFORM_LOG === 'true' ? (e) => console.log(JSON.stringify({ at: new Date(e.at).toISOString(), event: e.event, provider: e.provider, ...e.data })) : undefined

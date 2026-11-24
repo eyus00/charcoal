@@ -358,6 +358,8 @@ export interface ProviderContext {
   domain(role: string): string;
   /** An absolute URL on a domain role. */
   url(role: string, path: string): string;
+  /** A value configured for the role's address (an API version, a path prefix), if any. */
+  domainSetting(role: string, key: string): string | undefined;
   /** Scratch space scoped to this provider (session keys, looked-up ids). */
   store: KeyValueStore;
   log(event: string, data?: Record<string, unknown>): void;

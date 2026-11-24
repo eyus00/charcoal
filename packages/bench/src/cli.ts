@@ -16,6 +16,7 @@
  *     --out <file.json>              where to write the result (default: docs/platform/data/bench-<label>.json)
  *
  *   npm run report --workspace packages/bench -- <run.json> [<after.json>] [--out <file.md>]
+ *   npx tsx src/cli.ts domains [--label <name>] [--extra pack.ts,…]   diagnose every configured provider address
  *
  * Run it from a home connection with --egress user to measure what viewers' own networks reach.
  */
@@ -57,7 +58,32 @@ async function main() {
     else process.stdout.write(md + '\n');
     return;
   }
-  if (command !== 'run') throw new Error('usage: cli.ts run|report (see the header of this file)');
+  if (command === 'domains') {
+    // What is wrong with each configured address, from this machine: DNS (over HTTPS), the answer, redirects, browser checks.
+    const { DEFAULT_DOMAINS } = await import('@charcoal/providers');
+    const { diagnoseDomains, fetchTransport } = await import('@charcoal/provider-sdk');
+    const extra: Record<string, import('@charcoal/provider-sdk').DomainConfig> = {};
+    for (const file of str('extra')?.split(',') ?? []) Object.assign(extra, ((await import(path.resolve(file))) as { domains?: typeof extra }).domains ?? {});
+    const all = { ...DEFAULT_DOMAINS, ...extra };
+    const rows: (Awaited<ReturnType<typeof diagnoseDomains>>[number] & { provider: string })[] = [];
+    for (const [provider, config] of Object.entries(all)) {
+      const found = await diagnoseDomains(config, fetchTransport, { timeoutMs: 12_000 });
+      for (const d of found) {
+        rows.push({ provider, ...d });
+        console.error(`${provider.padEnd(14)} ${String(d.role).padEnd(9)} ${d.verdict.padEnd(14)} ${d.summary}`);
+      }
+    }
+    const label = str('label') ?? new Date().toISOString().slice(0, 10);
+    const out = str('out') ?? path.join(ROOT, 'docs/platform/data', `domains-${label}.json`);
+    mkdirSync(path.dirname(out), { recursive: true });
+    writeFileSync(out, JSON.stringify({ label, checkedFrom: str('egress') === 'user' ? 'user' : 'datacenter', note: str('note'), rows }, null, 1));
+    const md = ['| Provider | Role | Address | DNS | Answer | Verdict |', '|---|---|---|---|---|---|', ...rows.map((r) => `| ${r.provider} | ${r.role} (${r.position}) | ${r.host} | ${r.dns.status} | ${r.http?.status ?? '–'}${r.http?.redirectedTo ? ` → ${r.http.redirectedTo}` : ''} | ${r.verdict === 'ok' ? 'answers' : `\`${r.verdict}\`: ${r.summary}`} |`)].join('\n');
+    writeFileSync(out.replace(/\.json$/, '.md'), `# Provider addresses: ${label}\n\nChecked from a ${str('egress') === 'user' ? 'home' : 'data-centre'} address${str('note') ? ` (${str('note')})` : ''}. DNS is asked over HTTPS (public resolvers), so it is what the world sees, not what one machine resolves.\n\n${md}\n`);
+    const bad = rows.filter((r) => r.verdict !== 'ok');
+    console.error(`\n${rows.length - bad.length} of ${rows.length} addresses answer · written to ${out}`);
+    return;
+  }
+  if (command !== 'run') throw new Error('usage: cli.ts run|report|domains (see the header of this file)');
 
   const targetArg = str('target') ?? 'engine';
   const egress = str('egress') === 'user' ? 'user' : 'datacenter';

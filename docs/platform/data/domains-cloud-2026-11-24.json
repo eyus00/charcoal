@@ -1,0 +1,526 @@
+{
+ "label": "cloud-2026-11-24",
+ "checkedFrom": "datacenter",
+ "note": "cloud sandbox behind an HTTPS egress proxy",
+ "rows": [
+  {
+   "provider": "castle",
+   "origin": "https://api.hlowb.com",
+   "host": "api.hlowb.com",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.26.15.63",
+     "172.67.70.133",
+     "104.26.14.63"
+    ],
+    "ms": 123
+   },
+   "http": {
+    "status": 200,
+    "ms": 330,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "api.hlowb.com answers (HTTP 200, 330 ms)",
+   "checkedAt": "2026-11-24T20:26:36.943Z",
+   "role": "api",
+   "position": "active"
+  },
+  {
+   "provider": "vixsrc",
+   "origin": "https://vixsrc.to",
+   "host": "vixsrc.to",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.21.18.123",
+     "172.67.181.211"
+    ],
+    "ms": 20
+   },
+   "http": {
+    "status": 403,
+    "ms": 364,
+    "server": "cloudflare",
+    "failure": "CHALLENGE"
+   },
+   "verdict": "CHALLENGE",
+   "summary": "vixsrc.to answers with a browser check from this network",
+   "checkedAt": "2026-11-24T20:26:37.308Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "febbox",
+   "origin": "https://www.showbox.media",
+   "host": "www.showbox.media",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "40.160.33.57"
+    ],
+    "ms": 25
+   },
+   "http": {
+    "status": 200,
+    "ms": 510
+   },
+   "verdict": "ok",
+   "summary": "www.showbox.media answers (HTTP 200, 510 ms)",
+   "checkedAt": "2026-11-24T20:26:37.818Z",
+   "role": "showbox",
+   "position": "active"
+  },
+  {
+   "provider": "febbox",
+   "origin": "https://www.febbox.com",
+   "host": "www.febbox.com",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.18.14.95",
+     "104.18.15.95"
+    ],
+    "ms": 317
+   },
+   "http": {
+    "status": 200,
+    "ms": 627,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "www.febbox.com answers (HTTP 200, 627 ms)",
+   "checkedAt": "2026-11-24T20:26:37.936Z",
+   "role": "febbox",
+   "position": "active"
+  },
+  {
+   "provider": "cinesu",
+   "origin": "https://cine.su",
+   "host": "cine.su",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.166.155",
+     "104.21.41.187"
+    ],
+    "ms": 25
+   },
+   "http": {
+    "status": 403,
+    "ms": 1039,
+    "redirectedTo": "koddo.to",
+    "server": "cloudflare",
+    "failure": "REDIRECTED"
+   },
+   "verdict": "REDIRECTED",
+   "summary": "cine.su now sends visitors to koddo.to",
+   "checkedAt": "2026-11-24T20:26:38.976Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "icefy",
+   "origin": "https://streams.icefy.top",
+   "host": "streams.icefy.top",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.21.26.82",
+     "172.67.168.63"
+    ],
+    "ms": 66
+   },
+   "http": {
+    "status": 403,
+    "ms": 425,
+    "server": "cloudflare",
+    "failure": "CHALLENGE"
+   },
+   "verdict": "CHALLENGE",
+   "summary": "streams.icefy.top answers with a browser check from this network",
+   "checkedAt": "2026-11-24T20:26:39.402Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "fsharetv",
+   "origin": "https://fsharetv.cc",
+   "host": "fsharetv.cc",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.219.250.37",
+     "203.161.32.252"
+    ],
+    "ms": 626
+   },
+   "http": {
+    "ms": 6028,
+    "failure": "CONNECT"
+   },
+   "verdict": "CONNECT",
+   "summary": "fsharetv.cc resolves (104.219.250.37) but: couldn’t connect to it",
+   "checkedAt": "2026-11-24T20:26:45.431Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "popr",
+   "origin": "https://popr.ink",
+   "host": "popr.ink",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.219.250.37",
+     "203.161.32.252"
+    ],
+    "ms": 1292
+   },
+   "http": {
+    "ms": 3744,
+    "failure": "CONNECT"
+   },
+   "verdict": "CONNECT",
+   "summary": "popr.ink resolves (104.219.250.37) but: couldn’t connect to it",
+   "checkedAt": "2026-11-24T20:26:49.176Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "streammafia",
+   "origin": "https://player.nhdapi.com",
+   "host": "player.nhdapi.com",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "143.246.43.101",
+     "45.134.225.112"
+    ],
+    "ms": 292
+   },
+   "http": {
+    "ms": 10173,
+    "failure": "CONNECT"
+   },
+   "verdict": "CONNECT",
+   "summary": "player.nhdapi.com resolves (143.246.43.101) but: couldn’t connect to it",
+   "checkedAt": "2026-11-24T20:26:59.350Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "vidrock",
+   "origin": "https://vidrock.net",
+   "host": "vidrock.net",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.21.96.117",
+     "172.67.180.10"
+    ],
+    "ms": 64
+   },
+   "http": {
+    "status": 200,
+    "ms": 992,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "vidrock.net answers (HTTP 200, 992 ms)",
+   "checkedAt": "2026-11-24T20:27:00.344Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "vidrock",
+   "origin": "https://sub.vdrk.site",
+   "host": "sub.vdrk.site",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.21.89.219",
+     "172.67.165.53"
+    ],
+    "ms": 300
+   },
+   "http": {
+    "status": 200,
+    "ms": 521,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "sub.vdrk.site answers (HTTP 200, 521 ms)",
+   "checkedAt": "2026-11-24T20:26:59.873Z",
+   "role": "subs",
+   "position": "active"
+  },
+  {
+   "provider": "vidsrc",
+   "origin": "https://vsembed.ru",
+   "host": "vsembed.ru",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.21.92.109",
+     "172.67.192.20"
+    ],
+    "ms": 25
+   },
+   "http": {
+    "status": 200,
+    "ms": 569,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "vsembed.ru answers (HTTP 200, 569 ms)",
+   "checkedAt": "2026-11-24T20:27:00.913Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "vidzee",
+   "origin": "https://core.vidzee.wtf",
+   "host": "core.vidzee.wtf",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.180.227",
+     "104.21.75.193"
+    ],
+    "ms": 26
+   },
+   "http": {
+    "status": 404,
+    "ms": 548,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "core.vidzee.wtf answers (HTTP 404, 548 ms)",
+   "checkedAt": "2026-11-24T20:27:01.461Z",
+   "role": "api",
+   "position": "active"
+  },
+  {
+   "provider": "vidzee",
+   "origin": "https://player.vidzee.wtf",
+   "host": "player.vidzee.wtf",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.180.227",
+     "104.21.75.193"
+    ],
+    "ms": 19
+   },
+   "http": {
+    "status": 200,
+    "ms": 694,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "player.vidzee.wtf answers (HTTP 200, 694 ms)",
+   "checkedAt": "2026-11-24T20:27:01.608Z",
+   "role": "player",
+   "position": "active"
+  },
+  {
+   "provider": "vidnest",
+   "origin": "https://vidnest.fun",
+   "host": "vidnest.fun",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "104.21.20.33",
+     "172.67.191.73"
+    ],
+    "ms": 23
+   },
+   "http": {
+    "status": 200,
+    "ms": 379,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "vidnest.fun answers (HTTP 200, 379 ms)",
+   "checkedAt": "2026-11-24T20:27:01.988Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "vidnest",
+   "origin": "https://new.vidnest.fun",
+   "host": "new.vidnest.fun",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.191.73",
+     "104.21.20.33"
+    ],
+    "ms": 39
+   },
+   "http": {
+    "status": 403,
+    "ms": 725,
+    "server": "cloudflare",
+    "failure": "ACCESS_DENIED"
+   },
+   "verdict": "ACCESS_DENIED",
+   "summary": "new.vidnest.fun refuses this network (HTTP 403)",
+   "checkedAt": "2026-11-24T20:27:02.334Z",
+   "role": "api",
+   "position": "active"
+  },
+  {
+   "provider": "videasy",
+   "origin": "https://api.wecollege.net",
+   "host": "api.wecollege.net",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.199.196",
+     "104.21.36.217"
+    ],
+    "ms": 19
+   },
+   "http": {
+    "status": 403,
+    "ms": 197,
+    "server": "cloudflare",
+    "failure": "ACCESS_DENIED"
+   },
+   "verdict": "ACCESS_DENIED",
+   "summary": "api.wecollege.net refuses this network (HTTP 403)",
+   "checkedAt": "2026-11-24T20:27:02.532Z",
+   "role": "api",
+   "position": "active"
+  },
+  {
+   "provider": "videasy",
+   "origin": "https://vidy.st",
+   "host": "vidy.st",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "190.115.31.55"
+    ],
+    "ms": 17
+   },
+   "http": {
+    "status": 200,
+    "ms": 2581,
+    "server": "ddos-guard"
+   },
+   "verdict": "ok",
+   "summary": "vidy.st answers (HTTP 200, 2581 ms)",
+   "checkedAt": "2026-11-24T20:27:04.917Z",
+   "role": "player",
+   "position": "active"
+  },
+  {
+   "provider": "videasy",
+   "origin": "https://enc-dec.app",
+   "host": "enc-dec.app",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.197.95",
+     "104.21.84.216"
+    ],
+    "ms": 323
+   },
+   "http": {
+    "status": 200,
+    "ms": 489,
+    "server": "cloudflare"
+   },
+   "verdict": "ok",
+   "summary": "enc-dec.app answers (HTTP 200, 489 ms)",
+   "checkedAt": "2026-11-24T20:27:02.825Z",
+   "role": "decoder",
+   "position": "active"
+  },
+  {
+   "provider": "tulnex",
+   "origin": "https://api.tulnex.com",
+   "host": "api.tulnex.com",
+   "dns": {
+    "status": "nxdomain",
+    "addresses": [],
+    "ms": 29
+   },
+   "http": {
+    "ms": 67,
+    "failure": "TIMEOUT"
+   },
+   "verdict": "DNS",
+   "summary": "The name api.tulnex.com no longer exists in DNS",
+   "checkedAt": "2026-11-24T20:27:04.984Z",
+   "role": "api",
+   "position": "active"
+  },
+  {
+   "provider": "peachify",
+   "origin": "https://peachify.top",
+   "host": "peachify.top",
+   "dns": {
+    "status": "ok",
+    "addresses": [
+     "172.67.133.220",
+     "104.21.5.213"
+    ],
+    "ms": 60
+   },
+   "http": {
+    "status": 403,
+    "ms": 455,
+    "server": "cloudflare",
+    "failure": "CHALLENGE"
+   },
+   "verdict": "CHALLENGE",
+   "summary": "peachify.top answers with a browser check from this network",
+   "checkedAt": "2026-11-24T20:27:05.440Z",
+   "role": "site",
+   "position": "active"
+  },
+  {
+   "provider": "peachify",
+   "origin": "https://usa.eat-peach.sbs",
+   "host": "usa.eat-peach.sbs",
+   "dns": {
+    "status": "nxdomain",
+    "addresses": [],
+    "ms": 72
+   },
+   "http": {
+    "ms": 329,
+    "failure": "TIMEOUT"
+   },
+   "verdict": "DNS",
+   "summary": "The name usa.eat-peach.sbs no longer exists in DNS",
+   "checkedAt": "2026-11-24T20:27:05.313Z",
+   "role": "api",
+   "position": "active"
+  },
+  {
+   "provider": "peachify",
+   "origin": "https://uwu.eat-peach.sbs",
+   "host": "uwu.eat-peach.sbs",
+   "dns": {
+    "status": "nxdomain",
+    "addresses": [],
+    "ms": 63
+   },
+   "http": {
+    "ms": 169,
+    "failure": "TIMEOUT"
+   },
+   "verdict": "DNS",
+   "summary": "The name uwu.eat-peach.sbs no longer exists in DNS",
+   "checkedAt": "2026-11-24T20:27:05.156Z",
+   "role": "moviebox",
+   "position": "active"
+  }
+ ]
+}
