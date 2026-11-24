@@ -122,9 +122,13 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
       {loading && <CommunitySkeleton />}
       {!loading && hasAnything && (
         <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
-          <div className="flex flex-col gap-3">
-            {t && <SummaryWithMine r={ratings.data} t={t} type={type} id={id} user={user} />}
-            {t && <YourRating t={t} type={type} id={id} user={user} />}
+          {/* Starts level with the toolbar and ends with the comment cards (toolbar 48px + cards 272px). */}
+          <div className="flex flex-col">
+            {t && (
+              <SummaryWithMine r={ratings.data} t={t} type={type} id={id} user={user}>
+                <YourRating t={t} type={type} id={id} user={user} />
+              </SummaryWithMine>
+            )}
           </div>
           <div className="min-w-0">
             {/* One fixed-height toolbar: sort, and the button that opens the composer. */}
@@ -151,7 +155,7 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
                 <button
                   type="button"
                   onClick={() => setAll(true)}
-                  className="flex h-[232px] w-[180px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-2xl bg-white/[0.04] text-sm font-medium text-white/80 ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.07] hover:text-white"
+                  className="flex h-[272px] w-[180px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-2xl bg-white/[0.04] text-sm font-medium text-white/80 ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.07] hover:text-white"
                 >
                   <span className="grid size-11 place-items-center rounded-full bg-white/10">
                     <MessagesSquare className="size-5" />
@@ -166,7 +170,7 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
                 ))}
               </Scroller>
             ) : (
-              <div className="flex h-[232px] flex-col items-center justify-center gap-1.5 rounded-2xl bg-white/[0.04] p-6 text-center ring-1 ring-white/[0.06]">
+              <div className="flex h-[272px] flex-col items-center justify-center gap-1.5 rounded-2xl bg-white/[0.04] p-6 text-center ring-1 ring-white/[0.06]">
                 <MessageCircle className="mb-1 size-6 text-faint" />
                 <p className="text-sm font-medium">No comments yet</p>
                 <p className="text-sm text-muted">Be the first to share what you think.</p>
@@ -230,10 +234,10 @@ const compact = (n: number) =>
   }).format(n);
 
 /** Trakt's score and its spread (1 → 10); your own score gets a white cap on its bar. */
-function RatingSummary({ r, mine = 0 }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; mine?: number }) {
+function RatingSummary({ r, mine = 0, children }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; mine?: number; children?: React.ReactNode }) {
   const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
   return (
-    <div className="flex flex-1 flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+    <div className="flex flex-1 flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06] lg:h-[320px] lg:flex-none">
       <div className="flex items-baseline gap-2">
         <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
         <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
@@ -241,8 +245,8 @@ function RatingSummary({ r, mine = 0 }: { r?: { rating: number; votes: number; d
       </div>
       <p className="mt-1 text-xs text-muted">{r?.votes ? `${compact(r.votes)} ratings on Trakt` : 'No ratings on Trakt yet'}</p>
       {!!r?.votes && (
-        <div className={cx('mt-auto', mine ? 'pt-8' : 'pt-4')}>
-          <div className="flex h-12 items-end gap-1 lg:h-14" aria-hidden>
+        <div className={cx('mt-auto', mine ? 'pt-7' : 'pt-4')}>
+          <div className="flex h-12 items-end gap-1" aria-hidden>
             {Array.from({ length: 10 }, (_, i) => {
               const yours = mine === i + 1;
               return (
@@ -264,6 +268,7 @@ function RatingSummary({ r, mine = 0 }: { r?: { rating: number; votes: number; d
           </div>
         </div>
       )}
+      {children}
     </div>
   );
 }
@@ -274,14 +279,20 @@ function SummaryWithMine({
   type,
   id,
   user,
+  children,
 }: {
   r?: { rating: number; votes: number; distribution: Record<string, number> };
   t: TraktTitle;
   type: MediaType;
   id: number;
   user: TraktUser | null;
+  children?: React.ReactNode;
 }) {
-  return <RatingSummary r={r} mine={useMyScore(t, type, id, user)} />;
+  return (
+    <RatingSummary r={r} mine={useMyScore(t, type, id, user)}>
+      {children}
+    </RatingSummary>
+  );
 }
 
 /** Your saved score: Trakt's when connected and set there, else this browser's. */
@@ -326,8 +337,8 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
   };
   return (
     <div className="group/tip relative">
-      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="rounded-[22px] bg-white/[0.04] px-2.5 pt-3 pb-2.5 ring-1 ring-white/[0.06]">
-        <p className="mb-1.5 px-1.5 text-sm font-semibold">{mine ? 'Your rating' : 'Rate it'}</p>
+      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="-mx-2 mt-4 border-t border-white/[0.07] pt-4">
+        <p className="mb-2 px-2 text-sm font-semibold">{mine ? 'Your rating' : 'Rate it'}</p>
         <div className="grid grid-cols-10 gap-0.5">
           {Array.from({ length: 10 }, (_, i) => {
             const n = i + 1;
@@ -582,7 +593,7 @@ function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: T
     <article
       className={cx(
         'flex flex-col rounded-2xl p-4 ring-1',
-        row && 'h-[232px] w-[300px] shrink-0 snap-start sm:w-[340px]',
+        row && 'h-[272px] w-[300px] shrink-0 snap-start sm:w-[340px]',
         pinned ? 'bg-white/[0.06] ring-white/[0.12]' : 'bg-white/[0.04] ring-white/[0.06]',
       )}
     >
@@ -747,7 +758,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
   const avatarSrc = r.author_details.avatar_path ? `https://image.tmdb.org/t/p/w92${r.author_details.avatar_path}` : null;
   const avatar = r.author_details.avatar_path ? `https://image.tmdb.org/t/p/w92${r.author_details.avatar_path}` : null;
   return (
-    <article className="flex h-[232px] w-[300px] shrink-0 snap-start flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
+    <article className="flex h-[272px] w-[300px] shrink-0 snap-start flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
       <header className="flex items-center gap-3">
         <Avatar src={avatar} name={r.author} />
         <div className="min-w-0 flex-1">
@@ -779,17 +790,22 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
 function CommunitySkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
-      <div className="flex flex-col gap-3">
-        <div className="flex h-[200px] flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
-          <div className="skeleton h-9 w-28 rounded-lg" />
-          <div className="skeleton mt-2 h-3 w-32 rounded" />
-          <div className="mt-auto flex h-12 items-end gap-1">
-            {[8, 8, 8, 8, 10, 14, 30, 60, 50, 90].map((h, i) => (
-              <div key={i} className="skeleton flex-1 rounded-sm" style={{ height: `${h}%` }} />
+      <div className="flex h-[320px] flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+        <div className="skeleton h-9 w-28 rounded-lg" />
+        <div className="skeleton mt-2 h-3 w-32 rounded" />
+        <div className="mt-auto flex h-12 items-end gap-1">
+          {[8, 8, 8, 8, 10, 14, 30, 60, 50, 90].map((h, i) => (
+            <div key={i} className="skeleton flex-1 rounded-sm" style={{ height: `${h}%` }} />
+          ))}
+        </div>
+        <div className="-mx-2 mt-4 border-t border-white/[0.07] px-2 pt-4">
+          <div className="skeleton h-3.5 w-20 rounded" />
+          <div className="mt-3 grid grid-cols-10 gap-1.5">
+            {Array.from({ length: 10 }, (_, i) => (
+              <div key={i} className="skeleton h-7 rounded-md" />
             ))}
           </div>
         </div>
-        <div className="skeleton h-16 rounded-[22px]" />
       </div>
       <div className="min-w-0">
         <div className="mb-3 flex h-9 items-center gap-2">
@@ -799,7 +815,7 @@ function CommunitySkeleton() {
         </div>
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="flex h-[232px] w-[300px] shrink-0 flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
+            <div key={i} className="flex h-[272px] w-[300px] shrink-0 flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
               <div className="flex items-center gap-3">
                 <div className="skeleton size-9 rounded-full" />
                 <div className="flex-1 space-y-1.5">
