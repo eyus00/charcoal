@@ -26,16 +26,17 @@ test('build → stage → rank → domain → rollback: every step is a new vers
   assert.equal(await c.run('validate'), 1, 'nothing to validate yet');
   assert.equal(await c.run('build', '--resolver', 'https://resolver.example.com'), 0);
   assert.deepEqual(validateRegistry(c.doc()), []);
-  assert.deepEqual(c.doc().providers.map((p) => `${p.manifest.id}:${p.stage}`), ['febbox:stable', 'castle:stable', 'vixsrc:stable', 'cinesu-rules:canary']);
-  assert.equal(entry(c.doc(), 'cinesu-rules').rules?.steps.length, 5, 'the declarative provider travels in the registry as data');
+  assert.deepEqual(c.doc().providers.filter((p) => p.stage === 'stable').map((p) => p.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'icefy']);
+  assert.deepEqual(c.doc().providers.filter((p) => p.stage === 'canary').map((p) => p.manifest.id), ['vidsrc', 'videasy', 'vidzee', 'vidnest', 'tulnex', 'peachify', 'cinesu']);
+  assert.equal(entry(c.doc(), 'cinesu').rules?.steps.length, 5, 'the declarative provider travels in the registry as data');
   assert.equal(c.doc().version, 1);
   assert.equal(await c.run('validate'), 0);
 
   // Promote the canary; demote and re-rank another.
-  assert.equal(await c.run('stage', 'cinesu-rules', 'stable', '--reason', 'validated from a home connection'), 0);
+  assert.equal(await c.run('stage', 'cinesu', 'stable', '--reason', 'validated from a home connection'), 0);
   assert.equal(await c.run('stage', 'vixsrc', 'disabled'), 0);
   assert.equal(await c.run('rank', 'castle', '50'), 0);
-  assert.deepEqual([c.doc().version, entry(c.doc(), 'cinesu-rules').stage, entry(c.doc(), 'vixsrc').stage, entry(c.doc(), 'castle').rank], [4, 'stable', 'disabled', 50]);
+  assert.deepEqual([c.doc().version, entry(c.doc(), 'cinesu').stage, entry(c.doc(), 'vixsrc').stage, entry(c.doc(), 'castle').rank], [4, 'stable', 'disabled', 50]);
 
   // A domain change without touching any code (unchecked here: no network in tests).
   assert.equal(await c.run('domain', 'castle', 'api', 'https://api.new-castle.example', '--no-check', '--reason', 'moved'), 0);
@@ -63,7 +64,7 @@ test('build → stage → rank → domain → rollback: every step is a new vers
   assert.equal(store.audit()[4].note, 'moved');
   c.out.length = 0;
   assert.equal(await c.run('diff', '1', '5'), 0);
-  assert.deepEqual(c.out.sort(), ['castle: domains 1 → 2', 'castle: rank 200 → 50', 'cinesu-rules: stage canary → stable', 'vixsrc: stage stable → disabled']);
+  assert.deepEqual(c.out.sort(), ['castle: domains 1 → 2', 'castle: rank 200 → 50', 'cinesu: stage canary → stable', 'vixsrc: stage stable → disabled']);
   assert.equal(await c.run('stage', 'castle', 'stable'), 1, 'a change that changes nothing is refused');
   assert.equal(await c.run('stage', 'castle', 'sideways'), 1);
   assert.equal(await c.run('frobnicate'), 64);

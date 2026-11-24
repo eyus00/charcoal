@@ -204,8 +204,8 @@ test('GET /v2/registry: a valid document; signed when a key is configured and ve
   const body = JSON.parse((await plain.app.inject({ method: 'GET', url: '/v2/registry' })).body);
   assert.deepEqual(validateRegistry(body.document), []);
   const ids = body.document.providers.map((p: { manifest: { id: string } }) => p.manifest.id);
-  for (const id of ['febbox', 'castle', 'vixsrc', 'cinesu-rules', 'alpha']) assert.ok(ids.includes(id), id);
-  const cinesu = body.document.providers.find((p: { manifest: { id: string } }) => p.manifest.id === 'cinesu-rules');
+  for (const id of ['febbox', 'castle', 'vixsrc', 'cinesu', 'alpha']) assert.ok(ids.includes(id), id);
+  const cinesu = body.document.providers.find((p: { manifest: { id: string } }) => p.manifest.id === 'cinesu');
   assert.deepEqual([cinesu.stage, cinesu.rules.steps.length > 0, cinesu.domains.roles.site.active], ['canary', true, 'https://cine.su']);
   assert.deepEqual(body.document.endpoints.resolvers, ['https://resolver.test']);
 

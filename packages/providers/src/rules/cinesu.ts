@@ -6,15 +6,16 @@
  * runtime, its address lives in the domain config, and a fix can be published in the registry
  * without a release.
  *
- * Stage: canary. It has not been validated against the live site from this pack yet; the legacy
- * class stays the one in use on servers until it has.
+ * Stage: canary. The address it shipped with (cine.su) now redirects to another host, which
+ * refuses the playlist path from a cloud address; until a working address has been validated the
+ * provider stays out of ordinary requests.
  */
 import type { ProviderManifest, RulePack } from '@charcoal/provider-sdk';
 
 export const cinesuManifest: ProviderManifest = {
-  id: 'cinesu-rules',
+  id: 'cinesu',
   name: 'CineSu',
-  version: '2.0.0',
+  version: '2.0.1',
   description: 'Playlist address built from the TMDB id, verified by reading the playlist.',
   contract: 2,
   kinds: ['movie', 'tv'],
@@ -33,8 +34,8 @@ const HEADERS = { Referer: '{{domain.site}}/en/watch', Origin: '{{domain.site}}'
 
 export const cinesuRules: RulePack = {
   schema: 1,
-  id: 'cinesu-rules',
-  version: '2.0.0',
+  id: 'cinesu',
+  version: '2.0.1',
   steps: [
     { when: 'movie', set: 'path', value: '/v1/stream/master/movie/{{media.ids.tmdb}}.m3u8' },
     { when: 'tv', set: 'path', value: '/v1/stream/master/tv/{{media.ids.tmdb}}/{{media.season}}/{{media.episode}}.m3u8' },

@@ -8,6 +8,11 @@
  */
 import type { DomainConfig } from '@charcoal/provider-sdk';
 
+/** A domain config with one address per role and nothing else. */
+function one(provider: string, roles: Record<string, string>): DomainConfig {
+  return { provider, version: 1, updatedAt: '2026-11-24T00:00:00.000Z', roles: Object.fromEntries(Object.entries(roles).map(([role, active]) => [role, { active }])) };
+}
+
 export const DEFAULT_DOMAINS: Record<string, DomainConfig> = {
   castle: {
     provider: 'castle',
@@ -30,10 +35,25 @@ export const DEFAULT_DOMAINS: Record<string, DomainConfig> = {
       febbox: { active: 'https://www.febbox.com', aliases: ['febbox.com'] },
     },
   },
-  'cinesu-rules': {
-    provider: 'cinesu-rules',
+  cinesu: {
+    provider: 'cinesu',
     version: 1,
     updatedAt: '2026-11-24T00:00:00.000Z',
     roles: { site: { active: 'https://cine.su' } },
   },
+  icefy: one('icefy', { site: 'https://streams.icefy.top' }),
+  fsharetv: one('fsharetv', { site: 'https://fsharetv.cc' }),
+  popr: one('popr', { site: 'https://popr.ink' }),
+  streammafia: one('streammafia', { site: 'https://player.nhdapi.com' }),
+  vidrock: one('vidrock', { site: 'https://vidrock.net', subs: 'https://sub.vdrk.site' }),
+  vidsrc: one('vidsrc', { site: 'https://vsembed.ru' }),
+  vidzee: one('vidzee', { api: 'https://core.vidzee.wtf', player: 'https://player.vidzee.wtf' }),
+  vidnest: one('vidnest', { site: 'https://vidnest.fun', api: 'https://new.vidnest.fun' }),
+  // The API moved from api.videasy.net (which no longer answers) to the host below; the blob
+  // decoder is a third-party service.
+  videasy: one('videasy', { api: 'https://api.wecollege.net', player: 'https://vidy.st', decoder: 'https://enc-dec.app' }),
+  // These API hosts no longer exist in DNS (checked 2026-11-24). The entries stay so that a new
+  // address can be put in force from the control plane without touching the provider.
+  tulnex: one('tulnex', { api: 'https://api.tulnex.com' }),
+  peachify: one('peachify', { site: 'https://peachify.top', api: 'https://usa.eat-peach.sbs', moviebox: 'https://uwu.eat-peach.sbs' }),
 };

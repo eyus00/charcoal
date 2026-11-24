@@ -23,7 +23,8 @@ test('every provider in the pack has a valid manifest and a domain config for ea
     assert.deepEqual(validateRulePack(rules, manifest), [], manifest.id);
     assert.deepEqual(validateDomainConfig(DEFAULT_DOMAINS[manifest.id], manifest.domainRoles), [], manifest.id);
   }
-  assert.deepEqual(loadCorePack().map((p) => `${p.module.manifest.id}:${p.stage}`), ['febbox:stable', 'castle:stable', 'vixsrc:stable', 'cinesu-rules:canary']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'icefy']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'canary').map((p) => p.module.manifest.id), ['vidsrc', 'videasy', 'vidzee', 'vidnest', 'tulnex', 'peachify', 'cinesu']);
 });
 
 test('the vendored fallback pack loads as open-network providers with valid manifests', async () => {
@@ -35,7 +36,7 @@ test('the vendored fallback pack loads as open-network providers with valid mani
     assert.match(m.manifest.id, /^sv-/);
   }
   assert.ok(fallback.some((m) => m.manifest.id === 'sv-lookmovie'));
-  assert.equal((await loadPack({ fallback: true })).length, 4 + fallback.length);
+  assert.equal((await loadPack({ fallback: true })).length, loadCorePack().length + fallback.length);
 });
 
 // ---------- VixSrc ----------
@@ -101,7 +102,7 @@ const CINE = 'https://cine.su';
 
 test('CineSu rule pack: a provider that is only data finds the stream and reads its quality from the playlist', async () => {
   const h = createHarness({
-    providers: one('cinesu-rules'),
+    providers: one('cinesu'),
     routes: { [`${CINE}/v1/stream/master/movie/27205.m3u8`]: simulate.playlist([1080, 720, 480]), [`${CINE}/v1/stream/master/tv/1396/2/3.m3u8`]: simulate.playlist([720]) },
     engine: { includeCanary: true },
   });
@@ -112,18 +113,18 @@ test('CineSu rule pack: a provider that is only data finds the stream and reads 
   const episode = await h.engine.runProvider(h.engine.providers()[0], TITLES.episode);
   assert.deepEqual([episode.outcome, episode.streams[0]?.quality], ['ok', '720']);
   // Canary stage: not part of a normal plan until promoted.
-  const normal = createHarness({ providers: one('cinesu-rules') });
+  const normal = createHarness({ providers: one('cinesu') });
   assert.equal(normal.engine.plan({ media: TITLES.movie }).skipped[0].reason, 'canary');
 });
 
 test('CineSu rule pack: a 200 that is not a playlist is a changed site, a 404 is "not here", and it passes the provider contract', async () => {
-  const page = createHarness({ providers: one('cinesu-rules'), routes: { 'cine.su': simulate.html('<html>Maintenance</html>') } });
+  const page = createHarness({ providers: one('cinesu'), routes: { 'cine.su': simulate.html('<html>Maintenance</html>') } });
   const changed = await page.engine.runProvider(page.engine.providers()[0], TITLES.movie);
   assert.deepEqual([changed.outcome, changed.code, changed.scope], ['error', 'SELECTOR_MISSING', 'provider']);
-  const none = createHarness({ providers: one('cinesu-rules'), routes: { 'cine.su': simulate.notFound() } });
+  const none = createHarness({ providers: one('cinesu'), routes: { 'cine.su': simulate.notFound() } });
   assert.equal((await none.engine.runProvider(none.engine.providers()[0], TITLES.movie)).outcome, 'empty');
 
-  const loaded = one('cinesu-rules')[0];
+  const loaded = one('cinesu')[0];
   assert.deepEqual(await checkContract(loaded.module, { media: TITLES.movie, domains: loaded.domains, routes: { [`${CINE}/v1/stream/master/movie/27205.m3u8`]: simulate.playlist([1080]) } }), []);
   assert.equal(cinesuRules.id, cinesuManifest.id);
 });
