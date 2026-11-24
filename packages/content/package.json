@@ -1,0 +1,22 @@
+{
+  "name": "@charcoal/content",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Category adapters on the shared provider platform: anime identity and episode mapping, sports events and channels, language-aware discovery",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@charcoal/provider-sdk": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}
