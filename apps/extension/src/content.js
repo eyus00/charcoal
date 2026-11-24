@@ -8,6 +8,12 @@ const EXT = 'charcoal-extension';
 window.addEventListener('message', (e) => {
   if (e.source !== window || e.origin !== location.origin || e.data?.source !== PAGE) return;
   const { id, type, payload } = e.data;
+  // "Are you there?" is answered right here, without waking the background worker, so a page can
+  // tell at once whether the helper is installed (and not make viewers without it wait).
+  if (type === 'ping') {
+    window.postMessage({ source: EXT, id, ok: true, result: { present: true } }, location.origin);
+    return;
+  }
   chrome.runtime
     .sendMessage({ type, payload })
     .catch((err) => ({ ok: false, error: String(err?.message ?? err) }))

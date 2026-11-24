@@ -131,3 +131,30 @@ test('allowStream: one rule per site and tab, CORS for Charcoal only, the browse
   await send('releaseStreams', {});
   assert.equal(rules.size, 0);
 });
+
+test('content script: answers "are you there?" itself, relays everything else to the background, ignores other senders', async () => {
+  const source = readFileSync(new URL('../src/content.js', import.meta.url), 'utf8');
+  const posted = [];
+  const relayed = [];
+  let onMessage;
+  const window = { addEventListener: (_t, f) => (onMessage = f), postMessage: (m) => posted.push(plain(m)) };
+  const chrome = { runtime: { sendMessage: async (m) => (relayed.push(plain(m)), { ok: true, result: { version: '0.2.0' } }) } };
+  vm.runInNewContext(source, { window, chrome, location: { origin: 'https://charcoal.eys0.fyi' }, String, Promise });
+  assert.deepEqual(posted, [{ source: 'charcoal-extension', type: 'ready' }]);
+
+  const from = (data, over = {}) => onMessage({ source: window, origin: 'https://charcoal.eys0.fyi', data, ...over });
+  from({ source: 'charcoal-page', id: 1, type: 'ping' });
+  assert.deepEqual(posted[1], { source: 'charcoal-extension', id: 1, ok: true, result: { present: true } });
+  assert.equal(relayed.length, 0, 'the background worker was not woken for a ping');
+
+  from({ source: 'charcoal-page', id: 2, type: 'hello', payload: { protocol: 2 } });
+  await new Promise((r) => setTimeout(r, 5));
+  assert.deepEqual(relayed, [{ type: 'hello', payload: { protocol: 2 } }]);
+  assert.deepEqual(posted[2], { source: 'charcoal-extension', id: 2, ok: true, result: { version: '0.2.0' } });
+
+  from({ source: 'charcoal-page', id: 3, type: 'request' }, { origin: 'https://evil.example' });
+  from({ source: 'someone-else', id: 4, type: 'request' });
+  from({ source: 'charcoal-page', id: 5, type: 'request' }, { source: {} });
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(relayed.length, 1);
+});

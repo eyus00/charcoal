@@ -55,19 +55,42 @@ const call: BridgeCall = <T>(type: string, payload: unknown, timeoutMs: number):
 };
 
 let connected: Promise<Bridge | null> | null = null;
+/** A full detection that is still running in the background (for helpers too old to answer a ping). */
+let late: Promise<Bridge | null> | null = null;
+
 /**
- * The bridge, or null (not installed, or not on a Charcoal address it serves). A "not found" is
- * never remembered: the next call asks again, so installing it mid-session just works.
+ * The bridge, or null (not installed, or not on a Charcoal address it serves).
+ *
+ * Viewers without it must not wait for it: the page first asks "are you there?", which a current
+ * helper's content script answers within milliseconds. No answer means "no bridge" for this search;
+ * the slower handshake (an older helper only answers that one, and its worker can take seconds to
+ * wake) still runs in the background, so if one turns up it is used from the next search on.
+ * `fresh` waits for the full handshake (the settings page wants a definite answer).
  */
 export function getBridge(fresh = false): Promise<Bridge | null> {
-  if (!connected || fresh) {
+  if (connected && !fresh) return connected;
+  const full = () => {
     const attempt = connectBridge(call).then((b) => {
-      if (!b && connected === attempt) connected = null;
+      if (!b && connected === attempt) connected = null; // never remember a "not found"
       return b;
     });
-    connected = attempt;
-  }
-  return connected;
+    return attempt;
+  };
+  if (fresh || appBridge()) return (connected = full());
+  if (late) return Promise.resolve(null);
+  const quick = call<unknown>('ping', {}, 250).then(
+    () => true,
+    () => false,
+  );
+  return quick.then((present) => {
+    if (present) return (connected ??= full());
+    late = full().then((b) => {
+      late = null;
+      if (b) connected = Promise.resolve(b);
+      return b;
+    });
+    return null;
+  });
 }
 
 export interface ExtensionInfo {
