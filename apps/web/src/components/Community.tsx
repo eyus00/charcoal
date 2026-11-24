@@ -121,7 +121,7 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
       {(loading || hasAnything) && <SectionHeader title="What people think" action={shown.length > 0 || tmdb.data?.results.length ? <RowArrows onScroll={scroll} /> : undefined} />}
       {loading && <CommunitySkeleton />}
       {!loading && hasAnything && (
-        <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
+        <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
           <div className="flex flex-col gap-3">
             {t && <SummaryWithMine r={ratings.data} t={t} type={type} id={id} user={user} />}
             {t && <YourRating t={t} type={type} id={id} user={user} />}
@@ -326,44 +326,35 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
   };
   return (
     <div className="group/tip relative">
-      <div
-        role="radiogroup"
-        aria-label="Your rating"
-        onPointerLeave={() => setHover(0)}
-        className="grid h-[68px] grid-cols-10 items-end gap-0.5 rounded-[22px] bg-white/[0.04] px-2.5 pb-2.5 ring-1 ring-white/[0.06]"
-      >
-        {Array.from({ length: 10 }, (_, i) => {
-          const n = i + 1;
-          const on = mine === n;
-          const lit = on || hover === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              aria-label={`${n} out of 10`}
-              disabled={pending !== null}
-              onPointerEnter={() => setHover(n)}
-              onClick={() => pick(n)}
-              className="flex min-w-0 flex-col items-center gap-1"
-            >
-              <Star
-                key={on ? `on-${n}` : n}
-                className={cx('size-3 transition-opacity duration-150', lit ? 'opacity-100' : 'opacity-0', on ? 'pop fill-current text-white' : 'fill-current text-white/60')}
-                strokeWidth={0}
-              />
-              <span
+      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="flex h-14 items-center gap-1.5 rounded-[22px] bg-white/[0.04] pr-2 pl-3.5 ring-1 ring-white/[0.06]">
+        {/* The star marks the row; it fills in once you've rated. */}
+        <Star key={mine ? `on-${mine}` : 'off'} className={cx('size-4 shrink-0 fill-current', mine ? 'pop text-white' : 'text-white/25')} strokeWidth={0} aria-hidden />
+        <div className="grid flex-1 grid-cols-10 gap-0.5">
+          {Array.from({ length: 10 }, (_, i) => {
+            const n = i + 1;
+            const on = mine === n;
+            // Hovering lights up every number to it, like filling stars.
+            const upTo = hover ? n <= hover : on ? false : mine ? n <= mine : false;
+            return (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                aria-label={`${n} out of 10`}
+                disabled={pending !== null}
+                onPointerEnter={() => setHover(n)}
+                onClick={() => pick(n)}
                 className={cx(
-                  'grid h-9 w-full place-items-center rounded-md leading-none tabular-nums transition-[background-color,color,font-size]',
-                  on ? 'bg-white text-lg font-bold text-black' : hover === n ? 'bg-white/10 text-[15px] text-white' : 'text-[15px] text-white/70',
+                  'grid h-9 min-w-0 place-items-center rounded-lg text-[15px] leading-none tabular-nums transition-colors',
+                  on && !hover ? 'bg-white font-semibold text-black' : hover === n ? 'bg-white font-semibold text-black' : upTo ? 'text-white' : 'text-white/45 hover:text-white',
                 )}
               >
                 {n}
-              </span>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <Tip label={saved ? `Your rating: ${saved}/10 · pick it again to remove` : 'Your rating'} side="bottom" />
     </div>
@@ -788,7 +779,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
 /** Shaped like the real thing: score card (number, line, bars), rating pill, toolbar, comment cards. */
 function CommunitySkeleton() {
   return (
-    <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
+    <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
       <div className="flex flex-col gap-3">
         <div className="flex h-[200px] flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
           <div className="skeleton h-9 w-28 rounded-lg" />
