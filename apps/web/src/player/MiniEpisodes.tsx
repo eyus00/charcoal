@@ -23,6 +23,7 @@ export default function MiniEpisodes({
   currentLabel = 'Playing',
   startAt = 'center',
   compact,
+  upcoming: pickUpcoming,
 }: {
   show: Details;
   current: { season: number; episode: number };
@@ -32,6 +33,8 @@ export default function MiniEpisodes({
   startAt?: 'center' | 'start';
   /** Narrower stills (the hover peek). */
   compact?: boolean;
+  /** Upcoming episodes can be picked too (they open the episode list, not the player). */
+  upcoming?: boolean;
   onPick: (season: number, episode: number) => void;
   onAll: () => void;
   onPrev?: () => void;
@@ -115,13 +118,13 @@ export default function MiniEpisodes({
               key={ep.episode_number}
               type="button"
               aria-current={playing}
-              disabled={upcoming}
+              disabled={upcoming && !pickUpcoming}
               onClick={() => onPick(season, ep.episode_number)}
               className={cx('flex w-full gap-3 rounded-xl p-1.5 text-left transition-colors disabled:opacity-45', playing ? 'bg-white/[0.06]' : 'enabled:hover:bg-white/[0.06]')}
             >
               <span className={cx('relative shrink-0 self-start overflow-hidden rounded-lg bg-white/5', compact ? 'w-32' : 'w-40', playing && 'ring-2 ring-white')}>
                 <Img path={ep.still_path} kind="still" sizes="160px" alt="" className="aspect-video" />
-                {playing && <span className="absolute top-1 left-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">{currentLabel}</span>}
+                {playing && currentLabel && <span className="absolute top-1 left-1 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">{currentLabel}</span>}
                 {h?.isCompleted ? (
                   <span className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-px text-micro font-medium text-black">
                     <Check className="size-3" /> Watched

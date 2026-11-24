@@ -8,11 +8,10 @@ import { Tip } from '../components/Tip';
 import { btn } from '../components/Button';
 import { PlayTitleButton } from '../components/TitleActions';
 import LibraryButton from '../components/LibraryButton';
-import { useQuery } from '@tanstack/react-query';
-import { dateLabel, seLabel } from '../components/AiringTile';
+import MiniEpisodes from './MiniEpisodes';
 import { peek, type PeekEpisode } from '../lib/peek';
-import { q, titleOf, type Details, type MediaType } from '../lib/tmdb';
-import { percent, resumeTarget, useStore } from '../lib/store';
+import { titleOf, type Details, type MediaType } from '../lib/tmdb';
+import { resumeTarget, useStore } from '../lib/store';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { cx, formatRuntime, isTypingTarget } from '../lib/util';
 
@@ -287,18 +286,15 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
 }
 
 const W = 340;
+const EW = 330;
 const GAP = 12;
-/** The episode card on the mini peek's corner: its width and how far it hangs out. */
-const EW = 272;
-const OUT_X = 150;
-const OUT_Y = 40;
 
 /**
  * The mini peek: pinned beside the card it came from; stays while the pointer is on it. For a show
- * it carries one episode card on its bottom-right corner, hanging over the edge: the episode the
- * card was for, else the one you're on, else the latest. Clicking it opens the episode list there.
- * Placed to the card's right if there's room, else its left, else centred; re-measured as its
- * content loads so it never runs off screen.
+ * the player's small episode list sits beside it, on the episode the card was for, else the one
+ * you're on, else the latest; picking an episode opens the full episode list there. Placed to the
+ * card's right if there's room, else its left, else centred; re-measured as its content loads so
+ * it never runs off screen.
  */
 function SidePeek({
   d,
@@ -319,47 +315,43 @@ function SidePeek({
 }) {
   const title = titleOf(d);
   const ref = useRef<HTMLDivElement>(null);
+  const info = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<React.CSSProperties>({ left: -9999, top: 0 });
+  const [infoH, setInfoH] = useState(0);
   const history = useStore((s) => s.history);
   const resume = type === 'tv' ? resumeTarget(history, 'tv', d.id) : null;
   const last = d.last_episode_to_air;
-  const ep: (PeekEpisode & { why: 'card' | 'resume' | 'latest' }) | null =
+  const ep: PeekEpisode | null =
     type !== 'tv'
       ? null
-      : episode
-        ? { ...episode, why: 'card' }
-        : resume?.season !== undefined
-          ? { season: resume.season, episode: resume.episode!, why: 'resume' }
-          : last
-            ? { season: last.season_number, episode: last.episode_number, why: 'latest' }
-            : null;
-  const outX = ep ? OUT_X : 0;
-  const outY = ep ? OUT_Y : 0;
+      : (episode ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : last ? { season: last.season_number, episode: last.episode_number } : null));
+  const withEpisodes = !!ep && typeof window !== 'undefined' && window.innerWidth >= W + EW + GAP * 3;
+  const total = W + (withEpisodes ? GAP + EW : 0);
 
   useLayoutEffect(() => {
     const place = () => {
-      const h = Math.min((ref.current?.offsetHeight ?? 420) + outY, window.innerHeight - GAP * 2);
+      const h = Math.min(ref.current?.offsetHeight ?? 420, window.innerHeight - GAP * 2);
+      setInfoH(info.current?.offsetHeight ?? 0);
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const total = W + outX;
       const left = anchor.right + GAP + total <= vw - GAP ? anchor.right + GAP : anchor.left - GAP - total >= GAP ? anchor.left - GAP - total : Math.max(GAP, (vw - total) / 2);
       const top = Math.max(GAP, Math.min(anchor.top, vh - h - GAP));
       setPos({ left, top });
     };
     place();
     const ro = new ResizeObserver(place);
-    if (ref.current) ro.observe(ref.current);
+    if (info.current) ro.observe(info.current);
     return () => ro.disconnect();
-  }, [anchor, outX, outY]);
+  }, [anchor, total]);
 
   // Close on a press outside it (not its watchlist menu), Escape, scroll or resize.
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       const t = e.target as Element;
-      if (!ref.current?.parentElement?.contains(t) && !t.closest?.('[role=menu],[role=listbox]')) onClose();
+      if (!ref.current?.contains(t) && !t.closest?.('[role=menu],[role=listbox]')) onClose();
     };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('[role=menu]') && onClose();
-    const shut = (e: Event) => !ref.current?.parentElement?.contains(e.target as Node) && !document.querySelector('[role=menu]') && onClose();
+    const shut = (e: Event) => !ref.current?.contains(e.target as Node) && !document.querySelector('[role=menu]') && onClose();
     document.addEventListener('pointerdown', onDown);
     window.addEventListener('keydown', onKey);
     window.addEventListener('scroll', shut, { passive: true, capture: true });
@@ -374,14 +366,15 @@ function SidePeek({
 
   return createPortal(
     <div
+      ref={ref}
       role="dialog"
       aria-label={`${title}: details`}
-      style={{ ...pos, width: W, marginBottom: outY }}
+      style={{ ...pos, width: total }}
       onPointerEnter={() => peek.hold()}
       onPointerLeave={(e) => e.pointerType === 'mouse' && !document.querySelector('[role=menu]') && peek.release()}
-      className="toast-in fixed z-[60]"
+      className="toast-in fixed z-[60] flex max-h-[calc(100dvh-24px)] items-start gap-3"
     >
-      <div ref={ref} className="max-h-[calc(100dvh-46px)] overflow-y-auto overscroll-contain rounded-3xl bg-raised shadow-2xl ring-1 shadow-black/60 ring-white/10">
+      <div ref={info} style={{ width: W }} className="max-h-[calc(100dvh-24px)] shrink-0 overflow-y-auto overscroll-contain rounded-3xl bg-raised shadow-2xl ring-1 shadow-black/60 ring-white/10">
         <div className="relative">
           <Img path={d.backdrop_path} kind="backdrop" sizes="340px" alt="" className="aspect-video w-full" imgClassName="object-[70%_20%]" />
           <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/10 to-transparent" />
@@ -389,7 +382,7 @@ function SidePeek({
             <ExpandButton to={detailsUrl} small />
           </div>
         </div>
-        <div className={cx('relative -mt-6 px-4', ep ? 'pb-14' : 'pb-4')}>
+        <div className="relative -mt-6 px-4 pb-4">
           <h2 className="text-xl leading-tight font-semibold tracking-tight text-balance">{title}</h2>
           <Facts d={d} type={type} genresClassName="mt-1.5 text-xs" className="mt-1 text-xs" />
           {d.overview && <p className="mt-2.5 line-clamp-4 text-caption leading-5 text-pretty text-white/75">{d.overview}</p>}
@@ -399,105 +392,12 @@ function SidePeek({
           </div>
         </div>
       </div>
-      {ep && (
-        <PeekEpisodeCard
-          show={d}
-          start={ep}
-          resume={resume && !resume.isNext && resume.season !== undefined ? { season: resume.season, episode: resume.episode!, pct: percent(resume.item) } : undefined}
-          onOpen={(sel) => onEpisodes?.(sel)}
-        />
+      {withEpisodes && ep && (
+        <div style={{ width: EW, height: Math.max(infoH, 380) }} className="flex shrink-0 flex-col rounded-3xl bg-raised p-2.5 shadow-2xl ring-1 shadow-black/60 ring-white/10">
+          <MiniEpisodes show={d} current={ep} currentLabel="" startAt="start" compact upcoming onPick={(s, e) => onEpisodes?.({ season: s, episode: e })} onAll={() => onEpisodes?.(ep)} />
+        </div>
       )}
     </div>,
     document.body,
-  );
-}
-
-/**
- * The episode card on the mini peek's corner (see SidePeek): still, name, date · length · rating and
- * the synopsis. The wheel steps to the previous / next episode (across seasons); a click opens
- * the episode list on the one shown.
- */
-function PeekEpisodeCard({ show, start, resume, onOpen }: { show: Details; start: PeekEpisode; resume?: PeekEpisode & { pct: number }; onOpen: (sel: PeekEpisode) => void }) {
-  const [at, setAt] = useState<{ season: number; episode: number }>({ season: start.season, episode: start.episode });
-  const { data: season } = useQuery(q.season(show.id, at.season));
-  const list = season?.episodes ?? [];
-  // -1: the last episode of the season (stepping back into it).
-  const idx = at.episode === -1 ? list.length - 1 : list.findIndex((x) => x.episode_number === at.episode);
-  const e = idx >= 0 ? list[idx] : undefined;
-  const number = e?.episode_number ?? at.episode;
-  const seasons = (show.seasons ?? [])
-    .map((x) => x.season_number)
-    .filter((n) => n > 0 || at.season === 0)
-    .sort((a, b) => a - b);
-  const ref = useRef<HTMLButtonElement>(null);
-  const step = useRef<(dir: 1 | -1) => void>(() => {});
-  step.current = (dir) => {
-    if (!list.length) return;
-    const next = idx + dir;
-    if (next >= 0 && next < list.length) return setAt({ season: at.season, episode: list[next].episode_number });
-    const si = seasons.indexOf(at.season) + dir;
-    if (si < 0 || si >= seasons.length) return;
-    setAt({ season: seasons[si], episode: dir > 0 ? 1 : -1 });
-  };
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let last = 0;
-    const onWheel = (ev: WheelEvent) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (Math.abs(ev.deltaY) < 4 || ev.timeStamp - last < 220) return;
-      last = ev.timeStamp;
-      step.current(ev.deltaY > 0 ? 1 : -1);
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
-  const name = e?.name && !/^episode \d+$/i.test(e.name) ? e.name : '';
-  const air = e?.air_date;
-  const airAt = air ? new Date(`${air}T00:00:00`).getTime() : 0;
-  const upcoming = airAt > Date.now();
-  const facts = [air ? dateLabel(airAt) : '', !upcoming && e?.runtime ? formatRuntime(e.runtime) : '', !upcoming && e?.vote_average ? `★ ${e.vote_average.toFixed(1)}` : ''].filter(Boolean);
-  const pct = resume && resume.season === at.season && resume.episode === number ? resume.pct : 0;
-  const pos = list.length ? `${idx + 1} / ${list.length}` : '';
-  return (
-    <button
-      ref={ref}
-      type="button"
-      onClick={() => onOpen({ season: at.season, episode: number })}
-      onKeyDown={(k) => (k.key === 'ArrowDown' || k.key === 'ArrowUp') && (k.preventDefault(), step.current(k.key === 'ArrowDown' ? 1 : -1))}
-      style={{ width: EW, right: -OUT_X, bottom: -OUT_Y }}
-      aria-label={`${seLabel(at.season, number)}${name ? ` ${name}` : ''}: open the episode list. Scroll or use the arrow keys for the previous or next episode.`}
-      className="absolute overflow-hidden rounded-2xl bg-raised text-left shadow-[0_22px_50px_rgba(0,0,0,0.75)] ring-1 ring-white/15 focus-visible:outline-2 focus-visible:outline-white"
-    >
-      <div className="relative">
-        <Img key={`${at.season}-${number}`} path={e?.still_path ?? show.backdrop_path} kind="still" sizes="272px" alt="" className="aspect-video w-full" />
-        {pos && <span className="absolute top-2 right-2 rounded-full bg-black/75 px-2 py-0.5 text-[11px] text-white/85 tabular-nums">{pos}</span>}
-        {pct > 0 && (
-          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/25">
-            <span className="block h-full bg-white" style={{ width: `${Math.max(4, pct)}%` }} />
-          </span>
-        )}
-      </div>
-      <div key={`${at.season}-${number}`} className="fade-in px-3.5 pt-2.5 pb-3">
-        <p className="truncate text-sm font-semibold text-white">
-          {seLabel(at.season, number)}
-          {name ? ` ${name}` : ''}
-        </p>
-        {facts.length > 0 && <p className="mt-0.5 truncate text-xs text-muted">{facts.join(' · ')}</p>}
-        {e ? (
-          e.overview ? (
-            <p className="mt-1.5 line-clamp-3 text-xs leading-[1.1rem] text-white/70">{e.overview}</p>
-          ) : (
-            <p className="mt-1.5 text-xs text-faint">No synopsis yet.</p>
-          )
-        ) : (
-          <div className="mt-2 space-y-1.5">
-            <div className="skeleton h-2.5 w-full rounded" />
-            <div className="skeleton h-2.5 w-4/5 rounded" />
-          </div>
-        )}
-      </div>
-    </button>
   );
 }
