@@ -308,7 +308,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                   const body = (
                     <>
                       <Frame label={upcoming ? releaseLabel(ep) : undefined} bg="bg-surface">
-                        <div className={cx('relative overflow-hidden rounded-2xl', (isCurrent || isSelected) && 'ring-2 ring-white/70')}>
+                        <div className={cx('relative overflow-hidden rounded-2xl', isCurrent && !isSelected && 'ring-2 ring-white/70')}>
                           {ep.still_path ? (
                             <Img
                               path={ep.still_path}

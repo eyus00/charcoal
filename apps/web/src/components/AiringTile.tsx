@@ -114,71 +114,74 @@ function Card({
   const first = ep ?? a.episodes?.[0];
   const stack = stacked?.length ?? 0;
   // Shows: the episode is the headline, the show under it. Films: the title, then year · rating.
-  const line1 = stack ? `${a.se} · ${stack + 1} episodes` : tv && first ? `${seLabel(first.season, first.number)}${first.name ? ` ${first.name}` : ''}` : a.title;
+  // Shows: the episode is the headline, then the date, then the show (a link of its own).
+  // Films: the title, the date, then year · rating. A stack reads like its first episode.
+  const line1 = tv && first ? `${seLabel(first.season, first.number)}${first.name ? ` ${first.name}` : ''}` : a.title;
   const line2 = tv ? a.title : a.se;
-  const runtime = ep ? ep.runtime : a.runtime;
-  const image = ep?.image ?? a.image;
+  const runtime = ep ? ep.runtime : stack ? first?.runtime : a.runtime;
+  const image = ep?.image ?? first?.image ?? a.image;
   // A stack's tap fans it out (not the touch-screen peek).
   const hover = tv && first ? episodePeekProps(a.id, first.season, first.number, { tap: !onClick }) : peekProps(a.type, a.id, { tap: !onClick });
-  const body = (
-    <>
-      <div className="relative">
-        {/* The rest of the stack: sheets behind the card, stepping out to the right. */}
-        {stacked?.slice(0, 2).map((e, i) => (
-          <span
-            key={`${e.season}-${e.number}`}
-            aria-hidden
-            style={{ inset: i ? '24px -26px 24px 40px' : '12px -13px 12px 20px', zIndex: 1 - i }}
-            className="absolute overflow-hidden rounded-2xl bg-raised shadow-[-6px_0_14px_rgba(0,0,0,0.55)] ring-1 ring-white/15 transition-transform duration-300 group-hover:translate-x-[3px]"
-          >
-            <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.35]' : 'brightness-[0.55]'} />
-          </span>
-        ))}
-        <div className="relative z-[2]">
-          <Frame label={label}>
-            <div className={CARD_IMAGE}>
-              <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
-              {runtime ? (
-                <span className="absolute right-2 bottom-2">
-                  <Chip>{formatRuntime(runtime)}</Chip>
-                </span>
-              ) : null}
-              {!stack && (
-                <span className="absolute top-2 right-2 z-10">
-                  <ReminderBell a={a} ep={ep} />
-                </span>
+  const stretched = 'absolute inset-0 z-0 rounded-2xl';
+  return (
+    <div className={cx('group relative', stack > 0 && 'mr-4', className)}>
+      {/* The whole card is one link (or, for a stack, one button) under the content, so the show name can be a link too. */}
+      {onClick ? (
+        <button type="button" onClick={onClick} {...hover} aria-expanded={false} aria-label={`${line1}, ${a.title}: show all ${stack + 1} episodes`} className={stretched} />
+      ) : (
+        <Link to={to ?? linkOf(a)} {...hover} aria-label={`${line1}, ${line2 ?? ''}`} className={stretched} />
+      )}
+      <div className="pointer-events-none relative [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
+        <div className="relative">
+          {/* The rest of the stack: outlined sheets behind the card, stepping out to the right. */}
+          {stacked?.slice(0, 2).map((e, i) => (
+            <span
+              key={`${e.season}-${e.number}`}
+              aria-hidden
+              style={{ inset: i ? '24px -26px 24px 40px' : '12px -13px 12px 20px', zIndex: 1 - i }}
+              className={cx(
+                'absolute overflow-hidden rounded-2xl bg-raised shadow-[-8px_0_16px_rgba(0,0,0,0.6)] ring-[1.5px] transition-transform duration-300 group-hover:translate-x-[3px]',
+                i ? 'ring-white/30' : 'ring-white/55',
               )}
-            </div>
-          </Frame>
+            >
+              <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.35]' : 'brightness-[0.55]'} />
+            </span>
+          ))}
+          <div className="relative z-[2]">
+            <Frame label={label}>
+              <div className={CARD_IMAGE}>
+                <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
+                {runtime ? (
+                  <span className="absolute right-2 bottom-2">
+                    <Chip>{formatRuntime(runtime)}</Chip>
+                  </span>
+                ) : null}
+                {!stack && (
+                  <span className="absolute top-2 right-2 z-10">
+                    <ReminderBell a={a} ep={ep} />
+                  </span>
+                )}
+              </div>
+            </Frame>
+          </div>
+        </div>
+        <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
+          <div className={CARD_TITLE}>{line1}</div>
+          {showDate && <div className="text-caption text-faint">{dateLabel(a.at, !tv)}</div>}
+          <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
+            {tv ? (
+              <Link to={`/tv/${a.id}`} className="relative z-10 min-w-0 truncate decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline">
+                {line2}
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate">{line2}</span>
+            )}
+            <TypeIcon type={a.type} />
+          </div>
+          <CornerArc />
         </div>
       </div>
-      <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
-        <div className={CARD_TITLE}>{line1}</div>
-        <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
-          <span className="min-w-0 truncate">{line2}</span>
-          <TypeIcon type={a.type} />
-        </div>
-        {showDate && <div className="text-caption text-faint">{dateLabel(a.at, !tv)}</div>}
-        <CornerArc />
-      </div>
-    </>
-  );
-  // A stack keeps room on its right for the sheets (so they're never clipped at the row's end).
-  return onClick ? (
-    <button
-      type="button"
-      onClick={onClick}
-      {...hover}
-      aria-expanded={false}
-      aria-label={`${a.title} ${a.se}: show all ${stack + 1} episodes`}
-      className={cx('group relative mr-4 block text-left', className)}
-    >
-      {body}
-    </button>
-  ) : (
-    <Link to={to ?? linkOf(a)} {...hover} aria-label={`${line1}, ${line2 ?? ''}`} className={cx('group relative block', className)}>
-      {body}
-    </Link>
+    </div>
   );
 }
 

@@ -8,10 +8,8 @@ import { Tip } from '../components/Tip';
 import { btn } from '../components/Button';
 import { PlayTitleButton } from '../components/TitleActions';
 import LibraryButton from '../components/LibraryButton';
-import MiniEpisodes from './MiniEpisodes';
 import { peek, type PeekEpisode } from '../lib/peek';
 import { titleOf, type Details, type MediaType } from '../lib/tmdb';
-import { resumeTarget, useStore } from '../lib/store';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { cx, formatRuntime, isTypingTarget } from '../lib/util';
 
@@ -99,7 +97,6 @@ export default function DetailsPeek({
   anchor,
   play = true,
   onEpisodes,
-  episode,
 }: {
   d: Details;
   type: MediaType;
@@ -109,12 +106,10 @@ export default function DetailsPeek({
   anchor?: DOMRect;
   play?: boolean;
   onEpisodes?: (selected?: PeekEpisode) => void;
-  /** From an episode card: the mini peek shows that episode's card on its corner. */
-  episode?: PeekEpisode;
 }) {
   useDetailsKey(detailsUrl);
   const wide = typeof window !== 'undefined' && window.innerWidth >= 640;
-  if (mini && anchor && wide) return <SidePeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} anchor={anchor} onEpisodes={onEpisodes} episode={type === 'tv' ? episode : undefined} />;
+  if (mini && anchor && wide) return <SidePeek d={d} type={type} onClose={onClose} anchor={anchor} onEpisodes={onEpisodes} />;
   return <MediumPeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} play={play} onEpisodes={onEpisodes} />;
 }
 
@@ -286,52 +281,23 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
 }
 
 const W = 340;
-const EW = 330;
 const GAP = 12;
 
 /**
- * The mini peek: pinned beside the card it came from; stays while the pointer is on it. For a show
- * the player's small episode list sits beside it, on the episode the card was for, else the one
- * you're on, else the latest; picking an episode opens the full episode list there. Placed to the
- * card's right if there's room, else its left, else centred; re-measured as its content loads so
- * it never runs off screen.
+ * The mini peek: pinned beside the card it came from; stays while the pointer is on it. Placed to
+ * the card's right if there's room, else its left, else centred; re-measured as its content loads
+ * so it never runs off screen.
  */
-function SidePeek({
-  d,
-  type,
-  detailsUrl,
-  onClose,
-  anchor,
-  onEpisodes,
-  episode,
-}: {
-  d: Details;
-  type: MediaType;
-  detailsUrl: string;
-  onClose: () => void;
-  anchor: DOMRect;
-  onEpisodes?: (selected?: PeekEpisode) => void;
-  episode?: PeekEpisode;
-}) {
+function SidePeek({ d, type, onClose, anchor, onEpisodes }: { d: Details; type: MediaType; onClose: () => void; anchor: DOMRect; onEpisodes?: (selected?: PeekEpisode) => void }) {
   const title = titleOf(d);
   const ref = useRef<HTMLDivElement>(null);
   const info = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<React.CSSProperties>({ left: -9999, top: 0 });
-  const [infoH, setInfoH] = useState(0);
-  const history = useStore((s) => s.history);
-  const resume = type === 'tv' ? resumeTarget(history, 'tv', d.id) : null;
-  const last = d.last_episode_to_air;
-  const ep: PeekEpisode | null =
-    type !== 'tv'
-      ? null
-      : (episode ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : last ? { season: last.season_number, episode: last.episode_number } : null));
-  const withEpisodes = !!ep && typeof window !== 'undefined' && window.innerWidth >= W + EW + GAP * 3;
-  const total = W + (withEpisodes ? GAP + EW : 0);
+  const total = W;
 
   useLayoutEffect(() => {
     const place = () => {
       const h = Math.min(ref.current?.offsetHeight ?? 420, window.innerHeight - GAP * 2);
-      setInfoH(info.current?.offsetHeight ?? 0);
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const left = anchor.right + GAP + total <= vw - GAP ? anchor.right + GAP : anchor.left - GAP - total >= GAP ? anchor.left - GAP - total : Math.max(GAP, (vw - total) / 2);
@@ -378,9 +344,6 @@ function SidePeek({
         <div className="relative">
           <Img path={d.backdrop_path} kind="backdrop" sizes="340px" alt="" className="aspect-video w-full" imgClassName="object-[70%_20%]" />
           <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/10 to-transparent" />
-          <div className="absolute top-2.5 right-2.5">
-            <ExpandButton to={detailsUrl} small />
-          </div>
         </div>
         <div className="relative -mt-6 px-4 pb-4">
           <h2 className="text-xl leading-tight font-semibold tracking-tight text-balance">{title}</h2>
@@ -392,11 +355,6 @@ function SidePeek({
           </div>
         </div>
       </div>
-      {withEpisodes && ep && (
-        <div style={{ width: EW, height: Math.max(infoH, 380) }} className="flex shrink-0 flex-col rounded-3xl bg-raised p-2.5 shadow-2xl ring-1 shadow-black/60 ring-white/10">
-          <MiniEpisodes show={d} current={ep} currentLabel="" startAt="start" compact upcoming onPick={(s, e) => onEpisodes?.({ season: s, episode: e })} onAll={() => onEpisodes?.(ep)} />
-        </div>
-      )}
     </div>,
     document.body,
   );
