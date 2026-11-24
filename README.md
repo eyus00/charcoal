@@ -5,22 +5,34 @@ A movie & TV streaming frontend and the server that finds its streams, in one re
 ```
 apps/
   web/        Charcoal, the website (React, Vite)                    → Vercel
-  server/     Jelly, finds sources and relays video (Node, OMSS)     → Railway, Docker, your own machine
-  extension/  Charcoal Helper, finds and plays sources from the viewer's browser → GitHub Releases
+  server/     Jelly, finds sources and relays video (Node)           → Railway, Docker, your own machine
+  extension/  Charcoal Helper, an optional bridge to the viewer's own connection → GitHub Releases
 packages/
-  providers/  Source scrapers shared by the server and the website
-  streamviva/ StreamViva's provider engine (vendored, MIT), used as a fallback
+  provider-sdk/   The provider platform framework: contracts, diagnostics, extraction, domains,
+                  the aggregation engine, health, ranking, the signed registry
+  providers/      The provider pack: provider modules, rule packs and their domain configs
+  client/         Client side: bridge negotiation, registry client, the unified resolver
+  content/        Category adapters: anime identity mapping, sports events, regional discovery
+  control-plane/  Command line for the provider registry (stage, domains, rollback, signing)
+  streamviva/     StreamViva's provider engine (vendored, MIT), used as a fallback pack
+docs/platform/    Architecture, the provider SDK guide, operations, security review, testing
 ```
 
 ## Where streams come from
 
-Charcoal tries these in order, falling back to the next:
+One search, wherever the sources are. Every provider says what it needs to run; the site runs
+what it can in the viewer's own browser and asks a server for the rest, and both feed one ranked
+list that grows as providers answer. Playback starts on the first playable source.
 
-1. **Charcoal Helper** (browser extension), if installed: the scrapers in `packages/providers` run in
-   the page and everything loads from the viewer's own connection. See `apps/extension`.
-2. **Your own server**, if set in Settings (local or VPS, see below).
-3. **Charcoal's server** on Railway.
-4. **Embedded players** from other sites.
+1. **In this browser**, when a bridge is present (Charcoal Helper today): providers run on the
+   viewer's own connection and video loads straight from its host.
+2. **Your own server**, if set in Settings (local or VPS, see below), then **Charcoal's server**:
+   they run the remaining providers and send results as they arrive. Streams that need nothing
+   special play from their origin; the rest go through the server's relay.
+3. **Embedded players** from other sites, when nothing else plays.
+
+See `docs/platform/ARCHITECTURE.md` for how it fits together and `docs/platform/SDK.md` to add a
+provider.
 
 ## Develop
 
@@ -30,7 +42,8 @@ Needs Node 22+. From the repository root:
 npm install
 npm run dev:server     # Jelly on http://localhost:8080 (PORT to change)
 npm run dev:web        # Charcoal on http://localhost:5173
-npm run typecheck      # both apps
+npm run typecheck      # every workspace
+npm test               # every test suite (nothing contacts a streaming site)
 ```
 
 To point the local website at the local server, put `VITE_JELLY_URL=http://localhost:8080` in

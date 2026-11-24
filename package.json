@@ -1,7 +1,7 @@
 {
   "name": "charcoal-monorepo",
   "private": true,
-  "description": "Charcoal (website), its server (Jelly) and shared packages",
+  "description": "Charcoal (website), its server (Jelly), the provider platform and shared packages",
   "workspaces": [
     "apps/web",
     "apps/server",
@@ -14,7 +14,10 @@
     "build:web": "npm run build --workspace apps/web",
     "start:server": "npm run start --workspace apps/server",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "build:extension": "npm run build --workspace apps/extension"
+    "build:extension": "npm run build --workspace apps/extension",
+    "test": "npm run test --workspaces --if-present",
+    "registry": "npm run registry --workspace packages/control-plane --",
+    "check:image": "bash apps/server/tools/check-image.sh"
   },
   "engines": {
     "node": ">=22"

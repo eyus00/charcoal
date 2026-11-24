@@ -1,0 +1,29 @@
+# Type-checks and tests every workspace, builds the website, and checks that the server's image
+# recipe still installs and boots. Nothing here contacts a streaming site: provider tests run
+# against fixtures and a mock network.
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build:web
+      - run: npm run build:extension
+      - name: Server image recipe (production install, boot, health)
+        run: npm run check:image

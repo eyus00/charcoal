@@ -7,7 +7,10 @@
 import { collect, describeRuntime, Engine, fetchTransport, HealthStore, type Media } from '@charcoal/provider-sdk';
 import { loadPack } from '../src/index.js';
 
-const [kind = 'movie', tmdb = '27205', title = 'Inception', year, season, episode, ...only] = process.argv.slice(2);
+const [kind = 'movie', tmdb = '27205', title = 'Inception', year, ...rest] = process.argv.slice(2);
+// A show takes a season and an episode next; anything after that names the providers to run.
+const [season, episode] = kind === 'tv' ? rest : [];
+const only = kind === 'tv' ? rest.slice(2) : rest;
 const common = { ids: { tmdb }, title, year: year ? Number(year) : undefined };
 const media: Media = kind === 'tv' ? { kind: 'tv', ...common, season: Number(season || 1), episode: Number(episode || 1) } : { kind: 'movie', ...common };
 

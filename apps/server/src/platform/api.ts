@@ -164,7 +164,8 @@ export interface ApiOptions {
   adminToken?: string;
   /** Lets automatic recovery put a validated alternate domain in force for this long (0 = propose only). */
   autoFailoverTtlMs?: number;
-  limits?: { sourcesPerMinute?: number; reportsPerMinute?: number };
+  /** Per client address. `sourcesBurst` is how many may arrive at once before the per-minute rate applies. */
+  limits?: { sourcesPerMinute?: number; sourcesBurst?: number; reportsPerMinute?: number };
 }
 
 const RUNTIME_KINDS = new Set<RuntimeKind>(['server', 'edge', 'extension', 'app', 'browser', 'frame', 'remote']);
@@ -179,7 +180,7 @@ export interface Platform {
 
 export function registerApi(o: ApiOptions): Platform {
   const { app, engine, catalog, overlay, health } = o;
-  const sourcesLimit = new RateLimiter(o.limits?.sourcesPerMinute ?? 60, 20);
+  const sourcesLimit = new RateLimiter(o.limits?.sourcesPerMinute ?? 60, o.limits?.sourcesBurst ?? 20);
   const reportLimit = new RateLimiter(o.limits?.reportsPerMinute ?? 120, 60);
   // Reports from clients are kept apart: they inform, they never bench anything on the server.
   const fleet = new HealthStore({ failuresToOpen: Number.MAX_SAFE_INTEGER });

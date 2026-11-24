@@ -324,7 +324,8 @@ async function main() {
         publicUrl: PUBLIC_URL ?? `http://localhost:${Number(process.env.PORT ?? 8080)}`,
         canaries: CANARIES,
         adminToken: process.env.ADMIN_TOKEN || undefined,
-        autoFailoverTtlMs: Number(process.env.AUTO_DOMAIN_FAILOVER_MINUTES ?? 0) * 60_000
+        autoFailoverTtlMs: Number(process.env.AUTO_DOMAIN_FAILOVER_MINUTES ?? 0) * 60_000,
+        limits: { sourcesPerMinute: Number(process.env.RATE_LIMIT_SOURCES_PER_MINUTE ?? 60), sourcesBurst: Number(process.env.RATE_LIMIT_SOURCES_BURST ?? 20) }
     });
 
     // Chrome asks before an https site may reach a server on the viewer's own computer or network

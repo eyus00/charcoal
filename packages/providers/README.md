@@ -1,47 +1,41 @@
 # @charcoal/providers
 
-The source scrapers, written once and used in two places:
+The provider pack: every provider is written against `@charcoal/provider-sdk`, so the same module
+runs on the server, in the page through a bridge, or anywhere else a transport exists. Nothing
+here knows which runtime it is in, and nothing here contains an address: those live in
+`src/domains.ts`.
 
-- **The server** (`apps/server`) runs them with plain `fetch` and relays the video.
-- **The website** (`apps/web`) runs them in the browser through the extension, which fetches
-  from the viewer's own connection (step 4 of the plan).
+| Provider | Kind | Stage | Runs | Notes |
+|---|---|---|---|---|
+| Febbox | module | stable | where the viewer's own token is (extension, app, own server) | Original files up to 4K |
+| Castle | module | stable | anywhere | Adapted from nuvio-providers (GPL-3.0) |
+| VixSrc | module | stable | only on a viewer's own connection | Its API refuses data-centre addresses; links are address-bound |
+| CineSu (`cinesu-rules`) | rule pack (data) | canary | anywhere | A port of the server-only class; not yet validated against the live site |
+| StreamViva sources (`sv-*`) | vendored engine | stable | extension, app, home server | Open network policy; mostly fail from data centres |
 
-That works because a provider never fetches by itself: every request goes through the `fetch`
-it is given (`ScrapeContext.fetch`), and decryption uses WebCrypto, which Node and browsers share.
-The design follows `@movie-web/providers` (MIT), without its scrapers.
-
-## A provider
-
-```ts
-export const example: Provider = {
-  id: 'example',
-  name: 'Example',
-  rank: 100,                    // higher is tried / listed first
-  supports: ['movie', 'tv'],
-  async scrape(media, { fetch, signal }) {
-    const res = await fetch('https://api.example.com/…', { headers: { Referer: '…' }, signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    // …
-    if (nothing) throw new NotFoundError();   // the title isn't there (not a failure)
-    return { streams: [{ url, type: 'hls', quality: '1080', headers: { Referer: '…' } }], captions: [] };
-  },
-};
-```
-
-`media.title` is always the movie's or the show's title. Each stream lists the headers its video
-needs; the server's proxy or the extension adds them. Add the provider to `providers` in
-`src/index.ts`.
+Writing, testing and shipping a provider: `docs/platform/SDK.md`.
 
 ## Try it
 
+On this machine's own connection:
+
 ```bash
 npm run try --workspace packages/providers -- movie 27205 Inception 2010
-npm run try --workspace packages/providers -- tv 1396 "Breaking Bad" "" 2 3
 ```
 
-| Provider | From a server | From a home connection |
-|---|---|---|
-| Febbox (your own token) | not run on servers | original files up to 4K |
-| Castle | plays | plays |
-| VixSrc | API refuses servers | plays (tested from a home server) |
-| ~~VidApi~~ | removed 2026-11-21: its API answers 404 for everything | |
+```bash
+npm run try --workspace packages/providers -- tv 1396 "Breaking Bad" 2008 2 3
+```
+
+Add provider ids at the end to run only those (a canary runs when named). `EGRESS=user` says the
+machine is on a home connection; `FALLBACK=true` includes the vendored pack; `FEBBOX_TOKEN=…`
+enables Febbox.
+
+## Test
+
+```bash
+npm test --workspace packages/providers
+```
+
+The tests run each provider's real logic (including Castle's decryption) against fixtures
+written for the tests. They do not contact any site.

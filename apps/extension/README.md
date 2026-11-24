@@ -28,6 +28,13 @@ Chrome on Android (they don't run extensions like this).
 
 ## How it works
 
+It is an optional capability module: the website works without it and uses what it offers when
+it is there. Since 0.2.0 the two negotiate (`hello` answers with the protocol version both sides
+speak and the helper's capabilities), failures carry a code, and a `status` message reports
+active rules and request counters. The page first asks the content script "are you there?",
+which it answers itself in milliseconds, so viewers without the helper never wait for it.
+
+
 1. Its content script runs only on Charcoal's own pages (`charcoal.eys0.fyi`, and `localhost`
    for development) and relays messages between the page and the extension.
 2. **`request`**: Charcoal runs the scrapers from `packages/providers` in the page; each request
@@ -37,6 +44,9 @@ Chrome on Android (they don't run extensions like this).
    expected headers and a CORS header for Charcoal, for requests from that Charcoal tab only.
    The player then loads playlists and segments straight from the host.
 4. **`releaseStreams`**: closing the player (or the tab) removes those rules.
+
+`npm test --workspace apps/extension` runs the background and content scripts in a sandbox with a
+fake `chrome` API and checks these rules.
 
 What it deliberately doesn't do: work for any other website, read your browser's cookies, send a
 cookie anywhere except febbox.com (your own Febbox token, pasted in Charcoal's settings), set
