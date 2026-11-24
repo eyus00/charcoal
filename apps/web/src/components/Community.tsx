@@ -326,10 +326,9 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
   };
   return (
     <div className="group/tip relative">
-      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="flex h-14 items-center gap-1.5 rounded-[22px] bg-white/[0.04] pr-2 pl-3.5 ring-1 ring-white/[0.06]">
-        {/* The star marks the row; it fills in once you've rated. */}
-        <Star key={mine ? `on-${mine}` : 'off'} className={cx('size-4 shrink-0 fill-current', mine ? 'pop text-white' : 'text-white/25')} strokeWidth={0} aria-hidden />
-        <div className="grid flex-1 grid-cols-10 gap-0.5">
+      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="rounded-[22px] bg-white/[0.04] px-2.5 pt-3 pb-2.5 ring-1 ring-white/[0.06]">
+        <p className="mb-1.5 px-1.5 text-sm font-semibold">{mine ? 'Your rating' : 'Rate it'}</p>
+        <div className="grid grid-cols-10 gap-0.5">
           {Array.from({ length: 10 }, (_, i) => {
             const n = i + 1;
             const on = mine === n;
@@ -346,8 +345,8 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
                 onPointerEnter={() => setHover(n)}
                 onClick={() => pick(n)}
                 className={cx(
-                  'grid h-9 min-w-0 place-items-center rounded-lg text-[15px] leading-none tabular-nums transition-colors',
-                  on && !hover ? 'bg-white font-semibold text-black' : hover === n ? 'bg-white font-semibold text-black' : upTo ? 'text-white' : 'text-white/45 hover:text-white',
+                  'grid h-9 min-w-0 place-items-center rounded-lg text-[15px] leading-none font-semibold tabular-nums transition-colors',
+                  on && !hover ? 'bg-white font-bold text-black' : hover === n ? 'bg-white font-bold text-black' : upTo ? 'text-white' : 'text-white/45 hover:text-white',
                 )}
               >
                 {n}
