@@ -23,6 +23,7 @@ import { vidzee } from './providers/vidzee.js';
 import { vixsrc } from './providers/vixsrc.js';
 import { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 import { icefyManifest, icefyRules } from './rules/icefy.js';
+import { vidlinkManifest, vidlinkRules } from './rules/vidlink.js';
 
 export * from './types.js';
 export { nativeFetcher, getJson } from './fetch.js';
@@ -33,6 +34,7 @@ export { loadFallbackProviders };
 export { primesrc, STREAMVIVA_VERSION } from './streamviva.js';
 export { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 export { icefyManifest, icefyRules } from './rules/icefy.js';
+export { vidlinkManifest, vidlinkRules } from './rules/vidlink.js';
 export { castle, febbox, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidnest, vidrock, vidsrc, vidzee, vixsrc };
 
 /**
@@ -46,6 +48,8 @@ export const RULE_PROVIDERS: { manifest: ProviderManifest; rules: RulePack; stag
   // Its address redirects elsewhere and the new host refuses the playlist path.
   { manifest: cinesuManifest, rules: cinesuRules, stage: 'canary' },
   { manifest: icefyManifest, rules: icefyRules, stage: 'stable' },
+  // Needs a browser worker; live-validated through one from a cloud address on 2026-11-24.
+  { manifest: vidlinkManifest, rules: vidlinkRules, stage: 'stable' },
 ];
 
 /** First-party code providers, with the stage each ships in. */

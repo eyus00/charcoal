@@ -23,7 +23,7 @@ test('every provider in the pack has a valid manifest and a domain config for ea
     assert.deepEqual(validateRulePack(rules, manifest), [], manifest.id);
     assert.deepEqual(validateDomainConfig(DEFAULT_DOMAINS[manifest.id], manifest.domainRoles), [], manifest.id);
   }
-  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'icefy']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'icefy', 'vidlink']);
   assert.deepEqual(loadCorePack().filter((p) => p.stage === 'canary').map((p) => p.module.manifest.id), ['vidsrc', 'videasy', 'vidzee', 'vidnest', 'tulnex', 'peachify', 'cinesu']);
 });
 

@@ -68,8 +68,8 @@ export const vidnest = defineProvider({
   manifest: {
     id: 'vidnest',
     name: 'VidNest',
-    version: '2.0.0',
-    description: 'Ten named back-ends behind one API; answers are JSON in base64 with a shuffled alphabet.',
+    version: '2.1.0',
+    description: 'Ten named back-ends behind one API. With a browser, the site’s own player page is opened and its stream taken; without one, the API is asked directly.',
     kinds: ['movie', 'tv'],
     lookup: ['tmdb'],
     runtimes: ['server', 'edge', 'extension', 'app'],
@@ -81,10 +81,35 @@ export const vidnest = defineProvider({
     rank: 100,
     origin: 'apps/server/src/providers/vidnest (cinepro-org/core)',
   },
-  async getSources(media, { fetch, signal, url, domain, log }) {
+  async getSources(media, { fetch, signal, url, domain, log, browser }) {
     if ((media.kind !== 'movie' && media.kind !== 'tv') || !media.ids.tmdb) throw new NotFoundError('VidNest: needs a TMDB id');
     const H = xhrHeaders(domain('site'));
     const path = media.kind === 'movie' ? `movie/${media.ids.tmdb}` : `tv/${media.ids.tmdb}/${media.season}/${media.episode}`;
+
+    // Where a browser is available, open the site's own player page and take what it asks for.
+    // The page makes its API calls itself (including the request nonce the API now wants), so
+    // nothing about the API has to be reproduced here.
+    if (browser) {
+      const page = await browser.open(url('site', `/${path}`), { waitFor: 'domcontentloaded' });
+      try {
+        if (page.status === 404) throw new NotFoundError('VidNest: no page for this title');
+        try {
+          await page.waitFor({ media: true }, 12_000);
+        } catch (e) {
+          // The player page exists for every id; loading nothing means the site has no source for this one.
+          if (e instanceof ProviderError && e.code === 'SELECTOR_MISSING') throw new NotFoundError('VidNest: the player loaded no stream for this title');
+          throw e;
+        }
+        const seen = page.media();
+        const streams = seen.filter((m) => m.type !== 'captions').map((m): RawStream => ({ url: m.url, type: m.type as RawStream['type'], headers: m.headers }));
+        if (!streams.length) throw new NotFoundError('VidNest: the player loaded no stream for this title');
+        log('via-browser', { streams: streams.length });
+        return { streams, captions: seen.filter((m) => m.type === 'captions').map((m) => caption(m.url, 'Subtitles', m.headers)) };
+      } finally {
+        await page.close();
+      }
+    }
+
     const found = await gather<Found>(
       SERVERS.map((server) => async () => {
         const res = await fetch(url('api', `/${server.path}/${path}${server.query}`), { headers: H, signal });

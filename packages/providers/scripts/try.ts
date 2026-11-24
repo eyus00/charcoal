@@ -13,6 +13,7 @@
  *          --extra ./path/to/module.ts               also load providers from a pack file
  *                                                    (it exports `providers` and `domains`)
  * Environment: EGRESS=user on a home connection; FALLBACK=true for the vendored pack;
+ *              BROWSER=1 to give providers a browser worker;
  * NODE_USE_ENV_PROXY=1 where traffic has to leave through HTTPS_PROXY.
  */
 import path from 'node:path';
@@ -57,10 +58,14 @@ for (const d of flags.domain ?? []) {
 }
 const providers = [...(await loadPack({ fallback: process.env.FALLBACK === 'true', domains })), ...extra.map((p) => ({ ...p, domains: domains[p.module.manifest.id] ?? p.domains }))];
 
-const runtime = describeRuntime('server', { egress: process.env.EGRESS === 'user' ? 'user' : 'datacenter' });
+const base = describeRuntime('server', { egress: process.env.EGRESS === 'user' ? 'user' : 'datacenter' });
+// BROWSER=1 gives providers a browser worker (needs @charcoal/browser-runtime and a Chromium).
+const worker = process.env.BROWSER ? ((await import('@charcoal/browser-runtime' as string)) as { createBrowserWorker(): { close(): Promise<void> } }).createBrowserWorker() : undefined;
+const runtime = worker ? { ...base, features: [...base.features, 'js-render' as const] } : base;
 const engine = new Engine({
   providers,
   runtime,
+  browser: worker as never,
   transport: fetchTransport,
   health: new HealthStore(),
   settings: process.env.FEBBOX_TOKEN ? { febboxToken: process.env.FEBBOX_TOKEN } : undefined,
@@ -76,3 +81,4 @@ for (const r of results) {
     console.log(`               ${s.type} ${s.quality.padEnd(5)} ${s.audio.map((a) => a.lang).join('+').padEnd(5)} ${host.padEnd(34)} → ${v.state}${v.state === 'verified' ? ` (${v.level}${v.detail?.maxHeight ? `, up to ${v.detail.maxHeight}p` : ''}${v.detail?.container ? `, ${v.detail.container}` : ''})` : v.code ? ` ${v.code}: ${v.message}` : ` ${v.message ?? ''}`}`);
   }
 }
+await worker?.close();

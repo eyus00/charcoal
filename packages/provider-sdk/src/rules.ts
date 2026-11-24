@@ -75,6 +75,12 @@ export interface RenderStep extends When {
   capture?: string;
   /** Variable that receives the list of caption addresses the page asked for. */
   captureCaptions?: string;
+  /**
+   * What it means when the page never asks for media. A player page that exists for every id but
+   * loads nothing for titles the site lacks should say 'NOT_FOUND'; the default treats it as the
+   * page having changed.
+   */
+  noMediaIs?: 'NOT_FOUND' | 'SELECTOR_MISSING';
   timeoutMs?: number;
   optional?: boolean;
 }
@@ -314,7 +320,14 @@ export async function runRulePack(pack: RulePack, manifest: ProviderManifest, me
         try {
           if (page.status === 404 || page.status === 410) throw new ProviderError('NOT_FOUND');
           if (step.click) await page.click(step.click, { timeoutMs: step.timeoutMs, frames: true });
-          if (step.waitFor === 'media') await page.waitFor({ media: true }, step.timeoutMs);
+          if (step.waitFor === 'media') {
+            try {
+              await page.waitFor({ media: true }, step.timeoutMs);
+            } catch (e) {
+              if (step.noMediaIs === 'NOT_FOUND' && e instanceof ProviderError && e.code === 'SELECTOR_MISSING') throw new ProviderError('NOT_FOUND', `${manifest.name}: the player loaded no stream for this title`);
+              throw e;
+            }
+          }
           vars[step.as] = { status: page.status, ok: true, url: page.url, headers: {}, body: await page.html() };
           const seen = page.media();
           if (step.capture) vars[step.capture] = seen.filter((m) => m.type !== 'captions').map((m) => m.url);
