@@ -225,3 +225,99 @@ export async function validateStreams<T extends Checkable>(streams: T[], fetcher
   await Promise.all(Array.from({ length: Math.min(opts.concurrency ?? 4, streams.length) }, worker));
   return out;
 }
+
+// ---------- verification as part of a result stream ----------
+
+/** A stream found earlier in the same response has now been tried. */
+export interface VerifyEvent {
+  t: 'verify';
+  provider: string;
+  /** Stream.id */
+  stream: string;
+  verification: Verification;
+}
+
+export interface VerificationOptions extends ValidateOptions {
+  concurrency?: number;
+  /** Streams tried per provider result, best first as the provider returned them. */
+  maxPerProvider?: number;
+  /** How long the end of the response waits for checks still running. */
+  graceMs?: number;
+  /** Results are reused for this long (the same link is not tried again for every viewer). */
+  cacheMs?: number;
+  cache?: Map<string, { at: number; v: Verification }>;
+  onVerified?: (provider: string, verification: Verification) => void;
+}
+
+interface ResultLike {
+  t: string;
+  provider?: { id: string };
+  streams?: (Checkable & { id: string; verification?: Verification })[];
+}
+
+/**
+ * Passes a response's events through and adds a `verify` event for every stream as it is tried.
+ * Results are never held back for their checks: a stream is "discovered" the moment its provider
+ * answers and becomes "verified" (or "failed") a moment later. The final `done` event waits, up to
+ * `graceMs`, for checks that are still running.
+ */
+export async function* withVerification<E extends ResultLike>(events: AsyncIterable<E>, fetcher: Fetcher, o: VerificationOptions): AsyncGenerator<E | VerifyEvent> {
+  const now = o.now ?? Date.now;
+  const limit = o.concurrency ?? 4;
+  const queue: (() => Promise<void>)[] = [];
+  const ready: VerifyEvent[] = [];
+  let running = 0;
+  let wake: (() => void) | undefined;
+  const notify = () => {
+    wake?.();
+    wake = undefined;
+  };
+  const pump = () => {
+    while (running < limit && queue.length) {
+      running++;
+      void queue
+        .shift()!()
+        .catch(() => undefined)
+        .finally(() => {
+          running--;
+          pump();
+          notify();
+        });
+    }
+  };
+  const schedule = (provider: string, s: Checkable & { id: string }) => {
+    const key = `${s.id}|${s.url}`;
+    const hit = o.cache?.get(key);
+    if (hit && now() - hit.at < (o.cacheMs ?? 120_000)) return void ready.push({ t: 'verify', provider, stream: s.id, verification: hit.v });
+    queue.push(async () => {
+      const v = await validateStream(s, fetcher, o);
+      if (o.cache) {
+        if (o.cache.size > 2000) o.cache.clear();
+        if (v.state !== 'unchecked' && v.code !== 'CANCELLED') o.cache.set(key, { at: now(), v });
+      }
+      if (v.state !== 'unchecked' && v.code !== 'CANCELLED') o.onVerified?.(provider, v);
+      ready.push({ t: 'verify', provider, stream: s.id, verification: v });
+    });
+    pump();
+  };
+
+  for await (const e of events) {
+    if (e.t === 'done') {
+      // Give running checks a moment, handing each over as it lands.
+      const deadline = now() + (o.graceMs ?? 6000);
+      while ((running || queue.length) && now() < deadline && !o.signal?.aborted) {
+        while (ready.length) yield ready.shift()!;
+        await new Promise<void>((resolve) => {
+          wake = resolve;
+          setTimeout(resolve, 100);
+        });
+      }
+      while (ready.length) yield ready.shift()!;
+      yield e;
+      continue;
+    }
+    yield e;
+    if (e.t === 'result' && e.provider && e.streams?.length) for (const s of e.streams.slice(0, o.maxPerProvider ?? 4)) schedule(e.provider.id, s);
+    while (ready.length) yield ready.shift()!;
+  }
+}

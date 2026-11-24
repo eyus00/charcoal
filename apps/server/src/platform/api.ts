@@ -21,6 +21,8 @@ import {
   recordDomainOutcome,
   runCanary,
   stageDomain,
+  summarizePlacement,
+  withVerification,
   runRecovery,
   summarize,
   type CanaryTitles,
@@ -37,6 +39,7 @@ import {
   type Stage,
   type Stream,
   type StreamType,
+  type Verification,
 } from '@charcoal/provider-sdk';
 import type { Catalog } from './catalog.js';
 import type { Overlay } from './overlay.js';
@@ -170,6 +173,8 @@ export interface ApiOptions {
   adminToken?: string;
   /** State of the browser worker, when this server has one. */
   browserHealth?: () => BrowserWorkerHealth;
+  /** Try each discovered stream (manifest and first media bytes) and report it as verified or not. Default on. */
+  verifyStreams?: boolean;
   /** Lets automatic recovery put a validated alternate domain in force for this long (0 = propose only). */
   autoFailoverTtlMs?: number;
   /** Per client address. `sourcesBurst` is how many may arrive at once before the per-minute rate applies. */
@@ -228,6 +233,9 @@ export function registerApi(o: ApiOptions): Platform {
     return catalog.published();
   });
 
+  /** Recent verification results by stream, shared between requests. */
+  const verified = new Map<string, { at: number; v: Verification }>();
+
   app.get('/v2/sources', async (request, reply) => {
     if (!sourcesLimit.take(request.ip)) return limited(reply);
     const q = request.query as Record<string, unknown>;
@@ -241,7 +249,12 @@ export function registerApi(o: ApiOptions): Platform {
     const accept = list(q.accept)?.filter((t): t is StreamType => TYPES.includes(t as StreamType));
     const abort = new AbortController();
     request.raw.on('close', () => abort.abort());
-    const events = engine.resolve({ media, only: list(q.only), skip: list(q.skip), accept: accept?.length ? accept : undefined, signal: abort.signal });
+    const found = engine.resolve({ media, only: list(q.only), skip: list(q.skip), accept: accept?.length ? accept : undefined, signal: abort.signal });
+    // Discovered streams are sent at once; each is then tried from here and a `verify` line follows.
+    const events =
+      o.verifyStreams !== false && q.verify !== '0'
+        ? withVerification(found, o.transport, { runtime: engine.runtime, signal: abort.signal, timeoutMs: 6000, cache: verified, onVerified: (provider, v) => health.recordVerification(provider, engine.runtime.kind, v.state === 'verified') })
+        : found;
 
     async function* lines() {
       for await (const e of events) {
@@ -269,6 +282,9 @@ export function registerApi(o: ApiOptions): Platform {
       browser: o.browserHealth?.(),
       providers: summarize(health),
       fleet: summarize(fleet),
+      // One line per provider across this server's runs and what clients report: a provider that
+      // is refused here but answers on viewers' connections is "works-elsewhere", not broken.
+      placement: summarizePlacement(health, fleet),
       proposals: Object.entries(overlay.proposals()).map(([provider, p]) => ({ provider, role: p.role, from: p.from, to: p.to })),
     };
   });

@@ -235,7 +235,10 @@ export class Engine {
       }
       const gate = health.allow(m.id, runtime.kind);
       if (!gate.allowed) {
-        skip(`resting for ${Math.ceil((gate.retryInMs ?? 0) / 1000)}s after repeated failures`);
+        // Say what kind of rest it is: refused from here is not the same as broken.
+        const where = health.placement(m.id, runtime.kind);
+        const why = where === 'blocked' ? 'this network is refused by the site (it can still work from a viewer’s own connection)' : where === 'unreachable' ? 'its address does not answer from here' : where === 'broken' ? 'its extraction needs updating' : 'repeated failures';
+        skip(`resting for ${Math.ceil((gate.retryInMs ?? 0) / 1000)}s: ${why}`);
         continue;
       }
       run.push(p);

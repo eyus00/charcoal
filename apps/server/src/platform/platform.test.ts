@@ -367,3 +367,36 @@ test('control plane: a new address is put on trial, promoted by clean runs, and 
   assert.deepEqual(d.addresses.map((a) => [a.position, a.host]), [['active', 'old.moving.example.com'], ['alternate', 'new.moving.example.org']]);
   assert.equal((await h.app.inject({ method: 'GET', url: '/v2/admin/providers/moving/diagnose' })).statusCode, 401);
 });
+
+test('GET /v2/sources: discovered streams are followed by a verdict for each; health keeps count and places providers', async () => {
+  const media = '#EXTM3U\n#EXTINF:6,\nseg0.ts\n#EXT-X-ENDLIST\n';
+  const h = await harness({
+    ...ROUTES,
+    'cdn.alpha.example.net': (req) => (req.url.pathname.endsWith('.m3u8') ? { body: media } : { body: 'G' + '\0'.repeat(187) + 'G' }),
+    'cdn.beta.example.net': simulate.notFound(),
+  });
+  const { events } = await h.sources(`kind=movie&tmdb=27205&title=Inception&${ONLY}`);
+  const kinds = events.map((e) => (e as { t: string }).t);
+  assert.equal(kinds.at(-1), 'done');
+  const verdicts = Object.fromEntries((events as unknown as { t: string; provider: string; verification: { state: string; level: string; code?: string } }[]).filter((e) => e.t === 'verify').map((e) => [e.provider, [e.verification.state, e.verification.level, e.verification.code]]));
+  assert.deepEqual(verdicts, { alpha: ['verified', 'segment', undefined], beta: ['failed', 'none', 'EXPIRED'] });
+  // A result line never waits for its verdict.
+  assert.ok(kinds.indexOf('verify') > kinds.indexOf('result'));
+
+  const health = JSON.parse((await h.app.inject({ method: 'GET', url: '/v2/health' })).body) as { providers: { provider: string; verified: number; unverified: number; placement: string }[]; placement: { provider: string; verdict: string; blockedOn: string[] }[] };
+  const row = (id: string) => health.providers.find((p) => p.provider === id)!;
+  assert.deepEqual([row('alpha').verified, row('alpha').unverified, row('beta').verified, row('beta').unverified], [1, 0, 0, 1]);
+  assert.equal(row('alpha').placement, 'works');
+  // gamma answers with a browser check here: after repeated runs it is "blocked", which is not "broken".
+  for (let i = 0; i < 2; i++) await h.sources(`kind=movie&tmdb=27205&title=Inception&only=gamma`);
+  const after = JSON.parse((await h.app.inject({ method: 'GET', url: '/v2/health' })).body) as typeof health;
+  assert.deepEqual(after.placement.find((p) => p.provider === 'gamma'), { provider: 'gamma', worksOn: [], blockedOn: ['server'], unreachableOn: [], brokenOn: [], verdict: 'blocked' });
+  // A viewer's device reports that it works there: the provider is not written off.
+  await h.app.inject({ method: 'POST', url: '/v2/report', payload: { reports: [{ provider: 'gamma', runtime: 'extension', outcome: 'ok', ms: 800 }] } });
+  const reported = JSON.parse((await h.app.inject({ method: 'GET', url: '/v2/health' })).body) as typeof health;
+  assert.equal(reported.placement.find((p) => p.provider === 'gamma')?.verdict, 'works-elsewhere');
+
+  // Verification can be switched off per request.
+  const plain = await h.sources(`kind=movie&tmdb=27205&title=Inception&${ONLY}&verify=0`);
+  assert.ok(!plain.events.some((e) => (e as { t: string }).t === 'verify'));
+});

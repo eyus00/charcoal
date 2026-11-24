@@ -353,6 +353,7 @@ async function main() {
         publicUrl: PUBLIC_URL ?? `http://localhost:${Number(process.env.PORT ?? 8080)}`,
         canaries: CANARIES,
         adminToken: process.env.ADMIN_TOKEN || undefined,
+        verifyStreams: process.env.VERIFY_STREAMS !== 'false',
         browserHealth: browser ? (): BrowserWorkerHealth => browser!.health() : undefined,
         autoFailoverTtlMs: Number(process.env.AUTO_DOMAIN_FAILOVER_MINUTES ?? 0) * 60_000,
         limits: { sourcesPerMinute: Number(process.env.RATE_LIMIT_SOURCES_PER_MINUTE ?? 60), sourcesBurst: Number(process.env.RATE_LIMIT_SOURCES_BURST ?? 20) }

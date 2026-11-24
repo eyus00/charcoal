@@ -16,9 +16,11 @@ export interface RankWeights {
   rank: number;
   /** The provider that played last time. */
   lastPlayed: number;
+  /** A stream that was tried and answered with media (see Stream.verification). */
+  verified?: number;
 }
 
-export const DEFAULT_WEIGHTS: RankWeights = { language: 30, quality: 25, reliability: 20, speed: 5, delivery: 10, rank: 5, lastPlayed: 5 };
+export const DEFAULT_WEIGHTS: RankWeights = { language: 30, quality: 25, reliability: 20, speed: 5, delivery: 10, rank: 5, lastPlayed: 5, verified: 10 };
 
 const QUALITY_VALUE: Record<string, number> = { '2160': 1, '1440': 0.9, '1080': 0.8, auto: 0.7, '720': 0.6, original: 0.55, '480': 0.35, '360': 0.2, '240': 0.1 };
 const HEIGHT: Record<string, number> = { '2160': 2160, '1440': 1440, '1080': 1080, '720': 720, '480': 480, '360': 360, '240': 240 };
@@ -85,7 +87,14 @@ export function scoreStream(stream: Stream, ctx: RankContext): Scored {
   const rank = Math.min(1, Math.max(0, ctx.providerRank?.(stream.provider.id) ?? 0.5));
   const last = ctx.lastProvider && ctx.lastProvider === stream.provider.id ? 1 : 0;
 
-  const score = w.language * lang + w.quality * quality + w.reliability * reliability + w.speed * speed + w.delivery * DELIVERY_VALUE[delivery] + w.rank * rank + w.lastPlayed * last;
+  // Tried and answering beats merely discovered; tried and not answering goes to the bottom of
+  // what is still offered (it may be bound to another address, so it is not hidden).
+  const tried = stream.verification?.state;
+  if (tried === 'failed') reasons.push('did not answer when tried');
+  const verified = tried === 'verified' ? 1 : tried === 'failed' ? 0 : 0.5;
+
+  let score = w.language * lang + w.quality * quality + w.reliability * reliability + w.speed * speed + w.delivery * DELIVERY_VALUE[delivery] + w.rank * rank + w.lastPlayed * last + (w.verified ?? 0) * verified;
+  if (tried === 'failed') score *= 0.25;
   return { score: Math.round(score * 100) / 100, playable: true, reasons };
 }
 

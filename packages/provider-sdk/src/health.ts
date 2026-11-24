@@ -48,7 +48,24 @@ export interface HealthRecord {
   failures: FailureRecord[];
   /** Start of the trial run while half-open. */
   trialAt?: number;
+  /** Streams of this provider that answered with media when tried, and that did not. */
+  verified?: number;
+  unverified?: number;
 }
+
+/**
+ * What the measurements say about running a provider in one runtime:
+ * - works        it answered there recently
+ * - blocked      that runtime's network is refused (a browser check, a refusal): try another runtime
+ * - unreachable  its address does not answer from there (DNS, connection, a moved site)
+ * - broken       its extraction no longer fits the site: nowhere will do until it is updated
+ * - unknown      nothing recent to go on
+ */
+export type Placement = 'works' | 'blocked' | 'unreachable' | 'broken' | 'unknown';
+
+const BLOCKED = new Set<FailureCode>(['CHALLENGE', 'ACCESS_DENIED']);
+const UNREACHABLE = new Set<FailureCode>(['DNS', 'CONNECT', 'TLS', 'TIMEOUT', 'NETWORK', 'REDIRECTED']);
+const BROKEN = new Set<FailureCode>(['STRUCTURE_CHANGED', 'SELECTOR_MISSING', 'INVALID_RESULT']);
 
 export interface HealthOptions {
   failuresToOpen?: number;
@@ -192,6 +209,37 @@ export class HealthStore {
     return (hits + 1) / (answers + 2);
   }
 
+  /** Notes whether a stream of this provider answered with media when it was tried. */
+  recordVerification(provider: string, runtime: RuntimeKind, verified: boolean) {
+    const r = this.rec(provider, runtime);
+    if (verified) r.verified = (r.verified ?? 0) + 1;
+    else r.unverified = (r.unverified ?? 0) + 1;
+  }
+
+  /** Share of its tried streams that answered with media, 0..1 with a neutral prior (0.5 when untried). */
+  verifyRate(provider: string, runtime: RuntimeKind): number {
+    const r = this.records.get(key(provider, runtime));
+    const v = r?.verified ?? 0;
+    const u = r?.unverified ?? 0;
+    return (v + 1) / (v + u + 2);
+  }
+
+  /** Where the measurements put this provider in this runtime (see Placement). */
+  placement(provider: string, runtime: RuntimeKind): Placement {
+    const r = this.records.get(key(provider, runtime));
+    if (!r || !r.recent) return 'unknown';
+    if (!r.recent.endsWith('f')) return 'works';
+    // The failures at the end of the window, newest last.
+    const trailing = r.recent.length - r.recent.replace(/f+$/, '').length;
+    const codes = r.failures.slice(-trailing).map((f) => f.code);
+    if (!codes.length) return 'unknown';
+    if (codes.some((c) => BROKEN.has(c))) return 'broken';
+    if (codes.length >= 2 && codes.every((c) => BLOCKED.has(c))) return 'blocked';
+    if (codes.length >= 2 && codes.every((c) => UNREACHABLE.has(c) || BLOCKED.has(c))) return codes.some((c) => BLOCKED.has(c)) ? 'blocked' : 'unreachable';
+    // One failure after answers is not a verdict yet.
+    return r.recent.includes('o') || r.recent.includes('e') ? 'works' : 'unknown';
+  }
+
   status(provider: string, runtime: RuntimeKind): HealthStatus {
     const r = this.records.get(key(provider, runtime));
     if (!r || !r.recent) return 'unknown';
@@ -237,6 +285,48 @@ export interface HealthSummary {
   lastSuccessAt?: string;
   lastFailureAt?: string;
   lastFailure?: { code: FailureCode; label: string; message: string; host?: string; redirectedTo?: string };
+  placement: Placement;
+  /** Streams tried and found to answer with media / not to. */
+  verified: number;
+  unverified: number;
+}
+
+/** A provider across every runtime that has measurements of it. */
+export interface PlacementSummary {
+  provider: string;
+  worksOn: RuntimeKind[];
+  blockedOn: RuntimeKind[];
+  unreachableOn: RuntimeKind[];
+  brokenOn: RuntimeKind[];
+  /**
+   * works            answers somewhere
+   * works-elsewhere  refused or unreachable in some runtimes, answers in others: not broken
+   * blocked          refused wherever it was tried (other runtimes may still do)
+   * unreachable      its address answers nowhere it was tried
+   * broken           its extraction needs updating
+   */
+  verdict: 'works' | 'works-elsewhere' | 'blocked' | 'unreachable' | 'broken' | 'unknown';
+}
+
+/** Rolls per-runtime placements up to one line per provider. Pass every store that has measurements (a server's own runs, what clients report). */
+export function summarizePlacement(...stores: HealthStore[]): PlacementSummary[] {
+  const by = new Map<string, PlacementSummary>();
+  for (const store of stores) {
+    for (const r of store.list()) {
+      const s = by.get(r.provider) ?? { provider: r.provider, worksOn: [], blockedOn: [], unreachableOn: [], brokenOn: [], verdict: 'unknown' as const };
+      by.set(r.provider, s);
+      const p = store.placement(r.provider, r.runtime);
+      const list = p === 'works' ? s.worksOn : p === 'blocked' ? s.blockedOn : p === 'unreachable' ? s.unreachableOn : p === 'broken' ? s.brokenOn : undefined;
+      if (list && !list.includes(r.runtime)) list.push(r.runtime);
+    }
+  }
+  for (const s of by.values()) {
+    // A runtime in which it works outweighs an older verdict against the same runtime from another store.
+    for (const list of [s.blockedOn, s.unreachableOn, s.brokenOn]) for (const rt of s.worksOn) if (list.includes(rt)) list.splice(list.indexOf(rt), 1);
+    const troubled = s.blockedOn.length + s.unreachableOn.length + s.brokenOn.length;
+    s.verdict = s.worksOn.length ? (troubled ? 'works-elsewhere' : 'works') : s.brokenOn.length ? 'broken' : s.blockedOn.length ? 'blocked' : s.unreachableOn.length ? 'unreachable' : 'unknown';
+  }
+  return [...by.values()].sort((a, b) => a.provider.localeCompare(b.provider));
 }
 
 export function summarize(store: HealthStore, now = Date.now()): HealthSummary[] {
@@ -260,6 +350,9 @@ export function summarize(store: HealthStore, now = Date.now()): HealthSummary[]
         lastSuccessAt: iso(r.lastOkAt),
         lastFailureAt: iso(r.lastFailureAt),
         lastFailure: last ? { code: last.code, label: FAILURES[last.code].label, message: last.message, host: last.host, redirectedTo: last.redirectedTo } : undefined,
+        placement: store.placement(r.provider, r.runtime),
+        verified: r.verified ?? 0,
+        unverified: r.unverified ?? 0,
       };
     })
     .sort((a, b) => a.provider.localeCompare(b.provider) || a.runtime.localeCompare(b.runtime));

@@ -23,6 +23,7 @@ import {
   type Delivery,
   type DomainConfig,
   type EngineEvent,
+  type VerifyEvent,
   type FailureCode,
   type LoadedProvider,
   type Media,
@@ -75,7 +76,7 @@ export interface ResolveState {
 }
 
 /** One line of /v2/sources: an engine event whose streams may carry a relay link. */
-export type RemoteEvent = EngineEvent | (Omit<Extract<EngineEvent, { t: 'result' }>, 'streams'> & { streams: (Stream & { relay?: string })[] });
+export type RemoteEvent = EngineEvent | VerifyEvent | (Omit<Extract<EngineEvent, { t: 'result' }>, 'streams'> & { streams: (Stream & { relay?: string })[] });
 
 export interface ResolverDeps {
   /** Providers built into this client, with their shipped stages and domains. */
@@ -306,6 +307,14 @@ export async function resolveSources(media: Media, deps: ResolverDeps, opts: Res
             for (const s of e.skipped) if (!state.providers.some((x) => x.id === s.id)) state.providers.push({ id: s.id, name: s.name, where: 'remote', runtime: 'server', state: 'skipped', reason: s.reason });
             publish();
           } else if (e.t === 'result') take(e as ProviderOutcome & { streams: (Stream & { relay?: string })[] }, 'remote');
+          else if (e.t === 'verify') {
+            // The resolver has now tried a stream it sent a moment ago: discovered becomes verified (or not).
+            const f = found.find((x) => !x.local && x.stream.id === e.stream);
+            if (f) {
+              f.stream = { ...f.stream, verification: e.verification };
+              publish();
+            }
+          }
         }
         if (got) {
           state.remoteError = undefined;

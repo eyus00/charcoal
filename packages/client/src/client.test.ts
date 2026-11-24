@@ -343,3 +343,27 @@ test('cancelling stops both sides', async () => {
   assert.ok(Date.now() - started < 1000);
   assert.equal(final.sources.length, 0);
 });
+
+test('a stream sent as discovered is updated when the resolver reports having tried it; a failed one sinks', async () => {
+  const pack = [loaded(provider('first')), loaded(provider('second'))];
+  const server = fakeServer(pack, { [api('first')]: { body: { url: cdn('first') } }, [api('second')]: { body: { url: cdn('second', '720/master.m3u8') } } });
+  const remote: ResolverDeps['remote'] = async function* (base, q, signal) {
+    const ids: Record<string, string> = {};
+    for await (const e of server.remote(base, q, signal)) {
+      if (e.t === 'done') {
+        // What a resolver adds once it has tried the streams it sent.
+        yield { t: 'verify', provider: 'first', stream: ids.first, verification: { state: 'failed', level: 'none', code: 'EXPIRED', by: 'server', at: 1, ms: 20 } };
+        yield { t: 'verify', provider: 'second', stream: ids.second, verification: { state: 'verified', level: 'segment', by: 'server', at: 1, ms: 30 } };
+      }
+      if (e.t === 'result') for (const s of e.streams) ids[e.provider.id] = s.id;
+      yield e;
+    }
+  };
+  const updates: ResolveState[] = [];
+  const final = await resolveSources(TITLES.movie, deps({ packList: pack, remote }), { onUpdate: (s) => updates.push(s) });
+  // First they are simply discovered…
+  assert.ok(updates.some((u) => u.sources.length === 2 && u.sources.every((s) => !s.verification)));
+  // …then each carries its verdict, and the 720p stream that answers outranks the 1080p one that did not.
+  assert.deepEqual(final.sources.map((s) => [s.provider.id, s.quality, s.verification?.state]), [['second', '720', 'verified'], ['first', '1080', 'failed']]);
+  assert.ok(final.sources[1].reasons?.includes('did not answer when tried'));
+});
