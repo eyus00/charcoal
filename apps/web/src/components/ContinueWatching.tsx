@@ -62,7 +62,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
       // How far you got (white, bottom-left) and how long it is (bottom-right).
       bottomLeft={watched ? <Chip light>{formatRuntime(watched)}</Chip> : null}
       bottomRight={runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
-      // Shows: the episode is the headline, the show under it. Films: the title, then "Movie".
+      // Shows: the episode is the headline, the show under it. Films: the title, then a dash.
       primary={
         tv ? (
           <>
@@ -73,7 +73,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           h.title
         )
       }
-      secondary={tv ? h.title : 'Movie'}
+      secondary={tv ? h.title : '–'}
     >
       <button
         onClick={() => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Bell, BellRing, ChevronLeft } from 'lucide-react';
+import { Bell, BellRing, ChevronLeft, ChevronRight } from 'lucide-react';
 import Img from './Img';
 import { Chip } from './EpisodeTile';
 import { CARD_IMAGE, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
@@ -9,7 +9,7 @@ import { toast } from './Toast';
 import { episodePeekProps, peekProps } from '../lib/peek';
 import { useInLibrary } from '../lib/library';
 import { toggleReminder, useReminders, type Reminder } from '../lib/reminders';
-import { DAY, startOfDay, type Airing, type AiringEpisode } from '../lib/schedule';
+import { DAY, startOfDay, type Airing, type AiringEpisode, type Label } from '../lib/schedule';
 import { cx, formatRuntime } from '../lib/util';
 
 const fullDate = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -36,9 +36,9 @@ export const seLabel = (s: number, e: number) => (s === 0 ? `Special ${e}` : `S$
  * edge (PREMIERE, FINALE, NEW TO STREAMING…). Without a label the frame is invisible but keeps
  * its size, so framed and plain cards line up. `bg` is the colour behind the label.
  */
-export function Frame({ label, bg = 'bg-bg', children }: { label?: string; bg?: string; children: React.ReactNode }) {
+export function Frame({ label, bg = 'bg-bg', fill, children }: { label?: string; bg?: string; fill?: boolean; children: React.ReactNode }) {
   return (
-    <div className={cx('relative rounded-[22px] border-[1.5px] p-[5px]', label ? 'border-white/50' : 'border-transparent')}>
+    <div className={cx('relative rounded-[22px] border-[1.5px] p-[5px]', label ? 'border-white/50' : 'border-transparent', fill && bg)}>
       {label && <span className={cx('absolute -top-[9px] left-4 z-[2] px-1.5 text-[10.5px] leading-[15px] font-bold tracking-[0.14em] whitespace-nowrap text-white uppercase', bg)}>{label}</span>}
       {children}
     </div>
@@ -89,6 +89,23 @@ export function ReminderBell({ a, ep }: { a: Airing; ep?: AiringEpisode }) {
   );
 }
 
+const STARTS: Label[] = ['Premiere', 'New season', 'Full season', 'Special'];
+const ENDS: Label[] = ['Finale', 'Series finale'];
+/**
+ * The tag one episode of a batch carries: its own when known; otherwise the batch's, on the
+ * episode it belongs to (a premiere on the first, a finale on the last), never on all of them.
+ */
+function labelOf(a: Airing, i: number, n: number): Label | undefined {
+  const eps = a.episodes ?? [];
+  const tags = eps.map((e, k) => ('label' in e ? e.label : k === 0 ? a.label : undefined)).concat(a.label ?? []);
+  // A batch has one finale, on its last episode, and one premiere, on its first, however the
+  // episodes themselves are tagged (a two-part finale is often tagged on both, or the first).
+  const end = tags.find((t) => t && ENDS.includes(t));
+  const start = tags.find((t) => t && STARTS.includes(t));
+  if (n > 1) return i === n - 1 && end ? end : i === 0 && start ? start : undefined;
+  return end ?? start ?? a.label;
+}
+
 /** One card: image (frame, runtime, bell), then two lines and, outside the Calendar, the date. */
 function Card({
   a,
@@ -98,7 +115,7 @@ function Card({
   className,
   onClick,
   stacked,
-  label = a.label,
+  label,
 }: {
   a: Airing;
   ep?: AiringEpisode;
@@ -148,7 +165,7 @@ function Card({
             </span>
           ))}
           <div className="relative z-[2]">
-            <Frame label={label}>
+            <Frame label={label} fill={stack > 0}>
               <div className={CARD_IMAGE}>
                 <Img path={null} src={image} kind="still" sizes="(min-width: 640px) 300px, 260px" alt="" className="aspect-video" />
                 {runtime ? (
@@ -164,13 +181,22 @@ function Card({
               </div>
             </Frame>
           </div>
+          {/* Hovering a stack: an arrow says it opens out. */}
+          {stack > 0 && (
+            <span
+              aria-hidden
+              className="absolute top-1/2 -right-4 z-[3] grid size-8 -translate-y-1/2 place-items-center rounded-full bg-white text-black opacity-0 shadow-lg shadow-black/50 transition-opacity duration-200 group-hover:opacity-100"
+            >
+              <ChevronRight className="size-4" />
+            </span>
+          )}
         </div>
         <div className="relative pt-2 pr-2.5 pb-2 pl-[6.5px]">
           <div className={CARD_TITLE}>{line1}</div>
           {showDate && <div className="text-caption text-faint">{dateLabel(a.at, !tv)}</div>}
           <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
             {tv ? (
-              <Link to={`/tv/${a.id}`} className="relative z-10 min-w-0 truncate decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline">
+              <Link to={`/tv/${a.id}`} className="relative z-10 min-w-0 truncate decoration-white/80 decoration-1 underline-offset-[3px] transition-colors hover:text-white hover:underline">
                 {line2}
               </Link>
             ) : (
@@ -194,12 +220,17 @@ function Card({
 export default function AiringTile({ a, calendar, className }: { a: Airing; calendar?: boolean; className?: string }) {
   const [open, setOpen] = useState(false);
   const eps = a.episodes ?? [];
-  if (a.kind !== 'episode' || eps.length < 2) return <Card a={a} ep={eps[0]} showDate={!calendar} className={className} />;
-  if (!open) return <Card a={a} ep={undefined} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />;
+  if (a.kind !== 'episode' || eps.length < 2) return <Card a={a} ep={eps[0]} label={a.kind === 'episode' ? labelOf(a, 0, 1) : a.label} showDate={!calendar} className={className} />;
+  if (!open) return <Card a={a} ep={undefined} label={labelOf(a, 0, eps.length)} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />;
+  // Opened: the episodes side by side on a tray. The tray's backdrop hangs outside the cards
+  // (absolutely placed), so opening and closing never changes the row's height.
   return (
-    <div role="group" aria-label={`${a.title}, ${eps.length} episodes`} className="flex shrink-0 snap-start gap-3 rounded-[26px] bg-white/[0.035] p-1.5 pr-2 ring-1 ring-white/[0.07]">
+    <div role="group" aria-label={`${a.title}, ${eps.length} episodes`} className="relative flex shrink-0 snap-start gap-3">
+      <span aria-hidden className="absolute inset-y-0 -right-1 -left-1.5 rounded-[24px] bg-white/[0.035] ring-1 ring-white/[0.07]" />
       {eps.map((e, i) => (
-        <Card key={`${e.season}-${e.number}`} a={a} ep={e} label={i ? undefined : a.label} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={!calendar} className={className} />
+        <div key={`${e.season}-${e.number}`} className="fade-in relative" style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}>
+          <Card a={a} ep={e} label={labelOf(a, i, eps.length)} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={!calendar} className={className} />
+        </div>
       ))}
       <button
         type="button"

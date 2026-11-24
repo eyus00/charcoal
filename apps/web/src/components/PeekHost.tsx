@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import DetailsPeek from '../player/DetailsPeek';
+import DetailsPeek, { MediumPeekSkeleton } from '../player/DetailsPeek';
 import EpisodeSelector from './EpisodeSelector';
 import { peek, usePeek, type PeekEpisode } from '../lib/peek';
 import { q, type Details } from '../lib/tmdb';
@@ -21,6 +21,7 @@ export default function PeekHost() {
   const { data } = useQuery({ ...q.details(target?.type ?? 'movie', target?.id ?? 0), enabled: !!target });
   return (
     <>
+      {target?.mode === 'medium' && !(data && data.id === target.id) && <MediumPeekSkeleton onClose={peek.close} />}
       {target && data && data.id === target.id && (
         <DetailsPeek
           key={`${target.type}-${target.id}-${target.mode}`}

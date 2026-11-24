@@ -187,7 +187,7 @@ export function AiringThisWeek() {
         action={
           <div className="flex items-center gap-3">
             <Link to="/calendar" className="text-sm text-muted transition-colors hover:text-white">
-              Release Calendar
+              Calendar
             </Link>
             <RowArrows onScroll={scroll} />
           </div>

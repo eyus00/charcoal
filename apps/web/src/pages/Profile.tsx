@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import AvatarImg from '../components/AvatarImg';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
 import { Download, Film, Trash2, Upload, X, Heart } from 'lucide-react';
-import { StatusDot, StatusTag } from '../components/LibraryStatus';
+import { StatusDot } from '../components/LibraryStatus';
 import { LIBRARY_LABEL } from '../lib/library';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
-import { ROW_SIZES, SectionHeader } from '../components/Row';
+import { ROW_ITEM, ROW_SIZES, Scroller, SectionHeader } from '../components/Row';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
 import { detectExtension, extensionFetcher } from '../lib/extension';
@@ -140,17 +141,21 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'planned', label: 'To watch' },
   { id: 'completed', label: 'Watched' },
 ];
-const COLUMNS: WatchStatus[] = ['watching', 'planned', 'completed'];
+const SECTIONS: WatchStatus[] = ['watching', 'planned', 'completed'];
+const SECTION_HINT: Record<WatchStatus, string> = {
+  watching: 'Shows and films you’ve started',
+  planned: 'Saved for later',
+  completed: 'Seen to the end',
+};
 
-/** A library card: poster, status tag, a remove button on hover. */
-function LibraryCard({ w, sizes, className }: { w: WatchlistItem; sizes: string; className?: string }) {
+/** A library card: the poster, with a remove button on hover. The section says its status. */
+function LibraryCard({ w, className }: { w: WatchlistItem; className?: string }) {
   return (
     <MediaCard
-      sizes={sizes}
+      sizes={ROW_SIZES}
       className={className}
       type={w.mediaType}
       item={{ id: w.id, title: w.title, poster_path: w.posterPath, backdrop_path: null, overview: '', vote_average: w.ratingScore ?? 0, release_date: w.releaseDate }}
-      badge={<StatusTag status={w.status} />}
       overlay={
         <div className="absolute top-2 right-2 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
           <button
@@ -160,7 +165,7 @@ function LibraryCard({ w, sizes, className }: { w: WatchlistItem; sizes: string;
               toast(`Removed “${w.title}” from your library`, { label: 'Undo', run: () => actions.restore({ watchlist: before }) });
             }}
             aria-label={`Remove ${w.title} from your library`}
-            className="group/tip relative grid size-6 place-items-center rounded-full bg-black/60 hover:bg-black/80"
+            className="group/tip relative grid size-7 place-items-center rounded-full bg-black/75 hover:bg-black"
           >
             <X className="size-3.5" />
             <Tip label="Remove from your library" side="bottom" align="end" />
@@ -172,16 +177,26 @@ function LibraryCard({ w, sizes, className }: { w: WatchlistItem; sizes: string;
 }
 
 /**
- * The library (♥): All shows three columns (Watching, To watch, Watched); picking one shows just
- * that, as a grid. Statuses are set as you watch.
+ * The library (♥). All: a row per status (Watching, To watch, Watched), full-size posters, each
+ * with "See all". Picking a status shows just that, as a grid. Statuses are set as you watch.
+ * The area keeps a steady minimum height, so switching never makes the page jump.
  */
 function Watchlist() {
   const watchlist = useStore((s) => s.watchlist);
   const [view, setView] = useState<View>('all');
-  const of = (st: WatchStatus) => watchlist.filter((w) => w.status === st);
+  const of = (st: WatchStatus) => watchlist.filter((w) => w.status === st).sort((a, b) => b.addedAt - a.addedAt);
+  const count = (v: View) => (v === 'all' ? watchlist.length : of(v).length);
+  // Hold the tallest height seen, so switching views never makes the page jump up and down.
+  const area = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const h = el.firstElementChild?.getBoundingClientRect().height ?? 0;
+    if (h > parseFloat(el.style.minHeight || '0')) el.style.minHeight = `${Math.ceil(h)}px`;
+  });
   return (
     <section>
-      <SectionHeader title="Library" action={<span className="text-sm text-muted">{plural(watchlist.length, 'title', 'titles')}</span>} />
+      <SectionHeader title="Library" />
       {!watchlist.length ? (
         <EmptyCard
           icon={Heart}
@@ -200,49 +215,62 @@ function Watchlist() {
                   aria-selected={view === v.id}
                   onClick={() => setView(v.id)}
                   className={cx(
-                    'flex h-10 items-center gap-2 rounded-full px-5 text-sm whitespace-nowrap transition',
+                    'flex h-10 items-center gap-2 rounded-full px-4 text-sm whitespace-nowrap transition sm:px-5',
                     view === v.id ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white',
                   )}
                 >
                   {v.id !== 'all' && <StatusDot status={v.id} />}
                   {v.label}
+                  <span className={cx('text-xs tabular-nums', view === v.id ? 'text-black/50' : 'text-faint')}>{count(v.id)}</span>
                 </button>
               ))}
             </div>
           </div>
-          {view === 'all' ? (
-            <div className="grid gap-4 lg:grid-cols-3">
-              {COLUMNS.map((st) => {
-                const list = of(st);
-                return (
-                  <div key={st} className="min-w-0 rounded-3xl bg-white/[0.03] p-3 ring-1 ring-white/[0.05]">
-                    <button type="button" onClick={() => setView(st)} className="mb-3 flex w-full items-center gap-2 px-1 text-left text-sm font-medium transition-colors hover:text-white">
-                      <StatusDot status={st} />
-                      {LIBRARY_LABEL[st]}
-                      <span className="text-faint tabular-nums">{list.length}</span>
-                    </button>
-                    {list.length ? (
-                      <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3">
-                        {list.map((w) => (
-                          <LibraryCard key={w.mediaType + w.id} w={w} sizes="(min-width: 1280px) 9vw, (min-width: 1024px) 13vw, 25vw" />
-                        ))}
+          <div ref={area}>
+            {view === 'all' ? (
+              <div className="space-y-10">
+                {SECTIONS.map((st) => {
+                  const list = of(st);
+                  return (
+                    <div key={st}>
+                      <div className="mb-3 flex items-end gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="flex items-center gap-2 text-lg font-semibold">
+                            <StatusDot status={st} />
+                            {LIBRARY_LABEL[st]}
+                            <span className="text-sm font-normal text-faint tabular-nums">{list.length}</span>
+                          </h3>
+                          <p className="text-sm text-muted">{SECTION_HINT[st]}</p>
+                        </div>
+                        {list.length > 0 && (
+                          <button type="button" onClick={() => setView(st)} className="shrink-0 text-sm text-muted transition-colors hover:text-white">
+                            See all
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <p className="px-1 pb-2 text-sm text-faint">Nothing here yet.</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : !of(view).length ? (
-            <EmptyCard title={`Nothing in ${LIBRARY_LABEL[view]} yet`} />
-          ) : (
-            <div className={CARD_GRID}>
-              {of(view).map((w) => (
-                <LibraryCard key={w.mediaType + w.id} w={w} sizes={ROW_SIZES} />
-              ))}
-            </div>
-          )}
+                      {list.length ? (
+                        <Scroller label={LIBRARY_LABEL[st]}>
+                          {list.slice(0, 20).map((w) => (
+                            <LibraryCard key={w.mediaType + w.id} w={w} className={ROW_ITEM} />
+                          ))}
+                        </Scroller>
+                      ) : (
+                        <div className="grid h-28 place-items-center rounded-2xl border border-dashed border-white/10 text-sm text-faint">Nothing here yet</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : !of(view).length ? (
+              <EmptyCard title={`Nothing in ${LIBRARY_LABEL[view]} yet`} />
+            ) : (
+              <div className={CARD_GRID}>
+                {of(view).map((w) => (
+                  <LibraryCard key={w.mediaType + w.id} w={w} />
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
     </section>
@@ -321,6 +349,12 @@ function SettingsSection() {
             </select>
           </Row>
           <Toggle label="Block pop-ups in embeds" hint="Some servers refuse to play when on" on={settings.blockPopups} onChange={(v) => actions.updateSettings({ blockPopups: v })} />
+          <Toggle
+            label="Peek at titles on hover"
+            hint="Hovering a card shows a small preview beside it. Right-click a card for the preview any time."
+            on={settings.hoverPeek}
+            onChange={(v) => actions.updateSettings({ hoverPeek: v })}
+          />
         </div>
 
         <div className={cx(card, 'space-y-3')}>
@@ -633,7 +667,7 @@ function TraktCard({ className }: { className: string }) {
         <>
           <div className="flex items-center gap-3 rounded-2xl bg-raised/60 p-3">
             {user.avatar ? (
-              <img src={user.avatar} alt="" className="size-10 rounded-full bg-white/10 object-cover" />
+              <AvatarImg src={user.avatar} name={user.username} className="size-10" />
             ) : (
               <span className="grid size-10 place-items-center rounded-full bg-white/10 font-medium uppercase">{user.username.slice(0, 1)}</span>
             )}

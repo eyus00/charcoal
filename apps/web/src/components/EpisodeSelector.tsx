@@ -281,7 +281,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
 
           <div ref={list} className="flex-1 overflow-y-auto overscroll-contain border-t border-line px-5 py-5 md:px-7">
             {isPending ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-4 lg:grid-cols-3">
                 {Array.from({ length: 6 }, (_, i) => (
                   <div key={i}>
                     <Bone className="aspect-video rounded-2xl" />
@@ -297,7 +297,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             ) : !data.episodes.length ? (
               <p className="py-16 text-center text-muted">No episodes listed yet.</p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-4 lg:grid-cols-3">
                 {data.episodes.map((ep) => {
                   const h = progress.get(ep.episode_number);
                   const pct = percent(h);

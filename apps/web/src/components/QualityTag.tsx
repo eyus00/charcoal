@@ -29,10 +29,7 @@ export default function QualityTag({ d, type, className }: { d: Details; type: M
   // Positioned by a wrapper: the tag itself is the tooltip's anchor (relative).
   return (
     <span className={className}>
-      <span
-        tabIndex={0}
-        className="group/tip relative inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[11px] font-semibold tracking-wider text-white ring-1 ring-white/20 backdrop-blur-md outline-none ring-inset"
-      >
+      <span tabIndex={0} className="group/tip relative inline-flex h-7 items-center rounded-full px-3 text-[11px] font-semibold tracking-wider text-white ring-1 ring-white/45 outline-none ring-inset">
         {tag.label}
         <Tip label={tag.tip} side="bottom" align="end" />
       </span>

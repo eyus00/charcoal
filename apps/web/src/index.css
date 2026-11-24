@@ -179,3 +179,50 @@ video::cue {
 @utility fade-in {
   animation: fade-in 0.2s ease-out;
 }
+
+/*
+ * Card rows (Row.tsx): the row is a size container; each card takes the visible width divided by
+ * --row-k (a whole number of cards + 0.4), so the next card always peeks out by about 40%.
+ */
+.row-fit {
+  container-type: inline-size;
+}
+.row-item {
+  --row-k: 2.4;
+  width: calc((100cqi - var(--row-pad, 0px)) / var(--row-k) - 16px);
+}
+@container (min-width: 600px) {
+  .row-item {
+    --row-k: 3.4;
+  }
+}
+@container (min-width: 968px) {
+  .row-item {
+    --row-k: 4.4;
+  }
+}
+@container (min-width: 1200px) {
+  .row-item {
+    --row-k: 5.4;
+  }
+}
+@container (min-width: 1432px) {
+  .row-item {
+    --row-k: 6.4;
+  }
+}
+@container (min-width: 1664px) {
+  .row-item {
+    --row-k: 7.4;
+  }
+}
+@container (min-width: 1896px) {
+  .row-item {
+    --row-k: 8.4;
+  }
+}
+@container (min-width: 2128px) {
+  .row-item {
+    --row-k: 9.4;
+  }
+}

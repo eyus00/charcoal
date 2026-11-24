@@ -10,6 +10,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import type { MediaType } from './tmdb';
+import { getState } from './store';
 
 export type PeekMode = 'mini' | 'medium';
 /** An episode card's episode: the mini peek then shows the episode list beside the title. */
@@ -94,7 +95,7 @@ export function peekProps(type: MediaType, id: number, opts: { hover?: boolean; 
       open(e);
     },
     onPointerEnter: (e: React.PointerEvent) => {
-      if (hover && e.pointerType === 'mouse' && canHover()) peek.hover(type, id, e.currentTarget as HTMLElement, episode);
+      if (hover && e.pointerType === 'mouse' && getState().settings.hoverPeek && canHover()) peek.hover(type, id, e.currentTarget as HTMLElement, episode);
     },
     onPointerLeave: (e: React.PointerEvent) => {
       if (e.pointerType === 'mouse') peek.release();

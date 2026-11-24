@@ -169,7 +169,7 @@ const PROFILE: RailGroup = {
     },
     {
       to: '/calendar',
-      label: 'Release Calendar',
+      label: 'Calendar',
       icon: CalendarDays,
       id: 'calendar',
       keys: 'G C',

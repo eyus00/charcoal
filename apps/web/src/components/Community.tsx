@@ -22,6 +22,9 @@ import {
   type TraktUser,
 } from '../lib/trakt';
 import { q, type MediaType, type TmdbReview } from '../lib/tmdb';
+import ClampedText from './ClampedText';
+import AvatarImg from './AvatarImg';
+import Score from './Score';
 import { cx, useInView } from '../lib/util';
 import { fetchMyComments } from '../lib/traktData';
 import { setLocalRating, useLocalRating } from '../lib/ratings';
@@ -123,12 +126,9 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
       {!loading && hasAnything && (
         <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
           {/* Starts level with the toolbar and ends with the comment cards (toolbar 48px + cards 272px). */}
-          <div className="flex flex-col">
-            {t && (
-              <SummaryWithMine r={ratings.data} t={t} type={type} id={id} user={user}>
-                <YourRating t={t} type={type} id={id} user={user} />
-              </SummaryWithMine>
-            )}
+          <div className="flex flex-col lg:h-[320px]">
+            {t && <SummaryWithMine r={ratings.data} t={t} type={type} id={id} user={user} />}
+            {t && <YourRating t={t} type={type} id={id} user={user} />}
           </div>
           <div className="min-w-0">
             {/* One fixed-height toolbar: sort, and the button that opens the composer. */}
@@ -148,7 +148,7 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
             </div>
             {shown.length > 0 ? (
               // Sideways like the other rows: the first few, then "Read more" for everything.
-              <Scroller label="Comments" scrollRef={rowRef} bleed={false}>
+              <Scroller label="Comments" scrollRef={rowRef} bleed="end">
                 {shown.slice(0, 5).map((c) => (
                   <CommentCard key={c.id} c={c} me={user} pinned={mineIds.has(c.id)} onDeleted={() => onDeleted(c)} row />
                 ))}
@@ -164,7 +164,7 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
                 </button>
               </Scroller>
             ) : tmdb.data && tmdb.data.results.length > 0 ? (
-              <Scroller label="Reviews" scrollRef={rowRef} bleed={false}>
+              <Scroller label="Reviews" scrollRef={rowRef} bleed="end">
                 {tmdb.data.results.slice(0, 8).map((r) => (
                   <TmdbReviewCard key={r.id} r={r} />
                 ))}
@@ -237,7 +237,7 @@ const compact = (n: number) =>
 function RatingSummary({ r, mine = 0, children }: { r?: { rating: number; votes: number; distribution: Record<string, number> }; mine?: number; children?: React.ReactNode }) {
   const max = Math.max(1, ...Object.values(r?.distribution ?? {}));
   return (
-    <div className="flex flex-1 flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06] lg:h-[320px] lg:flex-none">
+    <div className="flex min-h-0 flex-1 flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
       <div className="flex items-baseline gap-2">
         <Star className="size-5 self-center fill-current text-star" strokeWidth={0} />
         <span className="text-4xl font-semibold tracking-tight tabular-nums">{r?.votes ? r.rating.toFixed(1) : '–'}</span>
@@ -337,8 +337,8 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
   };
   return (
     <div className="group/tip relative">
-      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="-mx-2 mt-4 border-t border-white/[0.07] pt-4">
-        <p className="mb-2 px-2 text-sm font-semibold">{mine ? 'Your rating' : 'Rate it'}</p>
+      <p className="mt-4 mb-2 px-1 text-sm font-semibold">{mine ? 'Your rating' : 'Rate it'}</p>
+      <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="rounded-[20px] bg-white/[0.04] p-1.5 ring-1 ring-white/[0.06]">
         <div className="grid grid-cols-10 gap-0.5">
           {Array.from({ length: 10 }, (_, i) => {
             const n = i + 1;
@@ -368,17 +368,6 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
       </div>
       <Tip label={saved ? `Your rating: ${saved}/10 · pick it again to remove` : 'Your rating'} side="bottom" />
     </div>
-  );
-}
-
-/** A reviewer's score, styled like the big one: ★ 8 /10. */
-function Score({ n }: { n: number }) {
-  return (
-    <span className="flex shrink-0 items-baseline gap-1" aria-label={`${n} out of 10`}>
-      <Star className="size-3.5 self-center fill-current text-star" strokeWidth={0} />
-      <span className="text-lg leading-none font-semibold tabular-nums">{n}</span>
-      <span className="text-xs text-muted">/ 10</span>
-    </span>
   );
 }
 
@@ -484,23 +473,37 @@ function Composer({
     >
       <div className="flex gap-3">
         <Avatar src={user.avatar} name={user.name || user.username} />
-        <textarea
-          autoFocus
-          value={draft.text}
-          onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-          onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && send()}
-          rows={7}
-          placeholder="What did you think? (5 words or more)"
-          aria-label="Your comment"
-          className="min-w-0 flex-1 resize-none rounded-2xl bg-white/[0.04] px-4 py-3 text-base leading-6 ring-1 ring-white/[0.06] outline-none placeholder:text-faint focus:ring-white/20 sm:text-sm"
-        />
+        <div className="min-w-0 flex-1">
+          <textarea
+            autoFocus
+            value={draft.text}
+            onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+            onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && send()}
+            rows={7}
+            placeholder="What did you think? (5 words or more)"
+            aria-label="Your comment"
+            className="block w-full resize-none rounded-2xl bg-white/[0.04] px-4 py-3 text-base leading-6 ring-1 ring-white/[0.06] outline-none ring-inset placeholder:text-faint focus:ring-white/25 sm:text-sm"
+          />
+          {/* Trakt needs 5 words; 200 or more makes it a review. */}
+          <p aria-live="polite" className={cx('mt-2 flex justify-end text-xs tabular-nums transition-colors', ok ? 'text-faint' : 'text-muted')}>
+            {ok ? (
+              <span>
+                {words} words{words >= 200 ? ' · posted as a review' : ''}
+              </span>
+            ) : (
+              <span>
+                <span className="font-medium text-white">{words}</span> / 5 words minimum
+              </span>
+            )}
+          </p>
+        </div>
       </div>
     </Dialog>
   );
 }
 
 /** Trakt marks spoilers inline as [spoiler]…[/spoiler]: blur those parts until tapped. */
-function Body({ text, spoiler, clamp, small, lines = 5 }: { text: string; spoiler: boolean; clamp: boolean; small?: boolean; lines?: 4 | 5 }) {
+function Body({ text, spoiler, clamp, small, lines = 5, onMore }: { text: string; spoiler: boolean; clamp: boolean; small?: boolean; lines?: 4 | 5; onMore?: () => void }) {
   const [shown, setShown] = useState(false);
   const parts = text.split(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi);
   const content = parts.map((p, i) =>
@@ -513,6 +516,13 @@ function Body({ text, spoiler, clamp, small, lines = 5 }: { text: string; spoile
     ),
   );
   const gated = spoiler && !shown;
+  // Clipped plain text: cut at a word with "… more" right after it (inline spoilers keep the plain clamp).
+  if (clamp && onMore && !gated && parts.length === 1)
+    return (
+      <div className={small ? 'mt-0.5' : 'mt-2.5'}>
+        <ClampedText text={text} lines={lines} onMore={onMore} className={cx('break-words text-white/85', small ? 'text-caption leading-5' : 'text-body-sm leading-6')} />
+      </div>
+    );
   return (
     <div className={cx('relative', small ? 'mt-0.5' : 'mt-2.5', gated && 'min-h-20')}>
       <p
@@ -543,7 +553,7 @@ function Body({ text, spoiler, clamp, small, lines = 5 }: { text: string; spoile
 function Avatar({ src, name, small }: { src?: string | null; name: string; small?: boolean }) {
   const size = small ? 'size-7 text-xs' : 'size-9 text-sm';
   return src ? (
-    <img src={src} alt="" loading="lazy" className={cx('shrink-0 rounded-full bg-white/10 object-cover', size)} />
+    <AvatarImg src={src} name={name} className={size} />
   ) : (
     <span className={cx('grid shrink-0 place-items-center rounded-full bg-white/10 font-medium uppercase', size)}>{name.slice(0, 1)}</span>
   );
@@ -598,23 +608,21 @@ function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: T
       )}
     >
       <CommentHead c={c} pinned={pinned} />
-      <Body text={c.comment} spoiler={c.spoiler} clamp lines={row ? 4 : 5} />
+      <Body text={c.comment} spoiler={c.spoiler} clamp lines={row ? 4 : 5} onMore={() => setThread(true)} />
       <footer className="mt-auto flex items-center gap-4 pt-3 text-xs text-faint">
-        {me && !mine ? (
-          <button
-            type="button"
-            onClick={like}
-            aria-pressed={liked}
-            aria-label={liked ? 'Unlike' : 'Like'}
-            className={cx('flex items-center gap-1 tabular-nums transition-colors hover:text-white', liked && 'text-white')}
-          >
-            <Heart className={cx('size-3.5', liked && 'fill-current')} /> {likes}
-          </button>
-        ) : (
-          <span className="flex items-center gap-1 tabular-nums">
-            <Heart className="size-3.5" /> {likes}
+        <button
+          type="button"
+          onClick={() => (!me ? toast('Liking comments needs Trakt: connect it in Settings') : mine ? toast('That’s your own comment') : like())}
+          aria-pressed={liked}
+          aria-label={liked ? 'Unlike' : 'Like'}
+          className={cx('group/like flex items-center gap-1 tabular-nums transition-colors', liked ? 'text-rose-400' : 'hover:text-white')}
+        >
+          {/* A pop each time it's liked; the count rolls with it. */}
+          <Heart key={liked ? 'on' : 'off'} className={cx('size-3.5 transition-transform group-active/like:scale-75', liked && 'pop fill-current')} />
+          <span key={likes} className="fade-in">
+            {likes}
           </span>
-        )}
+        </button>
         <button type="button" onClick={() => setThread(true)} aria-label={`${replies} replies`} className="flex items-center gap-1 tabular-nums transition-colors hover:text-white">
           <MessageCircle className="size-3.5" /> {replies}
         </button>
@@ -623,7 +631,7 @@ function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: T
             <Trash2 className="size-3.5" /> {confirm ? 'Delete?' : 'Delete'}
           </button>
         )}
-        {long && (
+        {long && (c.spoiler || /\[spoiler\]/i.test(c.comment)) && (
           <button type="button" onClick={() => setThread(true)} className="ml-auto font-medium text-white/70 transition-colors hover:text-white">
             Read more
           </button>
@@ -767,12 +775,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
         </div>
         {r.author_details.rating ? <Score n={r.author_details.rating} /> : null}
       </header>
-      <Body text={r.content} spoiler={false} clamp lines={4} />
-      {r.content.length > 220 && (
-        <button type="button" onClick={() => setOpen(true)} className="mt-auto self-end pt-2 text-xs font-medium text-white/70 transition-colors hover:text-white">
-          Read more
-        </button>
-      )}
+      <Body text={r.content} spoiler={false} clamp lines={4} onMore={() => setOpen(true)} />
       {open && (
         <Dialog title={`${r.author}’s review`} subtitle="On TMDB" onClose={() => setOpen(false)} wide>
           <div className="flex items-center gap-3">
@@ -790,21 +793,21 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
 function CommunitySkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
-      <div className="flex h-[320px] flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
-        <div className="skeleton h-9 w-28 rounded-lg" />
-        <div className="skeleton mt-2 h-3 w-32 rounded" />
-        <div className="mt-auto flex h-12 items-end gap-1">
-          {[8, 8, 8, 8, 10, 14, 30, 60, 50, 90].map((h, i) => (
-            <div key={i} className="skeleton flex-1 rounded-sm" style={{ height: `${h}%` }} />
-          ))}
-        </div>
-        <div className="-mx-2 mt-4 border-t border-white/[0.07] px-2 pt-4">
-          <div className="skeleton h-3.5 w-20 rounded" />
-          <div className="mt-3 grid grid-cols-10 gap-1.5">
-            {Array.from({ length: 10 }, (_, i) => (
-              <div key={i} className="skeleton h-7 rounded-md" />
+      <div className="flex flex-col lg:h-[320px]">
+        <div className="flex min-h-48 flex-1 flex-col rounded-3xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+          <div className="skeleton h-9 w-28 rounded-lg" />
+          <div className="skeleton mt-2 h-3 w-32 rounded" />
+          <div className="mt-auto flex h-12 items-end gap-1">
+            {[8, 8, 8, 8, 10, 14, 30, 60, 50, 90].map((h, i) => (
+              <div key={i} className="skeleton flex-1 rounded-sm" style={{ height: `${h}%` }} />
             ))}
           </div>
+        </div>
+        <div className="skeleton mt-4 mb-2 h-3.5 w-16 rounded" />
+        <div className="grid grid-cols-10 gap-1 rounded-[20px] bg-white/[0.04] p-2 ring-1 ring-white/[0.06]">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div key={i} className="skeleton h-7 rounded-md" />
+          ))}
         </div>
       </div>
       <div className="min-w-0">

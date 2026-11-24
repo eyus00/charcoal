@@ -359,3 +359,36 @@ function SidePeek({ d, type, onClose, anchor, onEpisodes }: { d: Details; type: 
     document.body,
   );
 }
+
+/** The pop-up's shape while its details load (right-click / tap on a card): banner, info card. */
+export function MediumPeekSkeleton({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
+      <div aria-busy="true" aria-label="Loading" className="toast-in relative w-full overflow-hidden rounded-t-3xl bg-bg shadow-2xl sm:max-w-3xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="skeleton aspect-video sm:aspect-[16/8]" />
+        <div className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
+          <div className="max-w-xl rounded-3xl bg-surface p-5 ring-1 ring-white/10 md:p-7">
+            <div className="skeleton h-9 w-2/3 rounded-lg" />
+            <div className="skeleton mt-3 h-3.5 w-40 rounded" />
+            <div className="skeleton mt-2 h-3.5 w-52 rounded" />
+            <div className="mt-5 space-y-2">
+              <div className="skeleton h-3.5 w-full rounded" />
+              <div className="skeleton h-3.5 w-11/12 rounded" />
+              <div className="skeleton h-3.5 w-3/4 rounded" />
+            </div>
+            <div className="mt-6 flex gap-2.5">
+              <div className="skeleton h-11 w-32 rounded-full" />
+              <div className="skeleton size-11 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
