@@ -13,7 +13,7 @@ const NAME: Record<Section, string> = { explore: 'Explore', yours: 'Your shows' 
 
 const dayNum = (t: number) => new Date(t).getDate();
 const weekday = (t: number) => new Date(t).toLocaleDateString(undefined, { weekday: 'short' });
-const TILE_W = 'w-[240px] shrink-0 snap-start sm:w-[272px]';
+const TILE_W = 'w-[250px] shrink-0 snap-start sm:w-[300px]';
 
 /**
  * The Calendar: a week at a time, a row per day. "Explore" (the default) is the notable releases
@@ -40,7 +40,7 @@ export default function Calendar() {
   const range = `${fmt(days[0])} – ${fmt(days[6])}`;
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-8 pb-10">
       <header className="flex flex-wrap items-center gap-4">
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight md:text-3xl">Calendar</h1>
         <div className="flex w-full items-center rounded-full bg-surface p-1 sm:w-auto">
@@ -144,19 +144,19 @@ function EmptySection({ section, onExplore }: { section: Section; onExplore: () 
 function DayRow({ day, items, loading }: { day: number; items: Airing[]; loading: boolean }) {
   const isToday = day === startOfDay(new Date()).getTime();
   return (
-    <section aria-label={new Date(day).toDateString()} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-5 first:pt-0 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-4">
+    <section aria-label={new Date(day).toDateString()} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-8 first:pt-2 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-6">
       <div className="pt-1">
         <p className={cx('text-xs font-medium tracking-wide uppercase', isToday ? 'text-white' : 'text-faint')}>{isToday ? 'Today' : weekday(day)}</p>
         <p className={cx('text-2xl font-semibold tabular-nums', !isToday && 'text-white/85')}>{dayNum(day)}</p>
       </div>
       {loading ? (
-        <div className="flex gap-4 overflow-hidden">
+        <div className="flex gap-5 overflow-hidden sm:gap-7">
           {Array.from({ length: 3 }, (_, i) => (
             <AiringTileSkeleton key={i} className={TILE_W} />
           ))}
         </div>
       ) : items.length ? (
-        <Scroller label={new Date(day).toDateString()} bleed={false}>
+        <Scroller label={new Date(day).toDateString()} bleed={false} gap="gap-5 sm:gap-7">
           {items.map((a) => (
             <AiringTile key={a.key} a={a} className={TILE_W} calendar />
           ))}

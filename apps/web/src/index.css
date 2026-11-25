@@ -233,3 +233,24 @@ video::cue {
     --row-k: 9.4;
   }
 }
+
+/* Wider cards (comments): the same idea as .row-item, about 340–420px each. */
+.row-item-wide {
+  --row-k: 1.2;
+  width: calc((100cqi - var(--row-pad, 0px)) / var(--row-k) - 16px);
+}
+@container (min-width: 712px) {
+  .row-item-wide {
+    --row-k: 2.4;
+  }
+}
+@container (min-width: 1068px) {
+  .row-item-wide {
+    --row-k: 3.4;
+  }
+}
+@container (min-width: 1424px) {
+  .row-item-wide {
+    --row-k: 4.4;
+  }
+}

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Bell, BellRing, ChevronRight } from 'lucide-react';
+import { Bell, BellRing } from 'lucide-react';
 import { Dialog } from './Modal';
+import { NoSynopsis, Synopsis } from './Synopsis';
 import Img from './Img';
 import { Chip } from './EpisodeTile';
 import { CARD_IMAGE, CARD_INFO, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
@@ -148,7 +149,7 @@ function Card({
   const hover = tv && first ? episodePeekProps(a.id, first.season, first.number, { tap: !onClick }) : peekProps(a.type, a.id, { tap: !onClick });
   const stretched = 'absolute inset-0 z-0 rounded-2xl';
   return (
-    <div className={cx('group relative', stack > 0 && 'mr-4', className)}>
+    <div className={cx('group relative', className)}>
       {/* The whole card is one link (or, for a stack, one button) under the content, so the show name can be a link too. */}
       {onClick ? (
         <button type="button" onClick={onClick} {...hover} aria-haspopup="dialog" aria-label={`${line1}, ${a.title}: show all ${stack + 1} episodes`} className={stretched} />
@@ -157,18 +158,19 @@ function Card({
       )}
       <div className="pointer-events-none relative [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
         <div className="relative">
-          {/* The rest of the stack: outlined sheets behind the card, stepping out to the right. */}
+          {/* The rest of the stack: sheets behind the card, each a step higher and narrower (like a
+              deck of cards seen from the front); they lift a little on hover. */}
           {stacked?.slice(0, 2).map((e, i) => (
             <span
               key={`${e.season}-${e.number}`}
               aria-hidden
-              style={{ inset: i ? '24px -30px 24px 40px' : '12px -16px 12px 20px', zIndex: 1 - i }}
+              style={{ inset: i ? '-16px 30px 16px 30px' : '-8px 15px 8px 15px', zIndex: 1 - i }}
               className={cx(
-                'absolute overflow-hidden rounded-2xl bg-raised shadow-[-8px_0_16px_rgba(0,0,0,0.6)] ring-[1.5px] transition-transform duration-300 group-hover:translate-x-[3px]',
-                i ? 'ring-white/30' : 'ring-white/55',
+                'absolute overflow-hidden rounded-2xl bg-raised ring-1 transition-transform duration-300',
+                i ? 'ring-white/20 group-hover:-translate-y-1.5' : 'ring-white/30 group-hover:-translate-y-0.5',
               )}
             >
-              <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.35]' : 'brightness-[0.55]'} />
+              <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.3]' : 'brightness-[0.5]'} />
             </span>
           ))}
           <div>
@@ -188,15 +190,6 @@ function Card({
               </div>
             </Frame>
           </div>
-          {/* Hovering a stack: an arrow says it opens out. */}
-          {stack > 0 && (
-            <span
-              aria-hidden
-              className="absolute top-1/2 -right-4 z-[3] grid size-8 -translate-y-1/2 place-items-center rounded-full bg-white text-black opacity-0 shadow-lg shadow-black/50 transition-opacity duration-200 group-hover:opacity-100"
-            >
-              <ChevronRight className="size-4" />
-            </span>
-          )}
         </div>
         <div className={CARD_INFO}>
           <div className={CARD_TITLE}>{line1}</div>
@@ -231,17 +224,49 @@ export default function AiringTile({ a, calendar, className }: { a: Airing; cale
   return (
     <>
       <Card a={a} ep={undefined} label={labelOf(a, 0, eps.length)} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />
-      {/* Tapping a stack: its episodes in a pop-up (the row itself never changes). */}
+      {/* Tapping a stack: its episodes in a pop-up, laid out like the episode list. */}
       {open && (
-        <Dialog title={a.title} subtitle={`${a.se} · ${eps.length} episodes · ${dateLabel(a.at)}`} onClose={() => setOpen(false)} wide>
-          <div className="grid grid-cols-1 gap-x-5 gap-y-7 pt-2 sm:grid-cols-2">
+        <Dialog title={a.title} subtitle={`${eps.length} episodes`} onClose={() => setOpen(false)} wide>
+          <div className="grid grid-cols-1 gap-1 pt-5 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-8">
             {eps.map((e, i) => (
-              <Card key={`${e.season}-${e.number}`} a={a} ep={e} label={labelOf(a, i, eps.length)} to={`/tv/${a.id}?episodes=${e.season}&ep=${e.number}`} showDate={false} />
+              <EpisodeCard key={`${e.season}-${e.number}`} a={a} ep={e} label={labelOf(a, i, eps.length)} />
             ))}
           </div>
         </Dialog>
       )}
     </>
+  );
+}
+
+/** One episode of a stack, like a card in the episode list: still, number and name, date, synopsis. */
+function EpisodeCard({ a, ep, label }: { a: Airing; ep: AiringEpisode; label?: string }) {
+  const upcoming = startOfDay(new Date(a.at)).getTime() > Date.now();
+  return (
+    <Link to={`/tv/${a.id}?episodes=${ep.season}&ep=${ep.number}`} className="group flex gap-3 rounded-2xl py-2.5 sm:flex-col sm:gap-0 sm:py-0">
+      <div className="w-[44%] shrink-0 self-start pt-2 sm:w-full sm:pt-0">
+        <Frame label={label} bg="bg-surface">
+          <div className={CARD_IMAGE}>
+            <Img path={null} src={ep.image ?? a.image} kind="still" sizes="(min-width: 640px) 320px, 45vw" alt="" className="aspect-video" />
+            {ep.runtime ? (
+              <span className="absolute right-2 bottom-2">
+                <Chip>{formatRuntime(ep.runtime)}</Chip>
+              </span>
+            ) : null}
+            <span className="absolute top-2 right-2 z-10">
+              <ReminderBell a={a} ep={ep} />
+            </span>
+          </div>
+        </Frame>
+      </div>
+      <div className={cx(CARD_INFO, 'min-w-0 flex-1 sm:pt-2.5')}>
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm text-muted tabular-nums">{ep.season === 0 ? 'Special' : ep.number}</span>
+          <h3 className="line-clamp-2 min-w-0 text-body-sm font-medium text-balance text-white/95">{ep.name || `Episode ${ep.number}`}</h3>
+        </div>
+        <div className="text-caption text-faint">{dateLabel(a.at)}</div>
+        {ep.overview ? <Synopsis text={ep.overview} title={`${seLabel(ep.season, ep.number)} ${ep.name}`} /> : <NoSynopsis n={ep.number} upcoming={upcoming} />}
+      </div>
+    </Link>
   );
 }
 

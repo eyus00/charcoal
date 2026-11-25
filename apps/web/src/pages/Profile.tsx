@@ -142,11 +142,6 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'completed', label: 'Watched' },
 ];
 const SECTIONS: WatchStatus[] = ['watching', 'planned', 'completed'];
-const SECTION_HINT: Record<WatchStatus, string> = {
-  watching: 'Shows and films you’ve started',
-  planned: 'Saved for later',
-  completed: 'Seen to the end',
-};
 
 /** A library card: the poster, with a remove button on hover. The section says its status. */
 function LibraryCard({ w, className }: { w: WatchlistItem; className?: string }) {
@@ -233,15 +228,11 @@ function Watchlist() {
                   const list = of(st);
                   return (
                     <div key={st}>
-                      <div className="mb-3 flex items-end gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="flex items-center gap-2 text-lg font-semibold">
-                            <StatusDot status={st} />
-                            {LIBRARY_LABEL[st]}
-                            <span className="text-sm font-normal text-faint tabular-nums">{list.length}</span>
-                          </h3>
-                          <p className="text-sm text-muted">{SECTION_HINT[st]}</p>
-                        </div>
+                      <div className="mb-3 flex items-center gap-3">
+                        <h3 className="flex min-w-0 flex-1 items-center gap-2 text-lg font-semibold">
+                          <StatusDot status={st} />
+                          {LIBRARY_LABEL[st]}
+                        </h3>
                         {list.length > 0 && (
                           <button type="button" onClick={() => setView(st)} className="shrink-0 text-sm text-muted transition-colors hover:text-white">
                             See all

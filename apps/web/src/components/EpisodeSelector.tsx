@@ -7,8 +7,8 @@ import Modal from './Modal';
 import { btn } from './Button';
 import { Chip } from './EpisodeTile';
 import LibraryButton from './LibraryButton';
-import { Dialog } from './Modal';
 import { useSwipeToClose } from '../lib/swipe';
+import { NoSynopsis, Synopsis } from './Synopsis';
 import { Frame, ReminderBell, dateLabel, seLabel } from './AiringTile';
 import Kbd from './Kbd';
 import { CARD_INFO } from './MediaCard';
@@ -43,12 +43,6 @@ interface Props {
  * or resume episode into view.
  */
 /** Blurred stand-in synopses, varied in length so the cards don't look identical. */
-const FILLER = [
-  'The story for this episode has not been shared yet.',
-  'Details about this episode will be added closer to its air date, once the network shares them.',
-  'A new chapter is on the way. More soon.',
-  'Plot details for this one are still under wraps, check back after the next episode airs for more on what happens.',
-];
 
 /** Where you left a show's episode list (season, scroll), so it reopens there. */
 type Position = { season: number; scroll: number };
@@ -77,44 +71,6 @@ function savePosition(id: number, p: Position) {
 }
 
 /** An episode's synopsis: three lines, then "more" opens it whole in a popup. */
-function Synopsis({ text, title }: { text: string; title: string }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const [clipped, setClipped] = useState(false);
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (el) setClipped(el.scrollHeight > el.clientHeight + 1);
-  }, [text]);
-  return (
-    <div className="mt-1.5">
-      <p ref={ref} className="line-clamp-3 text-caption leading-[1.4] text-pretty text-muted">
-        {text}
-      </p>
-      {clipped && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(true);
-          }}
-          className="mt-0.5 text-caption font-medium text-white/80 transition-colors hover:text-white"
-        >
-          more
-        </button>
-      )}
-      {open && (
-        // The card around this is a link: clicks inside the popup must not reach it.
-        // (capture: cancel the link's own navigation before anything inside handles the click)
-        <span onClickCapture={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
-          <Dialog title={title} onClose={() => setOpen(false)}>
-            <p className="text-body-sm leading-6 text-pretty whitespace-pre-line text-white/85">{text}</p>
-          </Dialog>
-        </span>
-      )}
-    </div>
-  );
-}
 
 /** What's special about an upcoming episode (shown as the card's frame label). */
 function releaseLabel(ep: Episode) {
@@ -315,7 +271,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                   const body = (
                     <>
                       {/* Phones: a row (still left, text right), like the player's small picker; larger: a card. */}
-                      <div className="w-[44%] shrink-0 self-start pt-2.5 sm:w-auto sm:pt-0">
+                      <div className="w-[44%] shrink-0 self-start pt-2.5 sm:w-full sm:self-stretch sm:pt-0">
                         <Frame label={upcoming ? releaseLabel(ep) : undefined} bg="bg-surface">
                           <div className={cx('relative overflow-hidden rounded-2xl', isCurrent && !isSelected && 'ring-2 ring-white/70')}>
                             {ep.still_path ? (
@@ -397,17 +353,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                         <div className="text-caption text-faint">
                           {upcoming ? (ep.air_date ? dateLabel(new Date(`${ep.air_date}T00:00:00`).getTime()) : 'Date TBA') : ep.air_date ? formatDate(ep.air_date) : ''}
                         </div>
-                        {ep.overview ? (
-                          <Synopsis text={ep.overview} title={`${seLabel(season, ep.episode_number)} ${ep.name}`} />
-                        ) : (
-                          // No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading").
-                          <div className="relative mt-1.5">
-                            <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
-                              {FILLER[ep.episode_number % FILLER.length]}
-                            </p>
-                            <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Coming soon' : 'No synopsis'}</span>
-                          </div>
-                        )}
+                        {ep.overview ? <Synopsis text={ep.overview} title={`${seLabel(season, ep.episode_number)} ${ep.name}`} /> : <NoSynopsis n={ep.episode_number} upcoming={upcoming} />}
                       </div>
                     </>
                   );

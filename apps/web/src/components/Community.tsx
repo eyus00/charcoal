@@ -339,7 +339,8 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
     <div className="group/tip relative">
       <p className="mt-4 mb-2 px-1 text-sm font-semibold">{mine ? 'Your rating' : 'Rate it'}</p>
       <div role="radiogroup" aria-label="Your rating" onPointerLeave={() => setHover(0)} className="rounded-[20px] bg-white/[0.04] p-1.5 ring-1 ring-white/[0.06]">
-        <div className="grid grid-cols-10 gap-0.5">
+        {/* Close together; the picked one (or the hovered one) widens into a pill, nudging its neighbours aside. */}
+        <div className="flex items-center justify-center">
           {Array.from({ length: 10 }, (_, i) => {
             const n = i + 1;
             const on = mine === n;
@@ -356,8 +357,8 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
                 onPointerEnter={() => setHover(n)}
                 onClick={() => pick(n)}
                 className={cx(
-                  'grid h-9 min-w-0 place-items-center rounded-lg text-[15px] leading-none font-semibold tabular-nums transition-colors',
-                  on && !hover ? 'bg-white font-bold text-black' : hover === n ? 'bg-white font-bold text-black' : upTo ? 'text-white' : 'text-white/45 hover:text-white',
+                  'grid h-9 place-items-center rounded-lg text-[15px] leading-none font-semibold tabular-nums transition-[padding,background-color,color] duration-200 ease-out',
+                  (on && !hover) || hover === n ? 'bg-white px-3 font-bold text-black' : cx('px-[7px]', upTo ? 'text-white' : 'text-white/45 hover:text-white'),
                 )}
               >
                 {n}
@@ -601,11 +602,7 @@ function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: T
   const long = c.comment.length > (row ? 220 : 320);
   return (
     <article
-      className={cx(
-        'flex flex-col rounded-2xl p-4 ring-1',
-        row && 'h-[272px] w-[300px] shrink-0 snap-start sm:w-[340px]',
-        pinned ? 'bg-white/[0.06] ring-white/[0.12]' : 'bg-white/[0.04] ring-white/[0.06]',
-      )}
+      className={cx('flex flex-col rounded-2xl p-4 ring-1', row && 'row-item-wide h-[272px] shrink-0 snap-start', pinned ? 'bg-white/[0.06] ring-white/[0.12]' : 'bg-white/[0.04] ring-white/[0.06]')}
     >
       <CommentHead c={c} pinned={pinned} />
       <Body text={c.comment} spoiler={c.spoiler} clamp lines={row ? 4 : 5} onMore={() => setThread(true)} />
@@ -615,7 +612,7 @@ function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: T
           onClick={() => (!me ? toast('Liking comments needs Trakt: connect it in Settings') : mine ? toast('That’s your own comment') : like())}
           aria-pressed={liked}
           aria-label={liked ? 'Unlike' : 'Like'}
-          className={cx('group/like flex items-center gap-1 tabular-nums transition-colors', liked ? 'text-rose-400' : 'hover:text-white')}
+          className={cx('group/like flex items-center gap-1 tabular-nums transition-colors', liked ? 'text-white' : 'hover:text-white')}
         >
           {/* A pop each time it's liked; the count rolls with it. */}
           <Heart key={liked ? 'on' : 'off'} className={cx('size-3.5 transition-transform group-active/like:scale-75', liked && 'pop fill-current')} />
@@ -766,7 +763,7 @@ function TmdbReviewCard({ r }: { r: TmdbReview }) {
   const avatarSrc = r.author_details.avatar_path ? `https://image.tmdb.org/t/p/w92${r.author_details.avatar_path}` : null;
   const avatar = r.author_details.avatar_path ? `https://image.tmdb.org/t/p/w92${r.author_details.avatar_path}` : null;
   return (
-    <article className="flex h-[272px] w-[300px] shrink-0 snap-start flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
+    <article className="row-item-wide flex h-[272px] shrink-0 snap-start flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06]">
       <header className="flex items-center gap-3">
         <Avatar src={avatar} name={r.author} />
         <div className="min-w-0 flex-1">
@@ -816,9 +813,9 @@ function CommunitySkeleton() {
           <div className="skeleton h-8 w-20 rounded-full" />
           <div className="skeleton ml-auto h-9 w-28 rounded-full" />
         </div>
-        <div className="flex gap-4 overflow-hidden">
+        <div className="row-fit flex gap-4 overflow-hidden">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="flex h-[272px] w-[300px] shrink-0 flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06] sm:w-[340px]">
+            <div key={i} className="row-item-wide flex h-[272px] shrink-0 flex-col rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06]">
               <div className="flex items-center gap-3">
                 <div className="skeleton size-9 rounded-full" />
                 <div className="flex-1 space-y-1.5">

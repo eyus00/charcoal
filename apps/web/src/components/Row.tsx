@@ -17,14 +17,26 @@ const INSET = 'row-fit -mx-1 px-1 [--row-pad:4px]';
 /** A row in a page's right-hand column: runs to the page's right edge only (full width on phones). */
 const END_BLEED = 'row-fit -mx-4 px-4 scroll-px-4 [--row-pad:16px] md:-mx-8 md:px-8 md:scroll-px-8 md:[--row-pad:32px] lg:-ml-1 lg:pl-1 lg:scroll-pl-1 lg:-mr-10 lg:pr-10 lg:[--row-pad:4px]';
 
-export function Scroller({ children, label, scrollRef, bleed = true }: { children: ReactNode; label: string; scrollRef?: React.RefObject<HTMLDivElement | null>; bleed?: boolean | 'end' }) {
+export function Scroller({
+  children,
+  label,
+  scrollRef,
+  bleed = true,
+  gap = 'gap-4',
+}: {
+  children: ReactNode;
+  label: string;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+  bleed?: boolean | 'end';
+  gap?: string;
+}) {
   return (
     <div
       ref={scrollRef}
       role="group"
       aria-label={label}
       // Inside a padded card (e.g. the Profile panels) there is no page edge to run to.
-      className={cx('no-scrollbar scroll-row flex snap-x gap-4 overflow-x-auto overscroll-x-contain', bleed === 'end' ? END_BLEED : bleed ? ROW_BLEED : INSET)}
+      className={cx('no-scrollbar scroll-row flex snap-x overflow-x-auto overscroll-x-contain', gap, bleed === 'end' ? END_BLEED : bleed ? ROW_BLEED : INSET)}
     >
       {children}
     </div>

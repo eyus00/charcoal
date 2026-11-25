@@ -17,7 +17,11 @@ export default function Modal({ label, onClose, children }: { label: string; onC
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      // Focus the dialog itself, not its first button (which would pop that button's tooltip).
+      dialog.focus({ preventScroll: true });
+    }
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -31,11 +35,12 @@ export default function Modal({ label, onClose, children }: { label: string; onC
     <dialog
       ref={ref}
       aria-label={label}
+      tabIndex={-1}
       onCancel={(e) => {
         e.preventDefault();
         close.current();
       }}
-      className="m-0 h-full max-h-none w-full max-w-none overflow-visible border-0 bg-transparent p-0 text-white backdrop:bg-transparent"
+      className="m-0 h-full max-h-none w-full max-w-none overflow-visible border-0 bg-transparent p-0 text-white outline-none backdrop:bg-transparent"
     >
       {children}
     </dialog>
