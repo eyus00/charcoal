@@ -83,6 +83,7 @@ const ANISKIP = {
 const ANISKIP_NOT_FOUND = fixture('aniskip.ts', 'ANISKIP_NOT_FOUND');
 
 // TheSportsDB: one real row (the package's sample of eventsnextleague.php?id=4328), re-dated around now.
+const PPV = fixture('ppv.ts', 'PPV_STREAMS_2026_11_25');
 const EPL_ROW = fixture('thesportsdb.ts', 'EVENTS_NEXT_LEAGUE_4328').events[0];
 const HOUR = 3_600_000;
 const sportsRow = (id, startsAt, over) => {
@@ -326,6 +327,9 @@ async function open(path, { down = [], context: reuse } = {}) {
         }
         return json({}, 404);
       }
+      case 'api.ppv.st':
+        // The sports directory: a real sample (its events are long over; its channel is always on).
+        return json(PPV);
       case 'iptv-org.github.io': {
         const file = u.pathname.replace('/api/', '');
         return IPTV[file] ? json(IPTV[file]) : json({}, 404);
@@ -470,7 +474,7 @@ section('A. Anime');
   const { page, context, errors } = await open('/anime');
   const listed = await page.getByRole('link', { name: /Attack on Titan/ }).first().waitFor({ timeout: 10000 }).then(() => true, () => false);
   const discover = tmdbLog.find((r) => r.path === 'discover/tv');
-  check('the Anime page lists TMDB’s Japanese animation', listed && discover?.q.with_original_language === 'ja' && discover?.q.with_genres === '16', JSON.stringify(discover?.q));
+  check('Anime’s home lists TMDB’s Japanese animation', listed && discover?.q.with_original_language === 'ja' && discover?.q.with_genres === '16', JSON.stringify(discover?.q));
   await shot(page, 'anime');
   await page.getByRole('link', { name: /Attack on Titan/ }).first().click();
   let names = '';
@@ -545,7 +549,7 @@ section('B. Indian cinema');
 section('C. Sports');
 const OFFICIAL_HOSTS = ['www.premierleague.com', 'www.laliga.com', 'www.uefa.tv', 'www.iplt20.com', 'www.nba.com', 'www.nfl.com', 'www.nhl.com', 'www.mlb.com', 'f1tv.formula1.com', 'www.motogp.com', 'www.tennistv.com'];
 {
-  const { page, context, errors, outside } = await open('/sports');
+  const { page, context, errors, outside } = await open('/sports/schedule');
   const list = page.getByTestId('events');
   await list.waitFor({ timeout: 15000 }).catch(() => {});
   const upcoming = list.locator('[data-event="thesportsdb:9001"]');
@@ -566,19 +570,25 @@ const OFFICIAL_HOSTS = ['www.premierleague.com', 'www.laliga.com', 'www.uefa.tv'
   check('the event’s official link opens in a new tab with rel=noopener', attrs?.target === '_blank' && /\bnoopener\b/.test(attrs?.rel ?? '') && attrs?.href === 'https://www.premierleague.com/en/media/broadcasters', JSON.stringify(attrs));
   check('an event with no known official page offers no link', (await list.locator('[data-event="thesportsdb:9002"] a').count()) === 0 && /No official link listed/.test(live));
 
+  const scheduleLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="http"]')].map((a) => ({ host: new URL(a.href).hostname, kind: a.getAttribute('data-kind'), target: a.target, rel: a.rel })));
+  check('every outside link on the schedule is a marked official one', scheduleLinks.length > 0 && scheduleLinks.every((a) => OFFICIAL_HOSTS.includes(a.host) && a.kind === 'official-site' && a.target === '_blank' && /\bnoopener\b/.test(a.rel)), JSON.stringify(scheduleLinks));
+  await shot(page, 'sports-schedule');
+
+  // Channels: the directory's own (framed) and the public free-to-air ones (Charcoal's player).
+  await page.getByRole('link', { name: 'Channels' }).first().click();
+  await page.waitForURL(/\/sports\/channels$/, { timeout: 5000 }).catch(() => {});
   const channels = page.getByTestId('channels');
   await channels.waitFor({ timeout: 15000 }).catch(() => {});
   const shown = await channels.locator('a[data-channel]').evaluateAll((as) => as.map((a) => a.getAttribute('data-channel')));
   check('free-to-air channels with an HLS stream are listed', ['DDSports.in', 'ACCDigitalNetwork.us', 'TRTSpor.tr', 'TRTSporYildiz.tr'].every((id) => shown.includes(id)), shown.join(', '));
   check('…and nothing else: no blocklisted, closed, non-sports, stream-less or not-known-free channel', shown.length === 4, `sample has ${IPTV['channels.json'].length} channels; shown: ${shown.join(', ')}`);
   const kinds = await page.evaluate(() => ({
-    playsHere: [...document.querySelectorAll('[data-testid="channels"] a')].every((a) => a.getAttribute('data-kind') === 'plays-here' && a.getAttribute('href').startsWith('/live/') && !a.target),
-    legend: [...document.querySelectorAll('[aria-label="How to watch"] li')].map((li) => li.textContent.replace(/\s+/g, ' ').trim()),
-    external: [...document.querySelectorAll('main a[href^="http"]')].map((a) => ({ host: new URL(a.href).hostname, kind: a.getAttribute('data-kind'), target: a.target, rel: a.rel })),
+    own: [...document.querySelectorAll('[data-testid="channels"] a')].every((a) => a.getAttribute('href').startsWith('/live/') && !a.target),
+    framed: [...document.querySelectorAll('[data-testid="directory-channels"] a')].map((a) => a.getAttribute('href')),
+    external: [...document.querySelectorAll('main a[href^="http"]')].length,
   }));
-  check('what plays here and what leaves is labelled', kinds.playsHere && kinds.legend.length === 2 && /^Plays here/.test(kinds.legend[0]) && /^Official site/.test(kinds.legend[1]), kinds.legend.join(' | '));
-  check('every outside link on the page is a marked official one', kinds.external.length > 0 && kinds.external.every((a) => OFFICIAL_HOSTS.includes(a.host) && a.kind === 'official-site' && a.target === '_blank' && /\bnoopener\b/.test(a.rel)), JSON.stringify(kinds.external));
-  await shot(page, 'sports');
+  check('public channels open in Charcoal’s player, the directory’s channel on its watch page, and nothing leaves the site', kinds.own && kinds.framed.length === 1 && kinds.framed[0] === '/sports/watch/18172' && kinds.external === 0, JSON.stringify(kinds));
+  await shot(page, 'sports-channels');
 
   // A public channel plays in the site's own player, from its HLS address.
   served.length = 0;
@@ -612,7 +622,7 @@ const OFFICIAL_HOSTS = ['www.premierleague.com', 'www.laliga.com', 'www.uefa.tv'
   const { page, context, errors } = await open('/live/ACCDigitalNetwork.us');
   const text = await page.getByTestId('live-message').textContent({ timeout: 15000 }).catch(() => '');
   check('a channel limited to its own region says so in plain words', /ACC Digital Network can’t be played right now/.test(text) && /own region/.test(text), text.replace(/\s+/g, ' ').slice(0, 160));
-  check('…offering its own site in a new tab and the way back', (await page.locator('[data-testid="live-message"] a[target="_blank"][rel~="noopener"]').getAttribute('href').catch(() => null)) === 'https://theacc.com/watch/' && (await page.getByRole('link', { name: 'Back to Sports' }).count()) === 1);
+  check('…offering its own site in a new tab and the way back', (await page.locator('[data-testid="live-message"] a[target="_blank"][rel~="noopener"]').getAttribute('href').catch(() => null)) === 'https://theacc.com/watch/' && (await page.getByRole('link', { name: 'Back to Channels' }).count()) === 1);
   await shot(page, 'live-region');
   check('…with no player and no page error', (await page.locator('video').count()) === 0 && errors.length === 0, errors.join(' | '));
   await context.close();

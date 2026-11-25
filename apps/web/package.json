@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test:e2e": "node e2e/smoke.mjs && node e2e/content.mjs && node e2e/playback.mjs"
+    "test:e2e": "node e2e/smoke.mjs && node e2e/content.mjs && node e2e/playback.mjs && node e2e/modes.mjs"
   },
   "dependencies": {
     "@charcoal/client": "*",
