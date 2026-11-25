@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeRuntime, validateDomainConfig, validateManifest, validateRulePack, type Media, type ProviderModule } from '@charcoal/provider-sdk';
 import { checkContract, createHarness, simulate, TITLES, type MockRoute } from '@charcoal/provider-sdk/testing';
-import { CODE_PROVIDERS, DEFAULT_DOMAINS, fsharetv, icefyManifest, icefyRules, loadCorePack, peachify, popr, RULE_PROVIDERS, streammafia, tulnex, videasy, vidnest, vidrock, vidsrc, vidzee } from './index.js';
+import { CODE_PROVIDERS, DEFAULT_DOMAINS, fsharetv, icefyManifest, icefyRules, loadCorePack, peachify, popr, RULE_PROVIDERS, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee } from './index.js';
 import { base64ToBytes, bytesToBase64, bytesToHex, utf8 } from './providers/shared.js';
 import { encryptItemId } from './providers/vidrock.js';
 
@@ -170,6 +170,34 @@ test('Videasy: a decoder that refuses the blob is STRUCTURE_CHANGED; a blocked A
   assert.equal(refused.code, 'STRUCTURE_CHANGED');
   const blocked = await run('videasy', MOVIE, { 'api.wecollege.net': { status: 403, headers: { 'content-type': 'text/html' }, body: '<html><head><title>Attention Required! | Cloudflare</title></head></html>' } });
   assert.ok(['ACCESS_DENIED', 'CHALLENGE'].includes(blocked.code ?? ''), blocked.code);
+});
+
+// ---------- VidLink ----------
+
+test('VidLink: a token from the third-party service, then its JSON API; files by quality with their codec', async () => {
+  const routes: Record<string, MockRoute> = {
+    'https://enc-dec.app/api/enc-vidlink?text=27205': { body: { status: 200, result: 'TOKEN27205' } },
+    'https://enc-dec.app/api/enc-vidlink?text=1396': { body: { status: 200, result: 'TOKEN1396' } },
+    'https://vidlink.pro/api/b/movie/TOKEN27205': { body: { sourceId: 'x', stream: { type: 'file', TTL: 3600, qualities: { '480': { type: 'mp4', url: 'https://cdn.example.org/f/480.mp4', codecName: 'hevc', size: '888' }, '1080': { type: 'mp4', url: 'https://cdn.example.org/f/1080.mp4', codecName: 'h264', size: '2414' } }, captions: [{ url: 'https://cdn.example.org/s/en.srt', language: 'English', type: 'srt' }] } } },
+    'https://vidlink.pro/api/b/tv/TOKEN1396/2/3': { body: { stream: { type: 'hls', playlist: 'https://cdn.example.org/tv/master.m3u8' } } },
+    'cdn.example.org': PLAYLIST,
+  };
+  const film = await run('vidlink', MOVIE, routes);
+  assert.equal(film.outcome, 'ok', `${film.code}: ${film.message}`);
+  assert.deepEqual(film.streams.map((s) => [s.type, s.quality, s.note ?? '', s.headers.Referer ?? 'no referer', s.headers['User-Agent']]).sort(), [['mp4', '1080', '', 'no referer', 'Charcoal'], ['mp4', '480', 'HEVC', 'no referer', 'Charcoal']]);
+  assert.deepEqual(film.captions.map((c) => [c.label, c.format]), [['English', 'srt']]);
+  const episode = await run('vidlink', EPISODE, routes);
+  assert.deepEqual(episode.streams.map((s) => [s.type, s.url]), [['hls', 'https://cdn.example.org/tv/master.m3u8']]);
+  assert.deepEqual(await contract(vidlink, MOVIE, routes), []);
+});
+
+test('VidLink: no browser needed; a missing title is empty, a refusing token service or site is said as such', async () => {
+  assert.ok(!loaded('vidlink')[0].module.manifest.requires?.features?.includes('js-render'));
+  const token = { 'https://enc-dec.app/api/enc-vidlink?text=27205': { body: { status: 200, result: 'T' } } };
+  assert.deepEqual([(await run('vidlink', MOVIE, { ...token, 'vidlink.pro': simulate.notFound() })).outcome], ['empty']);
+  assert.equal((await run('vidlink', MOVIE, { ...token, 'vidlink.pro': { body: { stream: { qualities: {} } } } })).code, 'NOT_FOUND');
+  assert.equal((await run('vidlink', MOVIE, { 'enc-dec.app': { body: { status: 400, error: 'bad text' } } })).code, 'STRUCTURE_CHANGED');
+  assert.equal((await run('vidlink', MOVIE, { ...token, 'vidlink.pro': { status: 403, body: 'no' } })).code, 'ACCESS_DENIED');
 });
 
 // ---------- VidSrc ----------

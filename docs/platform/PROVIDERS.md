@@ -120,6 +120,20 @@ Read down the last two columns: ten providers returned a stream that verified, s
 also had a stream start in the player. At the baseline, on the previous day from the same
 address, those numbers were two and two.
 
+### Changes after the first live deployment (2026-11-26)
+
+- **VidLink** no longer needs a browser worker: it asks VidLink's JSON API, with the id token
+  made by enc-dec.app (third party, closed source; it sees the TMDB id of each lookup). Live
+  from a cloud address: three files for Inception, 1080p H.264 among them, verified at header
+  level. Its file host refuses browsers (428 to a browser User-Agent, 429 to a Referer), so the
+  files play through the relay or the helper. Stable.
+- **CineSu**: `cine.su` redirects to `koddo.to`, where the playlist path answers 404. Changing
+  the address does not restore it; it stays canary until someone writes an extraction for the
+  new site.
+- **Videasy**: its API host (`api.wecollege.net`) blocks data-centre addresses outright
+  (Cloudflare "you have been blocked"), from Railway and from the test address. It can only work
+  on a viewer's own connection.
+
 ## 4. Other integrations
 
 | Integration | Implemented | Unit-tested | Integration-tested | Live-validated | Playback-validated |

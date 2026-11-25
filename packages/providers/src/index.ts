@@ -16,6 +16,7 @@ import { popr } from './providers/popr.js';
 import { streammafia } from './providers/streammafia.js';
 import { tulnex } from './providers/tulnex.js';
 import { videasy } from './providers/videasy.js';
+import { vidlink } from './providers/vidlink.js';
 import { vidnest } from './providers/vidnest.js';
 import { vidrock } from './providers/vidrock.js';
 import { vidsrc } from './providers/vidsrc.js';
@@ -24,7 +25,6 @@ import { vixsrc } from './providers/vixsrc.js';
 import { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 import { providers as ANIME_PROVIDERS } from './packs/anime.js';
 import { icefyManifest, icefyRules } from './rules/icefy.js';
-import { vidlinkManifest, vidlinkRules } from './rules/vidlink.js';
 
 export * from './types.js';
 export { nativeFetcher, getJson } from './fetch.js';
@@ -36,8 +36,7 @@ export { loadFallbackProviders };
 export { primesrc, STREAMVIVA_VERSION } from './streamviva.js';
 export { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 export { icefyManifest, icefyRules } from './rules/icefy.js';
-export { vidlinkManifest, vidlinkRules } from './rules/vidlink.js';
-export { castle, febbox, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidnest, vidrock, vidsrc, vidzee, vixsrc };
+export { castle, febbox, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee, vixsrc };
 
 /**
  * Providers declared as data: a manifest and its rules.
@@ -47,12 +46,11 @@ export { castle, febbox, fsharetv, peachify, popr, streammafia, tulnex, videasy,
  * validated against the live site, or when its site cannot be reached at the configured address.
  */
 export const RULE_PROVIDERS: { manifest: ProviderManifest; rules: RulePack; stage: Stage }[] = [
-  // Its address redirects elsewhere and the new host refuses the playlist path.
+  // cine.su now redirects to koddo.to, which has no such playlist path (404, checked 2026-11-26):
+  // moving the address there does not bring it back. It needs a new extraction for the new site.
   { manifest: cinesuManifest, rules: cinesuRules, stage: 'canary' },
   // The site answers with a browser check from a cloud address; not verified anywhere yet.
   { manifest: icefyManifest, rules: icefyRules, stage: 'canary' },
-  // Needs a browser worker; live-validated through one from a cloud address on 2026-11-24.
-  { manifest: vidlinkManifest, rules: vidlinkRules, stage: 'stable' },
 ];
 
 /**
@@ -70,6 +68,8 @@ export const CODE_PROVIDERS: { module: ProviderModule; stage: Stage }[] = [
   { module: vixsrc, stage: 'stable' },
   // Needs a browser worker. Verified through one from a cloud address on 2026-11-24.
   { module: vidnest, stage: 'stable' },
+  // Its JSON API, with the id token from a third-party service. Verified from a cloud address on 2026-11-26.
+  { module: vidlink, stage: 'stable' },
   // Ported from the server-only classes with the same protocol, but no stream of theirs could be
   // verified from where this was built: their sites do not connect, answer with a browser check,
   // or return an empty table there. They may well work from a home connection.

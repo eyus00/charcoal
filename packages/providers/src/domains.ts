@@ -43,7 +43,7 @@ export const DEFAULT_DOMAINS: Record<string, DomainConfig> = {
     roles: { site: { active: 'https://cine.su' } },
   },
   icefy: one('icefy', { site: 'https://streams.icefy.top' }),
-  vidlink: one('vidlink', { site: 'https://vidlink.pro' }),
+  vidlink: one('vidlink', { site: 'https://vidlink.pro', decoder: 'https://enc-dec.app' }),
   fsharetv: one('fsharetv', { site: 'https://fsharetv.cc' }),
   popr: one('popr', { site: 'https://popr.ink' }),
   streammafia: one('streammafia', { site: 'https://player.nhdapi.com' }),
