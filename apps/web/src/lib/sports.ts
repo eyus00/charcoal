@@ -1,92 +1,26 @@
 /**
  * Sports, from @charcoal/content.
  *
- *   live      a stream directory (PPV): what is on now and next, each with the directory's own
- *             player page, which plays here in a frame. It gives no stream addresses, so nothing
- *             from it goes through Charcoal's player.
- *   channels  the directory's always-on sports channels (framed the same way), and iptv-org's
- *             public free-to-air channels, which play in Charcoal's own player.
- *   schedule  TheSportsDB fixtures (it has no streams) with each competition's official
- *             "how to watch" page, opened in a new tab.
+ *   live, schedule  a stream directory (PPV): what is on now and next, each with the directory's
+ *                   own player page, which plays here in a frame.
+ *   channels        the directory's always-on sports channels (framed the same way), and
+ *                   iptv-org's public free-to-air channels, which play in Charcoal's own player.
  */
 import { useEffect, useState } from 'react';
-import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   createStreamDirectory,
-  createTheSportsDb,
-  effectiveStatus,
   loadChannelCatalog,
-  resolveLinkouts,
-  type BroadcasterLink,
   type Channel,
   type ChannelStream,
-  type EventStatus,
-  type SportsEvent,
   type StreamDirectory,
   type StreamOption,
 } from '@charcoal/content';
 import { cacheGet, cacheSet, webFetcher, within } from './content';
 import type { JellyResult } from './servers';
-import { FREE_TO_AIR_CHANNELS, OFFICIAL_LINKOUTS, type SportTab } from './sportsConfig';
-
-// ---------- events ----------
-
-/** TheSportsDB's public test key is the package default; a paid key (more events per request) is set at build time. */
-const sportsDb = createTheSportsDb(webFetcher, { apiKey: (import.meta.env.VITE_THESPORTSDB_KEY as string | undefined) || undefined });
+import { FREE_TO_AIR_CHANNELS } from './sportsConfig';
 
 const HOUR = 3_600_000;
-const utcDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-
-/** The UTC days that hold what is on now and in the next day and a bit, wherever the viewer is. */
-export function daysToAsk(now: number): string[] {
-  return [...new Set([utcDay(now - 6 * HOUR), utcDay(now), utcDay(now + 30 * HOUR)])];
-}
-
-export interface ListedEvent extends SportsEvent {
-  /** Live or scheduled by the clock as well as by the source (see effectiveStatus). */
-  state: EventStatus;
-  /** Official places to watch it; empty when none is known for its competition. */
-  links: BroadcasterLink[];
-}
-
-/** The viewer's country, as far as the browser says ("en-GB" → GB); 'WW' when it doesn't. */
-export function viewerRegion(): string {
-  for (const tag of typeof navigator === 'undefined' ? [] : (navigator.languages ?? [navigator.language])) {
-    const region = /^[a-z]{2,3}-(?:[A-Za-z]{4}-)?([A-Za-z]{2})\b/.exec(tag ?? '')?.[1];
-    if (region) return region.toUpperCase();
-  }
-  return 'WW';
-}
-
-/** Live first, then by start; finished and cancelled events are dropped. */
-export function listEvents(events: SportsEvent[], now: number, region: string): ListedEvent[] {
-  const seen = new Set<string>();
-  return events
-    .filter((e) => !seen.has(e.id) && seen.add(e.id))
-    .map((e) => ({ ...e, state: effectiveStatus(e, now), links: resolveLinkouts(OFFICIAL_LINKOUTS, e, region) }))
-    .filter((e) => e.state === 'live' || e.state === 'scheduled' || e.state === 'postponed')
-    .sort((a, b) => Number(b.state === 'live') - Number(a.state === 'live') || a.startsAt - b.startsAt);
-}
-
-/**
- * What is on and coming up in one sport: the days around now, plus the next fixture of each
- * featured competition. One request failing (the free key is rate-limited) leaves the rest.
- */
-export function useSportsEvents(tab: SportTab) {
-  return useQuery({
-    queryKey: ['sports-events', tab.key],
-    staleTime: 2 * 60_000,
-    refetchInterval: 5 * 60_000,
-    retry: false,
-    queryFn: async ({ signal }) => {
-      const now = Date.now();
-      const asked = await Promise.allSettled([...daysToAsk(now).map((d) => sportsDb.eventsOnDay(d, tab.sport, signal)), ...tab.leagues.map((id) => sportsDb.nextLeagueEvents(id, signal))]);
-      const answered = asked.filter((a): a is PromiseFulfilledResult<SportsEvent[]> => a.status === 'fulfilled');
-      if (!answered.length) throw (asked[0] as PromiseRejectedResult).reason;
-      return { events: answered.flatMap((a) => a.value), incomplete: answered.length < asked.length, at: now };
-    },
-  });
-}
 
 /** A start time in the viewer's own time zone: "Today", "Fri 27 Nov"; "20:00"; "GMT+5:30". */
 export function localStart(ms: number, now = Date.now()): { day: string; time: string; zone: string } {
@@ -223,8 +157,6 @@ export function useDirectory() {
   return useQuery({ ...DIRECTORY_QUERY, refetchInterval: 60_000, refetchOnWindowFocus: true, retry: 1 });
 }
 
-/** Asks ahead of the page (the pointer is on "Sports"), so the page opens with its list. */
-export const prefetchDirectory = (client: QueryClient) => client.prefetchQuery(DIRECTORY_QUERY);
 
 /** The clock, ticking every half minute: an event moves from "coming up" to "live" between refreshes. */
 export function useNow(): number {

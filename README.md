@@ -1,6 +1,6 @@
 # Charcoal
 
-A streaming frontend for movies and TV, anime and live sports, and the server that finds its
+A streaming frontend for movies, TV, anime and live sports, and the server that finds its
 streams, in one repository.
 
 ```
@@ -22,26 +22,23 @@ docs/platform/    Architecture, the provider SDK guide, operations, security rev
                   the availability measurements and the provider status table
 ```
 
-## Three parts, one shell
+## One app
 
-A switch below the logo (at the top of the page on a phone) chooses the part of Charcoal you are
-in. Each has its own home, navigation and search; your library, history and the player are shared.
+Movies, TV shows and anime are one catalogue: Home has a section for each kind of thing, Discover
+narrows by type, genre and where a title is from (Western, Bollywood, Asian, Anime), and the
+search field looks through TMDB and AniList together, showing what it finds as you type. An
+anime that TMDB lacks (AniList lists every season, film and special) has its own page and plays
+by its AniList id.
 
-| Part | What it is | Where its streams come from |
-|---|---|---|
-| **Screen** | Movies and TV shows (and Indian cinema by language) | The provider platform below |
-| **Anime** | AniList's catalogue (every season, film, special and web series), with sub / dub. An entry TMDB also has opens as that title; one it lacks has its own page and player | The provider platform, asked by AniList / MAL entry |
-| **Sports** | Live events, what is coming up, channels, and a schedule with official links | A stream directory's own player in a frame; public free-to-air channels in Charcoal's player |
+**Sports** is a small app inside it, at `/sports`: Live, Schedule and Channels, with its own
+search. Everything it lists is something it can open: a third-party directory's events and
+channels in that directory's own player (a frame Charcoal cannot see into), and public
+free-to-air channels in Charcoal's player.
 
 Nothing needs setting up to watch: a title for which no direct source is found starts in an
-embedded player, and a sports event is one tap from its player. Sports events and their players
-come from a third-party directory (PPV's public API); it gives player pages, not stream
-addresses, so they are framed and Charcoal cannot see or control what the frame shows.
-`docs/platform/PROVIDERS.md` says how far each of these has been verified.
-
-The search field looks in all three at once and shows what it finds as you type. `/admin` is a
-status page for whoever runs a server: which sources work, which are refused or unreachable and
-why (add the server's `ADMIN_TOKEN` there for stages, address checks and the audit log).
+embedded player. `/admin` is a status page for whoever runs a server: which sources work, which
+are refused or unreachable and why (add the server's `ADMIN_TOKEN` there for stages, address
+checks and the audit log). `docs/platform/PROVIDERS.md` says how far each source has been verified.
 
 ## Where streams come from
 

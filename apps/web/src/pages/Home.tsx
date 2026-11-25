@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ChevronRight, Clapperboard } from 'lucide-react';
+import { ChevronRight, Trophy } from 'lucide-react';
+import AnimeSection from '../components/AnimeSection';
+import AnimeShelfRow from '../components/AnimeShelfRow';
 import ContinueWatching from '../components/ContinueWatching';
 import Hero from '../components/Hero';
 import { AiringThisWeek, InTheaters, Top10, TopRated } from '../components/HomeRows';
@@ -26,10 +28,12 @@ export default function Home() {
     <div className="space-y-10 md:space-y-12">
       <Hero titles={titles} isError={trending.isError} label="Trending today" />
       {resume.length > 0 && <ContinueWatching items={resume} />}
+      <AnimeShelfRow title="Continue anime" show="watching" />
       <ForYouRow />
       <Top10 />
       <Browse />
-      <IndianCinema />
+      <AnimeSection />
+      <SportsCard />
       <AiringThisWeek />
       <InTheaters />
       <TopRated />
@@ -37,18 +41,15 @@ export default function Home() {
   );
 }
 
-// ---------- Indian cinema: in the sidebar on wide screens, a card here below them ----------
+// ---------- Sports: in the sidebar on wide screens, a card here below them ----------
 
-function IndianCinema() {
+function SportsCard() {
   return (
-    <Link to="/indian" className="group flex items-center gap-3.5 rounded-2xl bg-surface p-4 transition-colors hover:bg-raised lg:hidden">
+    <Link to="/sports" className="group flex items-center gap-3.5 rounded-2xl bg-surface p-4 transition-colors hover:bg-raised lg:hidden">
       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-white group-hover:text-black">
-        <Clapperboard className="size-5" strokeWidth={1.75} />
+        <Trophy className="size-5" strokeWidth={1.75} />
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-body-sm font-medium">Indian cinema</span>
-        <span className="block truncate text-caption text-muted">Hindi, Tamil, Telugu, Malayalam and more</span>
-      </span>
+      <span className="min-w-0 flex-1 text-body-sm font-medium">Sports</span>
       <ChevronRight className="size-5 shrink-0 text-faint" strokeWidth={1.5} />
     </Link>
   );

@@ -498,17 +498,17 @@ section('A. Anime');
 }
 {
   // The catalogue is AniList's: a row of the home page, then the entry behind a card.
-  const { page, context, errors, outside } = await open('/anime');
+  const { page, context, errors, outside } = await open('/');
+  await page.getByTestId('anime-section').scrollIntoViewIfNeeded().catch(() => {});
   const card = page.locator('a[data-anime="131681"]').first();
   const listed = await card.waitFor({ timeout: 10000 }).then(() => true, () => false);
   const homeAsks = outside.filter((o) => o === 'POST graphql.anilist.co/').length;
-  check('Anime’s home lists AniList’s entries, all its rows asked for in one request', listed && homeAsks === 1 && (await page.locator('a[data-anime="990001"]').count()) > 0, `${homeAsks} request(s)`);
+  check('Home’s Anime section lists AniList’s entries, all its lists asked for in one request', listed && homeAsks === 1 && (await page.locator('a[data-anime="990001"]').count()) > 0, `${homeAsks} request(s)`);
   await shot(page, 'anime');
   await card.click();
-  let names = '';
-  await until(async () => /Shingeki/.test((names = (await page.getByTestId('other-names').textContent().catch(() => '')) ?? '')), 10000);
+  await until(() => /\/tv\/1429/.test(page.url()), 10000);
   check('an entry TMDB also has opens as that TMDB title, at its season', /\/tv\/1429\?season=4$/.test(page.url()), page.url().replace(site, ''));
-  check('the title page shows the romaji and Japanese names', /Shingeki no Kyojin/.test(names) && /進撃の巨人/.test(names), names);
+  check('the title page shows no line of other names under the title', (await page.getByTestId('other-names').count()) === 0);
   await shot(page, 'title-anime');
   check('no page errors', errors.length === 0, errors.join(' | '));
   await context.close();
@@ -516,14 +516,14 @@ section('A. Anime');
 {
   // An entry TMDB does not list: its own page from AniList, and its episodes by AniList / MAL id.
   asked.length = 0;
-  const { page, context, errors } = await open('/anime/browse?q=lantern');
-  const card = page.locator('a[data-anime="990001"]');
+  const { page, context, errors } = await open('/discover?q=lantern');
+  const card = page.getByTestId('more-anime').locator('a[data-anime="990001"]');
   await card.waitFor({ timeout: 10000 }).catch(() => {});
-  check('a search by name finds an entry TMDB doesn’t have', (await page.getByTestId('anime-grid').locator('a[data-anime]').count()) === 1 && /Lantern Shop Stories/.test((await card.textContent()) ?? ''));
+  check('a search by name finds an entry TMDB doesn’t have', (await page.getByTestId('more-anime').locator('a[data-anime]').count()) === 1 && /Lantern Shop Stories/.test((await card.textContent()) ?? ''));
   await card.click();
   await page.getByTestId('anime-episodes').waitFor({ timeout: 10000 }).catch(() => {});
   const body = ((await page.textContent('main').catch(() => '')) ?? '').replace(/\s+/g, ' ');
-  check('…which has a page of its own: names, facts, description without markup, episodes', page.url().endsWith('/anime/title/990001') && /Chouchin-ya Monogatari · 提灯屋物語/.test(body) && /Web series/.test(body) && /3 episodes/.test(body) && /Studio Test/.test(body) && /A quiet shop\./.test(body) && !/<br>|<i>/.test(body) && (await page.getByTestId('anime-episodes').locator('a').count()) === 3, body.slice(0, 200));
+  check('…which has a page of its own: facts, description without markup, episodes', page.url().endsWith('/anime/title/990001') && /Web series/.test(body) && /3 episodes/.test(body) && /Studio Test/.test(body) && /A quiet shop\./.test(body) && !/<br>|<i>/.test(body) && (await page.getByTestId('anime-episodes').locator('a').count()) === 3, body.slice(0, 200));
   await shot(page, 'anime-entry');
   await page.getByRole('link', { name: 'Episode 2', exact: true }).click();
   const started = await playing(page);
@@ -538,9 +538,9 @@ section('A. Anime');
   check('the entry’s page then offers to continue where you were', await resume.waitFor({ timeout: 8000 }).then(() => true, () => false));
   // It is in history and, once ♥ is pressed, in the library: kept beside the TMDB-keyed ones.
   await page.getByRole('button', { name: 'Add Lantern Shop Stories to your library' }).click();
-  await page.goto(`${site}/anime`);
+  await page.goto(`${site}/`);
   const shelf = page.getByTestId('anime-shelf-watching').locator('a[data-shelf="990001"]');
-  check('Anime’s home offers to continue it', await shelf.waitFor({ timeout: 8000 }).then(() => true, () => false) && (await shelf.getAttribute('href')) === '/anime/watch/990001?ep=2');
+  check('Home offers to continue it', await shelf.waitFor({ timeout: 8000 }).then(() => true, () => false) && (await shelf.getAttribute('href')) === '/anime/watch/990001?ep=2');
   await page.goto(`${site}/profile`);
   check('…and the profile lists it under history and library', await until(async () => (await page.getByTestId('anime-shelf-history').locator('a[data-shelf="990001"]').count()) === 1 && (await page.getByTestId('anime-shelf-library').locator('a[data-shelf="990001"]').count()) === 1));
   check('…without entering the TMDB-keyed library (Trakt sync and the calendar read that)', (await page.evaluate(() => JSON.parse(localStorage.getItem('charcoal:v2') ?? '{}').watchlist?.length ?? 0)) === 0);
@@ -550,34 +550,7 @@ section('A. Anime');
   await context.close();
 }
 // ===================================================================== B. Indian cinema
-section('B. Indian cinema');
-{
-  tmdbLog.length = 0;
-  const { page, context, errors } = await open('/indian');
-  const tabs = page.getByRole('group', { name: 'Language' });
-  await tabs.waitFor({ timeout: 10000 }).catch(() => {});
-  const names = await tabs.getByRole('button').allTextContents();
-  const wanted = ['Hindi', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Marathi', 'Punjabi'];
-  check('the Indian cinema page has a tab per language', wanted.every((w) => names.includes(w)), names.join(', '));
-  const hindi = await page.getByRole('link', { name: /Jawan/ }).first().waitFor({ timeout: 10000 }).then(() => true, () => false);
-  const first = tmdbLog.find((r) => r.path === 'discover/movie');
-  check('Hindi is listed first, from TMDB discover by original language in India', hindi && first?.q.with_original_language === 'hi' && first?.q.region === 'IN', JSON.stringify(first?.q));
-  await tabs.getByRole('button', { name: 'Tamil', exact: true }).click();
-  const tamil = await page.getByRole('link', { name: /Vikram/ }).first().waitFor({ timeout: 10000 }).then(() => true, () => false);
-  const second = tmdbLog.find((r) => r.path === 'discover/movie' && r.q.with_original_language === 'ta');
-  const stillHindi = await page.getByRole('link', { name: /Jawan/ }).count();
-  check('the Tamil tab lists Tamil titles only', tamil && !!second && second.q.region === 'IN' && stillHindi === 0, `Vikram shown=${tamil}, Jawan links=${stillHindi}`);
-  await shot(page, 'indian');
-  await tabs.getByRole('button', { name: 'Telugu', exact: true }).click();
-  check('the Telugu tab lists Telugu titles', await page.getByRole('link', { name: /RRR/ }).first().waitFor({ timeout: 10000 }).then(() => true, () => false));
-  await page.getByRole('searchbox', { name: 'Search Indian titles' }).fill('vikram');
-  const found = await page.getByRole('link', { name: /Vikram/ }).first().waitFor({ timeout: 10000 }).then(() => true, () => false);
-  await sleep(300);
-  const foreign = await page.getByRole('link', { name: /Viking/ }).count();
-  check('search on the page keeps to Indian-language titles', found && foreign === 0, `Vikram shown=${found}, non-Indian results=${foreign}`);
-  check('no page errors', errors.length === 0, errors.join(' | '));
-  await context.close();
-}
+section('B. Regional titles');
 {
   // A Tamil film: its other names and its language go to the resolver; sources say what they carry.
   asked.length = 0;
@@ -610,37 +583,9 @@ section('B. Indian cinema');
 }
 
 // ===================================================================== C. sports
-section('C. Sports');
-const OFFICIAL_HOSTS = ['www.premierleague.com', 'www.laliga.com', 'www.uefa.tv', 'www.iplt20.com', 'www.nba.com', 'www.nfl.com', 'www.nhl.com', 'www.mlb.com', 'f1tv.formula1.com', 'www.motogp.com', 'www.tennistv.com'];
+section('C. Sports channels');
 {
-  const { page, context, errors, outside } = await open('/sports/schedule');
-  const list = page.getByTestId('events');
-  await list.waitFor({ timeout: 15000 }).catch(() => {});
-  const upcoming = list.locator('[data-event="thesportsdb:9001"]');
-  const text = ((await upcoming.textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ');
-  const local = new Date(UPCOMING_AT).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
-  const utc = new Date(UPCOMING_AT).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
-  check('an upcoming event is listed with its competition', /Nottingham Forest vs Chelsea/.test(text) && /English Premier League/.test(text), text.slice(0, 140));
-  check('…at its start time in the viewer’s time zone, not UTC', text.includes(local) && !text.includes(utc) && /GMT\+5:30/.test(text), `expects ${local} GMT+5:30 (UTC ${utc})`);
-  const stamp = await upcoming.locator('time').getAttribute('datetime').catch(() => null);
-  check('…which is the instant the schedule gave', stamp === new Date(UPCOMING_AT).toISOString(), stamp);
-  const live = ((await list.locator('[data-event="thesportsdb:9002"]').textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ');
-  check('an event in progress is marked live, first, with its score', /Live/.test(live) && /Santos vs Gremio/.test(live) && /1–0/.test(live) && (await list.locator('li').first().getAttribute('data-event')) === 'thesportsdb:9002', live.slice(0, 120));
-  check('a finished event is not listed', (await list.locator('[data-event="thesportsdb:9003"]').count()) === 0);
-  check('the schedule was asked with the working key, and one refused competition did not hide the rest', outside.some((o) => o.includes('/api/v1/json/123/eventsnextleague.php')) && !outside.some((o) => /\/json\/3\//.test(o)) && /didn’t answer/.test((await page.textContent('body')) ?? ''));
-
-  const link = upcoming.locator('a[data-kind="official-site"]').first();
-  const attrs = await link.evaluate((a) => ({ href: a.href, target: a.target, rel: a.rel, text: a.textContent })).catch(() => null);
-  check('the event’s official link opens in a new tab with rel=noopener', attrs?.target === '_blank' && /\bnoopener\b/.test(attrs?.rel ?? '') && attrs?.href === 'https://www.premierleague.com/en/media/broadcasters', JSON.stringify(attrs));
-  check('an event with no known official page offers no link', (await list.locator('[data-event="thesportsdb:9002"] a').count()) === 0 && /No official link listed/.test(live));
-
-  const scheduleLinks = await page.evaluate(() => [...document.querySelectorAll('main a[href^="http"]')].map((a) => ({ host: new URL(a.href).hostname, kind: a.getAttribute('data-kind'), target: a.target, rel: a.rel })));
-  check('every outside link on the schedule is a marked official one', scheduleLinks.length > 0 && scheduleLinks.every((a) => OFFICIAL_HOSTS.includes(a.host) && a.kind === 'official-site' && a.target === '_blank' && /\bnoopener\b/.test(a.rel)), JSON.stringify(scheduleLinks));
-  await shot(page, 'sports-schedule');
-
-  // Channels: the directory's own (framed) and the public free-to-air ones (Charcoal's player).
-  await page.getByRole('link', { name: 'Channels' }).first().click();
-  await page.waitForURL(/\/sports\/channels$/, { timeout: 5000 }).catch(() => {});
+  const { page, context, errors, outside } = await open('/sports?tab=channels');
   const channels = page.getByTestId('channels');
   await channels.waitFor({ timeout: 15000 }).catch(() => {});
   const shown = await channels.locator('a[data-channel]').evaluateAll((as) => as.map((a) => a.getAttribute('data-channel')));
@@ -652,6 +597,7 @@ const OFFICIAL_HOSTS = ['www.premierleague.com', 'www.laliga.com', 'www.uefa.tv'
     external: [...document.querySelectorAll('main a[href^="http"]')].length,
   }));
   check('public channels open in Charcoal’s player, the directory’s channel on its watch page, and nothing leaves the site', kinds.own && kinds.framed.length === 1 && kinds.framed[0] === '/sports/watch/18172' && kinds.external === 0, JSON.stringify(kinds));
+  check('the schedule service that listed fixtures Charcoal could not play is no longer asked', outside.every((o) => !o.includes('thesportsdb')));
   await shot(page, 'sports-channels');
 
   // A public channel plays in the site's own player, from its HLS address.

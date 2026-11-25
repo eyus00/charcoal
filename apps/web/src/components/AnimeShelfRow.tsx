@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import { X } from 'lucide-react';
 import EpisodeTile, { Chip } from './EpisodeTile';
 import { RowArrows, Scroller, SectionHeader, useRowScroll } from './Row';
@@ -56,9 +55,6 @@ export default function AnimeShelfRow({ title, show, bleed = true }: { title: st
         title={title}
         action={
           <div className="flex items-center gap-3">
-            <Link to="/anime" className="text-sm text-muted transition-colors hover:text-white">
-              Anime
-            </Link>
             <RowArrows onScroll={scroll} />
           </div>
         }

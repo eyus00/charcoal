@@ -1,35 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Keyboard, X } from 'lucide-react';
-import { modeHome, modeOfPath } from '../lib/mode';
 import { actions, getState } from '../lib/store';
 import { isTypingTarget, keyState } from '../lib/util';
 import Modal from './Modal';
 import { btn } from './Button';
 
 export const GO: Record<string, { to: string; label: string }> = {
-  h: { to: '/', label: 'Home (of Screen, Anime or Sports)' },
+  h: { to: '/', label: 'Home' },
   m: { to: '/discover?type=movie', label: 'Movies' },
   t: { to: '/discover?type=tv', label: 'TV shows' },
   d: { to: '/discover', label: 'Discover' },
   c: { to: '/calendar', label: 'Calendar' },
-  a: { to: '/anime', label: 'Anime' },
-  i: { to: '/indian', label: 'Indian cinema' },
+  a: { to: '/discover?region=anime', label: 'Anime' },
   o: { to: '/sports', label: 'Sports' },
   p: { to: '/profile', label: 'Profile' },
   l: { to: '/profile#library', label: 'Library' },
   s: { to: '/profile#settings', label: 'Settings' },
   y: { to: '/profile#history', label: 'History' },
 };
-
-/** Home, and in Anime the two catalogue keys, lead to the page of the part you are in. */
-function destination(key: string): string {
-  const mode = modeOfPath(location.pathname) ?? getState().settings.mode;
-  if (key === 'h') return modeHome(mode);
-  if (mode === 'anime' && key === 'm') return '/anime/browse?type=movie';
-  if (mode === 'anime' && key === 't') return '/anime/browse';
-  return GO[key].to;
-}
 
 const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
 export const MOD = isMac ? '⌘' : 'Ctrl';
@@ -129,7 +118,7 @@ export default function Hotkeys({ openSearch }: { openSearch?: () => void }) {
         keyState.gAt = Date.now();
       } else if (keyState.gAt && Date.now() - keyState.gAt < 1200 && GO[e.key]) {
         e.preventDefault();
-        navigate(destination(e.key));
+        navigate(GO[e.key].to);
         setTimeout(() => (keyState.gAt = 0));
       } else {
         keyState.gAt = 0;

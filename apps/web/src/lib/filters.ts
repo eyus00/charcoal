@@ -53,8 +53,35 @@ export const SORTS: { key: SortKey; label: string }[] = [
   { key: 'newest', label: 'Newest' },
 ];
 
+/** Where a title is from, as far as its original language says. */
+export type Region = 'all' | 'western' | 'bollywood' | 'asian' | 'anime';
+const ANIMATION = 16;
+const LANGUAGES: Record<Exclude<Region, 'all' | 'anime'>, string[]> = {
+  western: ['en', 'fr', 'de', 'es', 'it', 'pt', 'nl', 'sv', 'da', 'no'],
+  bollywood: ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa'],
+  // Japanese live action is here; Japanese animation is Anime.
+  asian: ['ko', 'zh', 'cn', 'th', 'ja'],
+};
+export const REGIONS: { key: Region; label: string }[] = [
+  { key: 'all', label: 'Everywhere' },
+  { key: 'western', label: 'Western' },
+  { key: 'bollywood', label: 'Bollywood' },
+  { key: 'asian', label: 'Asian' },
+  { key: 'anime', label: 'Anime' },
+];
+/** Whether a title belongs to a region (text-search results are filtered with this). */
+export function inRegion(m: { original_language?: string; genre_ids?: number[] }, region: Region): boolean {
+  if (region === 'all') return true;
+  const animated = !!m.genre_ids?.includes(ANIMATION);
+  if (region === 'anime') return m.original_language === 'ja' && animated;
+  if (!LANGUAGES[region].includes(m.original_language ?? '')) return false;
+  return !(region === 'asian' && m.original_language === 'ja' && animated);
+}
+
 export interface Filters {
   type: MediaType | 'all';
+  /** Absent means everywhere. */
+  region?: Region;
   genres: string[];
   from?: number;
   to?: number;
@@ -85,6 +112,7 @@ export function parseFilters(sp: URLSearchParams, fixedType?: MediaType): Filter
   const sort = sp.get('sort') as SortKey | null;
   return {
     type: fixedType ?? (t === 'movie' || t === 'tv' ? t : 'all'),
+    ...(REGIONS.some((r) => r.key === sp.get('region') && r.key !== 'all') ? { region: sp.get('region') as Region } : {}),
     genres: (sp.get('genres') ?? '').split(',').filter((s) => GENRES.some((g) => g.slug === s)),
     from: num(sp.get('from')),
     to: num(sp.get('to')),
@@ -99,6 +127,7 @@ export function writeFilters(sp: URLSearchParams, f: Partial<Filters>): URLSearc
   const set = (k: string, v: string | number | undefined | null, isDefault: boolean) =>
     isDefault || v === undefined || v === null || v === '' ? next.delete(k) : next.set(k, String(v));
   if ('type' in f) set('type', f.type, f.type === 'all');
+  if ('region' in f) set('region', f.region, !f.region || f.region === 'all');
   if ('genres' in f) set('genres', f.genres?.join(','), !f.genres?.length);
   if ('from' in f) set('from', f.from, false);
   if ('to' in f) set('to', f.to, false);
@@ -107,7 +136,7 @@ export function writeFilters(sp: URLSearchParams, f: Partial<Filters>): URLSearc
   return next;
 }
 
-export const hasActiveFilters = (f: Filters) => f.genres.length > 0 || !!f.from || !!f.to || f.rating > 0;
+export const hasActiveFilters = (f: Filters) => (!!f.region && f.region !== 'all') || f.genres.length > 0 || !!f.from || !!f.to || f.rating > 0;
 export const activeFilterCount = (f: Filters, withType = false) =>
   f.genres.length + (f.from || f.to ? 1 : 0) + (f.rating ? 1 : 0) + (withType && f.type !== 'all' ? 1 : 0);
 export const EMPTY_FILTERS: Filters = { type: 'all', genres: [], rating: 0, sort: 'popular' };
@@ -123,6 +152,15 @@ export function discoverParams(type: MediaType, f: Filters, page: number): Recor
     const ids = genreIds(type, f.genres);
     if (!ids.length) return null;
     p.with_genres = ids.join('|'); // OR, matching the old app's behaviour
+  }
+  const region = f.region ?? 'all';
+  if (region === 'anime') {
+    p.with_original_language = 'ja';
+    // Animation AND whatever genres were picked.
+    p.with_genres = p.with_genres ? `${ANIMATION},${p.with_genres}` : ANIMATION;
+  } else if (region !== 'all') {
+    p.with_original_language = LANGUAGES[region].join('|');
+    if (region === 'asian') p.without_genres = ANIMATION;
   }
   const dateKey = type === 'movie' ? 'primary_release_date' : 'first_air_date';
   if (f.from) p[`${dateKey}.gte`] = `${f.from}-01-01`;
@@ -149,6 +187,7 @@ export function discoverParams(type: MediaType, f: Filters, page: number): Recor
 export function matchesFilters(m: MediaItem, f: Filters): boolean {
   const type = typeOf(m);
   if (f.type !== 'all' && type !== f.type) return false;
+  if (!inRegion(m, f.region ?? 'all')) return false;
   if (f.genres.length) {
     const ids = genreIds(type, f.genres);
     if (!m.genre_ids?.some((id) => ids.includes(id))) return false;

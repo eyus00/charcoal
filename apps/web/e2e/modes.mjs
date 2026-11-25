@@ -80,7 +80,7 @@ const card = (id, name, lang, genres, extra = {}) => ({ id, title: name, name, o
 const ANIME = [card(1429, 'Attack on Titan', 'ja', [16, 10759]), card(37854, 'One Piece', 'ja', [16])];
 // AniList's catalogue, in the live API's shape: two entries, found by name.
 const alCard = (id, english, romaji) => ({ id, idMal: id, format: 'TV', status: 'FINISHED', episodes: 12, seasonYear: 2022, averageScore: 85, genres: ['Action'], title: { romaji, english, native: null }, coverImage: { large: `https://img.anilist.invalid/${id}.jpg` }, bannerImage: null, startDate: { year: 2022 }, nextAiringEpisode: null });
-const AL = [alCard(131681, 'Attack on Titan Final Season Part 2', 'Shingeki no Kyojin: The Final Season Part 2'), alCard(21, 'ONE PIECE', 'ONE PIECE')];
+const AL = [alCard(131681, 'Attack on Titan Final Season Part 2', 'Shingeki no Kyojin: The Final Season Part 2'), { ...alCard(21, 'ONE PIECE', 'ONE PIECE'), status: 'RELEASING', episodes: null, nextAiringEpisode: { episode: 1181 } }];
 const anilistAsked = [];
 function anilist(body) {
   anilistAsked.push(body);
@@ -232,130 +232,100 @@ async function visitor(device, { ppv = { 'api.ppv.st': 'ok' }, state } = {}) {
   return { context, open, errors, outside, framed, delisted };
 }
 
-const current = (page) => page.getByTestId('mode-switch').first().locator('[aria-current="true"]').textContent().catch(() => null);
 const railLabels = (page) => page.locator('aside nav[aria-label="Browse"] a').evaluateAll((as) => as.map((a) => a.textContent.replace(/G [A-Z]$/, '').trim()));
 const overflow = (page) => page.evaluate(() => ({ page: document.scrollingElement.scrollWidth, window: innerWidth }));
 const text = async (locator) => ((await locator.textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ').trim();
 
-// ===================================================================== A. the switch (desktop)
-section('A. Screen, Anime, Sports: the switch in the sidebar');
+// ===================================================================== A. one app
+section('A. One app: titles and anime together, Sports beside them');
 {
   const v = await visitor(DESKTOP, { state: { history: [], watchlist: [], settings: { sidebarOpen: true } } });
   const page = await v.open('/');
-  const nav = page.locator('aside').getByTestId('mode-switch');
-  await nav.waitFor({ timeout: 10000 }).catch(() => {});
-  const links = await nav.locator('a').evaluateAll((as) => as.map((a) => [a.textContent.trim(), a.getAttribute('href')]));
-  check('the sidebar has the switch, below the logo and above the navigation', JSON.stringify(links) === JSON.stringify([['Screen', '/'], ['Anime', '/anime'], ['Sports', '/sports']]) && (await page.evaluate(() => {
-    const top = (sel) => document.querySelector(sel)?.getBoundingClientRect().top ?? -1;
-    return top('aside a[aria-label="Charcoal home"]') < top('aside [data-testid="mode-switch"]') && top('aside [data-testid="mode-switch"]') < top('aside nav[aria-label="Browse"]');
-  })), JSON.stringify(links));
-  check('Screen is the part a new visitor starts in, with its own navigation', (await current(page)) === 'Screen' && JSON.stringify(await railLabels(page)) === JSON.stringify(['Home', 'Discover', 'Movies', 'TV shows', 'Indian cinema']), (await railLabels(page)).join(', '));
-  check('…and its search', (await page.getByRole('searchbox').getAttribute('placeholder')) === 'Search movies & TV shows');
-  await shot(page, 'screen');
+  await page.locator('aside nav[aria-label="Browse"]').waitFor({ timeout: 10000 }).catch(() => {});
+  check('the sidebar is Home, Discover (Movies, TV shows) and Sports; there is no switch between parts', JSON.stringify(await railLabels(page)) === JSON.stringify(['Home', 'Discover', 'Movies', 'TV shows', 'Sports']) && (await page.getByTestId('mode-switch').count()) === 0, (await railLabels(page)).join(', '));
 
-  await nav.getByRole('link', { name: 'Anime' }).click();
-  await page.waitForURL(/\/anime$/, { timeout: 5000 }).catch(() => {});
-  await page.locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
-  check('Anime: its home, its navigation, its search', (await current(page)) === 'Anime' && JSON.stringify(await railLabels(page)) === JSON.stringify(['Home', 'Series', 'Films']) && (await page.getByRole('searchbox').getAttribute('placeholder')) === 'Search anime', (await railLabels(page)).join(', '));
-  const rowsShown = await page.locator('main section h2').allTextContents();
-  check('…with rows into AniList’s catalogue', ['Trending now', 'Airing this season', 'Popular series', 'Popular films'].every((t) => rowsShown.includes(t)) && (await page.locator('main a[data-anime="131681"]').count()) > 0, rowsShown.join(' | '));
-  check('the logo leads to the home of the part you are in', (await page.locator('aside a[aria-label="Charcoal home"]').getAttribute('href')) === '/anime');
-  await shot(page, 'anime');
+  // Anime has its own section on Home, switched by pill.
+  const anime = page.getByTestId('anime-section');
+  await anime.scrollIntoViewIfNeeded().catch(() => {});
+  await anime.locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
+  const pills = await anime.getByRole('group', { name: 'Anime' }).getByRole('button').allTextContents();
+  check('Home has an Anime section with its own pills, from AniList in one request', JSON.stringify(pills) === JSON.stringify(['Trending', 'Airing', 'Popular', 'Top rated', 'Films']) && (await anime.locator('a[data-anime="131681"]').count()) === 1 && anilistAsked.filter((b) => /trending: Page/.test(b.query ?? '')).length === 1, pills.join(', '));
+  check('…titles as posters, with no episode number on them', !/Ep \d/.test(await text(anime)));
+  await anime.getByRole('button', { name: 'Airing' }).click();
+  check('…and what is airing as episode banner cards', await until(async () => /Episode 1180/.test(await text(anime))) && (await anime.locator('a[data-anime="21"]').count()) === 1, (await text(anime)).slice(0, 120));
+  await shot(page, 'home-anime');
 
-  // Search in Anime stays in Anime, and finds anime only.
-  await page.getByRole('searchbox').fill('attack');
-  await page.getByRole('searchbox').press('Enter');
-  await page.waitForURL(/\/anime\/browse\?q=attack$/, { timeout: 5000 }).catch(() => {});
-  await page.getByRole('heading', { name: '“attack”' }).waitFor({ timeout: 10000 }).catch(() => {});
-  await page.getByTestId('anime-grid').waitFor({ timeout: 10000 }).catch(() => {});
-  const found = await page.locator('main a[data-anime]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
-  const searched = anilistAsked.find((b) => b.variables?.s === 'attack');
-  check('an anime search asks AniList by name and shows its entries', page.url().endsWith('/anime/browse?q=attack') && JSON.stringify(found) === JSON.stringify(['/anime/title/131681']) && !!searched && /format_in: \[TV, TV_SHORT, ONA, OVA, SPECIAL\]/.test(searched.query) && (await current(page)) === 'Anime', `${page.url().replace(site, '')} → ${found.join(', ')}`);
-  await page.getByRole('group', { name: 'Show' }).getByRole('button', { name: 'Films' }).click();
-  check('…and switching to films keeps what was searched for', await until(() => /\/anime\/browse\?(q=attack&type=movie|type=movie&q=attack)$/.test(page.url())), page.url().replace(site, ''));
+  // Discover narrows by where a title is from.
+  await page.goto(`${site}/discover`);
+  const from = page.getByRole('group', { name: 'From' });
+  await from.waitFor({ timeout: 10000 }).catch(() => {});
+  check('Discover can be narrowed to a part of the world', JSON.stringify(await from.getByRole('button').allTextContents()) === JSON.stringify(['Everywhere', 'Western', 'Bollywood', 'Asian', 'Anime']));
+  tmdbLog.length = 0;
+  await from.getByRole('button', { name: 'Anime' }).click();
+  await until(() => tmdbLog.some((r) => r.path === 'discover/tv' && r.q.with_original_language === 'ja'));
+  const asked = tmdbLog.find((r) => r.path === 'discover/tv' && r.q.with_original_language === 'ja');
+  check('“Anime” asks for Japanese animation', page.url().endsWith('/discover?region=anime') && asked?.q.with_genres === '16', JSON.stringify(asked?.q));
+  await from.getByRole('button', { name: 'Asian' }).click();
+  await until(() => tmdbLog.some((r) => /ko/.test(r.q.with_original_language ?? '')));
+  const asian = tmdbLog.find((r) => /ko/.test(r.q.with_original_language ?? ''));
+  check('“Asian” asks for Korean, Chinese, Thai and Japanese titles that are not animation', asian?.q.with_original_language === 'ko|zh|cn|th|ja' && asian?.q.without_genres === '16', JSON.stringify(asian?.q));
 
-  // A title's page belongs to every part: the switch stays where it was.
-  await page.goto(`${site}/tv/37854`);
-  await page.getByRole('heading', { name: 'One Piece' }).first().waitFor({ timeout: 10000 }).catch(() => {});
-  check('a title opened from Anime keeps Anime selected', (await current(page)) === 'Anime', page.url().replace(site, ''));
-
-  await page.locator('aside').getByTestId('mode-switch').getByRole('link', { name: 'Sports' }).click();
-  await page.waitForURL(/\/sports$/, { timeout: 5000 }).catch(() => {});
-  await page.getByTestId('live-events').waitFor({ timeout: 10000 }).catch(() => {});
-  check('Sports: its home, its navigation, its search', (await current(page)) === 'Sports' && JSON.stringify(await railLabels(page)) === JSON.stringify(['Live', 'Schedule', 'Channels']) && (await page.getByRole('searchbox').getAttribute('placeholder')) === 'Search teams and leagues', (await railLabels(page)).join(', '));
-  check('the search field has no title filters outside Screen', (await page.getByRole('button', { name: /^Filters/ }).count()) === 0);
-
-  // Collapsed, the same three are icons with names.
-  await page.keyboard.press('[');
-  const icons = await page.locator('aside [data-testid="mode-switch"] a').evaluateAll((as) => as.map((a) => [a.getAttribute('aria-label'), a.textContent.trim().length > 0 && !a.querySelector('svg')]));
-  check('with the sidebar collapsed the switch is three named icons', await until(async () => (await page.locator('aside').evaluate((a) => a.getBoundingClientRect().width)) <= 80) && JSON.stringify(icons.map((i) => i[0])) === JSON.stringify(['Screen', 'Anime', 'Sports']), JSON.stringify(icons));
-  await shot(page, 'sports-collapsed');
-  await page.keyboard.press('[');
-
-  // Shortcuts follow the part.
+  // The old addresses still lead somewhere.
+  const redirects = [];
+  for (const [old, now] of [['/anime', '/discover?region=anime'], ['/indian', '/discover?region=bollywood'], ['/sports/schedule', '/sports?tab=schedule'], ['/sports/channels', '/sports?tab=channels']]) {
+    await page.goto(`${site}${old}`);
+    await until(() => page.url() === `${site}${now}`, 4000);
+    redirects.push(page.url().replace(site, '') === now);
+  }
+  check('the pages that were folded in redirect to where their content is now', redirects.every(Boolean), redirects.join(','));
   await page.keyboard.press('g');
-  await page.keyboard.press('h');
-  check('“g h” goes to the home of the part you are in', await until(() => page.url() === `${site}/sports`), page.url().replace(site, ''));
-  check('no page errors', v.errors.length === 0, v.errors.join(' | '));
-  await v.context.close();
-}
-
-// ===================================================================== B. where Charcoal opens
-section('B. Opening Charcoal again');
-{
-  const v = await visitor(DESKTOP);
-  let page = await v.open('/sports');
-  await page.getByTestId('live-events').waitFor({ timeout: 10000 }).catch(() => {});
-  await page.close();
-  page = await v.open('/');
-  check('opening the site lands in the part used last', await until(() => page.url() === `${site}/sports`) && (await current(page)) === 'Sports', page.url().replace(site, ''));
-  await page.goto(`${site}/discover?type=movie`);
-  check('a link to a page still opens that page', page.url() === `${site}/discover?type=movie` && (await current(page)) === 'Screen', page.url().replace(site, ''));
-  await page.close();
-  page = await v.open('/');
-  check('…and after using Screen, the site opens on Screen', page.url() === `${site}/` && (await current(page)) === 'Screen', page.url().replace(site, ''));
-  await page.goto(`${site}/sports`);
-  await page.locator('aside').getByTestId('mode-switch').getByRole('link', { name: 'Screen' }).click();
-  check('choosing Screen in the switch goes to Screen and stays there', await until(() => page.url() === `${site}/`) && (await sleep(400), page.url() === `${site}/`) && (await current(page)) === 'Screen', page.url().replace(site, ''));
+  await page.keyboard.press('o');
+  check('“g o” opens Sports', await until(() => page.url() === `${site}/sports`), page.url().replace(site, ''));
   check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }
 
 // ===================================================================== C. sports
-section('C. Sports: what is on, and watching it');
+section('C. Sports: a small app of its own');
 {
   const v = await visitor(DESKTOP);
   const page = await v.open('/sports');
   const live = page.getByTestId('live-events');
   await live.waitFor({ timeout: 10000 }).catch(() => {});
+  const tabs = await page.getByRole('group', { name: 'Sports' }).getByRole('button').allTextContents();
+  check('Sports is one page with Live, Schedule and Channels on top, and no explanatory text', JSON.stringify(tabs) === JSON.stringify(['Live', 'Schedule', 'Channels']) && !/time zone|third-party|coming up/i.test(await text(page.locator('main'))), tabs.join(', '));
   const liveText = await text(live);
-  check('the event in progress is under “Live now”, marked live, with its competition and viewers', (await live.locator('li').count()) === 1 && /Live/.test(liveText) && /Gonzaga Bulldogs at Kansas State Wildcats/.test(liveText) && /College Basketball/.test(liveText) && /51/.test(liveText), liveText.slice(0, 140));
+  check('Live: the event in progress, as a banner card marked live', (await live.locator('li').count()) === 1 && /Live/.test(liveText) && /Gonzaga Bulldogs at Kansas State Wildcats/.test(liveText) && /College Basketball/.test(liveText), liveText.slice(0, 120));
+  await page.getByRole('group', { name: 'Sports' }).getByRole('button', { name: 'Schedule' }).click();
   const upcoming = page.getByTestId('upcoming-events');
-  const days = await upcoming.locator('h3').allTextContents();
-  const order = await upcoming.locator('a[data-listing]').evaluateAll((as) => as.map((a) => a.querySelector('span span').textContent));
-  check('what is still to start is under “Coming up”, soonest first, grouped by day', days.length >= 2 && /Tomorrow|^[A-Z][a-z]{2} /.test(days[days.length - 1]) && JSON.stringify(order) === JSON.stringify(['Virginia Cavaliers at Marquette Golden Eagles', 'Sabah FK vs. Barcelona', 'Slavia Prague vs. Villarreal', 'TCU Horned Frogs at Texas Tech Red Raiders']), `${days.join(' | ')} :: ${order.join(' | ')}`);
-  const row = upcoming.locator(`a[data-listing="${ID.upcoming}"]`);
-  const stamp = await row.locator('time').getAttribute('datetime');
+  await upcoming.waitFor({ timeout: 8000 }).catch(() => {});
+  const days = await upcoming.locator('h2').allTextContents();
+  const order = await upcoming.locator('a[data-listing]').evaluateAll((as) => as.map((a) => a.getAttribute('title')));
+  check('Schedule: what the player can open later, as banner cards under their day, soonest first', page.url().endsWith('/sports?tab=schedule') && days[0] === 'Today' && days.length >= 2 && JSON.stringify(order) === JSON.stringify(['Virginia Cavaliers at Marquette Golden Eagles', 'Sabah FK vs. Barcelona', 'Slavia Prague vs. Villarreal', 'TCU Horned Frogs at Texas Tech Red Raiders']), `${days.join(' | ')} :: ${order.join(' | ')}`);
+  const stamp = await upcoming.locator(`a[data-listing="${ID.upcoming}"]`).locator('xpath=..').locator('time').getAttribute('datetime');
   const local = new Date(stamp).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
-  check('…with start times in the viewer’s own time zone and how long until then', (await text(row)).includes(local) && /in 2 h 5\d min|in 3 h/.test(await text(row)), `${await text(row)} (expects ${local})`);
-  const all = await text(page.locator('main'));
-  check('channels and the entertainment marathons are not among the events', !/NFL Network/.test(all) && !/South Park/.test(all));
-  check('a row that could not be framed safely is not on the page at all', !/Hostile Row/.test(all));
-  check('the page says where the events come from', /third-party directory/.test(all));
-  await shot(page, 'sports');
+  check('…each with its start time in the viewer’s own time zone', (await text(upcoming)).includes(local), local);
+  check('…and nothing that cannot be opened: no fixtures from elsewhere, no unsafe row', !/Hostile Row/.test(await text(page.locator('main'))) && v.outside.every((o) => !o.includes('thesportsdb')));
+  await shot(page, 'sports-schedule');
 
   await page.getByRole('group', { name: 'Sport' }).getByRole('button', { name: 'Football', exact: true }).click();
   const listedNow = () => page.locator('main a[data-listing]').count();
-  check('a sport’s pill narrows the page to that sport', (await until(async () => (await listedNow()) === 2)) && page.url().endsWith('/sports?sport=Football') && (await page.getByTestId('live-events').count()) === 0, `${page.url().replace(site, '')}: ${await listedNow()} listed`);
+  check('a sport’s pill narrows the view to that sport', (await until(async () => (await listedNow()) === 2)) && /sport=Football/.test(page.url()), `${page.url().replace(site, '')}: ${await listedNow()} listed`);
   await page.getByRole('group', { name: 'Sport' }).getByRole('button', { name: 'All', exact: true }).click();
 
-  await page.getByRole('searchbox').fill('barcelona');
-  check('typing in the search narrows the page as you type', await until(async () => page.url().endsWith('/sports?q=barcelona') && (await page.locator('main a[data-listing]').count()) === 1), page.url().replace(site, ''));
-  await page.getByRole('searchbox').fill('nfl network');
-  check('a search also finds a channel', await until(async () => (await page.locator(`main a[data-listing="${ID.channel}"]`).count()) === 1));
-  await page.getByRole('searchbox').fill('zzzz');
-  check('a search with no match says so', await until(async () => /Nothing found for “zzzz”/.test(await text(page.locator('main')))));
-  await page.getByRole('button', { name: 'Clear search' }).click();
+  // Its own search, apart from the app's.
+  const own = page.getByRole('searchbox', { name: 'Search sports' });
+  await own.fill('barcelona');
+  check('Sports has its own search, which narrows the view as you type', await until(async () => /q=barcelona/.test(page.url()) && (await listedNow()) === 1) && (await page.getByTestId('search-preview').count()) === 0, page.url().replace(site, ''));
+  await own.fill('zzzz');
+  check('…and says when nothing matches', await until(async () => /Nothing found for “zzzz”/.test(await text(page.locator('main')))));
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+
+  await page.getByRole('group', { name: 'Sports' }).getByRole('button', { name: 'Channels' }).click();
+  const chans = page.getByTestId('directory-channels');
+  await chans.waitFor({ timeout: 8000 }).catch(() => {});
+  check('Channels: the always-on channels, and no entertainment marathons', (await chans.locator(`a[data-listing="${ID.channel}"]`).count()) === 1 && !/South Park/.test(await text(page.locator('main'))));
+  await page.getByRole('group', { name: 'Sports' }).getByRole('button', { name: 'Live' }).click();
   await live.waitFor({ timeout: 5000 }).catch(() => {});
 
   // ---- watching ----
@@ -417,7 +387,7 @@ section('C. Sports: what is on, and watching it');
   const gone = page.getByTestId('sports-message');
   await gone.waitFor({ timeout: 8000 }).catch(() => {});
   check('an entry that isn’t listed (ended, or never safe to frame) gets a plain message and no frame', /isn’t on any more/.test(await text(gone)) && (await page.locator('iframe').count()) === 0 && (await gone.getByRole('link', { name: 'See what’s on' }).getAttribute('href')) === '/sports', await text(gone));
-  check('nothing but the directory, the two catalogues the search looks in, and the framed player was contacted', v.outside.every((o) => /^(api\.ppv\.st\/api\/streams|api\.themoviedb\.org\/|graphql\.anilist\.co\/|taifood-blog\.asia\/embed\/)/.test(o)), [...new Set(v.outside.map((o) => o.split('/')[0]))].join(', '));
+  check('nothing but the directory, TMDB and the framed player was contacted', v.outside.every((o) => /^(api\.ppv\.st\/api\/streams|api\.themoviedb\.org\/|taifood-blog\.asia\/embed\/)/.test(o)), [...new Set(v.outside.map((o) => o.split('/')[0]))].join(', '));
   check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }
@@ -455,7 +425,7 @@ section('C. Sports: what is on, and watching it');
   const v = await visitor(DESKTOP, { ppv: {} });
   const page = await v.open('/sports');
   const main = page.locator('main');
-  check('with the whole directory down, the page says so and offers the pages that don’t depend on it', await until(async () => /Couldn’t load what’s on/.test(await text(main)), 25000) && (await main.getByRole('link', { name: 'Channels' }).getAttribute('href')) === '/sports/channels' && (await main.getByRole('link', { name: 'Schedule' }).getAttribute('href')) === '/sports/schedule' && (await main.getByRole('button', { name: /try again|retry/i }).count()) === 1, (await text(main)).slice(0, 160));
+  check('with the whole directory down, the page says so and offers to try again', await until(async () => /Couldn’t load what’s on/.test(await text(main)), 25000) && (await main.getByRole('button', { name: /try again|retry/i }).count()) === 1, (await text(main)).slice(0, 160));
   await page.goto(`${site}/sports/watch/${ID.live}`);
   const failed = page.getByTestId('sports-message');
   check('…and a stream’s page says the same, with a way to try again', await until(async () => /Couldn’t load this stream/.test(await text(failed)), 25000) && (await failed.getByRole('button', { name: 'Try again' }).count()) === 1, await text(failed));
@@ -463,29 +433,34 @@ section('C. Sports: what is on, and watching it');
   await v.context.close();
 }
 
-// ===================================================================== C2. one search for everything
-section('C2. A search that looks everywhere');
+// ===================================================================== C2. one search
+section('C2. One search for titles and anime');
 {
   const v = await visitor(DESKTOP);
   const page = await v.open('/');
-  const box = page.getByRole('searchbox');
+  const box = page.getByRole('searchbox', { name: 'Search', exact: true });
   await box.click();
-  await box.pressSequentially('barcelona', { delay: 20 });
+  await box.pressSequentially('attack', { delay: 20 });
   const preview = page.getByTestId('search-preview');
   await preview.waitFor({ timeout: 8000 }).catch(() => {});
-  const groups = async () => preview.getByRole('group').evaluateAll((gs) => gs.map((g) => g.getAttribute('aria-label')));
-  await until(async () => (await groups()).includes('Sports') && (await preview.locator('a').count()) >= 2);
-  check('typing shows a preview under the field: titles and sports, the part you are in first, kinds with no match left out', JSON.stringify(await groups()) === JSON.stringify(['Movies and TV', 'Sports']) && /Fight Club/.test(await text(preview)) && /Sabah FK vs\. Barcelona/.test(await text(preview)) && page.url() === `${site}/`, `${(await groups()).join(', ')} :: ${(await text(preview)).slice(0, 120)}`);
+  await until(async () => (await preview.locator('a[data-result]').count()) >= 2);
+  const results = await preview.locator('a[data-result]').evaluateAll((as) => as.map((a) => a.getAttribute('data-result')));
+  check('typing shows one list under the field: titles from TMDB and the anime only AniList has', results[0] === 'movie550' && results.includes('anilist131681') && /Top result/i.test(await text(preview)) && page.url() === `${site}/`, results.join(', '));
+  check('…with nothing from Sports in it', v.outside.every((o) => !o.startsWith('api.ppv')) && !/Barcelona/.test(await text(preview)));
   await shot(page, 'search-preview');
-  await preview.getByRole('link', { name: /Sabah FK vs\. Barcelona/ }).click();
-  check('…and a result opens straight from it', await until(() => page.url() === `${site}/sports/watch/${ID.upcoming}`), page.url().replace(site, ''));
-  await page.goto(`${site}/sports`);
-  await page.getByRole('searchbox').click();
-  await page.getByRole('searchbox').pressSequentially('attack', { delay: 20 });
-  await until(async () => (await groups()).includes('Anime'));
-  check('from Sports the same search finds anime and titles too', (await groups()).includes('Anime') && (await groups()).includes('Movies and TV') && (await preview.locator('a[href="/anime/title/131681"]').count()) === 1, (await groups()).join(', '));
-  await preview.getByRole('button', { name: 'See all results' }).click();
-  check('“See all results” opens the full results of the part you are in', await until(() => page.url().endsWith('/sports?q=attack')) && (await preview.count()) === 0, page.url().replace(site, ''));
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  check('arrow keys mark a result', (await preview.locator('a[aria-selected="true"]').getAttribute('data-result')) === results[1]);
+  await page.keyboard.press('Enter');
+  check('…and Enter opens it', await until(() => page.url() === `${site}/anime/title/131681`), page.url().replace(site, ''));
+  await page.goto(`${site}/`);
+  await page.getByRole('searchbox', { name: 'Search', exact: true }).click();
+  await page.getByRole('searchbox', { name: 'Search', exact: true }).pressSequentially('attack', { delay: 20 });
+  await preview.waitFor({ timeout: 8000 }).catch(() => {});
+  await page.keyboard.press('Enter');
+  check('Enter with nothing marked opens the full results', await until(() => page.url() === `${site}/discover?q=attack`), page.url().replace(site, ''));
+  const more = page.getByTestId('more-anime');
+  check('…where the anime only AniList has are listed too', await more.waitFor({ timeout: 8000 }).then(() => true, () => false) && (await more.locator('a[data-anime="131681"]').count()) === 1);
   check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }
@@ -526,47 +501,44 @@ section('D. On a phone');
 {
   const v = await visitor(PHONE);
   const page = await v.open('/');
-  const nav = page.getByTestId('mode-switch');
-  await nav.first().waitFor({ timeout: 10000 }).catch(() => {});
-  const visible = await page.getByTestId('mode-switch').evaluateAll((navs) => navs.filter((n) => n.getBoundingClientRect().width > 0).map((n) => ({ top: Math.round(n.getBoundingClientRect().top), right: Math.round(innerWidth - n.getBoundingClientRect().right), labels: [...n.querySelectorAll('a')].map((a) => a.textContent.trim()) })));
-  check('the switch is at the top of the page (there is no sidebar)', visible.length === 1 && visible[0].top < 76 && visible[0].right >= 8 && JSON.stringify(visible[0].labels) === JSON.stringify(['Screen', 'Anime', 'Sports']) && !(await page.locator('aside').isVisible()), JSON.stringify(visible));
+  await page.locator('nav[aria-label="Main"]').waitFor({ timeout: 10000 }).catch(() => {});
   const bar = () => page.locator('nav[aria-label="Main"] a').evaluateAll((as) => as.map((a) => a.textContent.trim()));
-  check('Screen’s bar: Home, Movies, TV, Profile around Search', JSON.stringify(await bar()) === JSON.stringify(['Home', 'Movies', 'TV', 'Profile']), (await bar()).join(', '));
+  check('the bar is Home, Movies, TV, Profile around Search; there is no sidebar', JSON.stringify(await bar()) === JSON.stringify(['Home', 'Movies', 'TV', 'Profile']) && !(await page.locator('aside').isVisible()), (await bar()).join(', '));
   const fits = async (name) => {
     const o = await overflow(page);
     check(`${name} fits a phone’s width`, o.page <= o.window, `${o.page}px in ${o.window}px`);
   };
-  await fits('Screen’s home');
-  await shot(page, 'phone-screen');
-
-  await page.getByTestId('mode-switch').getByRole('link', { name: 'Anime' }).tap();
-  await page.waitForURL(/\/anime$/, { timeout: 5000 }).catch(() => {});
-  await page.locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
-  check('Anime’s bar: Home, Series, Films, Profile', (await current(page)) === 'Anime' && JSON.stringify(await bar()) === JSON.stringify(['Home', 'Series', 'Films', 'Profile']), (await bar()).join(', '));
-  await fits('Anime’s home');
-  await shot(page, 'phone-anime');
-
-  await page.getByTestId('mode-switch').getByRole('link', { name: 'Sports' }).tap();
+  await page.getByTestId('anime-section').scrollIntoViewIfNeeded().catch(() => {});
+  await page.getByTestId('anime-section').locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
+  await fits('Home, with its Anime section');
+  await shot(page, 'phone-home');
+  await page.getByRole('link', { name: 'Sports', exact: true }).tap();
   await page.waitForURL(/\/sports$/, { timeout: 5000 }).catch(() => {});
   await page.getByTestId('live-events').waitFor({ timeout: 10000 }).catch(() => {});
-  check('Sports’ bar: Live, Schedule, Channels, Profile', (await current(page)) === 'Sports' && JSON.stringify(await bar()) === JSON.stringify(['Live', 'Schedule', 'Channels', 'Profile']), (await bar()).join(', '));
+  check('Home leads to Sports', page.url() === `${site}/sports`);
   await fits('Sports');
   await shot(page, 'phone-sports');
+  await page.getByRole('group', { name: 'Sports' }).getByRole('button', { name: 'Schedule' }).tap();
+  await page.getByTestId('upcoming-events').waitFor({ timeout: 8000 }).catch(() => {});
+  await fits('Sports’ schedule');
+  await page.getByRole('group', { name: 'Sports' }).getByRole('button', { name: 'Channels' }).tap();
+  await page.getByTestId('directory-channels').waitFor({ timeout: 8000 }).catch(() => {});
+  await fits('Sports’ channels');
+  await page.goto(`${site}/discover?region=anime`);
+  await page.getByRole('group', { name: 'From' }).waitFor({ timeout: 8000 }).catch(() => {});
+  await fits('Discover with its region pills');
 
-  // Search opens from the bar and searches the part you are in.
-  await page.getByRole('button', { name: 'Search' }).tap();
-  const box = page.getByRole('searchbox');
-  check('the search button opens the field for the part you are in', await until(async () => (await box.evaluate((i) => document.activeElement === i && i.getBoundingClientRect().width > 100).catch(() => false))) && (await box.getAttribute('placeholder')) === 'Search teams and leagues');
-  await box.fill('villarreal');
-  check('…and searching works there', await until(async () => page.url().endsWith('/sports?q=villarreal') && (await page.locator('main a[data-listing]').count()) === 1), page.url().replace(site, ''));
-  await fits('Sports with the search field out');
-
-  await page.locator('nav[aria-label="Main"]').getByRole('link', { name: 'Channels' }).tap();
-  await page.getByTestId('directory-channels').waitFor({ timeout: 10000 }).catch(() => {});
-  await fits('Channels');
-  await page.locator('nav[aria-label="Main"]').getByRole('link', { name: 'Schedule' }).tap();
-  await page.waitForURL(/\/sports\/schedule$/, { timeout: 5000 }).catch(() => {});
-  await fits('Schedule');
+  // The app's search opens from the bar.
+  await page.goto(`${site}/`);
+  await page.locator('[data-search-trigger]').tap();
+  const box = page.getByRole('searchbox', { name: 'Search', exact: true });
+  check('the search button opens the field', await until(async () => (await box.evaluate((i) => document.activeElement === i && i.getBoundingClientRect().width > 100).catch(() => false))));
+  await box.pressSequentially('attack', { delay: 20 });
+  const preview = page.getByTestId('search-preview');
+  await preview.waitFor({ timeout: 8000 }).catch(() => {});
+  const previewFits = await preview.evaluate((m) => { const r = m.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }).catch(() => false);
+  check('…and its preview fits the screen', previewFits);
+  await fits('Home with the search preview out');
 
   await page.goto(`${site}/sports/watch/${ID.several}`);
   await page.getByTestId('not-yet').getByRole('button', { name: 'Open the player now' }).tap();
@@ -588,8 +560,7 @@ section('D. On a phone');
   const page = await v.open('/sports');
   await page.getByTestId('live-events').waitFor({ timeout: 10000 }).catch(() => {});
   const o = await overflow(page);
-  const sw = await page.getByTestId('mode-switch').evaluateAll((navs) => navs.filter((n) => n.getBoundingClientRect().width > 0).map((n) => { const r = n.getBoundingClientRect(); return { left: Math.round(r.left), right: Math.round(r.right) }; }));
-  check('at 320 px the switch and the page still fit', o.page <= o.window && sw.length === 1 && sw[0].left >= 0 && sw[0].right <= 320, `${o.page}px in ${o.window}px; switch ${JSON.stringify(sw)}`);
+  check('at 320 px the page still fits', o.page <= o.window, `${o.page}px in ${o.window}px`);
   await shot(page, 'phone-320');
   await v.context.close();
 }

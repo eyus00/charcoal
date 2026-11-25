@@ -1,32 +1,28 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Eye, Radio } from 'lucide-react';
+import { Eye, Play, Radio, Search, X } from 'lucide-react';
 import { listingState, matchesListing, orderListings, type LiveListing } from '@charcoal/content';
 import EpisodeTile, { Chip, TileSkeleton } from '../components/EpisodeTile';
 import { ErrorBox } from '../components/Grid';
-import { Empty, PageTitle } from '../components/PageHeader';
+import { Empty } from '../components/PageHeader';
 import { Pill, SectionHeader } from '../components/Row';
-import { Bone } from '../components/Skeletons';
-import { btn } from '../components/Button';
-import { localStart, startsIn, useDirectory, useNow, viewerCount } from '../lib/sports';
-import { cx, useTitle } from '../lib/util';
+import Segmented from '../components/Segmented';
+import { countryName, localStart, useChannels, useDirectory, useNow, viewerCount, type PlayableChannel } from '../lib/sports';
+import { useTitle } from '../lib/util';
 
-/** Cards in a grid: one column on phones, up to four on a wide screen. */
-export const EVENT_GRID = 'grid grid-cols-1 gap-x-4 gap-y-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
-/** How many upcoming events show before "Show more". */
-const PAGE = 30;
+type Tab = 'live' | 'schedule' | 'channels';
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'live', label: 'Live' },
+  { key: 'schedule', label: 'Schedule' },
+  { key: 'channels', label: 'Channels' },
+];
+/** Banner cards: one column on phones, up to four on a wide screen. */
+const GRID = 'grid grid-cols-1 gap-x-4 gap-y-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
-export const LiveChip = () => (
-  <Chip>
-    <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-danger" /> Live
-  </Chip>
-);
-
-/** One thing to watch, as the app's landscape card. `now` decides what its corner says. */
-export function ListingCard({ listing: l, now }: { listing: LiveListing; now: number }) {
+/** One thing to watch, as the app's banner card. Its corner says live, or when it starts. */
+function ListingCard({ listing: l, now }: { listing: LiveListing; now: number }) {
   const live = listingState(l, now) === 'live';
   const start = l.channel ? null : localStart(l.startsAt, now);
-  const second = l.channel ? `${l.sport} · Always on` : [l.league || l.sport, live ? `Since ${start!.time}` : `${start!.day} ${start!.time}`].join(' · ');
   return (
     <li>
       <EpisodeTile
@@ -34,9 +30,19 @@ export function ListingCard({ listing: l, now }: { listing: LiveListing; now: nu
         title={l.title}
         image={{ path: null, kind: 'backdrop', src: l.poster }}
         primary={l.title}
-        secondary={second}
+        secondary={l.channel ? l.sport : [l.league, l.sport].filter(Boolean).join(' · ')}
         width="w-full"
-        topLeft={l.channel ? undefined : live ? <LiveChip /> : <Chip>{startsIn(l.startsAt, now)}</Chip>}
+        topLeft={
+          l.channel ? undefined : live ? (
+            <Chip>
+              <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-danger" /> Live
+            </Chip>
+          ) : (
+            <Chip light>
+              <time dateTime={new Date(l.startsAt).toISOString()}>{start!.time}</time>
+            </Chip>
+          )
+        }
         bottomRight={
           l.viewers > 0 ? (
             <Chip>
@@ -51,158 +57,97 @@ export function ListingCard({ listing: l, now }: { listing: LiveListing; now: nu
   );
 }
 
-export const CardsSkeleton = ({ count = 6 }: { count?: number }) => (
-  <div className={EVENT_GRID} aria-hidden>
-    {Array.from({ length: count }, (_, i) => (
-      <TileSkeleton key={i} className="w-full" />
-    ))}
-  </div>
-);
-
-/** Sports: what is live now and what is coming up, each a tap away from playing. */
+/**
+ * Sports: a small app of its own inside Charcoal. Live, Schedule and Channels are its three
+ * views, and its search looks only through them. Everything listed is something its player can
+ * open: the stream directory's events and channels, and the free public channels.
+ */
 export default function Sports() {
+  useTitle('Sports');
   const [params, setParams] = useSearchParams();
+  const tab: Tab = TABS.find((t) => t.key === params.get('tab'))?.key ?? 'live';
   const query = (params.get('q') ?? '').trim();
-  useTitle(query ? `“${query}” · Sports` : 'Sports');
   const directory = useDirectory();
   const now = useNow();
-  const [shown, setShown] = useState(PAGE);
-
-  const all = directory.data?.listings ?? [];
-  // Sports with something live or coming up, in the directory's order.
-  const sports = useMemo(() => {
-    const open = new Set(all.filter((l) => !l.channel && listingState(l, now) !== 'ended').map((l) => l.sport));
-    return (directory.data?.sports ?? []).filter((s) => open.has(s));
-  }, [all, directory.data, now]);
-  const sport = sports.includes(params.get('sport') ?? '') ? params.get('sport')! : '';
-  const choose = (s: string) => {
+  const set = (patch: Record<string, string>) => {
     const next = new URLSearchParams(params);
-    if (s) next.set('sport', s);
-    else next.delete('sport');
+    for (const [k, v] of Object.entries(patch)) (v ? next.set(k, v) : next.delete(k));
     setParams(next, { replace: true, preventScrollReset: true });
-    setShown(PAGE);
   };
 
-  const { live, upcoming } = useMemo(
-    () =>
-      orderListings(
-        all.filter((l) => (!sport || l.sport === sport) && matchesListing(l, query)),
-        now,
-      ),
-    [all, sport, query, now],
-  );
-  // A search also finds channels; without one they have their own page.
-  const channels = useMemo(() => (query ? orderListings(all, now).channels.filter((l) => matchesListing(l, query)) : []), [all, query, now]);
+  const all = directory.data?.listings ?? [];
+  const ordered = useMemo(() => orderListings(all.filter((l) => matchesListing(l, query)), now), [all, query, now]);
+  const events = tab === 'live' ? ordered.live : tab === 'schedule' ? ordered.upcoming : [];
+  // Sports that have something in this view, in the directory's order.
+  const sports = useMemo(() => (directory.data?.sports ?? []).filter((s) => events.some((l) => l.sport === s)), [directory.data, events]);
+  const sport = sports.includes(params.get('sport') ?? '') ? params.get('sport')! : '';
+  const shown = sport ? events.filter((l) => l.sport === sport) : events;
+  const failed = !!directory.error && !directory.data;
 
   return (
     <div className="pb-10">
-      <PageTitle
-        title={query ? `“${query}”` : 'Sports'}
-        body={query ? 'Events and channels matching your search.' : 'Live events and what is coming up, with start times in your own time zone.'}
-      />
+      <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-4">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Sports</h1>
+        <Segmented value={tab} options={TABS} onChange={(t) => set({ tab: t === 'live' ? '' : t, sport: '' })} label="Sports" />
+        <label className="relative ml-auto flex h-10 w-full items-center sm:w-64">
+          <Search className="pointer-events-none absolute left-3.5 size-4 text-muted" />
+          <input
+            type="search"
+            value={params.get('q') ?? ''}
+            onChange={(e) => set({ q: e.target.value })}
+            placeholder="Search sports"
+            aria-label="Search sports"
+            autoComplete="off"
+            className="h-10 w-full rounded-full bg-surface pr-9 pl-10 text-sm outline-none ring-1 ring-white/[0.08] placeholder:text-faint focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-search-cancel-button]:hidden"
+          />
+          {query && (
+            <button type="button" aria-label="Clear" onClick={() => set({ q: '' })} className="absolute right-1.5 grid size-7 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-white">
+              <X className="size-3.5" />
+            </button>
+          )}
+        </label>
+      </div>
 
-      {directory.isPending ? (
-        <>
-          <div className="mb-7 flex gap-2.5 overflow-hidden" aria-hidden>
-            {['w-16', 'w-24', 'w-28', 'w-24', 'w-32'].map((w, i) => (
-              <Bone key={i} className={cx('h-10 shrink-0 rounded-full!', w)} />
-            ))}
-          </div>
-          <CardsSkeleton />
-        </>
-      ) : directory.error && !directory.data ? (
-        <div className="space-y-4">
-          <ErrorBox onRetry={() => directory.refetch()} message="Couldn’t load what’s on. The directory of live events didn’t answer; try again in a moment." />
-          <Elsewhere />
+      {tab !== 'channels' && sports.length > 1 && (
+        <div className="no-scrollbar scroll-row -mx-4 mb-7 flex gap-2.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="Sport">
+          <Pill on={!sport} onClick={() => set({ sport: '' })}>
+            All
+          </Pill>
+          {sports.map((s) => (
+            <Pill key={s} on={s === sport} onClick={() => set({ sport: s })}>
+              {s}
+            </Pill>
+          ))}
         </div>
+      )}
+
+      {tab === 'channels' ? (
+        <Channels directory={ordered.channels} loading={directory.isPending} failed={failed} retry={() => directory.refetch()} now={now} query={query} />
+      ) : directory.isPending ? (
+        <div className={GRID} aria-hidden>
+          {Array.from({ length: 6 }, (_, i) => (
+            <TileSkeleton key={i} className="w-full" />
+          ))}
+        </div>
+      ) : failed ? (
+        <ErrorBox onRetry={() => directory.refetch()} message="Couldn’t load what’s on. Try again in a moment." />
+      ) : !shown.length ? (
+        <Empty icon={Radio} title={query ? `Nothing found for “${query}”` : tab === 'live' ? 'Nothing is live right now' : 'Nothing scheduled'} body={tab === 'live' && !query ? 'See Schedule for what is coming up.' : ''} />
+      ) : tab === 'live' ? (
+        <ul className={GRID} data-testid="live-events">
+          {shown.map((l) => (
+            <ListingCard key={l.id} listing={l} now={now} />
+          ))}
+        </ul>
       ) : (
-        <>
-          {sports.length > 1 && (
-            <div className="no-scrollbar scroll-row -mx-4 mb-7 flex gap-2.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="Sport">
-              <Pill on={!sport} onClick={() => choose('')}>
-                All
-              </Pill>
-              {sports.map((s) => (
-                <Pill key={s} on={s === sport} onClick={() => choose(s)}>
-                  {s}
-                </Pill>
-              ))}
-            </div>
-          )}
-
-          {!live.length && !upcoming.length && !channels.length ? (
-            <div className="space-y-4">
-              <Empty
-                icon={Radio}
-                title={query ? `Nothing found for “${query}”` : 'Nothing is on right now'}
-                body={query ? 'Try a team, a competition or a sport.' : 'No events are listed at the moment. Channels are always on.'}
-              />
-              <Elsewhere />
-            </div>
-          ) : (
-            <div className="space-y-10 md:space-y-12">
-              {live.length > 0 && (
-                <section aria-label="Live now">
-                  <SectionHeader title="Live now" />
-                  <ul className={EVENT_GRID} data-testid="live-events">
-                    {live.map((l) => (
-                      <ListingCard key={l.id} listing={l} now={now} />
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {channels.length > 0 && (
-                <section aria-label="Channels">
-                  <SectionHeader title="Channels" to="/sports/channels" />
-                  <ul className={EVENT_GRID}>
-                    {channels.map((l) => (
-                      <ListingCard key={l.id} listing={l} now={now} />
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {upcoming.length > 0 && (
-                <section aria-label="Coming up">
-                  <SectionHeader title="Coming up" />
-                  <Upcoming listings={upcoming.slice(0, shown)} now={now} />
-                  {upcoming.length > shown && (
-                    <div className="mt-6 flex justify-center">
-                      <button type="button" onClick={() => setShown((n) => n + PAGE)} className={btn()}>
-                        Show more
-                      </button>
-                    </div>
-                  )}
-                </section>
-              )}
-            </div>
-          )}
-          <p className="mt-8 text-xs text-pretty text-faint">
-            Events and their players come from PPV, a third-party directory. Charcoal doesn’t host or control them, and they may show ads.
-          </p>
-        </>
+        <Schedule listings={shown} now={now} />
       )}
     </div>
   );
 }
 
-/** When the directory has nothing: the two pages that don’t depend on it. */
-function Elsewhere() {
-  return (
-    <div className="flex flex-wrap justify-center gap-2">
-      <Link to="/sports/channels" className={btn()}>
-        Channels
-      </Link>
-      <Link to="/sports/schedule" className={btn()}>
-        Schedule
-      </Link>
-    </div>
-  );
-}
-
-/** Upcoming events as rows, under the day they start on in the viewer's own time zone. */
-function Upcoming({ listings, now }: { listings: LiveListing[]; now: number }) {
+/** What is coming up, as banner cards under the day they start on (the viewer's own time zone). */
+function Schedule({ listings, now }: { listings: LiveListing[]; now: number }) {
   const days = useMemo(() => {
     const out: { day: string; rows: LiveListing[] }[] = [];
     for (const l of listings) {
@@ -213,36 +158,71 @@ function Upcoming({ listings, now }: { listings: LiveListing[]; now: number }) {
     return out;
   }, [listings, now]);
   return (
-    <div className="space-y-6" data-testid="upcoming-events">
+    <div className="space-y-10" data-testid="upcoming-events">
       {days.map(({ day, rows }) => (
-        <div key={day}>
-          <h3 className="mb-2.5 text-micro font-semibold tracking-wider text-muted uppercase">{day}</h3>
-          <ul className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+        <section key={day} aria-label={day}>
+          <SectionHeader title={day} />
+          <ul className={GRID}>
             {rows.map((l) => (
-              <UpcomingRow key={l.id} listing={l} now={now} />
+              <ListingCard key={l.id} listing={l} now={now} />
             ))}
           </ul>
-        </div>
+        </section>
       ))}
     </div>
   );
 }
 
-function UpcomingRow({ listing: l, now }: { listing: LiveListing; now: number }) {
-  const start = localStart(l.startsAt, now);
-  const soon = l.startsAt - now < 60 * 60_000;
+function Channels({ directory, loading, failed, retry, now, query }: { directory: LiveListing[]; loading: boolean; failed: boolean; retry: () => void; now: number; query: string }) {
+  const free = useChannels();
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const freeShown = (free.data ?? []).filter((c) => words.every((w) => `${c.channel.name} ${countryName(c.channel.country)}`.toLowerCase().includes(w)));
+  return (
+    <div className="space-y-10">
+      {loading ? (
+        <div className={GRID} aria-hidden>
+          {Array.from({ length: 3 }, (_, i) => (
+            <TileSkeleton key={i} className="w-full" />
+          ))}
+        </div>
+      ) : failed ? (
+        <ErrorBox onRetry={retry} message="Couldn’t load the sports channels. Try again in a moment." />
+      ) : directory.length > 0 ? (
+        <ul className={GRID} data-testid="directory-channels">
+          {directory.map((l) => (
+            <ListingCard key={l.id} listing={l} now={now} />
+          ))}
+        </ul>
+      ) : null}
+      {freeShown.length > 0 && (
+        <section aria-label="Free public channels">
+          <SectionHeader title="Free public channels" />
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="channels">
+            {freeShown.map((c) => (
+              <ChannelCard key={c.channel.id} entry={c} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {!loading && !failed && !directory.length && !freeShown.length && !free.isPending && <Empty icon={Radio} title={query ? `Nothing found for “${query}”` : 'No channels right now'} body="" />}
+    </div>
+  );
+}
+
+function ChannelCard({ entry: { channel, streams } }: { entry: PlayableChannel }) {
+  // Said only when it holds for every stream: one open mirror is enough to play.
+  const regional = streams.every((s) => s.hazards.includes('geo-blocked'));
+  const notes = [countryName(channel.country), regional && 'Home region only'].filter(Boolean).join(' · ');
   return (
     <li>
-      <Link to={`/sports/watch/${l.id}`} data-listing={l.id} className="group flex items-center gap-4 rounded-2xl bg-surface px-4 py-3 transition-colors hover:bg-raised">
-        <time dateTime={new Date(l.startsAt).toISOString()} title={new Date(l.startsAt).toLocaleString()} className="w-[4.5rem] shrink-0 text-body-sm font-medium tabular-nums">
-          {start.time}
-        </time>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white">{l.title}</span>
-          <span className="block truncate text-caption text-muted">{[l.league, l.sport].filter(Boolean).join(' · ')}</span>
+      <Link to={`/live/${encodeURIComponent(channel.id)}`} data-channel={channel.id} aria-label={`${channel.name}: play`} className="group flex items-center gap-3.5 rounded-2xl bg-surface p-4 transition-colors hover:bg-raised">
+        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-white group-hover:text-black">
+          <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
         </span>
-        {/* Phones: the title gets the room; the time on the left already says when. */}
-        <span className={cx('shrink-0 text-caption tabular-nums max-sm:hidden', soon ? 'text-white' : 'text-faint')}>{startsIn(l.startsAt, now)}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body-sm font-medium">{channel.name}</span>
+          <span className="block truncate text-caption text-muted">{notes}</span>
+        </span>
       </Link>
     </li>
   );

@@ -6,7 +6,6 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import RouteError, { clearChunkReloadFlag } from './pages/RouteError';
-import { openInLastMode } from './lib/mode';
 import { persistQueries } from './lib/persist';
 import './index.css';
 
@@ -17,14 +16,9 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Watch = lazy(() => import('./pages/Watch'));
 const TraktCallback = lazy(() => import('./pages/TraktCallback'));
 const Calendar = lazy(() => import('./pages/Calendar'));
-const Anime = lazy(() => import('./pages/Anime'));
-const AnimeBrowse = lazy(() => import('./pages/AnimeBrowse'));
 const AnimeTitle = lazy(() => import('./pages/AnimeTitle'));
 const AnimeWatch = lazy(() => import('./pages/AnimeWatch'));
-const Indian = lazy(() => import('./pages/Indian'));
 const Sports = lazy(() => import('./pages/Sports'));
-const SportsSchedule = lazy(() => import('./pages/SportsSchedule'));
-const SportsChannels = lazy(() => import('./pages/SportsChannels'));
 const SportsWatch = lazy(() => import('./pages/SportsWatch'));
 const Live = lazy(() => import('./pages/Live'));
 const Admin = lazy(() => import('./pages/Admin'));
@@ -63,8 +57,6 @@ function LibraryRedirect() {
   return <Navigate to={`/profile${hash}`} replace />;
 }
 
-openInLastMode();
-
 const router = createBrowserRouter([
   {
     element: <Layout />,
@@ -80,13 +72,14 @@ const router = createBrowserRouter([
       { path: 'profile', element: <Profile /> },
       { path: 'trakt/callback', element: <TraktCallback /> },
       { path: 'calendar', element: <Calendar /> },
-      { path: 'anime', element: <Anime /> },
-      { path: 'anime/browse', element: <AnimeBrowse /> },
+      // Anime is part of the one catalogue now: its old pages lead to Discover's Anime filter.
+      { path: 'anime', element: <Navigate to="/discover?region=anime" replace /> },
+      { path: 'anime/browse', element: <Navigate to="/discover?region=anime" replace /> },
       { path: 'anime/title/:id', element: <AnimeTitle /> },
-      { path: 'indian', element: <Indian /> },
+      { path: 'indian', element: <Navigate to="/discover?region=bollywood" replace /> },
       { path: 'sports', element: <Sports /> },
-      { path: 'sports/schedule', element: <SportsSchedule /> },
-      { path: 'sports/channels', element: <SportsChannels /> },
+      { path: 'sports/schedule', element: <Navigate to="/sports?tab=schedule" replace /> },
+      { path: 'sports/channels', element: <Navigate to="/sports?tab=channels" replace /> },
       { path: 'library', element: <LibraryRedirect /> },
       // For whoever runs a server: the state of its sources. Not in the navigation.
       { path: 'admin', element: <Admin /> },

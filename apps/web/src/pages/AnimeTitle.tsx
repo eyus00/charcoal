@@ -54,7 +54,6 @@ function Entry({ a }: { a: AnimeDetails }) {
   const resume = point.finished ? 1 : Math.min(point.episode, Math.max(1, count));
   const about = { id: a.id, title: a.title, cover: a.cover, film: a.kind === 'film', episodes: count };
   const inLibrary = !!kept?.inLibrary;
-  const names = [a.romaji, a.native].filter((n) => n && n !== a.title).join(' · ');
   const facts = [
     a.format && (FORMAT_LABEL[a.format] ?? a.format),
     a.year,
@@ -73,11 +72,6 @@ function Entry({ a }: { a: AnimeDetails }) {
         <div className="relative w-full px-4 pb-6 md:px-8 md:pb-10 lg:px-10">
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{a.title}</h1>
-            {names && (
-              <p className="mt-1 truncate text-sm text-white/70" data-testid="other-names" title={names}>
-                {names}
-              </p>
-            )}
             <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm text-white/75">
               {facts.map((f, i) => (
                 <span key={i} className="contents">

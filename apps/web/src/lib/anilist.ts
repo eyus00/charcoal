@@ -4,33 +4,26 @@
  * title, with everything a title page offers; one it lacks has a page and a player of its own,
  * found by its AniList / MAL id.
  */
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { fetchAnimeDetails, fetchAnimeList, fetchAnimeRows, type AnimeKind, type AnimeListQuery, type AnimeSort } from '@charcoal/content';
+import { useQuery } from '@tanstack/react-query';
+import { fetchAnimeDetails, fetchAnimeList, fetchAnimeRows, type AnimeListQuery } from '@charcoal/content';
 import { loadAnimeIndex } from './anime';
 import { webFetcher, within } from './content';
 
-export const ANIME_SORTS: { key: AnimeSort; label: string }[] = [
-  { key: 'popular', label: 'Popular' },
-  { key: 'trending', label: 'Trending' },
-  { key: 'rating', label: 'Top rated' },
-  { key: 'newest', label: 'Newest' },
-];
-
-/** The home page's rows, top to bottom. Asked for in one request (AniList allows 30 a minute). */
+/** The home page's anime lists, one per pill. Asked for in one request (AniList allows 30 a minute). */
 export const HOME_ROWS = {
-  trending: { title: 'Trending now', query: { kind: 'series', sort: 'trending' } },
-  airing: { title: 'Airing this season', query: { kind: 'series', sort: 'popular', airing: true } },
-  popular: { title: 'Popular series', query: { kind: 'series', sort: 'popular' } },
-  top: { title: 'Top rated series', query: { kind: 'series', sort: 'rating' } },
-  films: { title: 'Popular films', query: { kind: 'film', sort: 'popular' } },
-  topFilms: { title: 'Top rated films', query: { kind: 'film', sort: 'rating' } },
+  trending: { title: 'Trending', query: { sort: 'trending' } },
+  airing: { title: 'Airing', query: { kind: 'series', sort: 'trending', airing: true } },
+  popular: { title: 'Popular', query: { kind: 'series', sort: 'popular' } },
+  top: { title: 'Top rated', query: { kind: 'series', sort: 'rating' } },
+  films: { title: 'Films', query: { kind: 'film', sort: 'popular' } },
 } satisfies Record<string, { title: string; query: AnimeListQuery }>;
 export type HomeRow = keyof typeof HOME_ROWS;
 
 const HOUR = 3_600_000;
 
-export function useAnimeHome() {
+export function useAnimeHome(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ['anilist', 'home'],
     queryFn: ({ signal }) => fetchAnimeRows(webFetcher, Object.fromEntries(Object.entries(HOME_ROWS).map(([k, r]) => [k, r.query])) as Record<HomeRow, AnimeListQuery>, 20, signal),
     staleTime: HOUR,
@@ -38,15 +31,14 @@ export function useAnimeHome() {
   });
 }
 
-/** A list (or, with `search`, the matches for a name), paged. */
-export function useAnimeList(q: { kind: AnimeKind; sort: AnimeSort; search: string }) {
-  return useInfiniteQuery({
-    queryKey: ['anilist', 'list', q.kind, q.search ? '' : q.sort, q.search],
-    initialPageParam: 1,
-    queryFn: ({ pageParam, signal }) => fetchAnimeList(webFetcher, { kind: q.kind, sort: q.sort, search: q.search || undefined, page: pageParam }, signal),
-    getNextPageParam: (last) => (last.hasNext && last.page < 40 ? last.page + 1 : undefined),
-    staleTime: q.search ? 10 * 60_000 : HOUR,
-    retry: 1,
+/** AniList's matches for a name (the entries a title search may be missing). */
+export function useAnimeSearch(search: string) {
+  return useQuery({
+    queryKey: ['anilist', 'search', search],
+    queryFn: async ({ signal }) => (await fetchAnimeList(webFetcher, { search, perPage: 24 }, signal)).items,
+    enabled: search.length >= 2,
+    staleTime: 10 * 60_000,
+    retry: false,
   });
 }
 

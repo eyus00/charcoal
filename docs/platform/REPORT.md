@@ -1,3 +1,14 @@
+# One app (2026-11-26)
+
+The three-part switch described below was replaced after a day of use. Movies, TV and anime are
+one catalogue (an Anime section on Home, an Anime choice among Discover's region pills, one
+search over TMDB and AniList with a poster preview and keyboard control); the Anime and Indian
+cinema pages are gone and their addresses redirect. Sports is one page with Live, Schedule and
+Channels and its own search; its schedule lists only what its player can open (the directory's
+upcoming events as banner cards), and the fixture list with official links is no longer shown.
+Explanatory text under page titles and the line of other names under a title were removed.
+385 unit tests and 222 browser checks pass.
+
 # Three parts and live sports: implementation report (phase 3)
 
 Branch `claude/gallant-fermi-kf7wqm`, with `main` (the visual updates, `69e7c93`) merged in.
