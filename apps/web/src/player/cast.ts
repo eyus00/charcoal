@@ -62,6 +62,8 @@ export interface RemoteState {
 
 export interface CastLoad {
   url: string;
+  /** The source's kind ('hls', 'dash', 'mp4', 'webm', 'mkv'); HLS when not given. */
+  type?: string;
   title: string;
   subtitle?: string;
   poster?: string;
@@ -70,6 +72,9 @@ export interface CastLoad {
   subtitles?: { url: string; label: string };
   subtitleStyle?: { color: string; bg: number; scale: number; bold: boolean };
 }
+
+/** What the receiver is told the stream is. */
+const CONTENT_TYPE: Record<string, string> = { hls: 'application/x-mpegURL', dash: 'application/dash+xml', mp4: 'video/mp4', webm: 'video/webm', mkv: 'video/x-matroska' };
 
 const NO_REMOTE: RemoteState = { time: 0, duration: 0, paused: true, active: false, ended: false, volume: 1, muted: false };
 
@@ -158,10 +163,14 @@ export function useCast() {
     const s = session();
     if (!s) return false;
     const cm = (window as any).chrome.cast.media;
-    const info = new cm.MediaInfo(m.url, 'application/x-mpegURL');
-    const fmt = await segmentFormat(m.url);
-    info.hlsSegmentFormat = fmt === 'fmp4' ? cm.HlsSegmentFormat.FMP4 : cm.HlsSegmentFormat.TS;
-    info.hlsVideoSegmentFormat = fmt === 'fmp4' ? cm.HlsVideoSegmentFormat.FMP4 : cm.HlsVideoSegmentFormat.MPEG2_TS;
+    const kind = m.type && CONTENT_TYPE[m.type] ? m.type : 'hls';
+    const info = new cm.MediaInfo(m.url, CONTENT_TYPE[kind]);
+    // Only an HLS playlist has a segment format to tell the receiver about (and is small enough to read).
+    if (kind === 'hls') {
+      const fmt = await segmentFormat(m.url);
+      info.hlsSegmentFormat = fmt === 'fmp4' ? cm.HlsSegmentFormat.FMP4 : cm.HlsSegmentFormat.TS;
+      info.hlsVideoSegmentFormat = fmt === 'fmp4' ? cm.HlsVideoSegmentFormat.FMP4 : cm.HlsVideoSegmentFormat.MPEG2_TS;
+    }
     info.streamType = cm.StreamType.BUFFERED;
     const meta = new cm.GenericMediaMetadata();
     meta.title = m.title;

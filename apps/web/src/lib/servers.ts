@@ -30,6 +30,8 @@ export interface JellySource {
   size?: number;
   /** Adaptive streams built from several qualities: each one and its size. */
   levels?: { quality: string; size?: number }[];
+  /** What happened when the resolver tried the stream itself, when it did. */
+  verification?: { state: 'verified' | 'failed' | 'unchecked'; level?: string; code?: string; message?: string };
 }
 export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string>; /** Fetched through the bridge. */ bridged?: boolean }
 export interface JellyResponse {
@@ -51,6 +53,8 @@ export interface ProviderReport {
   where?: 'local' | 'remote';
   /** The classified failure, when it failed (see @charcoal/provider-sdk FailureCode). */
   code?: string;
+  /** It found a stream, but one this device can't play (`reason` says why): listed greyed in the player's Source menu. */
+  unplayable?: boolean;
 }
 
 export interface Target { type: MediaType; id: number; season?: number; episode?: number }

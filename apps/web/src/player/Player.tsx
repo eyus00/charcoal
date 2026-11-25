@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type Hls from 'hls.js';
 import { Link } from 'react-router';
 import {
   Airplay,
@@ -45,6 +44,7 @@ import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension'
 import { captureFrame, frameKey } from '../lib/frames';
 import { scrobble } from '../lib/trakt';
 import { activeCues, CaptionOverlay, CueText, parseCaptions, subColorName, SubtitleStyleControls, type Cue } from './captions';
+import { linkRanOut, REFUSALS, retryBudget, undecodableIn, unplayable, unplayableReason, type PlaybackEngine } from '../lib/playback-engines';
 import { splitKeys, Tip } from '../components/Tip';
 
 interface Props {
@@ -81,6 +81,13 @@ interface Props {
   refreshing?: boolean;
   /** Changes when a fresh search's results arrive: start over with them. */
   generation?: number;
+  /**
+   * A live stream (a TV channel). The player also notices one by itself (a playlist with no end);
+   * a page that says so beforehand is also told by itself when every source has failed.
+   */
+  live?: boolean;
+  /** The audio language to switch a stream with several to (ISO 639-1). The viewer's setting when not given. */
+  audioLang?: string;
 }
 
 const STARTUP_TIMEOUT_MS = 15_000;
@@ -88,6 +95,15 @@ const REPORT_EVERY_MS = 10_000;
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const HOLD_MS = 450;
 const PAUSE_OVERLAY_MS = 5000;
+/** How long to wait for fresh links after one expired before moving on to another source. */
+const RENEW_WAIT_MS = 20_000;
+/** Once fresh links start arriving, how long to wait for the expired stream itself to be among them. */
+const COME_BACK_WAIT_MS = 4000;
+/** At most this many automatic "link expired, search again" rounds in RENEW_WINDOW_MS. */
+const MAX_RENEWALS = 2;
+const RENEW_WINDOW_MS = 5 * 60_000;
+/** Subtitle formats the caption overlay can read. */
+const READABLE_SUBS = /^(vtt|webvtt|srt|subrip)$/i;
 
 /** Real upstream host of a (proxied) source URL, so one blocked host can rule out its siblings. */
 function upstreamHost(url: string): string {
@@ -101,16 +117,30 @@ function upstreamHost(url: string): string {
   }
 }
 
+/** Another site's player page, not a stream: never something for the video engines. */
+const isFrame = (s: JellySource) => s.type === 'frame' || s.delivery === 'frame';
+
+/**
+ * The source to try next when the player chooses by itself: the first that hasn't failed here,
+ * leaving those the resolver already tried without an answer for when nothing else remains.
+ * -1 when there is none.
+ */
+function bestIndex(list: JellySource[], failedAt: (i: number) => boolean = () => false): number {
+  const open = list.map((_, i) => i).filter((i) => !failedAt(i) && !isFrame(list[i]));
+  return open.find((i) => list[i].verification?.state !== 'failed') ?? open[0] ?? -1;
+}
+
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
 type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string>; bridged?: boolean };
 
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, onDetails, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation }: Props) {
+export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, onDetails, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation, live: liveSaid, audioLang }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  const hls = useRef<Hls | null>(null);
+  /** The streaming engine in use (hls.js or dash.js), or null while the video element plays a file (or HLS) by itself. */
+  const engine = useRef<PlaybackEngine | null>(null);
   const settings = useStore((s) => s.settings);
 
   // ---------- casting (Chromecast through the Cast SDK; AirPlay through Safari) ----------
@@ -126,7 +156,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   const dataRef = useRef(data);
   dataRef.current = data;
   const urlAt = (i: number) => dataRef.current.sources[i]?.url;
-  const [selectedUrl, setSelectedUrl] = useState(() => data.sources[0]?.url);
+  const [selectedUrl, setSelectedUrl] = useState(() => data.sources[Math.max(0, bestIndex(data.sources))]?.url);
   const sourceIdx = Math.max(0, data.sources.findIndex((x) => x.url === selectedUrl));
   const setSourceIdx = useCallback((i: number) => setSelectedUrl(dataRef.current.sources[i]?.url), []);
   const failedUrls = useRef(new Set<string>());
@@ -137,8 +167,25 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     clear: () => failedUrls.current.clear(),
   });
   const seekOnLoad = useRef(resumeAt);
+  /** Remembers where the viewer is, for the next source to start from. */
+  const keepPosition = () => {
+    const v = video.current;
+    // The element's own clock; or, when an engine has just restarted the stream (which resets that
+    // clock), the last position it reported.
+    const t = v && v.currentTime > 5 ? v.currentTime : pos.current.t;
+    if (t > 5) seekOnLoad.current = t;
+  };
   const [exhausted, setExhausted] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  /** The stream playing turned out to be live (its playlist has no end). */
+  const [liveSeen, setLiveSeen] = useState(false);
+  /** Live: there is no film to seek in. No seek bar, no duration, no ±10 s; a "Live" state instead. */
+  const live = !!liveSaid || liveSeen;
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  /** The audio language a multi-audio stream is switched to. */
+  const audioPref = useRef(audioLang || settings.audioLang);
+  audioPref.current = audioLang || settings.audioLang;
 
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(true);
@@ -225,7 +272,13 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       ? extensionFetcher(t.url!, { headers: t.headers }).then((r) => (r.ok ? r.body : Promise.reject(new Error(String(r.status)))))
       : fetch(t.url!).then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))));
     load
-      .then((text) => !stale && setCues(parseCaptions(text)))
+      .then((text) => {
+        if (stale) return;
+        const parsed = parseCaptions(text);
+        setCues(parsed);
+        // A track that isn't really WebVTT or SRT would otherwise just show nothing.
+        if (!parsed.length) flash('Those subtitles couldn’t be read. Pick another track.');
+      })
       .catch(() => {
         if (stale) return;
         setCues([]);
@@ -287,6 +340,15 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   const segment = dur ? segmentAt(segments, now, dur) : undefined;
   const inCredits = useRef(false);
   inCredits.current = segment?.type === 'credits';
+  /**
+   * The credits end well before the video does, and nothing known (a preview) starts where they
+   * end: more of the episode follows (an anime's scene after the ending).
+   */
+  const sceneAfter =
+    segment?.type === 'credits' &&
+    segment.end !== null &&
+    dur - segment.end > 20 &&
+    !segments.some((s) => s !== segment && Math.abs(s.start - segment.end!) < 5 && !!segmentAt([s], s.start, dur));
 
   // Stills for Continue watching: every 90 s while playing, and on pause / leaving (see lib/frames).
   // Trakt (when connected): tell it what's playing. Stopping at 80 %+ marks it watched there.
@@ -319,7 +381,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
 
   const stillKey = frameKey(media.type, media.id, media.season, media.episode);
   useEffect(() => {
-    if (!settings.frameThumbs) return;
+    if (!settings.frameThumbs || live) return;
     const v = video.current;
     const grab = () => {
       const el = video.current;
@@ -334,7 +396,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       v?.removeEventListener('pause', grab);
       grab();
     };
-  }, [stillKey, settings.frameThumbs]);
+  }, [stillKey, settings.frameThumbs, live]);
   const skipped = useRef(new Set<number>()); // auto-skipped segment starts
   const creditsOffered = useRef(false);
 
@@ -345,7 +407,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     const grew = sourceCount > prevCount.current;
     prevCount.current = sourceCount;
     if (!grew || !exhausted) return;
-    const i = data.sources.findIndex((_, k) => !failed.current.has(k));
+    const i = bestIndex(data.sources, failed.current.has);
     if (i < 0) return;
     setExhausted(false);
     setSourceIdx(i);
@@ -360,6 +422,50 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     autoRefreshed.current = true;
     onRefresh();
   }, [exhausted, searching, refreshing, onRefresh]);
+  // A live channel has no other server to offer: when every source has failed, the page says so
+  // in its own words (it has no search to run again either; with one, the buttons below stay).
+  const onExhaustedRef = useRef(onExhausted);
+  onExhaustedRef.current = onExhausted;
+  useEffect(() => {
+    if (exhausted && liveSaid && !onRefresh && !searching) onExhaustedRef.current();
+  }, [exhausted, liveSaid, onRefresh, searching]);
+
+  // ---------- expired links ----------
+  // A link past its expiry (or refused once its token ran out) is not a broken source. The search
+  // is run again (the page's own refetch) and the same stream comes back under a fresh address:
+  // stream ids survive a new search. Nothing else is started meanwhile, so the viewer sees one
+  // interruption, not two. If the stream isn't in the fresh list, the best source there is used;
+  // if no fresh list turns up at all, the source is skipped like any other failure.
+  /** The stream to carry on with when fresh links arrive. */
+  const comeBackTo = useRef<string | null>(null);
+  const renewedAt = useRef<number[]>([]);
+  /** The list generation the expired link belonged to: a later one is the fresh list. */
+  const renewGeneration = useRef(generation);
+  /** Waiting for fresh links: nothing is loaded meanwhile. */
+  const [renewing, setRenewing] = useState(false);
+  const renewingRef = useRef(renewing);
+  renewingRef.current = renewing;
+  /** Bumped to load the selected source once the wait is over (its address may be the same). */
+  const [attempt, setAttempt] = useState(0);
+  /** Asks for fresh links for an expired source. False when that can't be done (again): skip it instead. */
+  const renew = (s: JellySource): boolean => {
+    const now = Date.now();
+    renewedAt.current = renewedAt.current.filter((t) => now - t < RENEW_WINDOW_MS);
+    // Rationed, so a resolver that keeps handing out stale links can't hold the player in a loop.
+    if (!onRefresh || renewedAt.current.length >= MAX_RENEWALS) return false;
+    renewedAt.current.push(now);
+    keepPosition();
+    comeBackTo.current = s.id ?? null;
+    renewGeneration.current = generation;
+    setRenewing(true);
+    setBuffering(true);
+    if (!refreshing) onRefresh();
+    flash('This link expired. Getting a fresh one…');
+    return true;
+  };
+  const renewRef = useRef(renew);
+  renewRef.current = renew;
+
   // Fresh results arrived: start over with them (keeping the position).
   const firstGeneration = useRef(generation);
   useEffect(() => {
@@ -370,10 +476,54 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     failed.current.clear();
     failReason.current.clear();
     setExhausted(false);
-    setSourceIdx(0);
+    // While an expired stream is being waited for, the effect below picks the source.
+    if (!renewingRef.current) setSourceIdx(Math.max(0, bestIndex(data.sources)));
     flash('Got fresh links');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generation]);
+
+  /** The wait is over: carry on with the expired stream's fresh copy, or the best source there is. */
+  const settle = () => {
+    const back = comeBackTo.current ? dataRef.current.sources.findIndex((s) => s.id === comeBackTo.current) : -1;
+    comeBackTo.current = null;
+    setRenewing(false);
+    setSourceIdx(Math.max(0, back >= 0 ? back : bestIndex(dataRef.current.sources)));
+    setAttempt((n) => n + 1);
+  };
+  /** No fresh list came: skip the source after all. */
+  const giveUp = () => {
+    comeBackTo.current = null;
+    setRenewing(false);
+    failRef.current('link expired');
+  };
+  const settleRef = useRef(settle);
+  settleRef.current = settle;
+  const giveUpRef = useRef(giveUp);
+  giveUpRef.current = giveUp;
+  const fresh = renewing && generation !== renewGeneration.current;
+  const freshRef = useRef(fresh);
+  freshRef.current = fresh;
+  // The fresh list is here. Its sources arrive one provider at a time: give the expired stream a
+  // moment to turn up before settling for another source.
+  useEffect(() => {
+    if (!fresh) return;
+    const wanted = comeBackTo.current;
+    if (!wanted || !searching || data.sources.some((s) => s.id === wanted)) return settleRef.current();
+    const t = window.setTimeout(() => settleRef.current(), COME_BACK_WAIT_MS);
+    return () => window.clearTimeout(t);
+  }, [fresh, data.sources, searching]);
+  // No fresh list: the search failed, or is taking too long.
+  const sawRefresh = useRef(false);
+  useEffect(() => {
+    if (!renewing) return void (sawRefresh.current = false);
+    if (refreshing) return void (sawRefresh.current = true);
+    if (sawRefresh.current && !fresh) giveUpRef.current();
+  }, [renewing, refreshing, fresh]);
+  useEffect(() => {
+    if (!renewing) return;
+    const t = window.setTimeout(() => (freshRef.current ? settleRef.current() : giveUpRef.current()), RENEW_WAIT_MS);
+    return () => window.clearTimeout(t);
+  }, [renewing]);
 
   // ---------- source loading & fallback ----------
   /** Why each failed source failed, in words (shown in the Source menu). */
@@ -396,16 +546,17 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
           failReason.current.set(i, `Same host as a refused source (${host})`);
         });
       }
-      const v = video.current;
-      if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
-      const nextIdx = data.sources.findIndex((_, i) => !failed.current.has(i));
+      keepPosition();
+      const nextIdx = bestIndex(data.sources, failed.current.has);
       if (nextIdx === -1) {
         setExhausted(true);
         setBuffering(false);
         return;
       }
       console.warn(`[player] source ${sourceIdx + 1} failed (${why}), trying ${nextIdx + 1}`);
-      flash(`Source ${sourceIdx + 1} failed — trying another`);
+      // A source this device can't play at all is skipped with the reason, not reported as broken.
+      const cant = unplayableReason(why);
+      flash(cant ? `Skipped source ${sourceIdx + 1}: ${cant}` : `Source ${sourceIdx + 1} failed — trying another`);
       setSourceIdx(nextIdx);
     },
     [data.sources, sourceIdx, flash, setSourceIdx],
@@ -418,21 +569,30 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   useEffect(() => {
     const v = video.current;
     if (!v || !source) return;
-    // A link past its expiry would only fail slowly: skip it now (when every link has expired, the
-    // player searches again by itself and gets fresh ones).
+    // Waiting for fresh links (see "expired links" above): nothing is loaded until that settles.
+    if (renewingRef.current) return;
+    // A link past its expiry would only fail slowly: ask for fresh links now, and skip the source
+    // only if that can't be done.
     if (source.expiresAt && source.expiresAt <= Date.now()) {
-      failRef.current('link expired');
+      if (!renewRef.current(source)) failRef.current('link expired');
+      return;
+    }
+    // Another site's player page is not a stream: it is never handed to the video element or an engine.
+    if (isFrame(source)) {
+      failRef.current(unplayable('It is another site’s player, not a stream'));
       return;
     }
     let cancelled = false;
-    let netRetry = false;
-    let mediaRetry = false;
+    // Recovery from a network or media error, for either engine: once a minute per kind, then the next source.
+    const retry = retryBudget();
     setBuffering(true);
+    setLiveSeen(false);
     setLevels([]);
     setLevel(-1);
     setAudioTracks([]);
     setAudioTrack(-1);
-    const startAt = seekOnLoad.current;
+    // A live stream starts at its live edge, whatever position another source had reached.
+    const startAt = liveRef.current ? 0 : seekOnLoad.current;
 
     const startup = window.setTimeout(() => !cancelled && v.readyState < 3 && failRef.current('startup timeout'), STARTUP_TIMEOUT_MS);
     const clearStartup = () => window.clearTimeout(startup);
@@ -446,11 +606,63 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
 
     const play = () => v.play().catch(() => setPlaying(false)); // autoplay may be blocked; show the play button
 
+    const stop = () => {
+      cancelled = true;
+      clearStartup();
+      v.removeEventListener('playing', onPlaying);
+      engine.current?.destroy();
+      engine.current = null;
+      v.removeAttribute('src');
+      v.load(); // stop downloading
+    };
+    // The host refused a request (401/403/404/410): that won't fix itself. On a link that carries an
+    // expiry, a 401/403 is its token running out: get fresh links instead of writing off the host.
+    const refused = (why: string, status: number) => {
+      if (linkRanOut(status, source) && renewRef.current(source)) return stop();
+      failRef.current(`${why} ${status}`, status === 401 || status === 403);
+    };
+
     const nativeHls = v.canPlayType('application/vnd.apple.mpegurl') !== '';
     // Safari plays HLS itself. Letting it (instead of hls.js) is what makes AirPlay work: AirPlay
     // hands the TV the real stream address, which hls.js's in-tab blob: address can't be.
     const airplayCapable = 'WebKitPlaybackTargetAvailabilityEvent' in window;
-    if (source.type === 'hls' && !(nativeHls && (airplayCapable || !('MediaSource' in window)))) {
+    if (source.type === 'dash') {
+      // dash.js arrives only now, as its own chunk: nobody who never meets a DASH stream downloads it.
+      import('./dash')
+        .then(({ startDash }) => {
+          if (cancelled) return;
+          engine.current = startDash(
+            v,
+            {
+              url: source.url,
+              startAt,
+              audioLang: audioPref.current,
+              // Direct streams: before the first request to each host, have the bridge allow it.
+              allow: direct ? (host) => allowStream(host, source.headers ?? {}) : undefined,
+            },
+            {
+              ready: play,
+              live: setLiveSeen,
+              levels: setLevels,
+              audioTracks: (list, current) => {
+                setAudioTracks(list);
+                setAudioTrack(current);
+              },
+              audioTrack: setAudioTrack,
+              fail: (why, status) => {
+                if (cancelled) return;
+                cancelled = true;
+                if (status && REFUSALS.includes(status)) refused(why.replace(/ \d{3}$/, ''), status);
+                else failRef.current(why);
+              },
+            },
+          );
+        })
+        .catch((e) => {
+          console.warn('[player] dash', e);
+          if (!cancelled) failRef.current('Couldn’t start the DASH player');
+        });
+    } else if (source.type === 'hls' && !(nativeHls && (airplayCapable || !('MediaSource' in window)))) {
       import('hls.js').then(({ default: HlsCtor }) => {
         if (cancelled) return;
         if (!HlsCtor.isSupported()) {
@@ -475,7 +687,11 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
           maxBufferLength: 30,
           ...(direct ? { loader: HelperLoader as unknown as typeof HlsCtor.DefaultConfig.loader } : {}),
         });
-        hls.current = h;
+        engine.current = {
+          setLevel: (i) => void (h.currentLevel = i),
+          setAudioTrack: (id) => void (h.audioTrack = id),
+          destroy: () => h.destroy(),
+        };
         h.on(HlsCtor.Events.MANIFEST_PARSED, () => {
           setLevels(
             h.levels
@@ -488,29 +704,35 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
         h.on(HlsCtor.Events.AUDIO_TRACKS_UPDATED, () => {
           setAudioTracks(h.audioTracks.map((t, i) => ({ id: i, name: t.name || t.lang || `Track ${i + 1}` })));
           // Several audio languages in one stream (e.g. VixSrc): switch to the preferred one.
-          const pref = getState().settings.audioLang;
+          const pref = audioPref.current;
           const want = languageName(pref).toLowerCase();
           const i = h.audioTracks.findIndex((t) => t.lang?.toLowerCase().startsWith(pref) || t.name?.toLowerCase().startsWith(want));
           if (i >= 0 && i !== h.audioTrack) h.audioTrack = i;
           setAudioTrack(i >= 0 ? i : h.audioTrack);
         });
         h.on(HlsCtor.Events.AUDIO_TRACK_SWITCHED, (_e, d) => setAudioTrack(d.id));
+        // A playlist with no end is a live stream.
+        h.on(HlsCtor.Events.LEVEL_LOADED, (_e, d) => setLiveSeen(d.details.live));
         h.on(HlsCtor.Events.ERROR, (_e, d) => {
           const status = (d.response as { code?: number } | undefined)?.code ?? 0;
           // Don't sit through hls.js retries on a refusal: 401/403/404/410 won't fix themselves.
-          if ([401, 403, 404, 410].includes(status) && /LoadError$/.test(d.details)) {
+          if (REFUSALS.includes(status) && /LoadError$/.test(d.details)) {
             if (!cancelled) {
               cancelled = true;
-              failRef.current(`${d.details} ${status}`, status === 401 || status === 403);
+              refused(d.details, status);
             }
             return;
           }
-          if (!d.fatal) return;
-          if (d.type === HlsCtor.ErrorTypes.NETWORK_ERROR && !netRetry && d.details !== 'manifestLoadError') {
-            netRetry = true;
+          if (!d.fatal || cancelled) return;
+          // Nothing in the playlist this browser can decode. No recovery changes that, and hls.js
+          // would only sit there: skip the source now, with the reason.
+          if (d.details === HlsCtor.ErrorDetails.MANIFEST_INCOMPATIBLE_CODECS_ERROR) {
+            cancelled = true;
+            return failRef.current(unplayable(undecodableIn(d.reason)));
+          }
+          if (d.type === HlsCtor.ErrorTypes.NETWORK_ERROR && d.details !== 'manifestLoadError' && retry('network')) {
             h.startLoad();
-          } else if (d.type === HlsCtor.ErrorTypes.MEDIA_ERROR && !mediaRetry) {
-            mediaRetry = true;
+          } else if (d.type === HlsCtor.ErrorTypes.MEDIA_ERROR && retry('media')) {
             h.recoverMediaError();
           } else {
             failRef.current(d.details);
@@ -534,17 +756,9 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       else start();
     }
 
-    return () => {
-      cancelled = true;
-      clearStartup();
-      v.removeEventListener('playing', onPlaying);
-      hls.current?.destroy();
-      hls.current = null;
-      v.removeAttribute('src');
-      v.load(); // stop downloading
-    };
+    return stop;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source?.url, direct]);
+  }, [source?.url, direct, attempt]);
 
   // Apply persisted volume/speed (hold-to-speed overrides the speed while held).
   useEffect(() => {
@@ -616,6 +830,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     else v.pause();
   }, []);
   const seekTo = useCallback((t: number) => {
+    if (liveRef.current) return;
     if (castingRef.current) return cast.seek(Math.max(0, Math.min(durRef.current - 0.5, t)));
     const v = video.current;
     if (!v || !v.duration) return;
@@ -623,7 +838,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   }, []);
   const seekBy = useCallback(
     (s: number) => {
-      if (!durRef.current) return;
+      if (!durRef.current || liveRef.current) return;
       seekTo(nowRef.current + s);
       flash(`${s > 0 ? '+' : ''}${s}s`);
       poke();
@@ -698,8 +913,9 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   useEffect(() => {
     if (!segment) return;
     if (segment.type === 'credits') {
-      // Credits rolling with an episode to go to: start the "Up next" countdown now.
-      if (next && settings.creditsNext && settings.autoplayNext && !creditsOffered.current && isPlaying) {
+      // Credits rolling with an episode to go to: start the "Up next" countdown now. Not when more
+      // of this episode follows them (a post-credits scene): then they get a "Skip credits" instead.
+      if (next && !sceneAfter && settings.creditsNext && settings.autoplayNext && !creditsOffered.current && isPlaying) {
         creditsOffered.current = true;
         setCountdown(10);
       }
@@ -710,7 +926,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       seekTo(segment.end);
       flash(`Skipped ${segment.type}`);
     }
-  }, [segment, next, settings.creditsNext, settings.autoplayNext, settings.autoSkip, isPlaying, seekTo, flash]);
+  }, [segment, sceneAfter, next, settings.creditsNext, settings.autoplayNext, settings.autoSkip, isPlaying, seekTo, flash]);
 
   // ---------- Chromecast: hand the stream over, keep progress, take it back ----------
   const castLoaded = useRef<string | null>(null);
@@ -732,6 +948,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     cast
       .load({
         url: new URL(source.url, location.href).href,
+        type: source.type,
         title,
         subtitle,
         poster,
@@ -794,7 +1011,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
       if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open],[aria-modal="true"]')) return;
       // YouTube-style keys, the de facto standard for web video.
-      const jumpTo = (frac: number) => durRef.current && (seekTo(durRef.current * frac), flash(`${Math.round(frac * 100)}%`));
+      const jumpTo = (frac: number) => durRef.current && !liveRef.current && (seekTo(durRef.current * frac), flash(`${Math.round(frac * 100)}%`));
       const speed = (dir: 1 | -1) => {
         const i = SPEEDS.indexOf(rate);
         const sp = SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, (i < 0 ? SPEEDS.indexOf(1) : i) + dir))];
@@ -849,13 +1066,13 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     const ms = navigator.mediaSession;
     ms.setActionHandler('play', () => video.current?.play());
     ms.setActionHandler('pause', () => video.current?.pause());
-    ms.setActionHandler('seekbackward', () => seekBy(-10));
-    ms.setActionHandler('seekforward', () => seekBy(10));
+    ms.setActionHandler('seekbackward', live ? null : () => seekBy(-10));
+    ms.setActionHandler('seekforward', live ? null : () => seekBy(10));
     ms.setActionHandler('nexttrack', next ? () => next.go() : null);
     return () => {
       for (const a of ['play', 'pause', 'seekbackward', 'seekforward', 'nexttrack'] as MediaSessionAction[]) ms.setActionHandler(a, null);
     };
-  }, [title, subtitle, poster, next, seekBy]);
+  }, [title, subtitle, poster, next, seekBy, live]);
 
   // ---------- autoplay next ----------
   useEffect(() => {
@@ -926,8 +1143,8 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   };
 
   const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
-  const skippable = segment && segment.end !== null && !(segment.type === 'credits' && next);
-  const creditsNextBtn = segment?.type === 'credits' && next && countdown === null;
+  const skippable = segment && segment.end !== null && (sceneAfter || !(segment.type === 'credits' && next));
+  const creditsNextBtn = segment?.type === 'credits' && next && countdown === null && !sceneAfter;
   const qualityNow = level === -1 ? 'Auto' : `${levels.find((l) => l.index === level)?.height ?? ''}p`;
 
   return (
@@ -961,7 +1178,11 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
           if (v.duration > 0) pos.current = { t: v.currentTime, d: v.duration };
           report();
         }}
-        onDurationChange={(e) => Number.isFinite(e.currentTarget.duration) && setDuration(e.currentTarget.duration)}
+        onDurationChange={(e) => {
+          const d = e.currentTarget.duration;
+          if (Number.isFinite(d)) setDuration(d);
+          else if (d === Infinity && !engine.current) setLiveSeen(true); // the browser's own HLS, live
+        }}
         onProgress={(e) => {
           const b = e.currentTarget.buffered;
           if (b.length) setBuffered(b.end(b.length - 1));
@@ -970,7 +1191,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
           report(true, true);
           if (next && settings.autoplayNext && countdown === null) setCountdown(8);
         }}
-        onError={(e) => !hls.current && e.currentTarget.getAttribute('src') && e.currentTarget.error && fail('media error')}
+        onError={(e) => !engine.current && e.currentTarget.getAttribute('src') && e.currentTarget.error && fail('media error')}
         onDoubleClick={toggleFullscreen}
       >
         {nativeVtt && <track key={nativeVtt} kind="subtitles" src={nativeVtt} label={subLabel} />}
@@ -1028,9 +1249,11 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
               <SkipBack className="size-5 fill-current" />
             </CentreButton>
           )}
-          <CentreButton label="Back 10 seconds (J)" onClick={() => (seekBy(-10), poke())} shown={showControls} size="md" tip={!compact}>
-            <RotateCcw className={compact ? 'size-7' : 'size-6'} />
-          </CentreButton>
+          {!live && (
+            <CentreButton label="Back 10 seconds (J)" onClick={() => (seekBy(-10), poke())} shown={showControls} size="md" tip={!compact}>
+              <RotateCcw className={compact ? 'size-7' : 'size-6'} />
+            </CentreButton>
+          )}
           <CentreButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={() => (toggle(), poke())} shown={showControls} size="lg" tip={!compact}>
             {buffering ? (
               <span className="size-9 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
@@ -1040,9 +1263,11 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
               <Play className="ml-1 size-9 fill-white" strokeWidth={0} />
             )}
           </CentreButton>
-          <CentreButton label="Forward 10 seconds (L)" onClick={() => (seekBy(10), poke())} shown={showControls} size="md" tip={!compact}>
-            <RotateCw className={compact ? 'size-7' : 'size-6'} />
-          </CentreButton>
+          {!live && (
+            <CentreButton label="Forward 10 seconds (L)" onClick={() => (seekBy(10), poke())} shown={showControls} size="md" tip={!compact}>
+              <RotateCw className={compact ? 'size-7' : 'size-6'} />
+            </CentreButton>
+          )}
           {next !== undefined && (
             <CentreButton label={next ? `Next: ${next.label} (Shift N)` : 'No next episode'} onClick={next ? next.go : undefined} shown={showControls} size="sm" tip={!compact}>
               <SkipForward className="size-5 fill-current" />
@@ -1150,11 +1375,18 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
           showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />
+        {/* Live: what is on now, not a film with a length. */}
+        {!live && <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />}
         <div className="mt-2 flex items-center gap-1 md:gap-1.5">
-          <span className="pl-1 text-xs text-white/85 tabular-nums md:text-sm">
-            {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
-          </span>
+          {live ? (
+            <span data-testid="live-state" className="flex items-center gap-1.5 pl-1 text-xs font-semibold tracking-wide text-white/90 uppercase md:text-sm">
+              <span aria-hidden className={cx('size-1.5 rounded-full bg-danger', isPlaying && 'animate-pulse')} /> Live
+            </span>
+          ) : (
+            <span className="pl-1 text-xs text-white/85 tabular-nums md:text-sm">
+              {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
+            </span>
+          )}
           <div className={cx('group/vol ml-1 hidden items-center', !compact && 'sm:flex')}>
             <IconButton label={muted || volume === 0 ? 'Unmute (M)' : 'Mute (M)'} onClick={toggleMute}>
               <VolumeIcon className="size-5" />
@@ -1316,7 +1548,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                       <MenuItem
                         selected={level === -1}
                         onClick={() => {
-                          if (hls.current) hls.current.currentLevel = -1;
+                          engine.current?.setLevel(-1);
                           setLevel(-1);
                           setMenu(null);
                         }}
@@ -1328,7 +1560,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                           key={l.index}
                           selected={level === l.index}
                           onClick={() => {
-                            if (hls.current) hls.current.currentLevel = l.index;
+                            engine.current?.setLevel(l.index);
                             setLevel(l.index);
                             setMenu(null);
                           }}
@@ -1350,7 +1582,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                           key={t.id}
                           selected={audioTrack === t.id}
                           onClick={() => {
-                            if (hls.current) hls.current.audioTrack = t.id;
+                            engine.current?.setAudioTrack(t.id);
                             setMenu(null);
                           }}
                         >
@@ -1381,11 +1613,14 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                               onInfo={(el) => openInfo(s.url, el)}
                               selected={sourceIdx === i}
                               failed={failed.current.has(i)}
+                              reason={failed.current.has(i) ? failReason.current.get(i) : undefined}
                               onClick={() => {
                                 if (i === sourceIdx) return setMenu(null);
-                                const v = video.current;
-                                if (v && v.currentTime > 5) seekOnLoad.current = v.currentTime;
+                                keepPosition();
                                 failed.current.delete(i);
+                                // The viewer chose: a wait for fresh links doesn't override it.
+                                comeBackTo.current = null;
+                                setRenewing(false);
                                 setSourceIdx(i);
                                 setMenu(null);
                               }}
@@ -1393,6 +1628,20 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                           ))}
                         </div>
                       ))}
+                      {/* Found, but not for this device (a codec it can't decode, say): listed, never tried. */}
+                      {data.report?.some((r) => r.unplayable) && (
+                        <div className="pb-1">
+                          <div className="px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Can’t play here</div>
+                          {data.report
+                            .filter((r) => r.unplayable)
+                            .map((r) => (
+                              <div key={`${r.name}|${r.reason}`} data-unplayable aria-disabled className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm opacity-45">
+                                <span className="shrink-0 font-medium">{r.name}</span>
+                                <span className="min-w-0 flex-1 text-xs leading-snug">{r.reason}</span>
+                              </div>
+                            ))}
+                        </div>
+                      )}
                       {onRefresh && (
                         <button
                           onClick={() => {
@@ -1408,12 +1657,12 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                         </button>
                       )}
                       {/* Every other provider, and why it had nothing: useful when a title won't play. */}
-                      {settings.showDiagnostics && data.report?.some((r) => !r.ok) && (
+                      {settings.showDiagnostics && data.report?.some((r) => !r.ok && !r.unplayable) && (
                         <>
                           <Divider />
                           <p className="px-3 pt-1 pb-1 text-xs text-muted">No stream from</p>
                           {data.report
-                            .filter((r) => !r.ok && !r.group)
+                            .filter((r) => !r.ok && !r.group && !r.unplayable)
                             .map((r) => (
                               <ReportRow key={r.name} name={r.name} reason={r.reason} />
                             ))}
@@ -1477,7 +1726,8 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                 <Cast className={cx('size-5', cast.state === 'CONNECTING' && 'animate-pulse')} />
               </IconButton>
             )}
-            {airplay !== 'none' && (
+            {/* AirPlay hands the TV an address; a DASH stream is assembled in this tab and has none it could play. */}
+            {airplay !== 'none' && source.type !== 'dash' && (
               <IconButton label="AirPlay" active={airplay === 'active'} onClick={showAirplayPicker}>
                 <Airplay className="size-5" />
               </IconButton>
@@ -1732,13 +1982,31 @@ function levelLabel(pos: number, height: number, source: JellySource, count: num
 const levelSize = (pos: number, source: JellySource, count: number) => (source.levels?.length === count ? formatSize(source.levels[pos]?.size) : '');
 
 const sourceLabel = (s: JellySource) => (s.quality === 'original' ? 'Original' : qualityLabel(s.quality));
-const sourceTag = (s: JellySource) => s.audioTracks?.[0]?.label ?? s.note?.split(' · ')[0];
+/** Every audio language a source reports ("English, Hindi dub"), else the first words of its file description. */
+const sourceTag = (s: JellySource) => (s.audioTracks?.length ? s.audioTracks.map((a) => a.label).join(', ') : s.note?.split(' · ')[0]);
+/** What the resolver found when it tried the stream itself, in a word or two. */
+const triedHint = (s: JellySource) => (s.verification?.state === 'verified' ? 'Verified' : s.verification?.state === 'failed' ? 'Did not answer' : '');
+
+/** A language as a small tag ("EN", "HI dub"), like the audio menu's. */
+function LangBadge({ track, on }: { track: { language: string; label: string }; on?: boolean }) {
+  const code = /^[a-z]{2,3}$/i.test(track.language) && track.language !== 'und' ? track.language : track.label.slice(0, 3);
+  return (
+    <span
+      title={track.label}
+      className={cx('inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide uppercase ring-1 ring-inset', on ? 'ring-black/40' : 'ring-white/35')}
+    >
+      {code}
+      {/dub/i.test(track.label) ? ' dub' : ''}
+    </span>
+  );
+}
 
 /** One source as a single line like every other menu row: ✓, quality, a short tag, size, and ⓘ. */
 function SourceRow({
   source: s,
   selected,
   failed,
+  reason,
   onClick,
   infoOpen,
   onInfo,
@@ -1746,18 +2014,36 @@ function SourceRow({
   source: JellySource;
   selected: boolean;
   failed: boolean;
+  /** Why it failed or was skipped (the row's tooltip; the ⓘ card shows it too). */
+  reason?: string;
   onClick: () => void;
   infoOpen: boolean;
   onInfo: (button: HTMLElement) => void;
 }) {
   const label = sourceLabel(s);
   const tag = sourceTag(s);
+  const langs = s.audioTracks ?? [];
+  const tried = triedHint(s);
   return (
     <div className={cx('flex items-center rounded-xl transition-colors', selected ? 'bg-white text-black' : 'hover:bg-white/10')}>
-      <button onClick={onClick} aria-pressed={selected} className="flex h-10 min-w-0 flex-1 items-center gap-2.5 pr-1 pl-3 text-left text-sm">
+      <button onClick={onClick} aria-pressed={selected} title={reason} className="flex h-10 min-w-0 flex-1 items-center gap-2.5 pr-1 pl-3 text-left text-sm">
         <span className="shrink-0 font-medium">{label}</span>
-        {tag && <span className="min-w-0 truncate opacity-60">{tag}</span>}
-        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>{failed ? 'Failed' : formatSize(s.size)}</span>
+        {langs.length > 0 ? (
+          // One small tag per audio language the source says it carries.
+          <span className="flex min-w-0 items-center gap-1 overflow-hidden" data-languages={langs.map((a) => a.language).join(',')}>
+            {langs.slice(0, 4).map((a) => (
+              <LangBadge key={`${a.language}|${a.label}`} track={a} on={selected} />
+            ))}
+            {langs.length > 4 && <span className="shrink-0 text-xs opacity-60">+{langs.length - 4}</span>}
+          </span>
+        ) : (
+          tag && <span className="min-w-0 truncate opacity-60">{tag}</span>
+        )}
+        {/* Tried by the resolver before it got here: a quiet dot when it answered. */}
+        {tried === 'Verified' && !failed && <span title="Verified: it answered when it was tried" aria-label="Verified" className="size-1.5 shrink-0 rounded-full bg-success" />}
+        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>
+          {failed ? 'Failed' : tried === 'Did not answer' ? tried : formatSize(s.size)}
+        </span>
       </button>
       <button
         type="button"
@@ -1806,7 +2092,10 @@ function SourceInfo({ source: s, reason, style }: { source: JellySource; reason?
         </p>
       )}
       <p className="mt-2 flex justify-between text-faint">
-        <span className="uppercase">{s.type}</span>
+        <span>
+          <span className="uppercase">{s.type}</span>
+          {triedHint(s) && <span> · {triedHint(s) === 'Verified' ? 'verified: it answered when tried' : 'did not answer when tried'}</span>}
+        </span>
         {!levels && s.size ? <span className="tabular-nums">{formatSize(s.size)}</span> : null}
       </p>
       {reason && <p className="mt-2 leading-snug text-danger">{describeFailure(reason)}</p>}
@@ -1951,7 +2240,10 @@ function SeekBar({
         <div className="absolute inset-y-0 left-0 bg-white/35" style={{ width: `${duration ? Math.min(100, (buffered / duration) * 100) : 0}%` }} />
         {/* Intro / recap / credits ranges */}
         {duration > 0 &&
-          segments.map((s) => (
+          segments
+            // The same rule as segmentAt: times measured on a video of another length are another cut.
+            .filter((s) => segmentAt([s], s.start, duration))
+            .map((s) => (
             <div
               key={s.type + s.start}
               className="absolute inset-y-0 bg-planned/70"
@@ -1976,6 +2268,9 @@ function SeekBar({
 
 /** hls.js / player failure codes in plain words. */
 function describeFailure(why: string): string {
+  // "This device can't play it", already in words (a codec it can't decode, DRM).
+  const cant = unplayableReason(why);
+  if (cant) return cant;
   const status = why.match(/\b(\d{3})\b/)?.[1];
   if (status === '403' || status === '401') return `The video host refused it (${status})`;
   if (status === '404' || status === '410') return `The video is gone (${status})`;
@@ -2011,7 +2306,8 @@ function sortSubtitles(list: JellySubtitle[]): Track[] {
   const seen = new Set<string>();
   const pref = languageName(getState().settings.audioLang).toLowerCase();
   const tracks = list
-    .filter((s) => s.url && !seen.has(s.url) && seen.add(s.url))
+    // Only formats the overlay reads (WebVTT, SRT): an ASS or TTML track would be listed and show nothing.
+    .filter((s) => s.url && (!s.format || READABLE_SUBS.test(s.format)) && !seen.has(s.url) && seen.add(s.url))
     .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers, bridged: s.bridged }))
     .sort((a, b) => Number(b.label.toLowerCase().startsWith(pref)) - Number(a.label.toLowerCase().startsWith(pref)) || a.label.localeCompare(b.label));
   const count = new Map<string, number>();

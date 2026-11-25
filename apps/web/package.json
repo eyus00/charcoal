@@ -8,18 +8,20 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test:e2e": "node e2e/smoke.mjs"
+    "test:e2e": "node e2e/smoke.mjs && node e2e/content.mjs && node e2e/playback.mjs"
   },
   "dependencies": {
+    "@charcoal/client": "*",
+    "@charcoal/content": "*",
+    "@charcoal/provider-sdk": "*",
+    "@charcoal/providers": "*",
     "@tanstack/react-query": "^5.107.1",
+    "dashjs": "^5.3.0",
     "hls.js": "^1.7.4",
     "lucide-react": "^0.577.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router": "^7.18.5",
-    "@charcoal/providers": "*",
-    "@charcoal/client": "*",
-    "@charcoal/provider-sdk": "*"
+    "react-router": "^7.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",

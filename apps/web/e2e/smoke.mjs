@@ -86,7 +86,15 @@ const api = createServer(async (req, res) => {
 });
 await new Promise((r) => api.listen(API, r));
 
-const preview = spawn('npx', ['vite', 'preview', '--port', String(SITE), '--strictPort'], { cwd: join(here, '..'), stdio: 'ignore' });
+// In its own process group: `npx` starts the real server as a child, and stopping only `npx` would leave that running.
+const preview = spawn('npx', ['vite', 'preview', '--port', String(SITE), '--strictPort'], { cwd: join(here, '..'), stdio: 'ignore', detached: true });
+const stopPreview = () => {
+  try {
+    process.kill(-preview.pid);
+  } catch {
+    preview.kill();
+  }
+};
 for (let i = 0; i < 50; i++) {
   if (await fetch(`http://localhost:${SITE}/`).then((r) => r.ok, () => false)) break;
   await sleep(200);
@@ -192,7 +200,7 @@ async function open(path, { bridge = false, resolverDown = false } = {}) {
 }
 
 await browser.close();
-preview.kill();
+stopPreview();
 api.close();
 console.log(failures.length ? `\n${failures.length} check(s) failed` : '\nAll checks passed');
 process.exit(failures.length ? 1 : 0);
