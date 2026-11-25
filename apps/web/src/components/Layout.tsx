@@ -6,7 +6,7 @@ import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters
 import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
 import { MODES, modeHome, useMode, warmMode, type Mode } from '../lib/mode';
 import { actions, useStore } from '../lib/store';
-import { cx, scrollBehavior } from '../lib/util';
+import { cx, scrollBehavior, useDebounced } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 import { Wordmark } from './Logo';
@@ -21,6 +21,8 @@ import { Tip as HoverTip } from './Tip';
 
 // The details peek and the episode list it opens: needed on a hover or a long press, not to paint a page.
 const PeekHost = lazy(() => import('./PeekHost'));
+// What a search would find, under the field while typing: fetched with the first search, not the first page.
+const SearchPreview = lazy(() => import('./SearchPreview'));
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -513,6 +515,10 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   };
   // Type isn't counted: it's shown by the placeholder (and the page switch on results).
   const count = activeFilterCount(draft);
+  // The preview follows the typing a beat behind (AniList allows 30 requests a minute).
+  const typed = useDebounced(text.trim(), 300);
+  // (Not on Discover: there the page under the field is already the live result.)
+  const previewing = focused && !menu && !(onDiscover && target.filters) && typed.length >= 2 && text.trim().length >= 2;
   const atHome = pathname === modeHome(mode);
   // Below lg there is no sidebar: the switch sits at the top of the pages a section is made of
   // (not on a title's page), and makes way for the search field.
@@ -673,6 +679,20 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
                 </div>
               ))}
             </div>
+          )}
+          {previewing && (
+            <Suspense fallback={null}>
+              <SearchPreview
+                query={typed}
+                first={mode}
+                onPick={() => {
+                  addRecent(text);
+                  setFocused(false);
+                  searchInput.current?.blur();
+                }}
+                onAll={submit}
+              />
+            </Suspense>
           )}
           {menu && (
             <QuickFilterMenu

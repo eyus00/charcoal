@@ -77,35 +77,4 @@ export function useTmdbPage(anilistId: number) {
   });
 }
 
-// ---------- where you were, for entries with no TMDB title (the library and history are keyed by TMDB) ----------
-
-const LAST_KEY = 'charcoal:anime-last';
-
-function readLast(): Record<string, number> {
-  try {
-    const kept: unknown = JSON.parse(localStorage.getItem(LAST_KEY) ?? '{}');
-    return kept && typeof kept === 'object' ? (kept as Record<string, number>) : {};
-  } catch {
-    return {};
-  }
-}
-
-/** The episode last opened of an entry, or undefined. */
-export const lastEpisode = (anilistId: number): number | undefined => {
-  const n = readLast()[anilistId];
-  return Number.isInteger(n) && n > 0 ? n : undefined;
-};
-
-export function rememberEpisode(anilistId: number, episode: number) {
-  try {
-    const all = readLast();
-    delete all[anilistId];
-    all[anilistId] = episode;
-    // The newest two hundred are plenty.
-    localStorage.setItem(LAST_KEY, JSON.stringify(Object.fromEntries(Object.entries(all).slice(-200))));
-  } catch {
-    /* storage full or blocked: not remembered */
-  }
-}
-
 export const FORMAT_LABEL: Record<string, string> = { TV: 'Series', TV_SHORT: 'Short series', MOVIE: 'Film', SPECIAL: 'Special', OVA: 'OVA', ONA: 'Web series', MUSIC: 'Music video' };

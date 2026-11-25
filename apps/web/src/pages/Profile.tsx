@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { detectExtension, extensionFetcher } from '../lib/extension';
 import { checkFebboxToken } from '@charcoal/providers';
 import { SubtitleStyleControls } from '../player/captions';
+import AnimeShelfRow from '../components/AnimeShelfRow';
 import { actions, getState, historyByTitle, useStore, type WatchStatus, type WatchlistItem } from '../lib/store';
 import { toast } from '../components/Toast';
 import { startTraktLogin, syncWatchlistNow, traktSignOut, useTraktUser } from '../lib/trakt';
@@ -117,9 +118,15 @@ export default function Profile() {
                 <EmptyCard icon={Film} title="Nothing watched yet" body="Movies and episodes you play will show up here." />
               </>
             )}
+            <div className="mt-8 empty:hidden">
+              <AnimeShelfRow title="Anime outside TMDB" show="history" bleed={false} />
+            </div>
           </div>
           <div id="library" className={cx(PANEL, 'scroll-mt-4')}>
             <Watchlist />
+            <div className="mt-10 empty:hidden">
+              <AnimeShelfRow title="Anime outside TMDB" show="library" bleed={false} />
+            </div>
           </div>
         </>
       ) : tab === 'activity' ? (

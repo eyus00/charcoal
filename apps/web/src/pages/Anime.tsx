@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import AnimeCard from '../components/AnimeCard';
+import AnimeShelfRow from '../components/AnimeShelfRow';
 import ContinueWatching from '../components/ContinueWatching';
 import { ErrorBox } from '../components/Grid';
 import Hero from '../components/Hero';
@@ -39,6 +40,7 @@ export default function Anime() {
     <div className="space-y-10 pb-10 md:space-y-12">
       <Hero titles={titles} isError={featured.isError} label="New and popular anime" />
       {resume.length > 0 && <ContinueWatching items={resume} />}
+      <AnimeShelfRow title={resume.length ? 'More to continue' : 'Continue watching'} show="watching" />
       {rows.error && !rows.data ? (
         <ErrorBox onRetry={() => rows.refetch()} message="Couldn’t load the anime lists. AniList didn’t answer; try again in a moment." />
       ) : (

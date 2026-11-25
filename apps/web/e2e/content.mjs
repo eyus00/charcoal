@@ -536,6 +536,14 @@ section('A. Anime');
   await page.goto(`${site}/anime/title/990001`);
   const resume = page.getByRole('link', { name: 'Continue episode 2' });
   check('the entry’s page then offers to continue where you were', await resume.waitFor({ timeout: 8000 }).then(() => true, () => false));
+  // It is in history and, once ♥ is pressed, in the library: kept beside the TMDB-keyed ones.
+  await page.getByRole('button', { name: 'Add Lantern Shop Stories to your library' }).click();
+  await page.goto(`${site}/anime`);
+  const shelf = page.getByTestId('anime-shelf-watching').locator('a[data-shelf="990001"]');
+  check('Anime’s home offers to continue it', await shelf.waitFor({ timeout: 8000 }).then(() => true, () => false) && (await shelf.getAttribute('href')) === '/anime/watch/990001?ep=2');
+  await page.goto(`${site}/profile`);
+  check('…and the profile lists it under history and library', await until(async () => (await page.getByTestId('anime-shelf-history').locator('a[data-shelf="990001"]').count()) === 1 && (await page.getByTestId('anime-shelf-library').locator('a[data-shelf="990001"]').count()) === 1));
+  check('…without entering the TMDB-keyed library (Trakt sync and the calendar read that)', (await page.evaluate(() => JSON.parse(localStorage.getItem('charcoal:v2') ?? '{}').watchlist?.length ?? 0)) === 0);
   await page.goto(`${site}/anime/watch/990001?ep=9`);
   check('an episode it doesn’t have is refused in words', /doesn’t exist/.test((await page.getByTestId('anime-message').textContent({ timeout: 8000 }).catch(() => '')) ?? ''));
   check('no page errors', errors.length === 0, errors.join(' | '));

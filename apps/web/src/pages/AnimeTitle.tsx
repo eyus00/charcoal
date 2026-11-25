@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
-import { Play, Sparkles, Star } from 'lucide-react';
+import { Heart, Play, Sparkles, Star } from 'lucide-react';
 import { watchableEpisodes, type AnimeDetails } from '@charcoal/content';
 import { btn } from '../components/Button';
 import { ErrorBox } from '../components/Grid';
@@ -9,7 +9,9 @@ import { Empty } from '../components/PageHeader';
 import { Pill, SectionHeader } from '../components/Row';
 import Segmented from '../components/Segmented';
 import { DetailsSkeleton } from '../components/Skeletons';
-import { FORMAT_LABEL, lastEpisode, useAnimeEntry, useTmdbPage } from '../lib/anilist';
+import { FORMAT_LABEL, useAnimeEntry, useTmdbPage } from '../lib/anilist';
+import { resumePoint, toggleShelf, useShelfEntry } from '../lib/animeShelf';
+import { Tip } from '../components/Tip';
 import type { AnimeAudio } from '../lib/anime';
 import { actions, useStore } from '../lib/store';
 import { cx, useTitle } from '../lib/util';
@@ -46,8 +48,12 @@ export default function AnimeTitle() {
 function Entry({ a }: { a: AnimeDetails }) {
   const audio = useStore((s) => s.settings.animeAudio);
   const count = watchableEpisodes(a);
-  const last = useMemo(() => lastEpisode(a.id), [a.id]);
-  const resume = last && last <= count ? last : 1;
+  const kept = useShelfEntry(a.id);
+  const point = resumePoint(kept);
+  const last = kept?.episode;
+  const resume = point.finished ? 1 : Math.min(point.episode, Math.max(1, count));
+  const about = { id: a.id, title: a.title, cover: a.cover, film: a.kind === 'film', episodes: count };
+  const inLibrary = !!kept?.inLibrary;
   const names = [a.romaji, a.native].filter((n) => n && n !== a.title).join(' · ');
   const facts = [
     a.format && (FORMAT_LABEL[a.format] ?? a.format),
@@ -94,11 +100,21 @@ function Entry({ a }: { a: AnimeDetails }) {
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {count > 0 ? (
                 <Link to={`/anime/watch/${a.id}${resume > 1 ? `?ep=${resume}` : ''}`} className={btn({ variant: 'primary', size: 'lg' })}>
-                  <Play className="size-4 fill-current" strokeWidth={0} /> {a.kind === 'film' ? 'Watch now' : resume > 1 ? `Continue episode ${resume}` : 'Watch episode 1'}
+                  <Play className="size-4 fill-current" strokeWidth={0} /> {a.kind === 'film' ? (point.at > 0 ? 'Continue' : 'Watch now') : resume > 1 || point.at > 0 ? `Continue episode ${resume}` : 'Watch episode 1'}
                 </Link>
               ) : (
                 <span className={cx(btn({ size: 'lg' }), 'pointer-events-none opacity-60')}>Not out yet</span>
               )}
+              <button
+                type="button"
+                onClick={() => toggleShelf(about)}
+                aria-pressed={inLibrary}
+                aria-label={inLibrary ? `Remove ${a.title} from your library` : `Add ${a.title} to your library`}
+                className={cx(btn({ variant: inLibrary ? 'primary' : 'secondary', size: 'lg', icon: true }), 'group/tip relative')}
+              >
+                <Heart className={cx('size-5', inLibrary && 'fill-current')} strokeWidth={2} />
+                <Tip label={inLibrary ? 'In your library · click to remove' : 'Add to your library'} side="bottom" />
+              </button>
               <Segmented value={audio} options={AUDIO} onChange={(v) => actions.updateSettings({ animeAudio: v })} label="Anime audio" />
             </div>
           </div>
@@ -107,7 +123,7 @@ function Entry({ a }: { a: AnimeDetails }) {
 
       {a.kind === 'series' && count > 1 && <Episodes id={a.id} count={count} current={last} />}
       <p className="mt-8 text-xs text-pretty text-faint">
-        From AniList. TMDB doesn’t list this entry, so it can’t be added to your library yet; the episode you last opened is remembered on this device.
+        From AniList. TMDB doesn’t list this entry, so your library and history keep it on this device, apart from Trakt sync, the calendar and reminders.
       </p>
     </div>
   );

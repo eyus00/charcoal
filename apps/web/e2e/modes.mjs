@@ -97,6 +97,7 @@ function tmdb(u) {
   tmdbLog.push({ path, q });
   if (/^discover\/(movie|tv)$/.test(path)) return page1(q.with_original_language === 'ja' ? ANIME : [card(550, 'Fight Club', 'en', [18])]);
   // A name search finds everything Japanese: an anime and a live-action show of a similar name.
+  if (path === 'search/multi') return page1([{ ...card(550, 'Fight Club', 'en', [18]), media_type: 'movie' }]);
   if (path === 'search/tv') return page1(/attack/i.test(q.query ?? '') ? [ANIME[0], card(777, 'Attack No. 1 (live action)', 'ja', [18])] : []);
   const show = /^tv\/(\d+)$/.exec(path);
   if (show) {
@@ -121,8 +122,31 @@ const api = createServer((req, res) => {
     res.write(JSON.stringify({ t: 'plan', runtime: 'server', providers: [{ id: 'slow', name: 'Slow', wave: 1 }], skipped: [] }) + '\n');
     return;
   }
+  // What a server reports about its sources, and its control plane behind a token.
+  const json = (body, status = 200) => res.writeHead(status, { ...cors, 'Content-Type': 'application/json' }).end(JSON.stringify(body));
+  const run = (provider, over) => ({ provider, runtime: 'server', status: 'ok', reliability: 1, hitRate: 0.9, averageMs: 1800, ok: 9, empty: 1, failed: 0, benchedForSeconds: 0, lastSuccessAt: new Date(Date.now() - 120_000).toISOString(), verified: 8, unverified: 2, placement: 'works', ...over });
+  if (url.pathname === '/v2/health') {
+    return json({
+      generatedAt: new Date().toISOString(), runtime: 'server', egress: 'datacenter', features: [], providers: [
+        run('castle', {}),
+        run('vidsrc', { status: 'benched', reliability: 0, hitRate: 0, ok: 0, empty: 0, failed: 6, verified: 0, unverified: 0, benchedForSeconds: 240, lastSuccessAt: undefined, lastFailureAt: new Date(Date.now() - 60_000).toISOString(), lastFailure: { code: 'CHALLENGE', label: 'Bot check', message: 'The site asked for a human check', host: 'vidsrc.example' }, placement: 'blocked' }),
+      ],
+      fleet: [run('vidsrc', { runtime: 'extension', ok: 4, empty: 0, failed: 0 })],
+      placement: [{ provider: 'castle', verdict: 'works', worksOn: ['server'], blockedOn: [], unreachableOn: [], brokenOn: [] }, { provider: 'vidsrc', verdict: 'works-elsewhere', worksOn: ['extension'], blockedOn: ['server'], unreachableOn: [], brokenOn: [] }],
+      proposals: [{ provider: 'castle', role: 'api', from: 'https://old.example', to: 'https://new.example' }],
+    });
+  }
+  if (url.pathname.startsWith('/v2/admin')) {
+    if (req.headers.authorization !== 'Bearer secret') return json({ error: { code: 'UNAUTHORIZED' } }, 401);
+    adminCalls.push(`${req.method} ${url.pathname}`);
+    if (url.pathname === '/v2/admin/providers') return json({ registryVersion: 3, problems: [], providers: [{ id: 'castle', name: 'Castle', version: '1.2.0', stage: 'stable', rank: 10, runtimes: ['server'], domains: { roles: { api: { active: 'https://old.example', alternates: ['https://new.example'] } } } }, { id: 'vidsrc', name: 'VidSrc', version: '2.0.0', stage: 'canary', rank: 50, runtimes: ['server', 'extension'] }] });
+    if (url.pathname === '/v2/admin/audit') return json({ audit: [{ at: new Date(Date.now() - 3_600_000).toISOString(), by: 'monitor', provider: 'vidsrc', action: 'set-stage', detail: { stage: 'canary' } }] });
+    if (url.pathname === '/v2/admin/providers/castle/diagnose') return json({ provider: 'castle', addresses: [{ origin: 'https://old.example', host: 'old.example', role: 'api', position: 'active', dns: { status: 'nxdomain', addresses: [] }, verdict: 'DNS_FAILURE', summary: 'The name no longer exists', checkedAt: new Date().toISOString() }, { origin: 'https://new.example', host: 'new.example', role: 'api', position: 'alternate', dns: { status: 'ok', addresses: ['203.0.113.5'] }, http: { status: 200, ms: 120 }, verdict: 'ok', summary: 'Answers 200 in 120 ms', checkedAt: new Date().toISOString() }] });
+    return json({ ok: true });
+  }
   res.writeHead(404, cors).end('{}');
 });
+const adminCalls = [];
 await new Promise((r) => api.listen(API, r));
 
 const preview = spawn('npx', ['vite', 'preview', '--port', String(SITE), '--strictPort'], { cwd: join(here, '..'), stdio: 'ignore', detached: true });
@@ -393,7 +417,7 @@ section('C. Sports: what is on, and watching it');
   const gone = page.getByTestId('sports-message');
   await gone.waitFor({ timeout: 8000 }).catch(() => {});
   check('an entry that isn’t listed (ended, or never safe to frame) gets a plain message and no frame', /isn’t on any more/.test(await text(gone)) && (await page.locator('iframe').count()) === 0 && (await gone.getByRole('link', { name: 'See what’s on' }).getAttribute('href')) === '/sports', await text(gone));
-  check('nothing but the directory, TMDB and the framed player was contacted', v.outside.every((o) => /^(api\.ppv\.st\/api\/streams|api\.themoviedb\.org\/|taifood-blog\.asia\/embed\/)/.test(o)), [...new Set(v.outside.map((o) => o.split('/')[0]))].join(', '));
+  check('nothing but the directory, the two catalogues the search looks in, and the framed player was contacted', v.outside.every((o) => /^(api\.ppv\.st\/api\/streams|api\.themoviedb\.org\/|graphql\.anilist\.co\/|taifood-blog\.asia\/embed\/)/.test(o)), [...new Set(v.outside.map((o) => o.split('/')[0]))].join(', '));
   check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }
@@ -435,6 +459,64 @@ section('C. Sports: what is on, and watching it');
   await page.goto(`${site}/sports/watch/${ID.live}`);
   const failed = page.getByTestId('sports-message');
   check('…and a stream’s page says the same, with a way to try again', await until(async () => /Couldn’t load this stream/.test(await text(failed)), 25000) && (await failed.getByRole('button', { name: 'Try again' }).count()) === 1, await text(failed));
+  check('no page errors', v.errors.length === 0, v.errors.join(' | '));
+  await v.context.close();
+}
+
+// ===================================================================== C2. one search for everything
+section('C2. A search that looks everywhere');
+{
+  const v = await visitor(DESKTOP);
+  const page = await v.open('/');
+  const box = page.getByRole('searchbox');
+  await box.click();
+  await box.pressSequentially('barcelona', { delay: 20 });
+  const preview = page.getByTestId('search-preview');
+  await preview.waitFor({ timeout: 8000 }).catch(() => {});
+  const groups = async () => preview.getByRole('group').evaluateAll((gs) => gs.map((g) => g.getAttribute('aria-label')));
+  await until(async () => (await groups()).includes('Sports') && (await preview.locator('a').count()) >= 2);
+  check('typing shows a preview under the field: titles and sports, the part you are in first, kinds with no match left out', JSON.stringify(await groups()) === JSON.stringify(['Movies and TV', 'Sports']) && /Fight Club/.test(await text(preview)) && /Sabah FK vs\. Barcelona/.test(await text(preview)) && page.url() === `${site}/`, `${(await groups()).join(', ')} :: ${(await text(preview)).slice(0, 120)}`);
+  await shot(page, 'search-preview');
+  await preview.getByRole('link', { name: /Sabah FK vs\. Barcelona/ }).click();
+  check('…and a result opens straight from it', await until(() => page.url() === `${site}/sports/watch/${ID.upcoming}`), page.url().replace(site, ''));
+  await page.goto(`${site}/sports`);
+  await page.getByRole('searchbox').click();
+  await page.getByRole('searchbox').pressSequentially('attack', { delay: 20 });
+  await until(async () => (await groups()).includes('Anime'));
+  check('from Sports the same search finds anime and titles too', (await groups()).includes('Anime') && (await groups()).includes('Movies and TV') && (await preview.locator('a[href="/anime/title/131681"]').count()) === 1, (await groups()).join(', '));
+  await preview.getByRole('button', { name: 'See all results' }).click();
+  check('“See all results” opens the full results of the part you are in', await until(() => page.url().endsWith('/sports?q=attack')) && (await preview.count()) === 0, page.url().replace(site, ''));
+  check('no page errors', v.errors.length === 0, v.errors.join(' | '));
+  await v.context.close();
+}
+
+// ===================================================================== C3. the status page
+section('C3. Status of a server’s sources');
+{
+  const v = await visitor(DESKTOP);
+  const page = await v.open('/admin');
+  const list = page.getByTestId('admin-providers');
+  await list.waitFor({ timeout: 10000 }).catch(() => {});
+  const summary = await text(page.getByTestId('admin-summary'));
+  check('without a token it shows the public picture: what works, what is in trouble, where it runs from', /Working2/.test(summary) && /1 only from viewers’ connections/.test(summary) && /Data centre/.test(summary) && /80%/.test(summary), summary.slice(0, 200));
+  const first = list.locator('li[data-provider]').first();
+  check('providers are listed worst first, with the reason', (await first.getAttribute('data-provider')) === 'vidsrc' && /works elsewhere/i.test(await text(first)) && /Bot check · vidsrc\.example/.test(await text(first)), await text(first));
+  check('a proposed address change is shown', /castle \(api\): https:\/\/old\.example → https:\/\/new\.example/.test(await text(page.locator('main'))));
+  check('…and nothing that needs the token is offered or asked for', (await page.getByRole('button', { name: /recovery/ }).count()) === 0 && adminCalls.length === 0);
+  await page.getByPlaceholder('ADMIN_TOKEN of that server').fill('wrong');
+  check('a wrong token is said to be refused, and the public status stays', await until(async () => /admin token was refused/.test(await text(page.locator('main')))) && (await list.count()) === 1);
+  await page.getByPlaceholder('ADMIN_TOKEN of that server').fill('secret');
+  const castle = list.locator('li[data-provider="castle"]');
+  await until(async () => /stable/i.test(await text(castle)));
+  await castle.getByRole('button').first().click();
+  await castle.getByRole('button', { name: 'Check its addresses' }).click();
+  const diagnosis = castle.getByTestId('admin-diagnosis');
+  await diagnosis.waitFor({ timeout: 8000 }).catch(() => {});
+  check('with the token: stages, addresses, and an address check on demand', /The name no longer exists/.test(await text(diagnosis)) && /Answers 200/.test(await text(diagnosis)) && /api https:\/\/old\.example \(\+1 alternate\)/.test(await text(castle)), (await text(diagnosis)).slice(0, 160));
+  await castle.getByRole('button', { name: 'Disable' }).click();
+  check('…a stage change goes to the control plane, and the audit log is shown', await until(() => adminCalls.includes('POST /v2/admin/providers/castle')) && /vidsrc\s*set stage/.test(await text(page.locator('main'))), adminCalls.slice(-3).join(', '));
+  check('the token is kept for this tab only', (await page.evaluate(() => [sessionStorage.getItem('charcoal:admin-token'), JSON.stringify(localStorage).includes('secret')])).join() === 'secret,false');
+  await shot(page, 'admin');
   check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }

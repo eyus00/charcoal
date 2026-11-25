@@ -7,7 +7,8 @@ import { btn } from '../components/Button';
 import Segmented from '../components/Segmented';
 import { Tip } from '../components/Tip';
 import Player from '../player/Player';
-import { rememberEpisode, useAnimeEntry } from '../lib/anilist';
+import { useAnimeEntry } from '../lib/anilist';
+import { getShelf, openedEpisode, recordEpisode, resumePoint } from '../lib/animeShelf';
 import type { AnimeAudio } from '../lib/anime';
 import { useEntrySources } from '../lib/resolver';
 import { actions, useStore } from '../lib/store';
@@ -15,7 +16,6 @@ import { cx, useKeys, useTitle } from '../lib/util';
 
 /** No TMDB identity: no skip segments, no history entry, nothing to scrobble. */
 const NO_TITLE = { type: 'movie', id: 0 } as const;
-const noProgress = () => {};
 const AUDIO: { key: AnimeAudio; label: string }[] = [
   { key: 'sub', label: 'Sub' },
   { key: 'dub', label: 'Dub' },
@@ -70,7 +70,14 @@ function Episode({ a, ep, count, onClose }: { a: AnimeDetails; ep: number; count
   );
   const found = useEntrySources(media);
   const [gaveUp, setGaveUp] = useState(false);
-  useEffect(() => rememberEpisode(a.id, ep), [a.id, ep]);
+  const about = useMemo(() => ({ id: a.id, title: a.title, cover: a.cover, film: a.kind === 'film', episodes: count }), [a, count]);
+  // Where this episode was left, read once (progress updates must not restart playback).
+  const resumeAt = useMemo(() => {
+    const kept = getShelf().find((e) => e.id === a.id);
+    return kept?.episode === ep ? resumePoint(kept).at : 0;
+  }, [a.id, ep]);
+  useEffect(() => openedEpisode(about, ep), [about, ep]);
+  const record = useCallback((watched: number, duration: number, ended?: boolean) => recordEpisode(about, ep, watched, duration, ended), [about, ep]);
   useEffect(() => setGaveUp(false), [found.generation]);
 
   const go = useCallback((n: number) => navigate(`/anime/watch/${a.id}?ep=${n}`, { replace: true }), [a.id, navigate]);
@@ -124,12 +131,12 @@ function Episode({ a, ep, count, onClose }: { a: AnimeDetails; ep: number; count
         subtitle={subtitle}
         overview={a.description}
         poster={a.cover}
-        resumeAt={0}
+        resumeAt={resumeAt}
         audioLang={audio === 'sub' ? 'ja' : undefined}
         header={header}
         prev={film ? undefined : ep > 1 ? { label: `Episode ${ep - 1}`, go: () => go(ep - 1) } : null}
         next={film ? undefined : ep < count ? { label: `Episode ${ep + 1}`, go: () => go(ep + 1) } : null}
-        onProgress={noProgress}
+        onProgress={record}
         searching={found.searching}
         refreshing={found.refreshing}
         generation={found.generation}

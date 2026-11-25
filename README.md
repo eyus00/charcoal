@@ -39,6 +39,10 @@ come from a third-party directory (PPV's public API); it gives player pages, not
 addresses, so they are framed and Charcoal cannot see or control what the frame shows.
 `docs/platform/PROVIDERS.md` says how far each of these has been verified.
 
+The search field looks in all three at once and shows what it finds as you type. `/admin` is a
+status page for whoever runs a server: which sources work, which are refused or unreachable and
+why (add the server's `ADMIN_TOKEN` there for stages, address checks and the audit log).
+
 ## Where streams come from
 
 One search, wherever the sources are. Every provider says what it needs to run; the site runs

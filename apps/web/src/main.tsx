@@ -27,6 +27,7 @@ const SportsSchedule = lazy(() => import('./pages/SportsSchedule'));
 const SportsChannels = lazy(() => import('./pages/SportsChannels'));
 const SportsWatch = lazy(() => import('./pages/SportsWatch'));
 const Live = lazy(() => import('./pages/Live'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,8 @@ const router = createBrowserRouter([
       { path: 'sports/schedule', element: <SportsSchedule /> },
       { path: 'sports/channels', element: <SportsChannels /> },
       { path: 'library', element: <LibraryRedirect /> },
+      // For whoever runs a server: the state of its sources. Not in the navigation.
+      { path: 'admin', element: <Admin /> },
       { path: '*', element: <NotFound /> },
     ],
   },

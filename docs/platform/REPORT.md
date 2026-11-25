@@ -52,9 +52,27 @@ Limits: those entries have no library or history entry (both are keyed by TMDB i
 episode opened is remembered on the device), no embedded-player fallback and no skip times; and
 the home's banner still comes from TMDB, which has the wide artwork it needs.
 
+## Library for AniList-only anime, one search, and a status page
+
+- **Library and history for anime TMDB lacks** are kept beside the main ones, by AniList id
+  (`lib/animeShelf.ts`): ♥ on the entry's page, the episode and position you were at, a
+  "Continue watching" row on Anime's home, and rows under History and Library in the profile.
+  They are deliberately not put into the TMDB-keyed library: Trakt sync, the calendar,
+  reminders and recommendations read that and would be handed ids that mean nothing to them.
+  They are not part of the profile's export file yet.
+- **One search**: typing in the search field shows a preview under it with movies and TV,
+  anime and sports, whichever part you are in (that part first). Enter still opens the part's
+  full results.
+- **A status page at `/admin`** (not in the navigation): what a server reports about its
+  sources. Without a token: working / refused / unreachable / broken per provider with the last
+  failure and its host, verification rate, where the server runs from, proposed address
+  changes. With the server's `ADMIN_TOKEN` (kept for the tab only): stages, addresses, an
+  address check on demand, a recovery run, the audit log. It was tested against a stand-in
+  server, not the deployed one.
+
 ## Evidence and limits
 
-- 380 unit tests and 230 browser checks pass; the typecheck is clean (TESTING.md).
+- 380 unit tests and 247 browser checks pass; the typecheck is clean (TESTING.md).
 - **The framed player was not seen playing.** Its host answers curl with 200 and refused this
   sandbox's test browser with 502, so the page tests use a stand-in. Whether the real player
   starts inside a frame, and whether it still starts with pop-ups blocked, has to be checked in
