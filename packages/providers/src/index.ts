@@ -22,12 +22,14 @@ import { vidsrc } from './providers/vidsrc.js';
 import { vidzee } from './providers/vidzee.js';
 import { vixsrc } from './providers/vixsrc.js';
 import { cinesuManifest, cinesuRules } from './rules/cinesu.js';
+import { providers as ANIME_PROVIDERS } from './packs/anime.js';
 import { icefyManifest, icefyRules } from './rules/icefy.js';
 import { vidlinkManifest, vidlinkRules } from './rules/vidlink.js';
 
 export * from './types.js';
 export { nativeFetcher, getJson } from './fetch.js';
 export { DEFAULT_DOMAINS } from './domains.js';
+export { providers as ANIME_PROVIDERS } from './packs/anime.js';
 export { checkFebboxToken } from './providers/febbox.js';
 import { loadFallbackProviders } from './streamviva.js';
 export { loadFallbackProviders };
@@ -71,6 +73,9 @@ export const CODE_PROVIDERS: { module: ProviderModule; stage: Stage }[] = [
   // Ported, but their API hosts no longer exist in DNS.
   { module: tulnex, stage: 'canary' },
   { module: peachify, stage: 'canary' },
+  // Anime, searched by AniList / MyAnimeList id or by title. Each one's stage comes from a live
+  // gate; see packs/anime.ts for what was measured.
+  ...ANIME_PROVIDERS,
 ];
 
 export interface PackOptions {

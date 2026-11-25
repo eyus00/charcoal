@@ -26,8 +26,8 @@ test('build → stage → rank → domain → rollback: every step is a new vers
   assert.equal(await c.run('validate'), 1, 'nothing to validate yet');
   assert.equal(await c.run('build', '--resolver', 'https://resolver.example.com'), 0);
   assert.deepEqual(validateRegistry(c.doc()), []);
-  assert.deepEqual(c.doc().providers.filter((p) => p.stage === 'stable').map((p) => p.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'icefy', 'vidlink']);
-  assert.deepEqual(c.doc().providers.filter((p) => p.stage === 'canary').map((p) => p.manifest.id), ['vidsrc', 'videasy', 'vidzee', 'vidnest', 'tulnex', 'peachify', 'cinesu']);
+  assert.deepEqual(c.doc().providers.filter((p) => p.stage === 'stable').map((p) => p.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'anime-animotvslash', 'anime-shonen', 'anime-zokoanime', 'anime-animeheaven', 'icefy', 'vidlink']);
+  assert.deepEqual(c.doc().providers.filter((p) => p.stage === 'canary').map((p) => p.manifest.id), ['vidsrc', 'videasy', 'vidzee', 'vidnest', 'tulnex', 'peachify', 'anime-megavid', 'cinesu']);
   assert.equal(entry(c.doc(), 'cinesu').rules?.steps.length, 5, 'the declarative provider travels in the registry as data');
   assert.equal(c.doc().version, 1);
   assert.equal(await c.run('validate'), 0);

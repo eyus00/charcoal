@@ -7,6 +7,7 @@
  * `updatedAt`, and move the old address into `alternates` (see docs/platform/DOMAINS.md).
  */
 import type { DomainConfig } from '@charcoal/provider-sdk';
+import { domains as ANIME_DOMAINS } from './packs/anime.js';
 
 /** A domain config with one address per role and nothing else. */
 function one(provider: string, roles: Record<string, string>): DomainConfig {
@@ -57,4 +58,5 @@ export const DEFAULT_DOMAINS: Record<string, DomainConfig> = {
   // address can be put in force from the control plane without touching the provider.
   tulnex: one('tulnex', { api: 'https://api.tulnex.com' }),
   peachify: one('peachify', { site: 'https://peachify.top', api: 'https://usa.eat-peach.sbs', moviebox: 'https://uwu.eat-peach.sbs' }),
+  ...ANIME_DOMAINS,
 };
