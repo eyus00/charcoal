@@ -74,7 +74,7 @@ function Entry({ a }: { a: AnimeDetails }) {
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
             <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{a.title}</h1>
             {names && (
-              <p className="mt-1 text-sm text-white/70" data-testid="other-names">
+              <p className="mt-1 truncate text-sm text-white/70" data-testid="other-names" title={names}>
                 {names}
               </p>
             )}

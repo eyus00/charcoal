@@ -12,7 +12,7 @@ Nothing was deployed. The earlier reports follow below, unchanged.
 | The anime version | A home (banner, continue watching, six rows) and a browse page that also searches by name; shortcuts and search stay inside Anime | `pages/Anime.tsx`, `AnimeBrowse.tsx` |
 | The sports version, with the streams the listed sites embed | Live now, coming up (by day, in the viewer's time zone), sport pills, search; a watch page that frames the directory's player; channels; the schedule with official links kept as its own page | `pages/Sports*.tsx`, `packages/content/src/sports/directory.ts` |
 | Extract streams from the embed if possible, otherwise embed | Embed. See below | |
-| Minimal setup to start a stream | A viewer with no helper and no server of their own gets the embedded player after seven seconds of an empty search (was: when the whole search ended); sports events are one tap from their player; nothing asks for an install | `pages/Watch.tsx` |
+| Minimal setup to start a stream | A search that ends empty is run once more by itself, then the embedded player starts (an automatic switch after seven seconds was tried and removed: sources often arrive later than that); sports events are one tap from their player; nothing asks for an install | `pages/Watch.tsx` |
 | Smooth and fast | The details peek loads on demand: main bundle 325 kB (350 before, 336 before this phase). Pointing at a part fetches its code, and for Sports what is on. Anime rows and the sports list paint from the last visit's copy | `main.tsx`, `lib/mode.ts`, `lib/persist.ts` |
 | Mobile | Every new page checked at 390 px and 320 px for overflow; the switch, the bar, search and the player page have phone layouts | `e2e/modes.mjs` section D |
 | Clean the repository | 110 files removed: an unused vendored reference library and its test tool and results, the carried-out plan, an intermediate benchmark run, two stray screenshots | commit `be8bcdd` |
@@ -72,7 +72,7 @@ the home's banner still comes from TMDB, which has the wide artwork it needs.
 
 ## Evidence and limits
 
-- 380 unit tests and 247 browser checks pass; the typecheck is clean (TESTING.md).
+- 380 unit tests and 245 browser checks pass; the typecheck is clean (TESTING.md).
 - **The framed player was not seen playing.** Its host answers curl with 200 and refused this
   sandbox's test browser with 502, so the page tests use a stand-in. Whether the real player
   starts inside a frame, and whether it still starts with pop-ups blocked, has to be checked in

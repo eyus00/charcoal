@@ -156,7 +156,8 @@ function OtherNames({ d, type }: { d: D; type: MediaType }) {
   }, [d, anime.titles]);
   if (!names.length) return null;
   return (
-    <p className="mt-1.5 text-sm text-white/70" aria-label="Also known as" data-testid="other-names">
+    // One line: some anime have names a paragraph long. The whole of it is in the tooltip.
+    <p className="mt-1.5 truncate text-sm text-white/70" aria-label="Also known as" data-testid="other-names" title={names.join(' · ')}>
       {names.join(' · ')}
     </p>
   );

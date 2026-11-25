@@ -172,7 +172,7 @@ async function open(path, { bridge = false, resolverDown = false } = {}) {
   const src = await page.evaluate(() => document.querySelector('iframe')?.src ?? '');
   check('no sources → the embedded player takes over', /vidlink\.pro\/movie\/2/.test(src), src);
   check('…within 3 s of opening the page', ms < 3000, `${ms} ms`);
-  check('…after exactly one request to the resolver', log.filter((l) => l.what === 'sources 2').length === 1);
+  check('…after the search was run once more by itself (two requests to the resolver)', log.filter((l) => l.what === 'sources 2').length === 2);
   await context.close();
 }
 

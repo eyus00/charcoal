@@ -595,27 +595,21 @@ section('D. On a phone');
 }
 
 // ===================================================================== E. nothing set up
-section('E. A first stream with nothing set up');
+section('E. A search that is slow');
 {
+  // Sources can take a while (and a second search often finds what the first missed): the page
+  // waits and offers the embedded player; it does not switch to it by itself mid-search.
   const v = await visitor(DESKTOP);
   const page = await v.open('/watch/movie/550');
-  const started = Date.now();
-  const frame = page.locator('iframe');
-  const framed = await frame.waitFor({ timeout: 15000 }).then(() => true, () => false);
-  const took = Date.now() - started;
-  check('with no helper and no server of their own, a viewer whose search is still empty gets the embedded player', framed && asked.length >= 1 && /vidlink\.pro\/movie\/550/.test((await frame.getAttribute('src')) ?? ''), `after ${(took / 1000).toFixed(1)}s`);
-  check('…within a few seconds rather than at the end of the search', took > 5000 && took < 11000, `${(took / 1000).toFixed(1)}s`);
-  check('…and is told what happened and how to go back', /Jelly hadn’t found a source yet/.test(await text(page.locator('body'))) && /server menu/.test(await text(page.locator('body'))));
-  check('the saved choice of server is unchanged', (await page.evaluate(() => JSON.parse(localStorage.getItem('charcoal:v2') ?? '{}').settings?.server ?? 'jelly')) === 'jelly');
-  check('no page errors', v.errors.length === 0, v.errors.join(' | '));
-  await v.context.close();
-}
-{
-  // A viewer with their own server has chosen to wait for it.
-  const v = await visitor(DESKTOP, { state: { history: [], watchlist: [], settings: { serverUrl: base } } });
-  const page = await v.open('/watch/movie/550');
   await sleep(9500);
-  check('a viewer who set up their own server is not moved to the embedded player while it is still searching', (await page.locator('iframe').count()) === 0 && /Finding sources/.test(await text(page.locator('body'))));
+  check('while Jelly is still searching, the viewer is not moved to the embedded player', (await page.locator('iframe').count()) === 0 && /Finding sources/.test(await text(page.locator('body'))));
+  const offer = page.getByRole('button', { name: 'Use an embedded player instead' });
+  check('…but is offered it after a few seconds', (await offer.count()) === 1);
+  await offer.click();
+  // The first time, what an embedded player is gets said before switching.
+  await page.getByRole('button', { name: 'Continue' }).click();
+  check('…and gets it on asking', await page.locator('iframe').waitFor({ timeout: 8000 }).then(() => true, () => false) && /vidlink\.pro\/movie\/550/.test((await page.locator('iframe').getAttribute('src')) ?? ''));
+  check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }
 

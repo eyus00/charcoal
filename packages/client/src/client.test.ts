@@ -204,7 +204,7 @@ test('website with no bridge: everything is resolved remotely and arrives progre
   assert.deepEqual(final.providers.map((p) => `${p.id}:${p.state}:${p.where}`).sort(), ['files:error:remote', 'needy:ok:remote', 'plain:ok:remote', 'slow:ok:remote']);
 });
 
-test('with a bridge: providers run on the viewer’s connection, the server is told to skip them, and duplicates collapse to the local copy', async () => {
+test('with a bridge: providers run on the viewer’s connection, the server is told to skip them, and a duplicate keeps the local copy first and the server’s relay as a second way', async () => {
   const pack = [loaded(provider('both')), loaded(provider('homeonly', { requires: { egress: 'user' } })), loaded(provider('serveronly', { runtimes: ['server'] })), loaded(provider('tokened', { requires: { setting: 'token' } }))];
   const same = { url: cdn('shared'), headers: { Referer: 'https://shared.example.com/' } };
   const routes = {
@@ -224,8 +224,11 @@ test('with a bridge: providers run on the viewer’s connection, the server is t
   const by = Object.fromEntries(final.providers.map((p) => [p.id, p]));
   assert.deepEqual([by.both.where, by.homeonly.where, by.tokened.where, by.serveronly.where], ['local', 'local', 'local', 'remote']);
   // "both" (local) and "serveronly" (remote) found the same upstream file: one entry, the local one.
-  assert.deepEqual(final.sources.map((s) => `${s.provider.id}:${s.delivery}:${s.local}`).sort(), ['both:headers:true', 'homeonly:headers:true', 'tokened:headers:true']);
-  assert.ok(final.sources.every((s) => s.playUrl === s.url), 'played from the origin through the bridge');
+  assert.deepEqual(final.sources.map((s) => `${s.provider.id}:${s.delivery}:${s.local}`).sort(), ['both:headers:true', 'both:relay:false', 'homeonly:headers:true', 'tokened:headers:true']);
+  assert.ok(final.sources.filter((s) => s.local).every((s) => s.playUrl === s.url), 'played from the origin through the bridge');
+  const order = final.sources.map((s) => `${s.provider.id}:${s.delivery}`);
+  assert.equal(order.indexOf('both:relay'), order.indexOf('both:headers') + 1, 'the relayed copy comes right after the local one');
+  assert.notEqual(final.sources.find((s) => s.delivery === 'relay')!.playUrl, final.sources.find((s) => s.provider.id === 'both' && s.local)!.playUrl);
   assert.deepEqual((reports as { provider: string; runtime: string; outcome: string }[]).map((r) => `${r.provider}:${r.runtime}:${r.outcome}`).sort(), ['both:extension:ok', 'homeonly:extension:ok', 'tokened:extension:ok']);
 });
 

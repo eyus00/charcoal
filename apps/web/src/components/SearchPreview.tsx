@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Film, Radio, Sparkles, Tv } from 'lucide-react';
 import { fetchAnimeList, listingState, matchesListing, type AnimeCard, type LiveListing } from '@charcoal/content';
 import { FORMAT_LABEL } from '../lib/anilist';
+import { looksLikeAnime } from '../lib/anime';
 import { webFetcher } from '../lib/content';
 import { imageUrl } from '../lib/images';
 import { localStart, useDirectory } from '../lib/sports';
@@ -20,7 +21,7 @@ const EACH = 4;
 export default function SearchPreview({ query, first, onPick, onAll }: { query: string; first: 'screen' | 'anime' | 'sports'; onPick: () => void; onAll: () => void }) {
   const titles = useQuery({
     queryKey: ['preview-titles', query],
-    queryFn: async ({ signal }) => cleanList((await tmdb<Page<MediaItem>>('/search/multi', { query, include_adult: 'false' }, signal)).results).slice(0, EACH),
+    queryFn: async ({ signal }) => cleanList((await tmdb<Page<MediaItem>>('/search/multi', { query, include_adult: 'false' }, signal)).results).slice(0, EACH + 3),
     staleTime: 5 * 60_000,
     retry: false,
   });
@@ -37,14 +38,17 @@ export default function SearchPreview({ query, first, onPick, onAll }: { query: 
     .sort((a, b) => Number(listingState(b, now) === 'live') - Number(listingState(a, now) === 'live') || a.startsAt - b.startsAt)
     .slice(0, EACH);
 
+  // An anime is listed once, under Anime (its entries there open the same title page): TMDB's
+  // copy of it is left out as soon as AniList has answered with something.
+  const screen = anime.data?.length ? titles.data?.filter((m) => !looksLikeAnime(m)) : titles.data;
   const sections = {
-    screen: <Section key="screen" title="Movies and TV" loading={titles.isPending} empty={!titles.data?.length}>{titles.data?.map((m) => <TitleRow key={typeOf(m) + m.id} m={m} onPick={onPick} />)}</Section>,
+    screen: <Section key="screen" title="Movies and TV" loading={titles.isPending} empty={!screen?.length}>{screen?.slice(0, EACH).map((m) => <TitleRow key={typeOf(m) + m.id} m={m} onPick={onPick} />)}</Section>,
     anime: <Section key="anime" title="Anime" loading={anime.isPending} empty={!anime.data?.length}>{anime.data?.map((a) => <AnimeRow key={a.id} a={a} onPick={onPick} />)}</Section>,
     sports: <Section key="sports" title="Sports" loading={directory.isPending} empty={!sports.length}>{sports.map((l) => <SportsRow key={l.id} l={l} now={now} onPick={onPick} />)}</Section>,
   };
   const order = [first, ...(['screen', 'anime', 'sports'] as const).filter((k) => k !== first)];
   const settled = !titles.isPending && !anime.isPending && !directory.isPending;
-  const nothing = settled && !titles.data?.length && !anime.data?.length && !sports.length;
+  const nothing = settled && !screen?.length && !anime.data?.length && !sports.length;
 
   return (
     <div

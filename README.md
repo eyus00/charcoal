@@ -33,7 +33,7 @@ in. Each has its own home, navigation and search; your library, history and the 
 | **Anime** | AniList's catalogue (every season, film, special and web series), with sub / dub. An entry TMDB also has opens as that title; one it lacks has its own page and player | The provider platform, asked by AniList / MAL entry |
 | **Sports** | Live events, what is coming up, channels, and a schedule with official links | A stream directory's own player in a frame; public free-to-air channels in Charcoal's player |
 
-Nothing needs setting up to watch: a title with no direct source after a few seconds starts in an
+Nothing needs setting up to watch: a title for which no direct source is found starts in an
 embedded player, and a sports event is one tap from its player. Sports events and their players
 come from a third-party directory (PPV's public API); it gives player pages, not stream
 addresses, so they are framed and Charcoal cannot see or control what the frame shows.

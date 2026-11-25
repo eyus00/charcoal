@@ -7,7 +7,6 @@ import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
-import { getBridge } from '../lib/extension';
 import { useSources } from '../lib/resolver';
 import { looksLikeAnime, useAnime, type AnimeAudio, type AnimeState } from '../lib/anime';
 import { EMBEDS, embedById, languageName, type JellySource, type Target } from '../lib/servers';
@@ -72,9 +71,6 @@ export default function Watch() {
   return <WatchView key={`${type}-${id}-${season}-${episode}`} type={type} id={id} season={season} episode={episode} restart={sp.get('t') === '0'} />;
 }
 
-/** How long a viewer with nothing set up waits for Jelly before the embedded player starts. */
-const UNAIDED_PATIENCE_MS = 7_000;
-
 function WatchView({ type, id, season, episode, restart }: { type: MediaType; id: number; season?: number; episode?: number; restart: boolean }) {
   const navigate = useNavigate();
   const { data: d } = useQuery(q.details(type, id));
@@ -122,8 +118,14 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   // Nothing playable anywhere: use an embed server (without changing the saved preference). This
   // happens as soon as every provider has answered; there is no blind retry in between.
+  // A search that ends with nothing is run once more by itself first: a provider that was slow
+  // or resting a moment ago often answers the second time, and an embed is a worse way to watch.
+  // (Only when the first one was quick: after a long empty search the viewer has waited enough.)
+  const emptySearches = useRef(0);
+  const opened = useRef(Date.now());
   useEffect(() => {
     if (server === 'jelly' && found.error && !found.searching) {
+      if (emptySearches.current++ < 1 && Date.now() - opened.current < 8000) return void found.refetch();
       console.warn('Jelly:', found.error.message);
       setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
       setServer(EMBEDS[0].id);
@@ -159,27 +161,6 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     actions.updateSettings({ server: s });
   };
 
-  // Nothing set up: no helper in this browser and no server of the viewer's own, so sources can
-  // only come from Charcoal's server. When it hasn't found one in a few seconds, the default
-  // embedded player starts instead of a spinner; Jelly stays one tap away in the server menu.
-  const [unaided, setUnaided] = useState(false);
-  useEffect(() => {
-    let current = true;
-    if (settings.serverUrl) return setUnaided(false);
-    (settings.useExtension ? getBridge() : Promise.resolve(null)).then((bridge) => current && setUnaided(!bridge));
-    return () => {
-      current = false;
-    };
-  }, [settings.serverUrl, settings.useExtension]);
-  const stillLooking = server === 'jelly' && unaided && !streams && found.searching;
-  useEffect(() => {
-    if (!stillLooking) return;
-    const t = window.setTimeout(() => {
-      setFallbackNote(`Jelly hadn’t found a source yet, so ${EMBEDS[0].name} is playing. Choose Jelly in the server menu to keep looking.`);
-      setServer(EMBEDS[0].id);
-    }, UNAIDED_PATIENCE_MS);
-    return () => window.clearTimeout(t);
-  }, [stillLooking]);
 
   const embed = server !== 'jelly' ? (embedById(server) ?? EMBEDS[0]) : null;
 

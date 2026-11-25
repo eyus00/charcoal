@@ -254,6 +254,11 @@ export async function resolveSources(media: Media, deps: ResolverDeps, opts: Res
         continue;
       }
       state.sources.push({ ...s, delivery: d, playUrl: d === 'relay' ? f.stream.relay! : s.url, local: f.local });
+      // The server found the same file and can relay it: kept as a second way to the same stream,
+      // right behind the one resolved here. Some hosts refuse a viewer's own connection (or a
+      // header the bridge could not set) and still serve the server.
+      const relayed = f.local && d !== 'relay' ? found.find((o) => !o.local && o.stream.relay && o.stream.dedupKey === s.dedupKey) : undefined;
+      if (relayed) state.sources.push({ ...s, id: `${s.id}~relay`, runtime: relayed.stream.runtime, delivery: 'relay', playUrl: relayed.stream.relay!, local: false });
     }
     opts.onUpdate?.({ ...state, sources: [...state.sources], providers: [...state.providers], captions: [...state.captions], pending: { ...state.pending } });
   };
