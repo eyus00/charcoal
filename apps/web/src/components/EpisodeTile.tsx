@@ -10,7 +10,7 @@ import { cx } from '../lib/util';
 
 /** Little pill used in the corners of a tile's image. */
 export const Chip = ({ children, light }: { children: ReactNode; light?: boolean }) => (
-  <span className={cx('flex items-center gap-1 rounded-full px-2.5 py-1 text-xs', light ? 'bg-white font-medium text-black' : 'bg-black/60 text-white backdrop-blur-sm')}>{children}</span>
+  <span className={cx('flex items-center gap-1 rounded-full px-2.5 py-1 text-xs', light ? 'bg-white font-medium text-black' : 'bg-black/75 text-white')}>{children}</span>
 );
 
 export const TILE = 'w-[288px] shrink-0 snap-start sm:w-[344px]';
@@ -68,7 +68,7 @@ export default function EpisodeTile({
 }: Props) {
   const line = (which: 'primary' | 'secondary', content: ReactNode) =>
     titleLink?.line === which ? (
-      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:underline">
+      <Link to={titleLink.to} aria-label={titleLink.label} className="relative z-10 decoration-white/80 decoration-1 underline-offset-[3px] transition-colors hover:text-white hover:underline">
         {content}
       </Link>
     ) : (

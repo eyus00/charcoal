@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import RouteError, { clearChunkReloadFlag } from './pages/RouteError';
+import { persistQueries } from './lib/persist';
 import './index.css';
 
 // Route-level code splitting: the player (and hls.js) never loads while browsing.
@@ -30,6 +31,7 @@ const queryClient = new QueryClient({
     },
   },
 });
+persistQueries(queryClient);
 
 /** /movies and /tv are Discover with that type selected (other params kept). */
 function TypeRedirect({ type }: { type: 'movie' | 'tv' }) {

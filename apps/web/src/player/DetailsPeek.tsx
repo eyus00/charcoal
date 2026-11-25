@@ -8,7 +8,6 @@ import { Tip } from '../components/Tip';
 import { btn } from '../components/Button';
 import { PlayTitleButton } from '../components/TitleActions';
 import LibraryButton from '../components/LibraryButton';
-import MiniEpisodes from './MiniEpisodes';
 import { peek, type PeekEpisode } from '../lib/peek';
 import { titleOf, type Details, type MediaType } from '../lib/tmdb';
 import { imageSrcSet, imageUrl } from '../lib/images';
@@ -98,7 +97,6 @@ export default function DetailsPeek({
   anchor,
   play = true,
   onEpisodes,
-  episode,
 }: {
   d: Details;
   type: MediaType;
@@ -107,13 +105,11 @@ export default function DetailsPeek({
   mini?: boolean;
   anchor?: DOMRect;
   play?: boolean;
-  onEpisodes?: () => void;
-  /** From an episode card: the mini peek lists the show's episodes beside it, this one first. */
-  episode?: PeekEpisode;
+  onEpisodes?: (selected?: PeekEpisode) => void;
 }) {
   useDetailsKey(detailsUrl);
   const wide = typeof window !== 'undefined' && window.innerWidth >= 640;
-  if (mini && anchor && wide) return <SidePeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} anchor={anchor} onEpisodes={onEpisodes} episode={type === 'tv' ? episode : undefined} />;
+  if (mini && anchor && wide) return <SidePeek d={d} type={type} onClose={onClose} anchor={anchor} onEpisodes={onEpisodes} />;
   return <MediumPeek d={d} type={type} detailsUrl={detailsUrl} onClose={onClose} play={play} onEpisodes={onEpisodes} />;
 }
 
@@ -285,45 +281,23 @@ function MediumPeek({ d, type, detailsUrl, onClose, play, onEpisodes }: { d: Det
 }
 
 const W = 340;
-const EW = 330;
 const GAP = 12;
 
 /**
- * The mini peek: pinned beside the card it came from; stays while the pointer is on it. From an
- * episode card it carries the show's episode list too (the player's small picker), that episode
- * first. Placed to the card's right if there's room, else its left, else centred; re-measured
- * as its content loads so it never runs off screen.
+ * The mini peek: pinned beside the card it came from; stays while the pointer is on it. Placed to
+ * the card's right if there's room, else its left, else centred; re-measured as its content loads
+ * so it never runs off screen.
  */
-function SidePeek({
-  d,
-  type,
-  detailsUrl,
-  onClose,
-  anchor,
-  onEpisodes,
-  episode,
-}: {
-  d: Details;
-  type: MediaType;
-  detailsUrl: string;
-  onClose: () => void;
-  anchor: DOMRect;
-  onEpisodes?: () => void;
-  episode?: PeekEpisode;
-}) {
+function SidePeek({ d, type, onClose, anchor, onEpisodes }: { d: Details; type: MediaType; onClose: () => void; anchor: DOMRect; onEpisodes?: (selected?: PeekEpisode) => void }) {
   const title = titleOf(d);
-  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const info = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<React.CSSProperties>({ left: -9999, top: 0 });
-  const [infoH, setInfoH] = useState(0);
-  const withEpisodes = !!episode && typeof window !== 'undefined' && window.innerWidth >= W + EW + GAP * 3;
-  const total = W + (withEpisodes ? GAP + EW : 0);
+  const total = W;
 
   useLayoutEffect(() => {
     const place = () => {
       const h = Math.min(ref.current?.offsetHeight ?? 420, window.innerHeight - GAP * 2);
-      setInfoH(info.current?.offsetHeight ?? 0);
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const left = anchor.right + GAP + total <= vw - GAP ? anchor.right + GAP : anchor.left - GAP - total >= GAP ? anchor.left - GAP - total : Math.max(GAP, (vw - total) / 2);
@@ -370,9 +344,6 @@ function SidePeek({
         <div className="relative">
           <Img path={d.backdrop_path} kind="backdrop" sizes="340px" alt="" className="aspect-video w-full" imgClassName="object-[70%_20%]" />
           <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/10 to-transparent" />
-          <div className="absolute top-2.5 right-2.5">
-            <ExpandButton to={detailsUrl} small />
-          </div>
         </div>
         <div className="relative -mt-6 px-4 pb-4">
           <h2 className="text-xl leading-tight font-semibold tracking-tight text-balance">{title}</h2>
@@ -384,19 +355,39 @@ function SidePeek({
           </div>
         </div>
       </div>
-      {withEpisodes && episode && (
-        <div style={{ width: EW, height: Math.max(infoH, 360) }} className="flex shrink-0 flex-col rounded-3xl bg-raised p-2.5 shadow-2xl ring-1 shadow-black/60 ring-white/10">
-          <MiniEpisodes
-            show={d}
-            current={episode}
-            currentLabel="This one"
-            startAt="start"
-            compact
-            onPick={(s, e) => navigate(`/watch/tv/${d.id}?season=${s}&episode=${e}`)}
-            onAll={() => onEpisodes?.()}
-          />
+    </div>,
+    document.body,
+  );
+}
+
+/** The pop-up's shape while its details load (right-click / tap on a card): banner, info card. */
+export function MediumPeekSkeleton({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
+      <div aria-busy="true" aria-label="Loading" className="toast-in relative w-full overflow-hidden rounded-t-3xl bg-bg shadow-2xl sm:max-w-3xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="skeleton aspect-video sm:aspect-[16/8]" />
+        <div className="relative -mt-20 px-4 pb-10 sm:-mt-24 sm:px-6 sm:pb-6">
+          <div className="max-w-xl rounded-3xl bg-surface p-5 ring-1 ring-white/10 md:p-7">
+            <div className="skeleton h-9 w-2/3 rounded-lg" />
+            <div className="skeleton mt-3 h-3.5 w-40 rounded" />
+            <div className="skeleton mt-2 h-3.5 w-52 rounded" />
+            <div className="mt-5 space-y-2">
+              <div className="skeleton h-3.5 w-full rounded" />
+              <div className="skeleton h-3.5 w-11/12 rounded" />
+              <div className="skeleton h-3.5 w-3/4 rounded" />
+            </div>
+            <div className="mt-6 flex gap-2.5">
+              <div className="skeleton h-11 w-32 rounded-full" />
+              <div className="skeleton size-11 rounded-full" />
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>,
     document.body,
   );

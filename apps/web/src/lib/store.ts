@@ -41,6 +41,8 @@ export interface Settings {
   /** 'jelly' or an embed server id */
   server: string;
   autoplayNext: boolean;
+  /** Hovering a card (with a mouse) opens a small peek of the title beside it. */
+  hoverPeek: boolean;
   volume: number;
   muted: boolean;
   playbackRate: number;
@@ -107,6 +109,7 @@ export const COMPLETE_AT = 0.9;
 const defaultSettings: Settings = {
   server: 'jelly',
   autoplayNext: true,
+  hoverPeek: false,
   volume: 1,
   muted: false,
   playbackRate: 1,

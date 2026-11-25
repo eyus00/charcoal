@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { btn } from './Button';
 import { cx } from '../lib/util';
+import { useSwipeToClose } from '../lib/swipe';
 
 /**
  * Native modal dialog: the browser moves focus in, keeps Tab inside, makes the page behind it
@@ -16,7 +17,11 @@ export default function Modal({ label, onClose, children }: { label: string; onC
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      // Focus the dialog itself, not its first button (which would pop that button's tooltip).
+      dialog.focus({ preventScroll: true });
+    }
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -30,11 +35,12 @@ export default function Modal({ label, onClose, children }: { label: string; onC
     <dialog
       ref={ref}
       aria-label={label}
+      tabIndex={-1}
       onCancel={(e) => {
         e.preventDefault();
         close.current();
       }}
-      className="m-0 h-full max-h-none w-full max-w-none overflow-visible border-0 bg-transparent p-0 text-white backdrop:bg-transparent"
+      className="m-0 h-full max-h-none w-full max-w-none overflow-visible border-0 bg-transparent p-0 text-white outline-none backdrop:bg-transparent"
     >
       {children}
     </dialog>
@@ -46,16 +52,21 @@ export default function Modal({ label, onClose, children }: { label: string; onC
  * and close button on top, a scrolling body, and an optional footer that stays put.
  */
 export function Dialog({ title, subtitle, onClose, footer, wide, children }: { title: ReactNode; subtitle?: ReactNode; onClose: () => void; footer?: ReactNode; wide?: boolean; children: ReactNode }) {
+  const sheet = useRef<HTMLDivElement>(null);
+  useSwipeToClose(sheet, onClose);
   return (
     <Modal label={typeof title === 'string' ? title : 'Dialog'} onClose={onClose}>
       <div className="fixed inset-0 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
         <div
+          ref={sheet}
           className={cx(
-            'toast-in flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl ring-1 ring-white/[0.06] sm:max-h-[85dvh] sm:rounded-3xl',
+            'toast-in relative flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface shadow-2xl ring-1 ring-white/[0.06] sm:max-h-[85dvh] sm:rounded-3xl',
             wide ? 'sm:max-w-2xl' : 'sm:max-w-xl',
           )}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Phones: a handle that says it swipes down. */}
+          <span aria-hidden className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 sm:hidden" />
           <header className="flex shrink-0 items-center gap-3 px-5 pt-5 pb-3">
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-semibold tracking-tight">{title}</h2>

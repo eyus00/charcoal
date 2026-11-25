@@ -11,7 +11,7 @@ export const GO: Record<string, { to: string; label: string }> = {
   m: { to: '/discover?type=movie', label: 'Movies' },
   t: { to: '/discover?type=tv', label: 'TV shows' },
   d: { to: '/discover', label: 'Discover' },
-  c: { to: '/calendar', label: 'Release Calendar' },
+  c: { to: '/calendar', label: 'Calendar' },
   a: { to: '/anime', label: 'Anime' },
   i: { to: '/indian', label: 'Indian cinema' },
   o: { to: '/sports', label: 'Sports' },

@@ -8,9 +8,7 @@ import { PlayTitleButton } from '../components/TitleActions';
 import LibraryButton from '../components/LibraryButton';
 import QualityTag from '../components/QualityTag';
 import { Facts } from '../player/DetailsPeek';
-import { Frame, dateLabel, seLabel } from '../components/AiringTile';
-import { Chip } from '../components/EpisodeTile';
-import { useInLibrary } from '../lib/library';
+import { seLabel } from '../components/AiringTile';
 import { ErrorBox } from '../components/Grid';
 import Kbd from '../components/Kbd';
 import { DetailsSkeleton } from '../components/Skeletons';
@@ -18,11 +16,10 @@ import Modal from '../components/Modal';
 import { btn } from '../components/Button';
 import MediaCard, { CARD_IMAGE, CARD_LIFT, CornerArc } from '../components/MediaCard';
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
-import Img from '../components/Img';
 import { imageSrcSet, imageUrl } from '../lib/images';
 import { useAnime } from '../lib/anime';
 import { cleanList, HttpError, q, titleOf, trailersOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
-import { cx, formatRuntime, useKeys, useTitle } from '../lib/util';
+import { cx, useKeys, useTitle } from '../lib/util';
 import { BLEED } from './Home';
 import NotFound from './NotFound';
 
@@ -134,7 +131,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
       </section>
 
       {trailers.length > 0 && <Trailers videos={trailers} onPlay={setTrailer} />}
-      <Community type={type} id={d.id} />
+      <Community type={type} id={d.id} name={title} />
       {recs.length > 0 && <MoreLikeThis items={recs} type={type} />}
       {trailer && <TrailerModal video={trailer} onClose={() => setTrailer(null)} />}
 
@@ -245,37 +242,32 @@ function MoreLikeThis({ items, type }: { items: MediaItem[]; type: MediaType }) 
  * frame + label when it's special), with a "Next episode" caption. Opens the episode list there.
  */
 function NextEpisodeCard({ d, onOpen, className }: { d: D; onOpen: (at: { season: number; episode: number }) => void; className?: string }) {
-  const inLibrary = useInLibrary('tv', d.id);
   const next = d.next_episode_to_air;
   if (!next?.air_date) return null;
-  const at = new Date(next.air_date + 'T00:00:00').getTime();
-  if (at < new Date(new Date().toDateString()).getTime()) return null; // shown from today onwards
+  const date = new Date(next.air_date + 'T00:00:00');
+  const days = Math.round((date.getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
+  if (days < 0) return null; // shown from today onwards
+  const when =
+    days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days < 7 ? date.toLocaleDateString(undefined, { weekday: 'long' }) : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const name = next.name && !/^(Episode \d+|TBA)$/i.test(next.name) ? next.name : '';
-  const label = next.episode_type === 'finale' || next.episode_type === 'mid_season' ? 'Finale' : next.episode_number === 1 ? (next.season_number <= 1 ? 'Premiere' : 'New season') : undefined;
   return (
+    // Small: a date badge and the episode. Opens the episode list with it highlighted.
     <button
       type="button"
       onClick={() => onOpen({ season: next.season_number, episode: next.episode_number })}
-      className={cx('block w-72 rounded-3xl bg-raised p-2.5 pt-3.5 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 transition-colors hover:bg-line sm:w-80', className)}
+      className={cx('flex w-64 items-center gap-3.5 rounded-2xl bg-raised p-3.5 text-left shadow-2xl ring-1 shadow-black/50 ring-white/10 transition-colors hover:bg-line', className)}
     >
-      <Frame label={label} bg="bg-raised">
-        <div className="relative overflow-hidden rounded-2xl">
-          <Img path={next.still_path || d.backdrop_path} kind={next.still_path ? 'still' : 'backdrop'} sizes="320px" alt="" className="aspect-video" imgClassName="opacity-70" />
-          {next.runtime ? (
-            <span className="absolute right-2 bottom-2">
-              <Chip>{formatRuntime(next.runtime)}</Chip>
-            </span>
-          ) : null}
-        </div>
-      </Frame>
-      <span className="block px-[6.5px] pt-2.5 pb-1">
-        <span className="block text-micro font-semibold tracking-wider text-muted uppercase">Next episode</span>
-        <span className="mt-0.5 block truncate text-body-sm font-medium">
+      <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-white py-1.5 text-black">
+        <span className="text-micro font-semibold tracking-wider uppercase">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
+        <span className="text-lg leading-6 font-semibold tabular-nums">{date.getDate()}</span>
+      </span>
+      <span className="min-w-0">
+        <span className="block text-micro font-medium tracking-wider text-muted uppercase">New episode</span>
+        <span className="block truncate text-body-sm font-medium">{when}</span>
+        <span className="block truncate text-xs text-white/60">
           {seLabel(next.season_number, next.episode_number)}
           {name ? ` ${name}` : ''}
         </span>
-        <span className="block truncate text-caption text-muted">{dateLabel(at)}</span>
-        <span className="block truncate text-caption text-faint">{inLibrary ? 'In your library: you’ll be notified' : 'Add it to your library to be notified'}</span>
       </span>
     </button>
   );

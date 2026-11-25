@@ -1,6 +1,6 @@
 /**
  * Your library (♥): the one list of titles you care about. It is the stored "watchlist", shown as:
- * - Unwatched / Watching / Watched, set automatically as you watch (never by hand);
+ * - To watch / Watching / Watched, set automatically as you watch (never by hand);
  * - everything you watch is added on its own, so the library is your history too;
  * - only titles in it notify you: a show's new episodes, a film's streaming day (see below).
  * For a single release you don't want in your library, the bell on its card sets a one-off reminder.
@@ -12,7 +12,7 @@ import { actions, getState, historyByTitle, subscribeStore, type WatchStatus, ty
 import { q, tmdb, type Details, type MediaType } from './tmdb';
 import { ensureReminders, removeReminders, type Reminder } from './reminders';
 
-export const LIBRARY_LABEL: Record<WatchStatus, string> = { planned: 'Unwatched', watching: 'Watching', completed: 'Watched' };
+export const LIBRARY_LABEL: Record<WatchStatus, string> = { planned: 'To watch', watching: 'Watching', completed: 'Watched' };
 
 export const inLibrary = (type: MediaType, id: number) => getState().watchlist.some((w) => w.mediaType === type && w.id === id);
 export const useInLibrary = (type: MediaType, id: number) => useSyncExternalStore(subscribeStore, () => inLibrary(type, id));

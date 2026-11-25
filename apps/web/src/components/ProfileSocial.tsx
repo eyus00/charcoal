@@ -1,3 +1,5 @@
+import AvatarImg from './AvatarImg';
+import Score from './Score';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +34,7 @@ function Avatar({
   const src = user.avatar ?? user.images?.avatar?.full;
   const name = user.name || user.username;
   return src ? (
-    <img src={src} alt="" className={cx('shrink-0 rounded-full bg-white/10 object-cover', className)} />
+    <AvatarImg src={src} name={name} className={className} />
   ) : (
     <span className={cx('grid shrink-0 place-items-center rounded-full bg-white/10 font-medium uppercase', className)}>{name[0]}</span>
   );
@@ -286,7 +288,7 @@ function YourRatings() {
     <RowPanel title="Your ratings" count={items.length}>
       {(ref) =>
         isPending ? (
-          <div className="-mx-1 flex gap-4 overflow-hidden px-1">
+          <div className="row-fit -mx-1 flex gap-4 overflow-hidden px-1 [--row-pad:4px]">
             {Array.from({ length: 8 }, (_, i) => (
               <CardSkeleton key={i} className={ROW_ITEM} />
             ))}
@@ -302,15 +304,10 @@ function YourRatings() {
                 <Link key={`${x.type}-${id}`} to={`/${x.type}/${id}`} {...peekProps(x.type, id)} className={cx('group', ROW_ITEM)}>
                   <div className="relative overflow-hidden rounded-2xl transition duration-200 group-hover:brightness-110">
                     <Img path={null} src={tImg(x.m.images?.poster)} kind="poster" sizes={ROW_SIZES} alt="" className="aspect-[2/3]" />
-                    <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
-                      <Star className="size-3 fill-current text-star" strokeWidth={0} /> {r.rating}
-                    </span>
                   </div>
-                  <div className="pt-2">
-                    <p className="truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white">{x.m.title}</p>
-                    <p className="text-caption text-muted">
-                      {x.m.year} · rated {timeAgo(Date.parse(r.rated_at))}
-                    </p>
+                  <div className="flex items-center gap-2 pt-2">
+                    <p className="min-w-0 flex-1 truncate text-body-sm font-medium text-white/90 transition-colors group-hover:text-white">{x.m.title}</p>
+                    <Score n={r.rating} />
                   </div>
                 </Link>
               );

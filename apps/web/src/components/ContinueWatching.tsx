@@ -62,7 +62,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
       // How far you got (white, bottom-left) and how long it is (bottom-right).
       bottomLeft={watched ? <Chip light>{formatRuntime(watched)}</Chip> : null}
       bottomRight={runtime ? <Chip>{formatRuntime(runtime)}</Chip> : null}
-      // Shows: the episode is the headline, the show under it. Films: the title, then "Movie".
+      // Shows: the episode is the headline, the show under it. Films: the title, then a dash.
       primary={
         tv ? (
           <>
@@ -73,7 +73,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           h.title
         )
       }
-      secondary={tv ? h.title : 'Movie'}
+      secondary={tv ? h.title : '–'}
     >
       <button
         onClick={() => {
@@ -83,7 +83,7 @@ function ContinueCard({ h, ep }: { h: HistoryItem; ep?: Episode }) {
           toast(`Removed “${h.title}” from your history`, { label: 'Undo', run: () => actions.restore({ history: before }) });
         }}
         aria-label={`Remove ${h.title} from watch history`}
-        className="group/tip absolute top-3.5 right-3.5 grid size-7 place-items-center rounded-full bg-black/60 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        className="group/tip absolute top-3.5 right-3.5 grid size-7 place-items-center rounded-full bg-black/75 opacity-0 transition group-hover:opacity-100 hover:bg-black/80 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
         <X className="size-3.5" />
         <Tip label="Remove from history" side="bottom" align="end" />

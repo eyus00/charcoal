@@ -1,3 +1,4 @@
+import AvatarImg from './AvatarImg';
 import { Link } from 'react-router';
 import Img from './Img';
 import MediaCard, { CARD_IMAGE, CARD_INFO, CARD_LIFT, CARD_TITLE, CornerArc } from './MediaCard';
@@ -64,12 +65,8 @@ export function FriendCard({
       <div className={CARD_IMAGE}>
         <Img path={null} src={image} kind="still" sizes="288px" alt="" className="aspect-video" />
         {!self && (
-          <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-black/60 py-1 pr-2.5 pl-1 text-xs backdrop-blur-sm">
-            {avatar ? (
-              <img src={avatar} alt="" className="size-5 rounded-full object-cover" />
-            ) : (
-              <span className="grid size-5 place-items-center rounded-full bg-white/20 text-micro uppercase">{name[0]}</span>
-            )}
+          <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-black/75 py-1 pr-2.5 pl-1 text-xs">
+            {avatar ? <AvatarImg src={avatar} name="" className="size-5" /> : <span className="grid size-5 place-items-center rounded-full bg-white/20 text-micro uppercase">{name[0]}</span>}
             <span className="max-w-28 truncate">{name}</span>
           </span>
         )}

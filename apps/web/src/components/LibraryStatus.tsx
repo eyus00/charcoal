@@ -17,7 +17,7 @@ export function StatusDot({ status, className }: { status: WatchStatus; classNam
 /** Small status tag (dot + label) on library cards: Unwatched / Watching / Watched. */
 export function StatusTag({ status }: { status: WatchStatus }) {
   return (
-    <span className="flex items-center gap-1.5 rounded-full bg-black/60 py-1 pr-2.5 pl-2 text-xs backdrop-blur-sm">
+    <span className="flex items-center gap-1.5 rounded-full bg-black/75 py-1 pr-2.5 pl-2 text-xs">
       <StatusDot status={status} />
       {LIBRARY_LABEL[status]}
     </span>

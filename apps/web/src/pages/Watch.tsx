@@ -19,7 +19,6 @@ import { btn } from '../components/Button';
 import EmbedPlayer from '../player/EmbedPlayer';
 import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
-import DetailsPeek from '../player/DetailsPeek';
 import { Tip } from '../components/Tip';
 import Segmented from '../components/Segmented';
 
@@ -62,7 +61,12 @@ export default function Watch() {
     return <Message title="Can’t play this" body="This title or episode doesn’t exist." back={valid ? `/${type}/${id}` : '/'} />;
   }
   if (details.error) return <Message title="Couldn’t load this title" body="Check your connection and try again." back="/" retry={() => details.refetch()} />;
-  if (!d || fix) return <div className="fixed inset-0 grid place-items-center bg-black"><Spinner /></div>;
+  if (!d || fix)
+    return (
+      <div className="fixed inset-0 grid place-items-center bg-black">
+        <Spinner />
+      </div>
+    );
 
   return <WatchView key={`${type}-${id}-${season}-${episode}`} type={type} id={id} season={season} episode={episode} restart={sp.get('t') === '0'} />;
 }
@@ -87,10 +91,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   // Opened directly (a link or a refresh), there is nothing to go back to, so use the title page.
   const location = useLocation();
   const leave = useCallback(() => (location.key !== 'default' ? navigate(-1) : navigate(detailsUrl)), [location.key, navigate, detailsUrl]);
-  const go = useCallback(
-    (s: number, e: number) => navigate(`/watch/tv/${id}?season=${s}&episode=${e}`, { replace: true }),
-    [id, navigate],
-  );
+  const go = useCallback((s: number, e: number) => navigate(`/watch/tv/${id}?season=${s}&episode=${e}`, { replace: true }), [id, navigate]);
 
   // Resume point, read once per episode (not reactive: progress updates must not restart playback).
   const resumeAt = useMemo(() => {
@@ -144,7 +145,6 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   // Switching from Jelly to an embed: first say what embeds are (once, unless turned off).
   const [embedAsk, setEmbedAsk] = useState<string | null>(null);
-  const [peek, setPeek] = useState(false);
   const pickServer = (s: string, confirmed = false) => {
     if (s !== 'jelly' && server === 'jelly' && !confirmed && !getState().settings.embedNoticeOff) return setEmbedAsk(s);
     setEmbedAsk(null);
@@ -208,21 +208,13 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
-      {peek && d && <DetailsPeek d={d} type={type} detailsUrl={detailsUrl} onClose={() => setPeek(false)} play={false} />}
       {embedAsk && <EmbedNotice name={embedById(embedAsk)?.name ?? 'this server'} onCancel={() => setEmbedAsk(null)} onContinue={() => pickServer(embedAsk, true)} />}
       {embed ? (
         <>
           <div className="relative z-10 shrink-0 bg-bg">{header}</div>
           {fallbackNote && <Banner text={fallbackNote} onClose={() => setFallbackNote(null)} />}
           <div className="relative min-h-0 flex-1">
-            <EmbedPlayer
-              server={embed}
-              target={target}
-              resumeAt={resumeAt}
-              sandbox={settings.blockPopups}
-              onProgress={record}
-              onStarted={() => record(0, 0)}
-            />
+            <EmbedPlayer server={embed} target={target} resumeAt={resumeAt} sandbox={settings.blockPopups} onProgress={record} onStarted={() => record(0, 0)} />
           </div>
         </>
       ) : streams ? (
@@ -235,7 +227,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
           detailsUrl={detailsUrl}
           onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
-          onDetails={d ? () => setPeek(true) : undefined}
+          onDetails={d ? () => navigate(detailsUrl) : undefined}
           meta={meta}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
@@ -269,7 +261,18 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         />
       ) : (
         <>
-          <div className="relative z-10 shrink-0">{makeHeader(<TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onDetails={d ? () => setPeek(true) : undefined} onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined} />)}</div>
+          <div className="relative z-10 shrink-0">
+            {makeHeader(
+              <TitleInfo
+                title={title}
+                subtitle={subtitle}
+                meta={meta}
+                detailsUrl={detailsUrl}
+                onDetails={d ? () => navigate(detailsUrl) : undefined}
+                onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
+              />,
+            )}
+          </div>
           <JellyLoading backdrop={d?.backdrop_path} onSkip={() => pickServer(EMBEDS[0].id)} />
         </>
       )}
@@ -295,7 +298,6 @@ function nextLabel(n: { season: number; episode: number }, eps?: { season_number
 }
 
 // ---------- header ----------
-
 
 /** Text links brighten on hover (the app-wide convention for links that are text). */
 const TEXT_LINK = 'transition-colors hover:text-white';
@@ -386,7 +388,27 @@ function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; 
 }
 
 /** Icon button with a hover label (and its key) shown below it. */
-function HeaderButton({ label, keys, onClick, to, disabled, children, tipSide, solid, quiet }: { label: string; keys?: string; onClick?: () => void; to?: string; disabled?: boolean; children: React.ReactNode; tipSide?: 'left' | 'right'; solid?: boolean; quiet?: boolean }) {
+function HeaderButton({
+  label,
+  keys,
+  onClick,
+  to,
+  disabled,
+  children,
+  tipSide,
+  solid,
+  quiet,
+}: {
+  label: string;
+  keys?: string;
+  onClick?: () => void;
+  to?: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+  tipSide?: 'left' | 'right';
+  solid?: boolean;
+  quiet?: boolean;
+}) {
   // Buttons near the left edge open their label to the right, so it stays on screen.
   const align = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'start' : 'end';
   // `solid`: the app's round close button (filled); otherwise a plain round icon button.
@@ -429,25 +451,24 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
     setOpen(false);
   };
   const jellyOn = current === 'jelly';
-  const jellyNote =
-    jellyState === 'failed' ? 'Nothing found for this title' : jellyState === 'loading' ? 'Finding sources…' : 'Ad-free · best quality';
+  const jellyNote = jellyState === 'failed' ? 'Nothing found for this title' : jellyState === 'loading' ? 'Finding sources…' : 'Ad-free · best quality';
   return (
     <div ref={ref} className="relative shrink-0">
       <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-label={`Server: ${name} (S)`}
-          className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'group/tip relative max-sm:px-3')}
-        >
-          <Tip label="Choose a server" side="bottom" align="end" hidden={open} />
-          {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
-          {/* Phones show the name only for Jelly (embeds: just the arrow, to save room). */}
-          <span className={cx('max-w-[7rem] truncate font-medium', current === 'jelly' ? 'inline' : 'hidden sm:inline')}>{name}</span>
-          <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
-          <Kbd light={open}>S</Kbd>
-        </button>
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Server: ${name} (S)`}
+        className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'group/tip relative max-sm:px-3')}
+      >
+        <Tip label="Choose a server" side="bottom" align="end" hidden={open} />
+        {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
+        {/* Phones: just the arrow (and Jelly's status dot), so the title gets the room. */}
+        <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
+        <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
+        <Kbd light={open}>S</Kbd>
+      </button>
       {open && (
         <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
           {/* Jelly: our own player, the one to use. */}
@@ -670,8 +691,7 @@ function EmbedNotice({ name, onCancel, onContinue }: { name: string; onCancel: (
           <ShieldAlert className="size-6 text-warning" />
           <h2 className="mt-3 text-lg font-semibold">Switch to {name}?</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Embedded players are run by other sites, not Charcoal. We can’t control their ads, pop-ups or redirects, and some don’t save
-            your progress. Jelly is ad-free.
+            Embedded players are run by other sites, not Charcoal. We can’t control their ads, pop-ups or redirects, and some don’t save your progress. Jelly is ad-free.
           </p>
           <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-white/80">
             <input type="checkbox" checked={dontAsk} onChange={(e) => setDontAsk(e.target.checked)} className="size-4 accent-white" />
@@ -706,9 +726,7 @@ function JellyLoading({ backdrop, onSkip }: { backdrop?: string | null; onSkip: 
         <Spinner />
         <div>
           <p className="font-medium">Finding sources…</p>
-          <p className="mt-1 text-sm text-white/60 tabular-nums">
-            Jelly is checking providers · {secs}s
-          </p>
+          <p className="mt-1 text-sm text-white/60 tabular-nums">Jelly is checking providers · {secs}s</p>
         </div>
         {secs >= 8 && (
           <button onClick={onSkip} className={btn()}>

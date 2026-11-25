@@ -80,8 +80,9 @@
 
 /* Horizontal scrollers clip vertically too; give rings/shadows room without shifting layout. */
 @utility scroll-row {
-  padding-block: 8px;
-  margin-block: -8px;
+  /* Room above and below for frame labels and outlines (Calendar cards). */
+  padding-block: 16px;
+  margin-block: -16px;
 }
 
 /* Loading placeholder: the surface colour with a soft highlight sweeping across. */
@@ -168,4 +169,88 @@ video::cue {
 }
 .pop {
   animation: pop 0.35s ease-out backwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@utility fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/*
+ * Card rows (Row.tsx): the row is a size container; each card takes the visible width divided by
+ * --row-k (a whole number of cards + 0.4), so the next card always peeks out by about 40%.
+ */
+.row-fit {
+  container-type: inline-size;
+}
+.row-item {
+  /* Phones: one card and most of the next, big enough to read. */
+  --row-k: 1.75;
+  width: calc((100cqi - var(--row-pad, 0px)) / var(--row-k) - 16px);
+}
+@container (min-width: 480px) {
+  .row-item {
+    --row-k: 2.4;
+  }
+}
+@container (min-width: 640px) {
+  .row-item {
+    --row-k: 3.4;
+  }
+}
+@container (min-width: 968px) {
+  .row-item {
+    --row-k: 4.4;
+  }
+}
+@container (min-width: 1200px) {
+  .row-item {
+    --row-k: 5.4;
+  }
+}
+@container (min-width: 1432px) {
+  .row-item {
+    --row-k: 6.4;
+  }
+}
+@container (min-width: 1664px) {
+  .row-item {
+    --row-k: 7.4;
+  }
+}
+@container (min-width: 1896px) {
+  .row-item {
+    --row-k: 8.4;
+  }
+}
+@container (min-width: 2128px) {
+  .row-item {
+    --row-k: 9.4;
+  }
+}
+
+/* Wider cards (comments): the same idea as .row-item, about 340–420px each. */
+.row-item-wide {
+  --row-k: 1.2;
+  width: calc((100cqi - var(--row-pad, 0px)) / var(--row-k) - 16px);
+}
+@container (min-width: 712px) {
+  .row-item-wide {
+    --row-k: 2.4;
+  }
+}
+@container (min-width: 1068px) {
+  .row-item-wide {
+    --row-k: 3.4;
+  }
+}
+@container (min-width: 1424px) {
+  .row-item-wide {
+    --row-k: 4.4;
+  }
 }

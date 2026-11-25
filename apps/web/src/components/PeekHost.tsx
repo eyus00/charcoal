@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import DetailsPeek from '../player/DetailsPeek';
+import DetailsPeek, { MediumPeekSkeleton } from '../player/DetailsPeek';
 import EpisodeSelector from './EpisodeSelector';
-import { peek, usePeek } from '../lib/peek';
+import { peek, usePeek, type PeekEpisode } from '../lib/peek';
 import { q, type Details } from '../lib/tmdb';
 
 /**
@@ -13,7 +13,7 @@ import { q, type Details } from '../lib/tmdb';
 export default function PeekHost() {
   const target = usePeek();
   const { pathname } = useLocation();
-  const [episodesOf, setEpisodesOf] = useState<Details | null>(null);
+  const [episodesOf, setEpisodesOf] = useState<{ show: Details; selected?: PeekEpisode } | null>(null);
   useEffect(() => {
     peek.close();
     setEpisodesOf(null);
@@ -21,6 +21,7 @@ export default function PeekHost() {
   const { data } = useQuery({ ...q.details(target?.type ?? 'movie', target?.id ?? 0), enabled: !!target });
   return (
     <>
+      {target?.mode === 'medium' && !(data && data.id === target.id) && <MediumPeekSkeleton onClose={peek.close} />}
       {target && data && data.id === target.id && (
         <DetailsPeek
           key={`${target.type}-${target.id}-${target.mode}`}
@@ -30,14 +31,13 @@ export default function PeekHost() {
           onClose={peek.close}
           mini={target.mode === 'mini'}
           anchor={target.anchor}
-          episode={target.episode}
-          onEpisodes={() => {
+          onEpisodes={(selected) => {
             peek.close();
-            setEpisodesOf(data);
+            setEpisodesOf({ show: data, selected: selected ? { season: selected.season, episode: selected.episode } : undefined });
           }}
         />
       )}
-      {episodesOf && <EpisodeSelector show={episodesOf} onClose={() => setEpisodesOf(null)} />}
+      {episodesOf && <EpisodeSelector show={episodesOf.show} selected={episodesOf.selected} onClose={() => setEpisodesOf(null)} />}
     </>
   );
 }

@@ -34,6 +34,8 @@ export interface AiringEpisode {
   runtime?: number;
   overview?: string;
   image?: string;
+  /** This episode's own tag (only the last of a batch is the finale). */
+  label?: Label;
 }
 
 export interface Airing {
@@ -142,6 +144,7 @@ function pick(raw: Raw, taste: Taste, perDay: number, library: Set<string>): Air
       runtime: r.episode.runtime ?? undefined,
       overview: r.episode.overview ?? undefined,
       image: tImg(r.episode.images?.screenshot, true) ?? tImg(show.images?.fanart, true),
+      label: special ? 'Special' : epLabel(r.episode.episode_type),
     }));
     const runtime = episodes.reduce((n, e) => n + (e.runtime ?? 0), 0) || undefined;
     const se = special
