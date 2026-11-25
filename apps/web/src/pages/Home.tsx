@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Film, Pause, Play, Star, Tv } from 'lucide-react';
+import { Clapperboard, Film, Pause, Play, Sparkles, Star, Trophy, Tv } from 'lucide-react';
 import LibraryButton from '../components/LibraryButton';
 import { peekProps } from '../lib/peek';
 import ContinueWatching from '../components/ContinueWatching';
@@ -32,6 +32,7 @@ export default function Home() {
       <ForYouRow />
       <Top10 />
       <Browse />
+      <Explore />
       <AiringThisWeek />
       <InTheaters />
       <TopRated />
@@ -314,6 +315,35 @@ function HeroSlide({ item, active }: { item: MediaItem; active: boolean }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ---------- the catalogues with a page of their own ----------
+
+const EXPLORE = [
+  { to: '/anime', icon: Sparkles, title: 'Anime', body: 'Series and films from Japan, sub or dub' },
+  { to: '/indian', icon: Clapperboard, title: 'Indian cinema', body: 'Hindi, Tamil, Telugu, Malayalam and more' },
+  { to: '/sports', icon: Trophy, title: 'Sports', body: 'Fixtures, free channels and official links' },
+];
+
+function Explore() {
+  return (
+    <section>
+      <h2 className="mb-4 text-lg font-semibold tracking-tight md:text-xl">More to explore</h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {EXPLORE.map(({ to, icon: Icon, title, body }) => (
+          <Link key={to} to={to} className="group flex items-center gap-3.5 rounded-2xl bg-surface p-4 transition-colors hover:bg-raised">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-white group-hover:text-black">
+              <Icon className="size-5" strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-body-sm font-medium">{title}</span>
+              <span className="block truncate text-caption text-muted">{body}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 

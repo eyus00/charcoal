@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, CalendarDays, Heart, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
+import { ArrowUp, CalendarDays, Clapperboard, Heart, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Sparkles, Trophy, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
 import { actions, useStore } from '../lib/store';
@@ -99,6 +99,9 @@ function useSection() {
   if (pathname === '/') return 'home';
   if (pathname === '/discover') return params.get('type') === 'movie' ? 'movies' : params.get('type') === 'tv' ? 'tv' : 'discover';
   if (pathname === '/calendar') return 'calendar';
+  if (pathname === '/anime') return 'anime';
+  if (pathname === '/indian') return 'indian';
+  if (pathname === '/sports') return 'sports';
   if (pathname === '/profile') return hash && hash !== '#profile' ? `profile${hash}` : 'profile';
   return '';
 }
@@ -150,6 +153,27 @@ const DISCOVER: RailGroup = {
       icon: CalendarDays,
       id: 'calendar',
       keys: 'G C',
+    },
+    {
+      to: '/anime',
+      label: 'Anime',
+      icon: Sparkles,
+      id: 'anime',
+      keys: 'G A',
+    },
+    {
+      to: '/indian',
+      label: 'Indian cinema',
+      icon: Clapperboard,
+      id: 'indian',
+      keys: 'G I',
+    },
+    {
+      to: '/sports',
+      label: 'Sports',
+      icon: Trophy,
+      id: 'sports',
+      keys: 'G O',
     },
   ],
 };

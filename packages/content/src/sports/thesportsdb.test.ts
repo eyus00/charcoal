@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { EVENTS_DAY_1901_01_01_SOCCER, EVENTS_DAY_2026_11_22_SOCCER, EVENTS_NEXT_LEAGUE_4328 } from '../fixtures/thesportsdb.js';
 import { mockFetcher } from '../testing.js';
 import { effectiveStatus } from './model.js';
-import { createTheSportsDb, mapEventStatus } from './thesportsdb.js';
+import { createTheSportsDb, mapEventStatus, THESPORTSDB_TEST_KEY } from './thesportsdb.js';
 
 const BASE = 'https://www.thesportsdb.com/api/v1/json/123';
 const DAY_URL = `${BASE}/eventsday.php?d=2026-11-22&s=Soccer`;
@@ -247,9 +247,27 @@ test('builds URLs from the key, the base and the arguments', async () => {
   assert.deepEqual(fetcher.calls.map((call) => call.url), urls);
 });
 
+test('uses the public test key "123" unless given another; an empty key means the default', async () => {
+  assert.equal(THESPORTSDB_TEST_KEY, '123');
+  const fetcher = mockFetcher({ [NEXT_URL]: { body: { events: null } } });
+  await createTheSportsDb(fetcher, { now }).nextLeagueEvents('4328');
+  await createTheSportsDb(fetcher, { apiKey: '', now }).nextLeagueEvents('4328');
+  await createTheSportsDb(fetcher, { apiKey: '  ', now }).nextLeagueEvents('4328');
+  assert.deepEqual(fetcher.calls.map((call) => call.url), [NEXT_URL, NEXT_URL, NEXT_URL]);
+  assert.ok(NEXT_URL.includes('/api/v1/json/123/'));
+});
+
+test('a refused key (the retired key "3" answers 403) says so, without the key', async () => {
+  // The real answer to https://www.thesportsdb.com/api/v1/json/3/… on 2026-11-24.
+  const refusal = { status: 403, body: `The old '3' Free Sports API key is permanently disabled, Please use the new test key "123" or sign up to premium here https://www.thesportsdb.com/pricing` };
+  const url = 'https://www.thesportsdb.com/api/v1/json/s3cr3t-key/eventsnextleague.php?id=4328';
+  const api = createTheSportsDb(mockFetcher({ [url]: refusal }), { apiKey: 's3cr3t-key', now });
+  await assert.rejects(api.nextLeagueEvents('4328'), (error: Error) => /refused the API key \(HTTP 403\)/.test(error.message) && !error.message.includes('s3cr3t'));
+});
+
 test('never puts the API key in an error message', async () => {
   const url = 'https://www.thesportsdb.com/api/v1/json/s3cr3t-key/eventsday.php?d=2026-11-22';
-  for (const answer of [{ status: 429 }, { status: 500 }, { status: 200, body: 'not json' }]) {
+  for (const answer of [{ status: 429 }, { status: 401 }, { status: 403 }, { status: 500 }, { status: 200, body: 'not json' }]) {
     const api = createTheSportsDb(mockFetcher({ [url]: answer }), { apiKey: 's3cr3t-key', now });
     await assert.rejects(api.eventsOnDay('2026-11-22'), (error: Error) => !error.message.includes('s3cr3t'));
   }

@@ -19,6 +19,7 @@ import { importTraktHistory } from '../lib/traktData';
 import { btn } from '../components/Button';
 import { cx, scrollBehavior, useTitle } from '../lib/util';
 import { Tip } from '../components/Tip';
+import Segmented from '../components/Segmented';
 
 /** Fixed container card for each profile section (matches the settings cards). */
 /** Fixed-width columns: cards stay the same size as everywhere else instead of stretching. */
@@ -28,7 +29,7 @@ const CARD_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,190px)]
 const plural = (n: number, one: string, other: string) => `${n} ${new Intl.PluralRules('en').select(n) === 'one' ? one : other}`;
 
 /** Common audio languages for the preference (the browser's own is added if missing). */
-const AUDIO_LANGS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'hi', 'ta', 'te', 'ja', 'ko', 'zh', 'ar', 'ru', 'tr', 'nl', 'pl', 'sv'];
+const AUDIO_LANGS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'ur', 'ja', 'ko', 'zh', 'ar', 'ru', 'tr', 'nl', 'pl', 'sv'];
 
 const PANEL = 'rounded-3xl bg-surface/60 p-4 ring-1 ring-white/[0.06] md:p-6';
 
@@ -367,6 +368,18 @@ function SettingsSection() {
               ))}
             </select>
           </Row>
+          <Row label="Anime audio" hint="Sub: the original Japanese audio. Dub: dubbed into your audio language when a source has it">
+            <Segmented
+              value={settings.animeAudio}
+              options={[
+                { key: 'sub', label: 'Sub' },
+                { key: 'dub', label: 'Dub' },
+              ]}
+              onChange={(v) => actions.updateSettings({ animeAudio: v })}
+              label="Anime audio"
+              compact
+            />
+          </Row>
           <Toggle label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle label="Skip intros and recaps automatically" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
           <Toggle label="Next episode when the credits start" hint="Starts the autoplay countdown early" on={settings.creditsNext} onChange={(v) => actions.updateSettings({ creditsNext: v })} />
@@ -400,7 +413,11 @@ function SettingsSection() {
             <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
               TheIntroDB
             </a>
-            , a community database.
+            , a community database; for anime it has nothing on, from{' '}
+            <a href="https://aniskip.com" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
+              AniSkip
+            </a>
+            .
           </p>
         </div>
 

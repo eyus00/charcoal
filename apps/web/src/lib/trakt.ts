@@ -376,6 +376,8 @@ export interface ScrobbleMedia {
 /** Tell Trakt what's playing. "stop" at 80 %+ marks it watched; below that Trakt keeps the spot. */
 export function scrobble(action: 'start' | 'pause' | 'stop', m: ScrobbleMedia, progress: number) {
   if (!auth || !getState().settings.traktScrobble) return;
+  // Something with no TMDB identity (a live channel) is nothing Trakt knows.
+  if (!(m.id > 0)) return;
   const p = Math.max(0, Math.min(100, Math.round(progress * 100) / 100));
   const body =
     m.type === 'movie'

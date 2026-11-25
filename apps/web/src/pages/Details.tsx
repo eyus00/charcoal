@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Play, X } from 'lucide-react';
@@ -20,6 +20,7 @@ import MediaCard, { CARD_IMAGE, CARD_LIFT, CornerArc } from '../components/Media
 import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
 import Img from '../components/Img';
 import { imageSrcSet, imageUrl } from '../lib/images';
+import { useAnime } from '../lib/anime';
 import { cleanList, HttpError, q, titleOf, trailersOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
 import { cx, formatRuntime, useKeys, useTitle } from '../lib/util';
 import { BLEED } from './Home';
@@ -121,6 +122,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
             {/* What quality is out there for it (WEB-DL, BluRay, CAM…), top-right of the card. */}
             <QualityTag d={d} type={type} className="absolute top-5 right-5 md:top-7 md:right-7" />
             <h1 className="pr-20 text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
+            <OtherNames d={d} type={type} />
             <Facts d={d} type={type} genresClassName="mt-2 text-sm" className="mt-1.5 text-sm" />
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -140,6 +142,26 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
         <EpisodeSelector show={d} initialSeason={episodesParam ? Number(episodesParam) : undefined} onSeasonChange={setEpisodesSeason} selected={selectedEp} onClose={closeEpisodes} replace />
       )}
     </div>
+  );
+}
+
+/**
+ * What else the title is called: an anime's romanised and Japanese names (from AniList, by way of
+ * the identity mapping), otherwise the original title when it isn't the one shown.
+ */
+function OtherNames({ d, type }: { d: D; type: MediaType }) {
+  const anime = useAnime(type, d.id, d);
+  const names = useMemo(() => {
+    const shown = titleOf(d);
+    const original = d.original_title ?? d.original_name;
+    const all = anime.titles ? [anime.titles.romaji, anime.titles.native ?? original] : [original];
+    return [...new Set(all)].filter((n): n is string => !!n && n !== shown);
+  }, [d, anime.titles]);
+  if (!names.length) return null;
+  return (
+    <p className="mt-1.5 text-sm text-white/70" aria-label="Also known as" data-testid="other-names">
+      {names.join(' · ')}
+    </p>
   );
 }
 

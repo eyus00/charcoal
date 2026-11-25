@@ -15,6 +15,10 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Watch = lazy(() => import('./pages/Watch'));
 const TraktCallback = lazy(() => import('./pages/TraktCallback'));
 const Calendar = lazy(() => import('./pages/Calendar'));
+const Anime = lazy(() => import('./pages/Anime'));
+const Indian = lazy(() => import('./pages/Indian'));
+const Sports = lazy(() => import('./pages/Sports'));
+const Live = lazy(() => import('./pages/Live'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +68,9 @@ const router = createBrowserRouter([
       { path: 'profile', element: <Profile /> },
       { path: 'trakt/callback', element: <TraktCallback /> },
       { path: 'calendar', element: <Calendar /> },
+      { path: 'anime', element: <Anime /> },
+      { path: 'indian', element: <Indian /> },
+      { path: 'sports', element: <Sports /> },
       { path: 'library', element: <LibraryRedirect /> },
       { path: '*', element: <NotFound /> },
     ],
@@ -73,6 +80,13 @@ const router = createBrowserRouter([
     element: <Layout bare />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <Watch /> }],
+  },
+  {
+    // A public channel, live (the Sports page's free channels).
+    path: 'live/:channelId',
+    element: <Layout bare />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <Live /> }],
   },
 ]);
 

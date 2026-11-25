@@ -21,8 +21,14 @@ import { eventTtl, type EventStatus, type SportsEvent } from './model.js';
 
 export const THESPORTSDB_SOURCE = 'thesportsdb';
 
+/**
+ * The public test key. Its predecessor "3" was switched off for good: requests with it answer 403
+ * with the text "use the new test key 123" (seen 2026-11-24).
+ */
+export const THESPORTSDB_TEST_KEY = '123';
+
 export interface TheSportsDbOptions {
-  /** '123' is the public test key. A paid key is a secret: it is never put in an error message. */
+  /** Default: the public test key. A paid key is a secret: it is never put in an error message. */
   apiKey?: string;
   base?: string;
   /** The clock used for fetchedAt and ttl. Default Date.now. */
@@ -144,12 +150,16 @@ function toEvent(row: unknown, fetchedAt: number): SportsEvent | undefined {
 }
 
 export function createTheSportsDb(fetcher: Fetcher, options: TheSportsDbOptions = {}): TheSportsDb {
-  const { apiKey = '123', base = 'https://www.thesportsdb.com/api/v1/json', now = Date.now } = options;
+  const { base = 'https://www.thesportsdb.com/api/v1/json', now = Date.now } = options;
+  // An empty key (an unset environment variable passed straight through) means the default too.
+  const apiKey = options.apiKey?.trim() || THESPORTSDB_TEST_KEY;
   const root = `${base.replace(/\/+$/, '')}/${encodeURIComponent(apiKey)}`;
 
   async function events(endpoint: string, query: Record<string, string>, signal?: AbortSignal): Promise<SportsEvent[]> {
     const response = await fetcher(`${root}/${endpoint}?${new URLSearchParams(query)}`, { headers: { Accept: 'application/json' }, signal });
     if (response.status === 429) throw new Error(`TheSportsDB rate limit reached (HTTP 429) on ${endpoint}`);
+    // A retired or mistyped key. The key itself stays out of the message.
+    if (response.status === 401 || response.status === 403) throw new Error(`TheSportsDB refused the API key (HTTP ${response.status}) on ${endpoint}`);
     if (response.status !== 200) throw new Error(`TheSportsDB ${endpoint} failed with status ${response.status}`);
 
     const payload = parseJson(response.body, `TheSportsDB ${endpoint}`);

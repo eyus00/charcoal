@@ -96,6 +96,8 @@ export async function deleteFrames(prefix: string) {
 
 /** Grab the video's current picture and keep it. Returns false when it can't (tainted, black, not ready). */
 export function captureFrame(video: HTMLVideoElement, key: string): boolean {
+  // Id 0: something with no TMDB identity (a live channel) has no Continue watching entry.
+  if (/^(movie|tv)-0(-|$)/.test(key)) return false;
   if (video.readyState < 2 || !video.videoWidth) return false;
   try {
     // Mostly black (a fade or the credits)? Keep the previous frame.

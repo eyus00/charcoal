@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Keyboard, ShieldAlert, X } from 'lucide-react';
+import { AudioLines, Check, ChevronDown, Keyboard, ShieldAlert, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
 import { useSources } from '../lib/resolver';
-import { EMBEDS, embedById, type Target } from '../lib/servers';
+import { useAnime, type AnimeAudio, type AnimeState } from '../lib/anime';
+import { EMBEDS, embedById, languageName, type JellySource, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
 import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
@@ -20,6 +21,7 @@ import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
 import DetailsPeek from '../player/DetailsPeek';
 import { Tip } from '../components/Tip';
+import Segmented from '../components/Segmented';
 
 export default function Watch() {
   const params = useParams();
@@ -100,6 +102,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   // One search, wherever the sources come from: providers that can run in this browser (through
   // Charcoal Helper or the app) run here, the rest on the viewer's own server or Charcoal's, and
   // everything arrives as one ranked list that grows while providers are still answering.
+  // A title that is anime is also searched for as its AniList / MAL entry (lib/resolver does that
+  // by itself); what is known about it here is for the audio control.
+  const anime = useAnime(type, id, d, season, episode);
   const found = useSources(target, d, ep?.id, server === 'jelly');
   const streams = found.data;
   // Search again with fresh links (the player calls it once by itself before giving up).
@@ -151,6 +156,29 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   const embed = server !== 'jelly' ? (embedById(server) ?? EMBEDS[0]) : null;
 
+  // Audio preferences apply to the next search, so changing one searches again: the list on screen
+  // stays until the new one arrives, and the player then carries on from the same position.
+  const refetch = found.refetch;
+  const setAnimeAudio = useCallback(
+    (animeAudio: AnimeAudio) => {
+      actions.updateSettings({ animeAudio });
+      refetch();
+    },
+    [refetch],
+  );
+  const setAudioLang = useCallback(
+    (audioLang: string) => {
+      actions.updateSettings({ audioLang });
+      refetch();
+    },
+    [refetch],
+  );
+  const heard = useMemo(() => audioLanguages(streams?.sources ?? []), [streams?.sources]);
+  const audioMenu =
+    !embed && (anime.isAnime || heard.length > 0) ? (
+      <AudioMenu anime={anime} animeAudio={settings.animeAudio} onAnimeAudio={setAnimeAudio} languages={heard} preferred={settings.audioLang} onLanguage={setAudioLang} />
+    ) : null;
+
   // Page shortcuts (the Jelly player adds its own: space, arrows, f, m, c, n, i).
   useKeys({
     // Esc: back to the title page, unless a menu is open (it closes that) or the video is
@@ -172,6 +200,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
       detailsUrl={detailsUrl}
       onClose={leave}
       onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
+      audioMenu={audioMenu}
       serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={found.error ? 'failed' : found.data ? 'ok' : found.searching ? 'loading' : 'idle'} />}
     />
   );
@@ -210,6 +239,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
           meta={meta}
           poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
+          audioLang={anime.isAnime && settings.animeAudio === 'sub' ? 'ja' : settings.audioLang}
           header={makeHeader}
           prev={type === 'tv' ? (prev ? { label: nextLabel(prev, seasonData?.episodes), go: () => go(prev.season, prev.episode) } : null) : undefined}
           next={type === 'tv' ? (next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null) : undefined}
@@ -275,6 +305,7 @@ function Header({
   subtitle,
   detailsUrl,
   onEpisodes,
+  audioMenu,
   serverMenu,
   onClose,
   pausedInfo,
@@ -286,6 +317,8 @@ function Header({
   detailsUrl: string;
   onClose: () => void;
   onEpisodes?: () => void;
+  /** Sub / dub and the audio language (Jelly only, when there is something to choose). */
+  audioMenu?: React.ReactNode;
   serverMenu: React.ReactNode;
 }) {
   return (
@@ -305,6 +338,7 @@ function Header({
           <Keyboard className="size-[18px]" strokeWidth={1.5} />
           <Kbd>?</Kbd>
         </button>
+        {audioMenu}
         {serverMenu}
         <HeaderButton label="Close player" keys="Esc" onClick={onClose} solid>
           <X className="size-5" />
@@ -465,6 +499,162 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
     </div>
   );
 }
+
+// ---------- audio: sub / dub and the language ----------
+
+interface Heard {
+  /** ISO 639-1 code. */
+  code: string;
+  name: string;
+  /** How many of the sources found say they carry it. */
+  sources: number;
+}
+
+/** The audio languages the sources found report, the most common first. Sources that don't say are left out. */
+function audioLanguages(sources: JellySource[]): Heard[] {
+  const count = new Map<string, number>();
+  for (const s of sources) {
+    for (const code of new Set((s.audioTracks ?? []).map((a) => a.language.toLowerCase().slice(0, 2)))) {
+      if (/^[a-z]{2}$/.test(code) && code !== 'un') count.set(code, (count.get(code) ?? 0) + 1);
+    }
+  }
+  return [...count].map(([code, n]) => ({ code, name: languageName(code), sources: n })).sort((a, b) => b.sources - a.sources || a.name.localeCompare(b.name));
+}
+
+const ANIME_AUDIO: { key: AnimeAudio; label: string }[] = [
+  { key: 'sub', label: 'Sub' },
+  { key: 'dub', label: 'Dub' },
+];
+
+/** A two-letter language tag, like the age-rating tags on cards. */
+const LangBadge = ({ code, on }: { code: string; on?: boolean }) => (
+  <span className={cx('inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide uppercase ring-1 ring-inset', on ? 'ring-black/40' : 'ring-white/35')}>{code}</span>
+);
+
+/**
+ * The audio the viewer wants: for anime, original (sub) or dubbed; for everything, which language
+ * to put first, chosen from the languages the sources found say they carry.
+ */
+function AudioMenu({
+  anime,
+  animeAudio,
+  onAnimeAudio,
+  languages,
+  preferred,
+  onLanguage,
+}: {
+  anime: AnimeState;
+  animeAudio: AnimeAudio;
+  onAnimeAudio: (a: AnimeAudio) => void;
+  languages: Heard[];
+  preferred: string;
+  onLanguage: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => {
+    setOpen(false);
+    ref.current?.querySelector('button')?.focus({ preventScroll: true });
+  }, []);
+  useDismiss(open, close, ref);
+  useKeys({ a: () => setOpen((o) => !o) });
+  // The chosen language is always listed, also when no source found says it carries it.
+  const rows = languages.some((l) => l.code === preferred) ? languages : [{ code: preferred, name: languageName(preferred), sources: 0 }, ...languages];
+  const current = anime.isAnime ? (animeAudio === 'sub' ? 'Sub' : 'Dub') : languageName(preferred);
+  const entry = anime.identity?.entry;
+  // A language is chosen for everything but subtitled anime, whose audio is Japanese by definition.
+  const choosing = !anime.isAnime || animeAudio === 'dub';
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Audio: ${current} (A)`}
+        className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'group/tip relative max-sm:px-3')}
+      >
+        <Tip label="Audio" side="bottom" align="end" hidden={open} />
+        <AudioLines className="size-4" />
+        <span className="hidden max-w-[6rem] truncate font-medium sm:inline">{current}</span>
+        <Kbd light={open}>A</Kbd>
+      </button>
+      {open && (
+        <div
+          data-testid="audio-menu"
+          // Phones: the button sits left of the server and close buttons, so the panel is pulled
+          // right by their width to line up with the screen's edge instead of running off the left.
+          className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-[min(18rem,calc(100vw-1.5rem))] max-sm:right-[-9.25rem] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10"
+        >
+          {anime.isAnime && (
+            <>
+              <div className="px-3 pt-2.5 pb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium">Anime audio</span>
+                  <Segmented value={animeAudio} options={ANIME_AUDIO} onChange={onAnimeAudio} label="Anime audio" compact />
+                </div>
+                <p className="mt-2 text-xs text-muted">
+                  {animeAudio === 'sub' ? 'Japanese audio first; turn subtitles on with C.' : `Sources dubbed into ${languageName(preferred)} first, then other dubs.`}
+                </p>
+                {/* Which identity the search used, so a missing source can be understood. */}
+                {anime.identity !== undefined && (
+                  <p className="mt-1 text-xs text-faint" data-testid="anime-identity">
+                    {entry ? `Also searched as its anime entry${entry.anilist ? ` (AniList ${entry.anilist})` : ''}, episode ${anime.identity!.episode}.` : 'Not in the anime list: searched as a TMDB title only.'}
+                  </p>
+                )}
+              </div>
+              <div className="mb-1.5 h-px bg-white/[0.06]" />
+            </>
+          )}
+          {choosing ? (
+            <>
+              <div className="px-3 pt-1.5 pb-1 text-xs text-faint">{anime.isAnime ? 'Dub language' : 'Audio language'}</div>
+              {rows.map((l) => {
+                const on = l.code === preferred;
+                return (
+                  <button
+                    key={l.code}
+                    aria-pressed={on}
+                    data-lang={l.code}
+                    onClick={() => {
+                      if (!on) onLanguage(l.code);
+                      setOpen(false);
+                    }}
+                    className={cx('flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-sm transition-colors', on ? 'bg-white text-black' : 'text-white/80 hover:bg-white/10 hover:text-white')}
+                  >
+                    <LangBadge code={l.code} on={on} />
+                    <span className="min-w-0 flex-1 truncate">{l.name}</span>
+                    <span className={cx('text-xs tabular-nums', on ? 'text-black/60' : 'text-faint')}>{sourceCount(l.sources)}</span>
+                    {on && <Check className="size-4 shrink-0" />}
+                  </button>
+                );
+              })}
+              <p className="px-3 pt-2 pb-2 text-xs text-muted">Sources in this language are tried first. Sources that don’t say what they carry usually have the original audio.</p>
+            </>
+          ) : (
+            // Sub: the language is settled (Japanese). What the sources carry is shown, not chosen.
+            <>
+              <div className="px-3 pt-1.5 pb-1 text-xs text-faint">Audio the sources carry</div>
+              {languages.length ? (
+                languages.map((l) => (
+                  <div key={l.code} data-lang={l.code} className="flex h-9 items-center gap-2.5 px-3 text-sm text-white/80">
+                    <LangBadge code={l.code} />
+                    <span className="min-w-0 flex-1 truncate">{l.name}</span>
+                    <span className="text-xs text-faint tabular-nums">{sourceCount(l.sources)}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="px-3 pb-2 text-xs text-muted">None of the sources found says. They usually have the original audio.</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const sourceCount = (n: number) => (n ? `${n} ${n === 1 ? 'source' : 'sources'}` : 'none found');
 
 /** Shown before leaving Jelly for an embed: those players are other sites', with their ads. */
 function EmbedNotice({ name, onCancel, onContinue }: { name: string; onCancel: () => void; onContinue: () => void }) {

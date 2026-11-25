@@ -7,9 +7,12 @@
  * never see providers, runtimes or servers, only sources.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RegistryClient, resolveSources, type PlayableSource, type RemoteEvent, type ResolveState } from '@charcoal/client';
-import { HealthStore, normalizeStream, type HealthRecord, type Media, type PlaybackCapabilities, type Stream } from '@charcoal/provider-sdk';
+import { RegistryClient, resolveSources, type PlayableSource, type RemoteEvent, type ResolveState, type ResolverDeps } from '@charcoal/client';
+import { DEFAULT_WEIGHTS, HealthStore, mergeCaptions, normalizeStream, type EpisodeMedia, type HealthRecord, type Media, type MovieMedia, type PlaybackCapabilities, type Stream } from '@charcoal/provider-sdk';
+import { animeMediaFor, looksLikeAnime, type AnimeAudio } from './anime';
+import { within } from './content';
 import { getBridge } from './extension';
+import { altTitlesOf } from './regional';
 import { HOSTED_SERVER, languageName, type JellyResult, type JellySource, type JellySubtitle, type ProviderReport, type Target } from './servers';
 import { getState } from './store';
 import type { Details } from './tmdb';
@@ -176,8 +179,9 @@ export function deviceCapabilities(): Omit<PlaybackCapabilities, 'bridge' | 'rel
   if (can('audio/flac') || can('audio/mp4; codecs="flac"')) audioCodecs.push('flac');
   caps = {
     hls: mse || can('application/vnd.apple.mpegurl'),
-    // No DASH player is bundled; a DASH-only source is reported as not playable here.
-    dash: false,
+    // The player loads dash.js on demand, which needs Media Source Extensions. Phones that only
+    // have ManagedMediaSource are left out until DASH has been tried there; they get HLS and files.
+    dash: 'MediaSource' in window,
     mp4: true,
     // Browsers play some Matroska files and say they play none; they stay in the list, last.
     mkv: true,
@@ -191,12 +195,20 @@ export function deviceCapabilities(): Omit<PlaybackCapabilities, 'bridge' | 'rel
 
 // ---------- to the player's shapes ----------
 
-function mediaOf(t: Target, d: Details, episodeTmdbId?: number): Media {
+/**
+ * /v2/sources carries alternate titles as one comma-separated value and reads the first eight, so
+ * a name with a comma in it can't travel (it would arrive as two wrong names).
+ */
+const MAX_ALT_TITLES = 8;
+const sendable = (titles: string[]) => titles.filter((t) => !t.includes(',')).slice(0, MAX_ALT_TITLES);
+
+function mediaOf(t: Target, d: Details, episodeTmdbId?: number): MovieMedia | EpisodeMedia {
   const date = d.release_date || d.first_air_date || '';
   const common = {
     ids: { tmdb: String(t.id), ...(d.imdb_id || d.external_ids?.imdb_id ? { imdb: (d.imdb_id || d.external_ids?.imdb_id) as string } : {}) },
     title: d.title || d.name || '',
-    altTitles: [d.original_title, d.original_name].filter((x): x is string => !!x && x !== (d.title || d.name)),
+    // The original title, transliterations and translated titles: what regional and anime sites list it under.
+    altTitles: sendable(altTitlesOf(d, [getState().settings.audioLang])),
     year: Number(date.slice(0, 4)) || undefined,
     originalLanguage: d.original_language,
     runtime: d.runtime || d.episode_run_time?.[0] || undefined,
@@ -205,15 +217,33 @@ function mediaOf(t: Target, d: Details, episodeTmdbId?: number): Media {
   return { kind: 'movie', ...common };
 }
 
-function toSource(s: PlayableSource): JellySource {
-  const a = s.audio[0];
-  const named = a && (a.lang !== 'und' || (a.label && !/^(original|unknown)$/i.test(a.label)));
+/**
+ * The audio languages a source reports, the wanted one first (the player's source list shows the
+ * first as the source's tag). Undefined when it doesn't say: nearly always the original audio.
+ */
+function audioTracksOf(s: PlayableSource, preferred: string): JellySource['audioTracks'] {
+  const seen = new Set<string>();
+  const tracks: NonNullable<JellySource['audioTracks']> = [];
+  for (const a of s.audio) {
+    const named = a.lang !== 'und' || (a.label && !/^(original|unknown)$/i.test(a.label));
+    if (!named) continue;
+    const name = a.label ?? languageName(a.lang);
+    const label = a.dub && !/dub/i.test(name) ? `${name} dub` : name;
+    if (seen.has(`${a.lang}|${label}`)) continue;
+    seen.add(`${a.lang}|${label}`);
+    tracks.push({ language: a.lang, label });
+  }
+  if (!tracks.length) return undefined;
+  return [...tracks.filter((t) => t.language === preferred), ...tracks.filter((t) => t.language !== preferred)];
+}
+
+function toSource(s: PlayableSource, preferred: string): JellySource {
   return {
     id: s.id,
     url: s.playUrl,
     type: s.type,
     quality: s.quality,
-    audioTracks: named ? [{ language: a.lang, label: a.label ?? languageName(a.lang) }] : undefined,
+    audioTracks: audioTracksOf(s, preferred),
     provider: { id: s.provider.id, name: s.provider.name },
     headers: s.delivery === 'headers' ? s.headers : undefined,
     bridged: s.delivery === 'headers',
@@ -222,12 +252,99 @@ function toSource(s: PlayableSource): JellySource {
     note: s.note,
     size: s.size,
     levels: s.levels,
+    verification: s.verification && { state: s.verification.state, level: s.verification.level, code: s.verification.code, message: s.verification.message },
   };
 }
 
-function toResult(state: ResolveState): JellyResult {
+/** How one search's results are ordered and labelled. */
+interface Taste {
+  /** The audio language to put first (ISO 639-1). */
+  language: string;
+  /** Set for anime: original audio with subtitles, or dubbed. */
+  animeAudio?: AnimeAudio;
+  /** The language the title was made in (ISO 639-1), when TMDB says. */
+  originalLanguage?: string;
+}
+
+/**
+ * Audio order for a title made in another language than the one the viewer asked for. The ranker
+ * knows one wanted language and weighs it against picture quality and the rest, and it counts a
+ * source that says it carries the ORIGINAL audio as "another language", below one that doesn't say
+ * (which is assumed original). Here the order is what the setting promises, plainly:
+ *   1. sources that carry the wanted language (the viewer asked for them; they are tried first);
+ *   2. everything else by rank, stated original audio being worth what unstated audio is;
+ *   3. sources with only dubs nobody asked for (a Tamil film in Hindi, for a viewer who asked for English).
+ * A title in the viewer's own language is left exactly as ranked.
+ */
+function byAudioPreference(sources: PlayableSource[], taste: Taste): PlayableSource[] {
+  const original = taste.originalLanguage;
+  if (!original || original === taste.language) return sources;
+  const wanted = (s: PlayableSource) => s.audio.some((a) => a.lang === taste.language);
+  const inOriginal = (s: PlayableSource) => s.audio.some((a) => a.lang === original && !a.dub);
+  const unwanted = (s: PlayableSource) => s.audio.length > 0 && s.audio.every((a) => a.lang !== 'und' && a.lang !== taste.language && (a.lang !== original || !!a.dub));
+  // What the ranker gives audio it knows nothing about (rank.ts: 0.85 of the language weight).
+  const worth = (s: PlayableSource) => (s.score ?? 0) + (inOriginal(s) ? DEFAULT_WEIGHTS.language * 0.85 : 0);
+  // Array.prototype.sort is stable: sources worth the same keep the ranker's order.
+  const rest = sources.filter((s) => !wanted(s) && !unwanted(s)).sort((a, b) => worth(b) - worth(a));
+  return [...sources.filter(wanted), ...rest, ...sources.filter((s) => !wanted(s) && unwanted(s))];
+}
+
+/**
+ * Anime: sources in the wanted audio first, the ranking otherwise kept. A source that doesn't say
+ * what it carries counts as the original (Japanese) audio, which is what nearly all of them are.
+ */
+function byAnimeAudio(sources: PlayableSource[], want: AnimeAudio): PlayableSource[] {
+  const dubbed = (s: PlayableSource) => s.audio.some((a) => a.dub || (a.lang !== 'und' && a.lang !== 'ja'));
+  const original = (s: PlayableSource) => !s.audio.length || s.audio.some((a) => !a.dub && (a.lang === 'ja' || a.lang === 'und'));
+  const fits = want === 'dub' ? dubbed : original;
+  return [...sources.filter(fits), ...sources.filter((s) => !fits(s))];
+}
+
+const OUTCOME_RANK: Record<ResolveState['providers'][number]['state'], number> = { ok: 4, pending: 3, empty: 2, error: 1, skipped: 0 };
+
+const NOTHING: ResolveState = { sources: [], captions: [], providers: [], unplayable: [], pending: { local: false, remote: false }, done: false, mode: { bridge: null, server: null } };
+
+/**
+ * Several searches for the same thing under different identities (a TMDB episode and its anime
+ * entry) as one: one ranked list without duplicates, one set of captions, every provider's
+ * outcome. `waiting`: another search may still start, so the picture isn't final yet.
+ */
+function mergeStates(parts: ResolveState[], waiting: boolean): ResolveState {
+  if (!parts.length) return { ...NOTHING, pending: { local: waiting, remote: waiting } };
+  if (parts.length === 1 && !waiting) return parts[0];
+  const seen = new Set<string>();
+  const sources: PlayableSource[] = [];
+  // Scores come from the same ranker with the same preferences, so they compare across searches.
+  // (Array.prototype.sort is stable: on a tie the earlier search, the TMDB one, stays first.)
+  for (const s of parts.flatMap((p) => p.sources).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))) {
+    // The same upstream file found under both identities is one source.
+    if (seen.has(`file:${s.dedupKey}`) || seen.has(`id:${s.id}`)) continue;
+    seen.add(`file:${s.dedupKey}`).add(`id:${s.id}`);
+    sources.push(s);
+  }
+  const providers = new Map<string, ResolveState['providers'][number]>();
+  for (const p of parts.flatMap((x) => x.providers)) {
+    const had = providers.get(p.id);
+    // A provider asked under both identities is reported once, by its better outcome.
+    if (!had || OUTCOME_RANK[p.state] > OUTCOME_RANK[had.state]) providers.set(p.id, p);
+  }
+  const unplayable = new Map(parts.flatMap((p) => p.unplayable).map((u) => [`${u.provider}|${u.reason}`, u]));
+  return {
+    sources,
+    captions: parts.slice(1).reduce((all, p) => mergeCaptions(all, p.captions) as ResolveState['captions'], parts[0].captions),
+    providers: [...providers.values()],
+    unplayable: [...unplayable.values()],
+    pending: { local: parts.some((p) => p.pending.local), remote: waiting || parts.some((p) => p.pending.remote) },
+    done: !waiting && parts.every((p) => p.done),
+    mode: { bridge: parts.find((p) => p.mode.bridge)?.mode.bridge ?? null, server: parts.find((p) => p.mode.server)?.mode.server ?? null },
+    remoteError: parts.every((p) => p.remoteError) ? parts[0].remoteError : undefined,
+  };
+}
+
+function toResult(state: ResolveState, taste: Taste): JellyResult {
+  const wanted = taste.animeAudio ? byAnimeAudio(state.sources, taste.animeAudio) : byAudioPreference(state.sources, taste);
   // MKV last, as before: most browsers can't play most of them.
-  const ordered = [...state.sources.filter((s) => s.type !== 'mkv' && s.type !== 'frame'), ...state.sources.filter((s) => s.type === 'mkv')];
+  const ordered = [...wanted.filter((s) => s.type !== 'mkv' && s.type !== 'frame'), ...wanted.filter((s) => s.type === 'mkv')];
   const subtitles: JellySubtitle[] = state.captions.map((c) => {
     const relay = (c as { relay?: string }).relay;
     const bridged = c.local && !!state.mode.bridge;
@@ -236,13 +353,13 @@ function toResult(state: ResolveState): JellyResult {
   const report: ProviderReport[] = state.providers
     .filter((p) => p.state !== 'pending')
     .map((p) => ({ name: p.name, ok: p.state === 'ok', reason: p.state === 'ok' ? undefined : p.reason, group: p.id.startsWith('sv-') ? 'StreamViva' : undefined, where: p.where, code: p.code }));
-  for (const u of state.unplayable) if (!report.some((r) => r.name === u.provider && !r.ok)) report.push({ name: u.provider, ok: false, reason: u.reason });
+  for (const u of state.unplayable) if (!report.some((r) => r.name === u.provider && !r.ok)) report.push({ name: u.provider, ok: false, reason: u.reason, unplayable: true });
   const own = getState().settings.serverUrl;
   const anyLocal = ordered.some((s) => s.local);
   return {
     responseId: 'platform',
     expiresAt: '',
-    sources: ordered.map(toSource),
+    sources: ordered.map((s) => toSource(s, taste.language)),
     subtitles,
     report,
     via: anyLocal ? 'extension' : state.mode.server && state.mode.server === own ? 'own' : 'hosted',
@@ -250,34 +367,72 @@ function toResult(state: ResolveState): JellyResult {
   };
 }
 
-/** One discovery run for a title. Resolves when every provider has answered. */
+/** How long a search waits to learn a title's anime identity before going on without it. */
+const ANIME_IDENTITY_MS = 8_000;
+
+/**
+ * One discovery run for a title. Resolves when every provider has answered.
+ *
+ * A title that is anime is searched for under both of its identities at once: as the TMDB movie
+ * or episode it is, and as its AniList / MAL entry (kind "anime", the episode numbered inside that
+ * entry, the names anime sites use, sub or dub). Both feed one list. The TMDB search never waits
+ * for the anime one, and if the anime identity can't be worked out the TMDB search is all there is.
+ */
 export async function findSources(t: Target, d: Details, episodeTmdbId: number | undefined, signal: AbortSignal, onUpdate: (r: JellyResult, done: boolean) => void): Promise<JellyResult> {
   const settings = getState().settings;
+  const media = mediaOf(t, d, episodeTmdbId);
+  const anime = looksLikeAnime(d);
+  const animeAudio = anime ? settings.animeAudio : undefined;
+  // Anime in its original audio is Japanese whatever language the viewer otherwise prefers.
+  const taste: Taste = { language: animeAudio === 'sub' ? 'ja' : settings.audioLang, animeAudio, originalLanguage: d.original_language || undefined };
   // Not awaited: a newer registry applies to the next search; discovery never delays playback.
   void registry.refresh();
-  const final = await resolveSources(
-    mediaOf(t, d, episodeTmdbId),
-    {
-      pack: async () => (await import('@charcoal/providers')).loadPack({ fallback: true }),
-      bridge: async () => (settings.useExtension ? getBridge() : null),
-      registry: () => registry.current(),
-      servers,
-      remote,
-      settings: () => ({ febboxToken: settings.febboxToken || undefined, febboxMaxHeight: settings.febboxMaxHeight || undefined }),
-      device: deviceCapabilities,
-      preferences: () => ({ language: settings.audioLang, lastProvider: settings.lastProvider }),
-      health,
-      report: settings.shareHealth
-        ? (reports) => {
-            const base = servers()[servers().length - 1];
-            if (base) fetch(`${base}/v2/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reports }), keepalive: true }).catch(() => {});
-          }
-        : undefined,
-    },
-    { signal, onUpdate: (s) => onUpdate(toResult(s), s.done) },
-  );
+  const deps: ResolverDeps = {
+    pack: async () => (await import('@charcoal/providers')).loadPack({ fallback: true }),
+    bridge: async () => (settings.useExtension ? getBridge() : null),
+    registry: () => registry.current(),
+    servers,
+    remote,
+    settings: () => ({ febboxToken: settings.febboxToken || undefined, febboxMaxHeight: settings.febboxMaxHeight || undefined }),
+    device: deviceCapabilities,
+    preferences: () => ({ language: taste.language, lastProvider: settings.lastProvider }),
+    health,
+    report: settings.shareHealth
+      ? (reports) => {
+          const base = servers()[servers().length - 1];
+          if (base) fetch(`${base}/v2/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reports }), keepalive: true }).catch(() => {});
+        }
+      : undefined,
+  };
+
+  // [the TMDB search, the anime search]: either may be missing at any moment.
+  const parts: (ResolveState | undefined)[] = [undefined, undefined];
+  let awaitingIdentity = anime;
+  const merged = () => mergeStates(parts.filter((p): p is ResolveState => !!p), awaitingIdentity);
+  const publish = () => {
+    const state = merged();
+    onUpdate(toResult(state, taste), state.done);
+  };
+  const search = (m: Media, slot: 0 | 1) =>
+    resolveSources(m, deps, { signal, onUpdate: (s) => ((parts[slot] = s), publish()) }).then((s) => void (parts[slot] = s));
+
+  const asAnime = !anime
+    ? Promise.resolve()
+    : within(animeMediaFor(media, d, animeAudio!), ANIME_IDENTITY_MS, 'Looking up the anime entry')
+        .catch((e) => void console.warn('[anime]', (e as Error).message))
+        .then((entry) => {
+          awaitingIdentity = false;
+          if (!entry || signal.aborted) return;
+          return search({ ...entry, altTitles: sendable(entry.altTitles ?? []) }, 1);
+        })
+        // Whatever goes wrong on the anime side, the TMDB search stands by itself.
+        .catch((e) => void console.warn('[anime] the anime search failed:', (e as Error).message))
+        .finally(() => {
+          awaitingIdentity = false;
+        });
+  await Promise.all([search(media, 0), asAnime]);
   storage.set(HEALTH_KEY, JSON.stringify(health.snapshot()));
-  return toResult(final);
+  return toResult(merged(), taste);
 }
 
 // ---------- the hook ----------

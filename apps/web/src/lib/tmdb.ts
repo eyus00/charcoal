@@ -95,6 +95,17 @@ export interface Details extends MediaItem {
   content_ratings?: { results: { iso_3166_1: string; rating: string }[] };
   imdb_id?: string | null;
   external_ids?: { imdb_id?: string | null };
+  /** Other names by country: movies answer `titles`, shows answer `results`. */
+  alternative_titles?: { titles?: AlternativeTitle[]; results?: AlternativeTitle[] };
+  /** The title in other languages: `data.title` for movies, `data.name` for shows. */
+  translations?: { translations?: { iso_639_1: string; iso_3166_1: string; data?: { title?: string; name?: string } }[] };
+}
+
+export interface AlternativeTitle {
+  iso_3166_1: string;
+  title: string;
+  /** Free text: "romaji", "Transliteration", "Hindi dubbed title", … Often empty. */
+  type?: string;
 }
 
 export interface TmdbReview {
@@ -188,7 +199,9 @@ export const q = {
       tmdb<Details>(
         `/${type}/${id}`,
         {
-          append_to_response: ['videos', 'credits', 'recommendations', 'similar', 'images', 'external_ids', type === 'movie' ? 'release_dates' : 'content_ratings'].join(','),
+          // alternative_titles + translations: the other names a title goes by, which providers that
+          // match by title need (regional cinema, anime). They ride along instead of costing a request.
+          append_to_response: ['videos', 'credits', 'recommendations', 'similar', 'images', 'external_ids', 'alternative_titles', 'translations', type === 'movie' ? 'release_dates' : 'content_ratings'].join(','),
           include_image_language: 'en,null',
         },
         signal,

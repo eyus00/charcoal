@@ -79,6 +79,8 @@ export interface Settings {
   /** Preferred audio language (ISO 639-1, e.g. "en"): sources in it go first, and streams with
    *  several audio tracks switch to it. */
   audioLang: string;
+  /** Anime: original audio with subtitles ('sub') or dubbed into the audio language ('dub'). */
+  animeAudio: 'sub' | 'dub';
   /** The viewer's own Febbox login token ("ui" cookie). Only ever sent to febbox.com, from this
    *  browser through Charcoal Helper; never to any server of ours. */
   febboxToken: string;
@@ -131,6 +133,7 @@ const defaultSettings: Settings = {
   showDiagnostics: false,
   shareHealth: true,
   audioLang: (typeof navigator !== 'undefined' && navigator.language?.slice(0, 2).toLowerCase()) || 'en',
+  animeAudio: 'sub',
 };
 
 // ---------- load / migrate ----------
