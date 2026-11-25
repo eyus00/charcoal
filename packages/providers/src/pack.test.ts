@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeRuntime, validateDomainConfig, validateManifest, validateRulePack } from '@charcoal/provider-sdk';
 import { checkContract, createHarness, simulate, TITLES, type MockRoute } from '@charcoal/provider-sdk/testing';
-import { castle, cinesuManifest, cinesuRules, CODE_PROVIDERS, DEFAULT_DOMAINS, febbox, loadCorePack, loadFallbackProviders, loadPack, RULE_PROVIDERS, vixsrc } from './index.js';
+import { castle, pickCastleRow, sameLength, cinesuManifest, cinesuRules, CODE_PROVIDERS, DEFAULT_DOMAINS, febbox, loadCorePack, loadFallbackProviders, loadPack, RULE_PROVIDERS, vixsrc } from './index.js';
 
 const extension = describeRuntime('extension');
 const one = (id: string) => loadCorePack().filter((p) => p.module.manifest.id === id);
@@ -23,8 +23,8 @@ test('every provider in the pack has a valid manifest and a domain config for ea
     assert.deepEqual(validateRulePack(rules, manifest), [], manifest.id);
     assert.deepEqual(validateDomainConfig(DEFAULT_DOMAINS[manifest.id], manifest.domainRoles), [], manifest.id);
   }
-  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidnest', 'vidlink', 'cinejoy', 'meowtv', 'anime-animotvslash', 'anime-shonen', 'anime-zokoanime', 'anime-animeheaven']);
-  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'canary').map((p) => p.module.manifest.id), ['vidrock', 'popr', 'fsharetv', 'streammafia', 'vidsrc', 'videasy', 'vidzee', 'tulnex', 'peachify', 'anime-megavid', 'cinesu', 'icefy']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidnest', 'vidlink', 'cinejoy', 'meowtv', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'vidsrc', 'videasy', 'anime-animotvslash', 'anime-shonen', 'anime-zokoanime', 'anime-animeheaven', 'anime-megavid', 'icefy']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'canary').map((p) => p.module.manifest.id), ['vidzee', 'tulnex', 'peachify', 'cinesu']);
 });
 
 test('the vendored fallback pack loads as open-network providers with valid manifests', async () => {
@@ -155,6 +155,52 @@ async function castleRoutes(video: unknown): Promise<Record<string, MockRoute>> 
     },
   };
 }
+
+test('Castle: only the title asked for is accepted: exact name, same kind, same year, same length', () => {
+  const film = (title: string, year: number, extra: Record<string, unknown> = {}) => ({ id: title + year, title, movieType: 2, publishTime: Date.UTC(year, 5, 1), ...extra });
+  const up = { ...TITLES.movie, title: 'Up', year: 2009 };
+  // What the live search answered for "Up 2009" on 2026-11-26: nothing that is the film.
+  assert.equal(pickCastleRow([film('Up Up & Up', 2019), film('Balls Up', 2026), film('Mix Up', 2019)], up), undefined);
+  assert.equal(pickCastleRow([film('Up Up & Up', 2019), film('Up', 2009)], up)?.id, 'Up2009');
+  // A sequel never stands in for the film, nor the film for its sequel.
+  const rises = { ...TITLES.movie, title: 'The Dark Knight Rises', year: 2012 };
+  assert.equal(pickCastleRow([film('The Dark Knight', 2008), film('The Dark Knight Rises', 2012)], rises)?.id, 'The Dark Knight Rises2012');
+  assert.equal(pickCastleRow([film('The Dark Knight', 2008)], rises), undefined);
+  // A remake of the same name: the year decides; a year either side is still the same film.
+  const it = { ...TITLES.movie, title: 'It', year: 2017 };
+  assert.equal(pickCastleRow([film('It', 1990), film('It', 2017)], it)?.id, 'It2017');
+  assert.equal(pickCastleRow([film('It', 1990)], it), undefined);
+  assert.equal(pickCastleRow([film('It', 2018)], it)?.id, 'It2018');
+  // A show of the same name is not the film.
+  assert.equal(pickCastleRow([{ id: 'show', title: 'It', movieType: 1, publishTime: Date.UTC(2017, 1, 1) }], it), undefined);
+  // Other names count, and so do accents and "&".
+  assert.equal(pickCastleRow([film('Amelie', 2001)], { ...TITLES.movie, title: 'Le Fabuleux Destin d’Amélie Poulain', altTitles: ['Amélie'], year: 2001 })?.id, 'Amelie2001');
+  assert.equal(pickCastleRow([film('Fast and Furious', 2009)], { ...TITLES.movie, title: 'Fast & Furious', year: 2009 })?.id, 'Fast and Furious2009');
+  // A show: its entry may be dated by a later season, never before the show began.
+  const show = { ...TITLES.episode, title: 'Breaking Bad', year: 2008 };
+  assert.equal(pickCastleRow([{ id: 's', title: 'Breaking Bad', movieType: 1, publishTime: Date.UTC(2012, 1, 1) }], show)?.id, 's');
+  assert.equal(pickCastleRow([{ id: 'old', title: 'Breaking Bad', movieType: 1, publishTime: Date.UTC(1999, 1, 1) }], show), undefined);
+
+  const film148 = { ...TITLES.movie, runtime: 148 };
+  assert.equal(sameLength(film148, 148 * 60), true);
+  assert.equal(sameLength(film148, 142 * 60), true, 'a slightly different cut');
+  assert.equal(sameLength(film148, 78 * 60), false, 'another film');
+  assert.equal(sameLength(film148, undefined), true, 'unknown passes');
+  assert.equal(sameLength({ ...TITLES.movie, runtime: undefined }, 78 * 60), true);
+  assert.equal(sameLength({ ...TITLES.episode, runtime: 47 }, 58 * 60), true, 'episodes vary more');
+  assert.equal(sameLength({ ...TITLES.episode, runtime: 47 }, 110 * 60), false);
+});
+
+test('Castle: a match of the wrong length is refused, not played', async () => {
+  const routes = await castleRoutes({ videoUrl: 'https://cdn.castle.example/x/720/index.m3u8' });
+  routes[`${CASTLE}/film-api/v1.9.9/movie*`] = { body: { data: await castleEncrypt({ data: { episodes: [{ id: 900, number: 1, duration: 4708, tracks: [] }] } }) } };
+  const h = createHarness({ providers: loadCorePack().filter((p) => p.module.manifest.id === 'castle'), routes });
+  const wrong = await h.engine.runProvider(h.engine.providers()[0], { ...TITLES.movie, runtime: 148 });
+  assert.deepEqual([wrong.outcome, wrong.code], ['empty', 'NOT_FOUND']);
+  assert.match(wrong.message ?? '', /runs 78 min, the title 148 min/);
+  const right = await h.engine.runProvider(h.engine.providers()[0], { ...TITLES.movie, runtime: 80 });
+  assert.equal(right.outcome, 'ok', right.message);
+});
 
 test('Castle: the encrypted API flow works against the configured address and yields one stream per audio language', async () => {
   const routes = await castleRoutes((lang: string) => ({

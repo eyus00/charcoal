@@ -134,6 +134,19 @@ address, those numbers were two and two.
   (Cloudflare "you have been blocked"), from Railway and from the test address. It can only work
   on a viewer's own connection.
 
+### Castle's matching, and staging (2026-11-26)
+
+- **Castle played the wrong film for some titles.** It is searched by name and accepted a name
+  that merely contained the title: "Up" (2009) returned "Up Up & Up" (seen live). A result is now
+  accepted only with the exact name (or one of the title's other names), the same kind (film or
+  show), a release year within one of the film's, and a length within 12 % of the film's runtime
+  (a third for an episode). Otherwise Castle answers "not found". Seen live after the change:
+  "Up" not found; Inception and a Breaking Bad episode found as before.
+- **No waiting stage for providers that may work.** Every provider that answers anywhere is
+  `stable` and runs for every search; one that fails from where the server runs is rested by its
+  health record after a few searches. Only the four known dead stay `canary` (VidZee, Tulnex,
+  Peachify, CineSu): running them would only slow each search.
+
 ### From the enc-dec.app samples (2026-11-26, one cloud address)
 
 Each of these depends on enc-dec.app (third party, closed source): it sees what is looked up,

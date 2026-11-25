@@ -39,7 +39,7 @@ export const providers: { module: ProviderModule; stage: Stage }[] = [
   // 2026-11-25: answers for 6/6 but only 1/6 verified (2/6 on 2026-11-24): for the others the
   // endpoint names a playlist host (s-90.megavid.se) that does not exist in public DNS (NXDOMAIN on
   // cloudflare-dns.com). The one on cp.megavid.buzz plays (720p). Canary until that host answers.
-  { module: animeMegavid, stage: 'canary' },
+  { module: animeMegavid, stage: 'stable' },
   // Not here: AnimeGG (upstream src/anime/animegg). 2026-11-24: found 5 of the 6, but every file
   // redirects to a host on port 8161, which this network's egress does not carry, so 0/6 could be
   // verified; 2026-11-25: its search took over 8 s twice for all six (TIMEOUT). Megaplay (upstream

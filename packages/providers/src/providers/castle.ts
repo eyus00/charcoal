@@ -34,9 +34,11 @@ const VIDEO_BODY = {
   packageName: PKG,
 };
 
-type Row = { id?: number | string; redirectId?: number | string; title?: string; name?: string };
+/** A search result. movieType: 1 = a show, 2 = a film. publishTime: its release, epoch ms. */
+type Row = { id?: number | string; redirectId?: number | string; title?: string; name?: string; movieType?: number; publishTime?: number };
 type Track = { languageId?: number | string; languageName?: string; abbreviate?: string; isDefault?: boolean; existIndividualVideo?: boolean };
-type Episode = { id: number | string; number: number; tracks?: Track[] };
+/** duration: seconds. */
+type Episode = { id: number | string; number: number; duration?: number; tracks?: Track[] };
 type Details = { seasons?: { number: number; movieId?: number | string }[]; episodes?: Episode[] };
 type Video = {
   videoUrl?: string;
@@ -48,7 +50,50 @@ const dataOf = <T>(o: unknown): T => {
   const d = (o as { data?: unknown })?.data;
   return (d && typeof d === 'object' ? d : o) as T;
 };
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const norm = (s: string) =>
+  s
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/**
+ * Which search result is the title asked for, if any.
+ *
+ * Castle is searched by name, and a name alone picks wrong films ("Up" used to return "Up Up &
+ * Up"; a sequel matched its first part). A result is accepted only when all of these hold:
+ *   - its name is the title or one of its other names, word for word (never "contains");
+ *   - it is the same kind of thing (a film for a film, a show for a show), where Castle says;
+ *   - a film was released within a year of the one asked for; a show did not start after it.
+ * Among several that pass, the one closest in year wins. The length is checked afterwards, once
+ * the details are known (see sameLength).
+ */
+export function pickCastleRow(rows: Row[], media: Media): Row | undefined {
+  const names = new Set([media.title, ...(media.altTitles ?? [])].map(norm).filter(Boolean));
+  const wantType = media.kind === 'movie' ? 2 : 1;
+  const yearOf = (r: Row) => (r.publishTime ? new Date(r.publishTime).getUTCFullYear() : undefined);
+  const passing = rows.filter((r) => {
+    if (!names.has(norm(r.title || r.name || ''))) return false;
+    if (r.movieType !== undefined && r.movieType !== wantType) return false;
+    const year = yearOf(r);
+    if (media.year && year) return media.kind === 'movie' ? Math.abs(year - media.year) <= 1 : year >= media.year - 1;
+    return true;
+  });
+  const distance = (r: Row) => (media.year && yearOf(r) ? Math.abs(yearOf(r)! - media.year) : 0.5);
+  return passing.sort((a, b) => distance(a) - distance(b))[0];
+}
+
+/**
+ * Whether what Castle has is as long as the title should be. A film may differ by 12 % (cuts,
+ * credits, frame-rate conversions); an episode by a third. Unknown on either side passes.
+ */
+export function sameLength(media: Media, seconds: number | undefined): boolean {
+  if (!media.runtime || !seconds) return true;
+  const ratio = seconds / 60 / media.runtime;
+  return media.kind === 'movie' ? ratio > 0.88 && ratio < 1.12 : ratio > 0.67 && ratio < 1.5;
+}
 
 /** AES-128-CBC; key = base64(securityKey) + suffix, zero-padded / cut to 16 bytes; IV = key. */
 async function decrypt(cipherB64: string, securityKey: string): Promise<string> {
@@ -86,18 +131,12 @@ function client(fetcher: Fetcher, api: string, signal?: AbortSignal) {
       if (json.code !== 200 || !json.data) throw new Error('Castle: no security key');
       return json.data;
     },
-    /** Match on the title; never fall back to an unrelated first result. */
+    /** The result that is this title (see pickCastleRow); null rather than a near miss. */
     async findId(key: string, media: Media): Promise<string | null> {
       const keyword = media.year ? `${media.title} ${media.year}` : media.title;
       const params = new URLSearchParams({ channel: 'IndiaA', clientType: '1', keyword, lang: 'en-US', mode: '1', packageName: PKG, page: '1', size: '30' });
       const rows = dataOf<{ rows?: Row[] }>(await call(key, `/film-api/v1.1.0/movie/searchByKeyword?${params}`)).rows ?? [];
-      const want = norm(media.title);
-      const hit =
-        rows.find((r) => norm(r.title || r.name || '') === want) ??
-        rows.find((r) => {
-          const t = norm(r.title || r.name || '');
-          return t && (t.includes(want) || want.includes(t));
-        });
+      const hit = pickCastleRow(rows, media);
       const id = hit?.id ?? hit?.redirectId;
       return id ? String(id) : null;
     },
@@ -114,7 +153,7 @@ export const castle = defineProvider({
   manifest: {
     id: 'castle',
     name: 'Castle',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'The Castle app’s film API: HLS up to 1080p, several audio languages.',
     kinds: ['movie', 'tv'],
     languages: ['en', 'hi', 'ta', 'te', 'ml', 'kn'],
@@ -145,6 +184,8 @@ export const castle = defineProvider({
     const episodes = details.episodes ?? [];
     const episode = media.kind === 'tv' ? episodes.find((e) => e.number === media.episode) : episodes[0];
     if (!episode) throw new NotFoundError('Castle: episode not found');
+    // The right name and year, but another cut or another film altogether: better nothing than the wrong one.
+    if (!sameLength(media, episode.duration)) throw new NotFoundError(`Castle: its match runs ${Math.round((episode.duration ?? 0) / 60)} min, the title ${media.runtime} min`);
 
     const streams: RawStream[] = [];
     const captions: Caption[] = [];

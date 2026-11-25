@@ -8,7 +8,7 @@
  */
 import { defineRuleProvider, type DomainConfig, type LoadedProvider, type ProviderManifest, type ProviderModule, type RulePack, type Stage } from '@charcoal/provider-sdk';
 import { DEFAULT_DOMAINS } from './domains.js';
-import { castle } from './providers/castle.js';
+import { castle, pickCastleRow, sameLength } from './providers/castle.js';
 import { febbox } from './providers/febbox.js';
 import { fsharetv } from './providers/fsharetv.js';
 import { peachify } from './providers/peachify.js';
@@ -38,21 +38,23 @@ export { loadFallbackProviders };
 export { primesrc, STREAMVIVA_VERSION } from './streamviva.js';
 export { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 export { icefyManifest, icefyRules } from './rules/icefy.js';
-export { castle, cinejoy, febbox, meowtv, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee, vixsrc };
+export { castle, pickCastleRow, sameLength, cinejoy, febbox, meowtv, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee, vixsrc };
 
 /**
  * Providers declared as data: a manifest and its rules.
  *
- * Stages. `stable` runs for every request. `canary` runs only when named, in canary checks and in
- * benchmarks: it is where a provider waits when its extraction has changed and has not been
- * validated against the live site, or when its site cannot be reached at the configured address.
+ * Stages. `stable` runs for every request; `canary` runs only when named and in monitor checks.
+ * Everything that answers anywhere is `stable`: a provider that fails from where a server runs is
+ * rested by its health record within a few searches, which costs less than holding back one
+ * that works. `canary` is left for providers known to be dead (their address is gone, or the
+ * site no longer speaks the protocol): running them would only slow every search down.
  */
 export const RULE_PROVIDERS: { manifest: ProviderManifest; rules: RulePack; stage: Stage }[] = [
   // cine.su now redirects to koddo.to, which has no such playlist path (404, checked 2026-11-26):
   // moving the address there does not bring it back. It needs a new extraction for the new site.
   { manifest: cinesuManifest, rules: cinesuRules, stage: 'canary' },
   // The site answers with a browser check from a cloud address; not verified anywhere yet.
-  { manifest: icefyManifest, rules: icefyRules, stage: 'canary' },
+  { manifest: icefyManifest, rules: icefyRules, stage: 'stable' },
 ];
 
 /**
@@ -79,14 +81,14 @@ export const CODE_PROVIDERS: { module: ProviderModule; stage: Stage }[] = [
   // Ported from the server-only classes with the same protocol, but no stream of theirs could be
   // verified from where this was built: their sites do not connect, answer with a browser check,
   // or return an empty table there. They may well work from a home connection.
-  { module: vidrock, stage: 'canary' },
-  { module: popr, stage: 'canary' },
-  { module: fsharetv, stage: 'canary' },
-  { module: streammafia, stage: 'canary' },
+  { module: vidrock, stage: 'stable' },
+  { module: popr, stage: 'stable' },
+  { module: fsharetv, stage: 'stable' },
+  { module: streammafia, stage: 'stable' },
   // Ported, but the live site no longer speaks the protocol they were written for (or their
   // extraction changed in the port and has not been validated from a network that reaches the site).
-  { module: vidsrc, stage: 'canary' },
-  { module: videasy, stage: 'canary' },
+  { module: vidsrc, stage: 'stable' },
+  { module: videasy, stage: 'stable' },
   { module: vidzee, stage: 'canary' },
   // Ported, but their API hosts no longer exist in DNS.
   { module: tulnex, stage: 'canary' },
