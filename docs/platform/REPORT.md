@@ -41,9 +41,20 @@ would mean defeating that, which this project does not do. The frame is given no
 with "Block pop-ups" it is sandboxed (scripts yes; pop-ups and leaving the page no). The watch
 page says the player is another site's.
 
+## Anime's catalogue is AniList's
+
+TMDB lists anime as television and misses much of it (specials, OVAs, web series, a good part of
+each season), so Anime's rows, browse page and search now come from AniList, which lists every
+entry the way anime sites do and is the id those sites are searched by. A card opens the entry:
+one the mapping list places on TMDB opens as that TMDB title (library, history, episode stills);
+one TMDB lacks gets a page from AniList and plays by its AniList / MAL id in Charcoal's player.
+Limits: those entries have no library or history entry (both are keyed by TMDB id; the last
+episode opened is remembered on the device), no embedded-player fallback and no skip times; and
+the home's banner still comes from TMDB, which has the wide artwork it needs.
+
 ## Evidence and limits
 
-- 374 unit tests and 221 browser checks pass; the typecheck is clean (TESTING.md).
+- 380 unit tests and 230 browser checks pass; the typecheck is clean (TESTING.md).
 - **The framed player was not seen playing.** Its host answers curl with 200 and refused this
   sandbox's test browser with 502, so the page tests use a stand-in. Whether the real player
   starts inside a frame, and whether it still starts with pop-ups blocked, has to be checked in

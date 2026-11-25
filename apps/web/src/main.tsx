@@ -19,6 +19,8 @@ const TraktCallback = lazy(() => import('./pages/TraktCallback'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Anime = lazy(() => import('./pages/Anime'));
 const AnimeBrowse = lazy(() => import('./pages/AnimeBrowse'));
+const AnimeTitle = lazy(() => import('./pages/AnimeTitle'));
+const AnimeWatch = lazy(() => import('./pages/AnimeWatch'));
 const Indian = lazy(() => import('./pages/Indian'));
 const Sports = lazy(() => import('./pages/Sports'));
 const SportsSchedule = lazy(() => import('./pages/SportsSchedule'));
@@ -79,6 +81,7 @@ const router = createBrowserRouter([
       { path: 'calendar', element: <Calendar /> },
       { path: 'anime', element: <Anime /> },
       { path: 'anime/browse', element: <AnimeBrowse /> },
+      { path: 'anime/title/:id', element: <AnimeTitle /> },
       { path: 'indian', element: <Indian /> },
       { path: 'sports', element: <Sports /> },
       { path: 'sports/schedule', element: <SportsSchedule /> },
@@ -92,6 +95,13 @@ const router = createBrowserRouter([
     element: <Layout bare />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <Watch /> }],
+  },
+  {
+    // An episode of an AniList entry that TMDB doesn't list.
+    path: 'anime/watch/:id',
+    element: <Layout bare />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <AnimeWatch /> }],
   },
   {
     // An event or a channel from the sports directory, in its own player.

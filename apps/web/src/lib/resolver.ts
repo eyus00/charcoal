@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RegistryClient, resolveSources, type PlayableSource, type RemoteEvent, type ResolveState, type ResolverDeps } from '@charcoal/client';
-import { DEFAULT_WEIGHTS, HealthStore, mergeCaptions, normalizeStream, type EpisodeMedia, type HealthRecord, type Media, type MovieMedia, type PlaybackCapabilities, type Stream } from '@charcoal/provider-sdk';
+import { DEFAULT_WEIGHTS, HealthStore, mergeCaptions, normalizeStream, type EpisodeMedia, type HealthRecord, type AnimeMedia, type Media, type MovieMedia, type PlaybackCapabilities, type Stream } from '@charcoal/provider-sdk';
 import { animeMediaFor, looksLikeAnime, type AnimeAudio } from './anime';
 import { within } from './content';
 import { getBridge } from './extension';
@@ -370,24 +370,12 @@ function toResult(state: ResolveState, taste: Taste): JellyResult {
 /** How long a search waits to learn a title's anime identity before going on without it. */
 const ANIME_IDENTITY_MS = 8_000;
 
-/**
- * One discovery run for a title. Resolves when every provider has answered.
- *
- * A title that is anime is searched for under both of its identities at once: as the TMDB movie
- * or episode it is, and as its AniList / MAL entry (kind "anime", the episode numbered inside that
- * entry, the names anime sites use, sub or dub). Both feed one list. The TMDB search never waits
- * for the anime one, and if the anime identity can't be worked out the TMDB search is all there is.
- */
-export async function findSources(t: Target, d: Details, episodeTmdbId: number | undefined, signal: AbortSignal, onUpdate: (r: JellyResult, done: boolean) => void): Promise<JellyResult> {
+/** What every search here runs with: this browser's providers, bridge, servers and health records. */
+function resolverDeps(taste: Taste): ResolverDeps {
   const settings = getState().settings;
-  const media = mediaOf(t, d, episodeTmdbId);
-  const anime = looksLikeAnime(d);
-  const animeAudio = anime ? settings.animeAudio : undefined;
-  // Anime in its original audio is Japanese whatever language the viewer otherwise prefers.
-  const taste: Taste = { language: animeAudio === 'sub' ? 'ja' : settings.audioLang, animeAudio, originalLanguage: d.original_language || undefined };
   // Not awaited: a newer registry applies to the next search; discovery never delays playback.
   void registry.refresh();
-  const deps: ResolverDeps = {
+  return {
     pack: async () => (await import('@charcoal/providers')).loadPack({ fallback: true }),
     bridge: async () => (settings.useExtension ? getBridge() : null),
     registry: () => registry.current(),
@@ -404,6 +392,35 @@ export async function findSources(t: Target, d: Details, episodeTmdbId: number |
         }
       : undefined,
   };
+}
+
+/**
+ * Sources for an anime known only by its AniList / MAL entry (one TMDB does not list): the anime
+ * providers are asked by those ids and the entry's names. There is no TMDB search to go with it.
+ */
+export async function findEntrySources(media: AnimeMedia, signal: AbortSignal, onUpdate: (r: JellyResult, done: boolean) => void): Promise<JellyResult> {
+  const taste: Taste = { language: media.audio === 'dub' ? getState().settings.audioLang : 'ja', animeAudio: media.audio, originalLanguage: 'ja' };
+  const final = await resolveSources({ ...media, altTitles: sendable(media.altTitles ?? []) }, resolverDeps(taste), { signal, onUpdate: (s) => onUpdate(toResult(s, taste), s.done) });
+  storage.set(HEALTH_KEY, JSON.stringify(health.snapshot()));
+  return toResult(final, taste);
+}
+
+/**
+ * One discovery run for a title. Resolves when every provider has answered.
+ *
+ * A title that is anime is searched for under both of its identities at once: as the TMDB movie
+ * or episode it is, and as its AniList / MAL entry (kind "anime", the episode numbered inside that
+ * entry, the names anime sites use, sub or dub). Both feed one list. The TMDB search never waits
+ * for the anime one, and if the anime identity can't be worked out the TMDB search is all there is.
+ */
+export async function findSources(t: Target, d: Details, episodeTmdbId: number | undefined, signal: AbortSignal, onUpdate: (r: JellyResult, done: boolean) => void): Promise<JellyResult> {
+  const settings = getState().settings;
+  const media = mediaOf(t, d, episodeTmdbId);
+  const anime = looksLikeAnime(d);
+  const animeAudio = anime ? settings.animeAudio : undefined;
+  // Anime in its original audio is Japanese whatever language the viewer otherwise prefers.
+  const taste: Taste = { language: animeAudio === 'sub' ? 'ja' : settings.audioLang, animeAudio, originalLanguage: d.original_language || undefined };
+  const deps = resolverDeps(taste);
 
   // [the TMDB search, the anime search]: either may be missing at any moment.
   const parts: (ResolveState | undefined)[] = [undefined, undefined];
@@ -415,7 +432,6 @@ export async function findSources(t: Target, d: Details, episodeTmdbId: number |
   };
   const search = (m: Media, slot: 0 | 1) =>
     resolveSources(m, deps, { signal, onUpdate: (s) => ((parts[slot] = s), publish()) }).then((s) => void (parts[slot] = s));
-
   const asAnime = !anime
     ? Promise.resolve()
     : within(animeMediaFor(media, d, animeAudio!), ANIME_IDENTITY_MS, 'Looking up the anime entry')
@@ -451,15 +467,14 @@ export interface SourcesQuery {
   refetch(): void;
 }
 
-/** Sources for a title, progressively. Searches again only when asked to (`refetch`). */
-export function useSources(target: Target, d: Details | undefined, episodeTmdbId: number | undefined, enabled: boolean): SourcesQuery {
-  const settings = getState().settings;
-  const key = [target.type, target.id, target.season, target.episode, settings.serverUrl, settings.useExtension, !!settings.febboxToken, settings.febboxMaxHeight].join('|');
+type Search = (signal: AbortSignal, onUpdate: (r: JellyResult, done: boolean) => void) => Promise<JellyResult>;
+
+/** One search at a time for `key`, its list growing as providers answer. `search` is read when a search starts. */
+function useSearch(key: string, ready: boolean, enabled: boolean, search: Search): SourcesQuery {
   const [run, setRun] = useState(0);
   const [state, setState] = useState<{ key: string; data?: JellyResult; searching: boolean; error?: Error; generation: number }>({ key, searching: enabled, generation: 0 });
-  const latest = useRef({ target, d, episodeTmdbId });
-  latest.current = { target, d, episodeTmdbId };
-  const ready = enabled && !!d;
+  const latest = useRef(search);
+  latest.current = search;
 
   useEffect(() => {
     if (!ready) return;
@@ -476,17 +491,33 @@ export function useSources(target: Target, d: Details | undefined, episodeTmdbId
         return { key, data: r, searching: !done, error: undefined, generation };
       });
     };
-    const { target: t, d: details, episodeTmdbId: ep } = latest.current;
-    findSources(t, details!, ep, ctrl.signal, adopt)
+    latest
+      .current(ctrl.signal, adopt)
       .then((r) => adopt(r, true))
       .catch((e) => !ctrl.signal.aborted && setState((s) => ({ key, data: s.key === key ? s.data : undefined, searching: false, error: s.key === key && s.data ? undefined : (e as Error), generation: s.generation })));
     return () => ctrl.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, run, ready]);
 
   const refetch = useCallback(() => setRun((n) => n + 1), []);
   const current = state.key === key ? state : { key, searching: ready, generation: state.generation, data: undefined, error: undefined };
   return { data: current.data, searching: current.searching, refreshing: current.searching && !!current.data && run > 0, error: current.error, generation: current.generation, refetch };
+}
+
+const settingsKey = () => {
+  const settings = getState().settings;
+  return [settings.serverUrl, settings.useExtension, !!settings.febboxToken, settings.febboxMaxHeight].join('|');
+};
+
+/** Sources for a title, progressively. Searches again only when asked to (`refetch`). */
+export function useSources(target: Target, d: Details | undefined, episodeTmdbId: number | undefined, enabled: boolean): SourcesQuery {
+  const key = [target.type, target.id, target.season, target.episode, settingsKey()].join('|');
+  return useSearch(key, enabled && !!d, enabled, (signal, onUpdate) => findSources(target, d!, episodeTmdbId, signal, onUpdate));
+}
+
+/** Sources for an episode of an AniList entry (see findEntrySources). Nothing is searched until the entry is known. */
+export function useEntrySources(media: AnimeMedia | undefined): SourcesQuery {
+  const key = ['entry', media?.ids.anilist, media?.episode, media?.audio, settingsKey()].join('|');
+  return useSearch(key, !!media, true, (signal, onUpdate) => findEntrySources(media!, signal, onUpdate));
 }
 
 function noSourcesMessage(r: JellyResult): string {

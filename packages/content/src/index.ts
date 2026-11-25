@@ -9,6 +9,7 @@
 
 export * from './anime/mapping.js';
 export * from './anime/anilist.js';
+export * from './anime/catalog.js';
 export * from './anime/aniskip.js';
 
 export * from './sports/model.js';

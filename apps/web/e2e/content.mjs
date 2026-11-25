@@ -67,6 +67,31 @@ const ANILIST = {
 };
 const ANILIST_NOT_FOUND = fixture('anilist.ts', 'ANILIST_NOT_FOUND');
 
+// AniList's catalogue (lists, search, one entry), in the shape the live API answers with.
+const alCard = (id, idMal, english, romaji, over = {}) => ({ id, idMal, format: 'TV', status: 'FINISHED', episodes: 12, seasonYear: 2022, averageScore: 85, genres: ['Action', 'Drama'], title: { romaji, english, native: null }, coverImage: { large: `https://img.anilist.invalid/${id}.jpg` }, bannerImage: null, startDate: { year: 2022 }, nextAiringEpisode: null, ...over });
+const AL_CATALOG = [
+  alCard(131681, 48583, 'Attack on Titan Final Season Part 2', 'Shingeki no Kyojin: The Final Season Part 2'),
+  alCard(21, 21, 'ONE PIECE', 'ONE PIECE', { status: 'RELEASING', episodes: null, seasonYear: 1999, nextAiringEpisode: { episode: 1181 } }),
+  // An entry TMDB does not list (and so the mapping list has no TMDB title for it).
+  alCard(990001, 59001, 'Lantern Shop Stories', 'Chouchin-ya Monogatari', { format: 'ONA', episodes: 3, seasonYear: 2026, title: { romaji: 'Chouchin-ya Monogatari', english: 'Lantern Shop Stories', native: '提灯屋物語' } }),
+];
+/** Answers a catalogue query; undefined for the older "names of one entry" query, which is answered from ANILIST. */
+function anilistCatalog(body) {
+  const query = body.query ?? '';
+  const page = (media) => ({ pageInfo: { hasNextPage: false }, media });
+  if (/description\(asHtml/.test(query)) {
+    const card = AL_CATALOG.find((c) => c.id === body.variables?.id);
+    return card ? { status: 200, body: { data: { Media: { ...card, description: 'A quiet shop.<br><br><i>Three</i> nights.', synonyms: ['Lantern Tales'], duration: 12, studios: { nodes: [{ name: 'Studio Test' }] } } } } } : { status: 404, body: { errors: [{ message: 'Not Found.', status: 404 }], data: { Media: null } } };
+  }
+  if (!/Page\(/.test(query)) return undefined;
+  const search = String(body.variables?.s ?? '').toLowerCase();
+  const films = /format_in: \[MOVIE\]/.test(query);
+  const list = films ? [] : AL_CATALOG.filter((c) => !search || `${c.title.english} ${c.title.romaji}`.toLowerCase().includes(search));
+  // The home page asks for its rows under names of its own, all in one request.
+  const names = [...query.matchAll(/(\w+): Page\(/g)].map((m) => m[1]);
+  return { status: 200, body: { data: names.length ? Object.fromEntries(names.map((n) => [n, page(/format_in: \[MOVIE\]/.test(query.split(`${n}: Page(`)[1].split('}')[0]) ? [] : AL_CATALOG)])) : { Page: page(list) } } };
+}
+
 // AniSkip: the live answer's shape (MAL 48583, episode 1), with the times moved onto the 60 s test clip.
 const CLIP_SECONDS = 60;
 const ANISKIP = {
@@ -305,8 +330,10 @@ async function open(path, { down = [], context: reuse } = {}) {
       case 'raw.githubusercontent.com':
         return /^\/Fribb\/anime-lists\/HEAD\/anime-list-(mini|full)\.json$/.test(u.pathname) ? route.fulfill({ status: 200, contentType: 'text/plain; charset=utf-8', headers, body: JSON.stringify(ANIME_LIST) }) : json({}, 404);
       case 'graphql.anilist.co': {
-        const id = JSON.parse(request.postData() ?? '{}').variables?.id;
-        return ANILIST[id] ? json(ANILIST[id]) : json(ANILIST_NOT_FOUND, 404);
+        const body = JSON.parse(request.postData() ?? '{}');
+        const catalog = anilistCatalog(body);
+        if (catalog) return json(catalog.body, catalog.status);
+        return ANILIST[body.variables?.id] ? json(ANILIST[body.variables.id]) : json(ANILIST_NOT_FOUND, 404);
       }
       case 'api.aniskip.com': {
         const key = u.pathname.replace('/v2/skip-times/', '');
@@ -470,21 +497,50 @@ section('A. Anime');
   await context.close();
 }
 {
-  tmdbLog.length = 0;
-  const { page, context, errors } = await open('/anime');
-  const listed = await page.getByRole('link', { name: /Attack on Titan/ }).first().waitFor({ timeout: 10000 }).then(() => true, () => false);
-  const discover = tmdbLog.find((r) => r.path === 'discover/tv');
-  check('Anime’s home lists TMDB’s Japanese animation', listed && discover?.q.with_original_language === 'ja' && discover?.q.with_genres === '16', JSON.stringify(discover?.q));
+  // The catalogue is AniList's: a row of the home page, then the entry behind a card.
+  const { page, context, errors, outside } = await open('/anime');
+  const card = page.locator('a[data-anime="131681"]').first();
+  const listed = await card.waitFor({ timeout: 10000 }).then(() => true, () => false);
+  const homeAsks = outside.filter((o) => o === 'POST graphql.anilist.co/').length;
+  check('Anime’s home lists AniList’s entries, all its rows asked for in one request', listed && homeAsks === 1 && (await page.locator('a[data-anime="990001"]').count()) > 0, `${homeAsks} request(s)`);
   await shot(page, 'anime');
-  await page.getByRole('link', { name: /Attack on Titan/ }).first().click();
+  await card.click();
   let names = '';
   await until(async () => /Shingeki/.test((names = (await page.getByTestId('other-names').textContent().catch(() => '')) ?? '')), 10000);
+  check('an entry TMDB also has opens as that TMDB title, at its season', /\/tv\/1429\?season=4$/.test(page.url()), page.url().replace(site, ''));
   check('the title page shows the romaji and Japanese names', /Shingeki no Kyojin/.test(names) && /進撃の巨人/.test(names), names);
   await shot(page, 'title-anime');
   check('no page errors', errors.length === 0, errors.join(' | '));
   await context.close();
 }
-
+{
+  // An entry TMDB does not list: its own page from AniList, and its episodes by AniList / MAL id.
+  asked.length = 0;
+  const { page, context, errors } = await open('/anime/browse?q=lantern');
+  const card = page.locator('a[data-anime="990001"]');
+  await card.waitFor({ timeout: 10000 }).catch(() => {});
+  check('a search by name finds an entry TMDB doesn’t have', (await page.getByTestId('anime-grid').locator('a[data-anime]').count()) === 1 && /Lantern Shop Stories/.test((await card.textContent()) ?? ''));
+  await card.click();
+  await page.getByTestId('anime-episodes').waitFor({ timeout: 10000 }).catch(() => {});
+  const body = ((await page.textContent('main').catch(() => '')) ?? '').replace(/\s+/g, ' ');
+  check('…which has a page of its own: names, facts, description without markup, episodes', page.url().endsWith('/anime/title/990001') && /Chouchin-ya Monogatari · 提灯屋物語/.test(body) && /Web series/.test(body) && /3 episodes/.test(body) && /Studio Test/.test(body) && /A quiet shop\./.test(body) && !/<br>|<i>/.test(body) && (await page.getByTestId('anime-episodes').locator('a').count()) === 3, body.slice(0, 200));
+  await shot(page, 'anime-entry');
+  await page.getByRole('link', { name: 'Episode 2', exact: true }).click();
+  const started = await playing(page);
+  const q = asked.find((x) => x.kind === 'anime');
+  check('its episode plays in the player', started && /\/anime\/watch\/990001\?ep=2$/.test(page.url()), JSON.stringify(await video(page)));
+  check('…found by its AniList and MAL ids and its names, with no TMDB id', !!q && q.anilist === '990001' && q.mal === '59001' && q.e === '2' && q.tmdb === undefined && q.title === 'Lantern Shop Stories' && altOf(q).includes('Chouchin-ya Monogatari') && altOf(q).includes('提灯屋物語') && q.audio === 'sub' && asked.every((x) => x.kind === 'anime'), JSON.stringify(q && { anilist: q.anilist, mal: q.mal, e: q.e, tmdb: q.tmdb, alt: q.alt, audio: q.audio }));
+  await page.mouse.move(640, 300);
+  await page.getByRole('group', { name: 'Anime audio' }).getByRole('button', { name: 'Dub' }).click();
+  check('…and Dub asks again for the dubbed episode', await until(() => asked.some((x) => x.kind === 'anime' && x.audio === 'dub' && x.e === '2')));
+  await page.goto(`${site}/anime/title/990001`);
+  const resume = page.getByRole('link', { name: 'Continue episode 2' });
+  check('the entry’s page then offers to continue where you were', await resume.waitFor({ timeout: 8000 }).then(() => true, () => false));
+  await page.goto(`${site}/anime/watch/990001?ep=9`);
+  check('an episode it doesn’t have is refused in words', /doesn’t exist/.test((await page.getByTestId('anime-message').textContent({ timeout: 8000 }).catch(() => '')) ?? ''));
+  check('no page errors', errors.length === 0, errors.join(' | '));
+  await context.close();
+}
 // ===================================================================== B. Indian cinema
 section('B. Indian cinema');
 {

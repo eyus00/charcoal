@@ -30,7 +30,7 @@ in. Each has its own home, navigation and search; your library, history and the 
 | Part | What it is | Where its streams come from |
 |---|---|---|
 | **Screen** | Movies and TV shows (and Indian cinema by language) | The provider platform below |
-| **Anime** | The same catalogue cut down to anime, with sub / dub | The provider platform, also asked by AniList / MAL entry |
+| **Anime** | AniList's catalogue (every season, film, special and web series), with sub / dub. An entry TMDB also has opens as that title; one it lacks has its own page and player | The provider platform, asked by AniList / MAL entry |
 | **Sports** | Live events, what is coming up, channels, and a schedule with official links | A stream directory's own player in a frame; public free-to-air channels in Charcoal's player |
 
 Nothing needs setting up to watch: a title with no direct source after a few seconds starts in an

@@ -78,6 +78,18 @@ const EMBED_HOST = 'taifood-blog.asia';
 const page1 = (results) => ({ page: 1, results, total_pages: 1, total_results: results.length });
 const card = (id, name, lang, genres, extra = {}) => ({ id, title: name, name, original_title: name, original_name: name, original_language: lang, poster_path: `/p${id}.jpg`, backdrop_path: `/b${id}.jpg`, overview: `${name}.`, vote_average: 8.1, vote_count: 900, genre_ids: genres, release_date: '2024-01-05', first_air_date: '2024-01-05', ...extra });
 const ANIME = [card(1429, 'Attack on Titan', 'ja', [16, 10759]), card(37854, 'One Piece', 'ja', [16])];
+// AniList's catalogue, in the live API's shape: two entries, found by name.
+const alCard = (id, english, romaji) => ({ id, idMal: id, format: 'TV', status: 'FINISHED', episodes: 12, seasonYear: 2022, averageScore: 85, genres: ['Action'], title: { romaji, english, native: null }, coverImage: { large: `https://img.anilist.invalid/${id}.jpg` }, bannerImage: null, startDate: { year: 2022 }, nextAiringEpisode: null });
+const AL = [alCard(131681, 'Attack on Titan Final Season Part 2', 'Shingeki no Kyojin: The Final Season Part 2'), alCard(21, 'ONE PIECE', 'ONE PIECE')];
+const anilistAsked = [];
+function anilist(body) {
+  anilistAsked.push(body);
+  const query = body.query ?? '';
+  const names = [...query.matchAll(/(\w+): Page\(/g)].map((m) => m[1]);
+  if (names.length) return { data: Object.fromEntries(names.map((n) => [n, { media: AL }])) };
+  const search = String(body.variables?.s ?? '').toLowerCase();
+  return { data: { Page: { pageInfo: { hasNextPage: false }, media: AL.filter((c) => !search || c.title.english.toLowerCase().includes(search)) } } };
+}
 const tmdbLog = [];
 function tmdb(u) {
   const path = u.pathname.replace(/^\/3\//, '');
@@ -175,6 +187,7 @@ async function visitor(device, { ppv = { 'api.ppv.st': 'ok' }, state } = {}) {
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
     outside.push(`${u.hostname}${u.pathname}`);
     if (u.hostname === 'api.themoviedb.org') return json(tmdb(u));
+    if (u.hostname === 'graphql.anilist.co') return json(anilist(JSON.parse(request.postData() ?? '{}')));
     if (u.hostname === 'api.ppv.st' || u.hostname === 'api.ppv.cx') {
       const how = ppv[u.hostname] ?? 'down';
       return how === 'ok' ? json(listedNow()) : route.fulfill({ status: 502, headers, body: 'Bad Gateway' });
@@ -218,10 +231,10 @@ section('A. Screen, Anime, Sports: the switch in the sidebar');
 
   await nav.getByRole('link', { name: 'Anime' }).click();
   await page.waitForURL(/\/anime$/, { timeout: 5000 }).catch(() => {});
-  await page.getByRole('link', { name: /Attack on Titan/ }).first().waitFor({ timeout: 10000 }).catch(() => {});
+  await page.locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
   check('Anime: its home, its navigation, its search', (await current(page)) === 'Anime' && JSON.stringify(await railLabels(page)) === JSON.stringify(['Home', 'Series', 'Films']) && (await page.getByRole('searchbox').getAttribute('placeholder')) === 'Search anime', (await railLabels(page)).join(', '));
   const rowsShown = await page.locator('main section h2').allTextContents();
-  check('…with rows into the catalogue', ['Airing this week', 'Popular series', 'Popular films'].every((t) => rowsShown.includes(t)), rowsShown.join(' | '));
+  check('…with rows into AniList’s catalogue', ['Trending now', 'Airing this season', 'Popular series', 'Popular films'].every((t) => rowsShown.includes(t)) && (await page.locator('main a[data-anime="131681"]').count()) > 0, rowsShown.join(' | '));
   check('the logo leads to the home of the part you are in', (await page.locator('aside a[aria-label="Charcoal home"]').getAttribute('href')) === '/anime');
   await shot(page, 'anime');
 
@@ -230,16 +243,15 @@ section('A. Screen, Anime, Sports: the switch in the sidebar');
   await page.getByRole('searchbox').press('Enter');
   await page.waitForURL(/\/anime\/browse\?q=attack$/, { timeout: 5000 }).catch(() => {});
   await page.getByRole('heading', { name: '“attack”' }).waitFor({ timeout: 10000 }).catch(() => {});
-  await page.getByRole('link', { name: /Attack on Titan/ }).first().waitFor({ timeout: 10000 }).catch(() => {});
-  const found = await page.locator('main a[href^="/tv/"]').evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
-  check('an anime search shows the anime and not the live-action show of the same name', page.url().endsWith('/anime/browse?q=attack') && JSON.stringify(found) === JSON.stringify(['/tv/1429']) && (await current(page)) === 'Anime', `${page.url().replace(site, '')} → ${found.join(', ')}`);
+  await page.getByTestId('anime-grid').waitFor({ timeout: 10000 }).catch(() => {});
+  const found = await page.locator('main a[data-anime]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+  const searched = anilistAsked.find((b) => b.variables?.s === 'attack');
+  check('an anime search asks AniList by name and shows its entries', page.url().endsWith('/anime/browse?q=attack') && JSON.stringify(found) === JSON.stringify(['/anime/title/131681']) && !!searched && /format_in: \[TV, TV_SHORT, ONA, OVA, SPECIAL\]/.test(searched.query) && (await current(page)) === 'Anime', `${page.url().replace(site, '')} → ${found.join(', ')}`);
   await page.getByRole('group', { name: 'Show' }).getByRole('button', { name: 'Films' }).click();
   check('…and switching to films keeps what was searched for', await until(() => /\/anime\/browse\?(q=attack&type=movie|type=movie&q=attack)$/.test(page.url())), page.url().replace(site, ''));
 
   // A title's page belongs to every part: the switch stays where it was.
-  await page.goto(`${site}/anime`);
-  await page.getByRole('link', { name: /One Piece/ }).first().click();
-  await page.waitForURL(/\/tv\/37854/, { timeout: 5000 }).catch(() => {});
+  await page.goto(`${site}/tv/37854`);
   await page.getByRole('heading', { name: 'One Piece' }).first().waitFor({ timeout: 10000 }).catch(() => {});
   check('a title opened from Anime keeps Anime selected', (await current(page)) === 'Anime', page.url().replace(site, ''));
 
@@ -447,7 +459,7 @@ section('D. On a phone');
 
   await page.getByTestId('mode-switch').getByRole('link', { name: 'Anime' }).tap();
   await page.waitForURL(/\/anime$/, { timeout: 5000 }).catch(() => {});
-  await page.getByRole('link', { name: /Attack on Titan/ }).first().waitFor({ timeout: 10000 }).catch(() => {});
+  await page.locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
   check('Anime’s bar: Home, Series, Films, Profile', (await current(page)) === 'Anime' && JSON.stringify(await bar()) === JSON.stringify(['Home', 'Series', 'Films', 'Profile']), (await bar()).join(', '));
   await fits('Anime’s home');
   await shot(page, 'phone-anime');

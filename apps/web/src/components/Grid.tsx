@@ -34,7 +34,7 @@ export default function Grid({ items, type, loading, error, onRetry, hasMore, lo
 }
 
 /** Auto-loads when scrolled into view; the button is the fallback. */
-function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
+export function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }) {
   const ref = useRef<HTMLButtonElement>(null);
   const cb = useRef(onLoad);
   cb.current = onLoad;
