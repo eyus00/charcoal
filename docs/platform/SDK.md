@@ -62,9 +62,12 @@ Steps run in order. `when` limits a step to a media kind.
 | `extract` | `css` (with optional `attr`), `xpath`, `json` (JSONPath), `regex` (`group`), `jsonld`, `meta` (Open Graph and friends), `iframes`, `media` (stream URLs in any text), `hls` (parse a playlist). `all: true` keeps every match; `required: true` makes "nothing matched" a `SELECTOR_MISSING` failure |
 | `set` | Stores a rendered template |
 | `require` | Fails (default `STRUCTURE_CHANGED`) when a template renders empty |
+| `render` | Opens a page in the browser runtime (the manifest must require `js-render`). `waitFor`: a selector, or `media` (until the page asks for a playlist or file). `click`: a selector to click first. `capture` / `captureCaptions`: variables that receive what the page asked for. `noMediaIs: 'NOT_FOUND'` for player pages that load nothing when the site lacks the title. See BROWSER.md |
 
-Templates: `{{media.ids.tmdb}}`, `{{media.season}}`, `{{domain.site}}`, `{{settings.x}}`, any
-variable, `{{item}}` inside `each`. Filters: `urlencode`, `json`, `lower`, `upper`, `trim`,
+Templates: `{{media.ids.tmdb}}`, `{{media.season}}`, `{{domain.site}}`,
+`{{domainSetting.site.apiVersion}}` (a value configured for the address in use), `{{settings.x}}`,
+any variable, `{{item}}` inside `each`. `media`, `domain`, `domainSetting`, `settings` and `item`
+are reserved names. Filters: `urlencode`, `json`, `lower`, `upper`, `trim`,
 `pad2`, `default:value`.
 
 Validation (`validateRulePack`) rejects undeclared domain roles, variables read before they are
@@ -115,6 +118,17 @@ Rules of the road:
   provider that needs one never runs on a shared server.
 - `store` is a small per-provider key-value scratch space with a TTL (session keys, looked-up
   ids). `log(event, data)` goes to the platform log.
+- **Hosts you decoded yourself.** The policy lets you GET hosts that appeared in a response from
+  one of your own (up to three hops: embed → player → CDN). When an answer was encrypted, the
+  policy could not see the hosts in it: call `ctx.discovered(text)` with the decoded text.
+- **Values that belong to an address** (an API version, a path prefix) go in the domain config and
+  are read with `ctx.domainSetting(role, key)`; a mirror that differs in a detail then needs no
+  code.
+- **A browser**, where the runtime has one: `ctx.browser` (BROWSER.md). Either require the
+  `js-render` feature, or use it only when it is there.
+- **Several servers of one site**: run them with `gather()` from
+  `packages/providers/src/providers/shared.ts`. One server failing never fails the provider, but
+  when none answers the most telling failure is thrown, so a block is not reported as "not found".
 
 Register it in `CODE_PROVIDERS` (`packages/providers/src/index.ts`) with a stage, and add its
 domain config.
@@ -131,6 +145,11 @@ domain config.
 | `findIframes`, `findVideoElements`, `findMediaUrls` | Players and stream URLs in markup or scripts (escaped ones too) |
 | `parseHls`, `parseDash`, `sniffStreamType` | Playlists and manifests: variants, audio renditions, live or VOD, encryption, maximum height |
 | `detectQuality`, `detectExpiry`, `resolveUrl` | Labels, signed-URL expiry, relative URLs |
+| `findPlayerConfig`, `unpackScripts` | What a page's player was configured with: `sources: [{ file }]` lists, single `file:`/`src:` values, Playerjs quality lists, `<video>`/`<source>`/`<track>`, and `tracks` for captions; also inside scripts compressed with the common packer, which is undone by substitution (nothing is evaluated) |
+
+Outside `extract`: `bestTitleMatch(candidates, media)` / `normalizeTitle` for sites that are
+searched by name (accents, punctuation, numerals, alternate titles, the year against namesakes);
+`validateStream(stream, fetch, { runtime })` to try a stream without downloading it.
 
 ## 4. Domains
 
@@ -145,6 +164,8 @@ example: {
 
 - A run fails over to the next alternate by itself when the active address doesn't resolve or
   connect. Your code doesn't see it.
+- `settings` and `perOrigin` on a role hold values that belong to the address;
+  `candidate` is an address on trial (OPERATIONS.md).
 - To change an address: bump `version`, set `updatedAt`, keep the old one as an alternate. Or
   change it at run time without a deploy (OPERATIONS.md): it is validated first, audited, and
   can be rolled back.
@@ -183,6 +204,11 @@ test('meets the provider contract', async () => {
 - Fixtures are responses you write in the shape the provider expects. They prove your logic; they
   do not prove the live site still answers that way. That is the canary's job.
 - Try it on your own connection: `npm run try --workspace packages/providers -- movie 27205 Inception 2010 example`.
+  Every stream that comes back is then tried (manifest and first media bytes) and printed as
+  verified or failed. `--domain example.site=https://new.host` tries another address without
+  editing anything; `--extra ./pack.ts` loads providers from a pack file; `BROWSER=1` gives
+  providers a browser; `anime <anilist id> "<title>" <year> <episode> --alt "<other title>"` asks
+  for an anime entry.
 
 ## 6. Shipping it
 

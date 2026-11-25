@@ -20,6 +20,11 @@ Each control names the test that exercises it. "Residual" is what remains true a
 | 11 | Poisoned health through fake client reports | Reports are validated (known provider, client runtimes only, known outcome), rate-limited, stored apart, and never open a circuit on the server | `platform.test.ts` "health and reports…" | They can skew the published `fleet` numbers |
 | 12 | A website abusing the extension | Unchanged and now tested: only Charcoal's origins are answered; private addresses refused; a fixed header allow-list; a cookie only to one allow-listed site; the browser's own cookies never sent; rules scoped to the requesting tab | `apps/extension/test/background.test.mjs` (7 tests) | `<all_urls>` host permission is still required for the helper to do its job |
 | 13 | Leaking what people watch | No titles in client reports; the server keeps no per-user data; logs are per provider run (id, outcome, timing) | `client.test.ts` report assertions | Request logs of `/v2/sources` contain TMDB ids, as `/v1` logs already did |
+| 14 | A stream address returned by a provider used to reach internal services when the server tries it | Verification refuses anything but http(s) to a public host before any request, refuses a redirect that ends on a private address, sends only the stream's own headers, reads at most 1 MB of a manifest and 2 KB of media, and makes at most four requests per stream | `validate.test.ts` "a stream address is untrusted…", "an HLS stream is verified…" | Like provider fetches, the first hop of a redirect is followed by the HTTP client before the final address is checked |
+| 15 | The browser worker used as an open proxy or to reach internal services | Two layers: in the browser every request is intercepted (the page navigates only where the provider's policy allows; private addresses refused; media cancelled; a request budget), and below it every connection passes an egress guard that resolves names itself, refuses a name with any private address, pins the connection to the checked address and allows only web ports. Where a page ended up after redirects must be allowed or nothing is read from it | `worker.test.ts` "a page cannot reach private or internal addresses…", "redirects cannot carry a page to a private address either…", "the page itself only navigates where the provider policy allows…" | With a browser in another container (`BROWSER_WS_ENDPOINT`) the egress guard is not in the path: that container's network must be restricted where it runs |
+| 16 | Page scripts or one provider's browser state affecting another provider or another run | A fresh browser context per run (cookies, storage), service workers blocked, downloads and permissions off, pop-ups closed, the context destroyed with the run; kept cookies are per provider, only for its own hosts, bounded in number, size and lifetime | `worker.test.ts` "cookie lifecycle…", "limits: pages per run, requests per run, and cancellation" | The browser process is shared between runs; isolation between contexts is Chromium's |
+| 17 | A viewer's account session leaking | A supplied session is a per-device setting: never sent to the resolver, loaded only into that provider's own context, never written to the cookie store | `worker.test.ts` "a viewer’s own session…" | It is as safe as the device it is stored on |
+| 18 | An unproven address entering use, or a bad one staying in use | A new address is validated (endpoint and a real extraction) before it can even go on trial; on trial it serves a share of runs and is promoted only by clean runs, dropped after failures; after any change, repeated failures put the previous address back once; every step is audited | `domains-trial.test.ts`, `platform.test.ts` "a new address is put on trial…" | A site that works for the trial and breaks later is caught by ordinary health, not by the trial |
 
 ## Secrets
 
@@ -32,7 +37,14 @@ Each control names the test that exercises it. "Residual" is what remains true a
 ## Not addressed here
 
 - Bot checks, fingerprinting and similar access controls are detected and reported
-  (`CHALLENGE`), never worked around.
+  (`CHALLENGE`), never worked around. This holds for the browser runtime too: it reports an
+  interstitial the moment it sees one, uses no stealth tooling and leaves Chromium's automation
+  flags as they are. A site whose player sits behind a run-time gate (`vidsrc`) is offered as its
+  own player in a frame rather than extracted.
+- Sites whose answers are obfuscated by the site itself (several of the ported providers) are
+  read the way the site's own page reads them. One provider (`videasy`) hands its answer to a
+  third-party decoding service, as the class it was ported from did; that service sees the title
+  id of each lookup. It ships canary and is called out in PROVIDERS.md.
 - DRM-protected streams are out of scope; DASH manifests report `protected: true` and nothing
   plays them.
 - Third-party embeds remain third-party pages with their own behaviour (the existing sandbox

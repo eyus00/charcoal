@@ -15,6 +15,13 @@ COPY apps/server/package.json apps/server/
 COPY packages/ packages/
 RUN npm ci --workspace apps/server --include-workspace-root --omit=dev
 
+# Optional: a Chromium for the browser runtime (providers that need page JavaScript).
+#   docker build -f apps/server/Dockerfile --build-arg WITH_BROWSER=true -t charcoal-server:browser .
+# then run with BROWSER_WORKER=local. See docs/platform/BROWSER.md. About 400 MB more.
+ARG WITH_BROWSER=false
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN if [ "$WITH_BROWSER" = "true" ]; then npx playwright-core install --with-deps chromium && rm -rf /var/lib/apt/lists/*; fi
+
 COPY apps/server/ apps/server/
 
 ENV HOST=0.0.0.0 PORT=8080
