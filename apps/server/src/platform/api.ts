@@ -234,6 +234,15 @@ export function registerApi(o: ApiOptions): Platform {
     return reply.code(429).send({ error: { code: 'RATE_LIMITED', message: 'Too many requests; slow down' } });
   };
 
+  // The framework answers 406 to any request whose Accept names neither JSON nor */*. A client
+  // asking for the event stream by its own type (application/x-ndjson) is asking for what
+  // /v2/sources sends: it must not be turned away. (It was, for every viewer without the helper,
+  // until 2026-11-26.)
+  app.addHook('onRequest', async (request) => {
+    const accept = request.headers.accept;
+    if (request.url.startsWith('/v2/') && accept && !accept.includes('application/json') && !accept.includes('*/*')) request.headers.accept = `${accept}, application/json`;
+  });
+
   app.get('/v2/registry', async (_request, reply) => {
     reply.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return catalog.published();

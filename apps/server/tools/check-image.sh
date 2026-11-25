@@ -48,4 +48,9 @@ echo "ok   the relay refuses a link it didn't sign"
 CODE=$(curl -s -m 5 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/v2/admin/providers")
 [ "$CODE" = "404" ] || fail "admin endpoints exist without ADMIN_TOKEN ($CODE)"
 echo "ok   the control plane is absent without ADMIN_TOKEN"
+# The website asks for the event stream by its own type; the real server (framework and all) must
+# answer it. A request for nothing (kind missing) is refused with 400, not with 406.
+CODE=$(curl -s -m 5 -o /dev/null -w '%{http_code}' -H 'Accept: application/x-ndjson' "http://127.0.0.1:$PORT/v2/sources")
+[ "$CODE" = "400" ] && echo "ok   /v2/sources accepts a client that asks for application/x-ndjson" || fail "/v2/sources answered $CODE to Accept: application/x-ndjson (expected 400 for a request with no title)"
+
 echo "Image recipe check passed"

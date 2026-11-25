@@ -37,7 +37,8 @@ async function* remote(base: string, query: URLSearchParams, signal: AbortSignal
   try {
     let res: Response;
     try {
-      res = await fetch(`${base}/v2/sources?${query}`, { signal: ctrl.signal, headers: { Accept: 'application/x-ndjson' } });
+      // Both types: the server framework refuses, with 406, a request that does not also accept JSON.
+      res = await fetch(`${base}/v2/sources?${query}`, { signal: ctrl.signal, headers: { Accept: 'application/x-ndjson, application/json' } });
     } catch {
       throw new Error(signal.aborted ? 'cancelled' : 'Couldn’t reach the server');
     }
