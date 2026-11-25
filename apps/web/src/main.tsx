@@ -112,6 +112,14 @@ const router = createBrowserRouter([
 // The app booted fine, so a later stale-chunk error may reload once again.
 window.setTimeout(clearChunkReloadFlag, 10_000);
 
+// Once the first page is up and the browser has nothing to do: the code for what a hover or a
+// long press opens (the details peek), so it doesn't start with a download. Not on a connection
+// the viewer has asked to spare.
+if (!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) {
+  const whenIdle = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 2500));
+  whenIdle(() => void import('./components/PeekHost'), { timeout: 6000 });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

@@ -10,7 +10,7 @@
  *             "how to watch" page, opened in a new tab.
  */
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import {
   createStreamDirectory,
   createTheSportsDb,
@@ -213,16 +213,18 @@ const directory = createStreamDirectory(webFetcher);
  * What the directory lists now. It is asked again every minute while a page that shows it is open
  * (its own answer is cached for ten seconds), and a copy kept from the last visit paints first.
  */
+const DIRECTORY_QUERY = {
+  queryKey: ['sports-directory'],
+  queryFn: ({ signal }: { signal?: AbortSignal }): Promise<StreamDirectory> => within(directory.load(signal), 15_000, 'The sports directory'),
+  staleTime: 30_000,
+};
+
 export function useDirectory() {
-  return useQuery<StreamDirectory>({
-    queryKey: ['sports-directory'],
-    queryFn: ({ signal }) => within(directory.load(signal), 15_000, 'The sports directory'),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
-    retry: 1,
-  });
+  return useQuery({ ...DIRECTORY_QUERY, refetchInterval: 60_000, refetchOnWindowFocus: true, retry: 1 });
 }
+
+/** Asks ahead of the page (the pointer is on "Sports"), so the page opens with its list. */
+export const prefetchDirectory = (client: QueryClient) => client.prefetchQuery(DIRECTORY_QUERY);
 
 /** The clock, ticking every half minute: an event moves from "coming up" to "live" between refreshes. */
 export function useNow(): number {

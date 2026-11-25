@@ -1,15 +1,15 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { ArrowUp, CalendarClock, CalendarDays, Clapperboard, Heart, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Radio, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
-import { MODES, modeHome, useMode, type Mode } from '../lib/mode';
+import { MODES, modeHome, useMode, warmMode, type Mode } from '../lib/mode';
 import { actions, useStore } from '../lib/store';
 import { cx, scrollBehavior } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
 import { Wordmark } from './Logo';
-import PeekHost from './PeekHost';
 import { startReminderLoop } from '../lib/reminders';
 import { migrateLibrary, useLibraryReminders } from '../lib/library';
 import { startWatchlistSync, syncWatchlistOnStart } from '../lib/trakt';
@@ -18,6 +18,9 @@ import Kbd from './Kbd';
 import { btn } from './Button';
 import { OfflineNotice, Toaster, toast } from './Toast';
 import { Tip as HoverTip } from './Tip';
+
+// The details peek and the episode list it opens: needed on a hover or a long press, not to paint a page.
+const PeekHost = lazy(() => import('./PeekHost'));
 
 /** The one search input; search buttons focus it inside the tap so mobile keyboards open. */
 const searchInput: { current: HTMLInputElement | null } = { current: null };
@@ -85,7 +88,9 @@ function Shell() {
       <ScrollTop />
       <Hotkeys openSearch={() => searchCtl.open()} />
       <ReminderLoop />
-      <PeekHost />
+      <Suspense fallback={null}>
+        <PeekHost />
+      </Suspense>
       <Toaster />
       <OfflineNotice />
     </div>
@@ -270,6 +275,7 @@ const Sep = () => <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" /
  * one the same three stack as icons. The compact version sits at the top of the page below lg.
  */
 function ModeSwitch({ mode, layout }: { mode: Mode; layout: 'row' | 'column' | 'compact' }) {
+  const client = useQueryClient();
   return (
     <nav
       aria-label="Screen, Anime or Sports"
@@ -286,6 +292,8 @@ function ModeSwitch({ mode, layout }: { mode: Mode; layout: 'row' | 'column' | '
             key={m.key}
             to={m.home}
             aria-current={on ? 'true' : undefined}
+            onPointerEnter={() => !on && warmMode(m.key, client)}
+            onFocus={() => !on && warmMode(m.key, client)}
             aria-label={layout === 'column' ? m.label : undefined}
             title={layout === 'column' ? undefined : m.about}
             className={cx(

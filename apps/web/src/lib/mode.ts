@@ -12,6 +12,7 @@
 import { MonitorPlay, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
+import type { QueryClient } from '@tanstack/react-query';
 import { actions, getState, useStore } from './store';
 
 export type Mode = 'screen' | 'anime' | 'sports';
@@ -42,6 +43,19 @@ export function useMode(): Mode {
     if (here && here !== getState().settings.mode) actions.updateSettings({ mode: here });
   }, [here]);
   return here ?? kept;
+}
+
+/**
+ * The pointer is on a part's name: fetch its home's code, and for Sports what is on, so the
+ * click that follows opens a page that is already there. (Imported on demand: none of it is in
+ * the first download.)
+ */
+export function warmMode(mode: Mode, client: QueryClient) {
+  if (mode === 'anime') void import('../pages/Anime');
+  if (mode === 'sports') {
+    void import('../pages/Sports');
+    void import('./sports').then((m) => m.prefetchDirectory(client));
+  }
 }
 
 /**
