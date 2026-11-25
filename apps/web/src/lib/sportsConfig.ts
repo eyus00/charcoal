@@ -1,7 +1,8 @@
 /**
- * What the Sports page offers. This file is configuration, kept by whoever operates the site:
- * which sports and competitions to list, which public channels may play here, and where each
- * competition's official "how to watch" page is. Nothing in it points at an unofficial stream.
+ * What Sports' Schedule and Channels pages offer. This file is configuration, kept by whoever
+ * operates the site: which sports and competitions the schedule lists, which public channels may
+ * play in Charcoal's player, and where each competition's official "how to watch" page is.
+ * (Live events come from the stream directory instead: see lib/sports.)
  */
 import type { LinkoutTable } from '@charcoal/content';
 

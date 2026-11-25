@@ -43,7 +43,7 @@ page says the player is another site's.
 
 ## Evidence and limits
 
-- 374 unit tests and 218 browser checks pass; the typecheck is clean (TESTING.md).
+- 374 unit tests and 221 browser checks pass; the typecheck is clean (TESTING.md).
 - **The framed player was not seen playing.** Its host answers curl with 200 and refused this
   sandbox's test browser with 502, so the page tests use a stand-in. Whether the real player
   starts inside a frame, and whether it still starts with pop-ups blocked, has to be checked in

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ChevronDown, ExternalLink, RotateCw, X } from 'lucide-react';
 import { listingState, type LiveListing } from '@charcoal/content';
@@ -23,7 +23,14 @@ const SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation'
 export default function SportsWatch() {
   const { id = '' } = useParams();
   const directory = useDirectory();
-  const listing = directory.data?.listings.find((l) => l.id === id);
+  const listed = directory.data?.listings.find((l) => l.id === id);
+  // A match that runs long is taken off the directory while it is still being watched: what was
+  // opened stays open, whatever later answers say.
+  const [kept, setKept] = useState(listed);
+  useEffect(() => {
+    if (listed) setKept(listed);
+  }, [listed]);
+  const listing = listed ?? (kept?.id === id ? kept : undefined);
   useTitle(listing ? `${listing.title} · Sports` : 'Sports');
   const leave = useLeave();
   // Esc closes, unless a menu is open (it closes that) or the frame is fullscreen.
@@ -51,14 +58,20 @@ function Stream({ listing: l, onClose }: { listing: LiveListing; onClose: () => 
   const noticeOff = useStore((s) => s.settings.embedNoticeOff);
   const [choice, setChoice] = useState(0);
   const [reloads, setReloads] = useState(0);
-  // An event that hasn't started shows when it does; the player can still be opened early.
-  const [early, setEarly] = useState(false);
+  // The player is shown from the moment the event is live (or the viewer opens it early), and
+  // then stays: the clock passing the scheduled end must not take a game in extra time away.
+  const [open, setOpen] = useState(state === 'live');
+  useEffect(() => {
+    if (state === 'live') setOpen(true);
+  }, [state]);
   const [notice, setNotice] = useState(!noticeOff);
   const option = l.options[Math.min(choice, l.options.length - 1)];
   const labels = optionLabels(l.options);
   const start = l.channel ? null : localStart(l.startsAt, now);
-  const subtitle = l.channel ? `${l.sport} · Always on` : [l.league || l.sport, state === 'live' ? 'Live' : state === 'ended' ? 'Ended' : `${start!.day} ${start!.time}`].join(' · ');
-  const waiting = state === 'upcoming' && !early;
+  const subtitle = l.channel
+    ? `${l.sport} · Always on`
+    : [l.league || l.sport, state === 'live' ? 'Live' : state === 'upcoming' ? `${start!.day} ${start!.time}` : open ? '' : 'Ended'].filter(Boolean).join(' · ');
+  const waiting = !open;
 
   useKeys({ r: () => setReloads((n) => n + 1) }, !waiting);
 
@@ -119,11 +132,8 @@ function Stream({ listing: l, onClose }: { listing: LiveListing; onClose: () => 
       )}
 
       <div className="relative min-h-0 flex-1">
-        {waiting ? (
-          <NotYet listing={l} now={now} onOpen={() => setEarly(true)} />
-        ) : state === 'ended' && !early ? (
-          <Ended onOpen={() => setEarly(true)} />
-        ) : (
+        {open ? null : state === 'upcoming' ? <NotYet listing={l} now={now} onOpen={() => setOpen(true)} /> : <Ended onOpen={() => setOpen(true)} />}
+        {open && (
           <iframe
             // A new frame for another stream, a reload, or a change of the pop-up setting.
             key={`${option.embed}|${reloads}|${blockPopups}`}

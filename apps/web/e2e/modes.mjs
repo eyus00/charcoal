@@ -159,6 +159,13 @@ async function visitor(device, { ppv = { 'api.ppv.st': 'ok' }, state } = {}) {
   const errors = [];
   const outside = [];
   const framed = [];
+  /** Names the directory stops listing from now on (an event it has taken off). */
+  const delisted = new Set();
+  const listedNow = () => {
+    const d = directory();
+    for (const category of d.streams) category.streams = category.streams.filter((s) => !delisted.has(s.name));
+    return d;
+  };
   await context.route('**/*', async (route) => {
     const request = route.request();
     const u = new URL(request.url());
@@ -170,7 +177,7 @@ async function visitor(device, { ppv = { 'api.ppv.st': 'ok' }, state } = {}) {
     if (u.hostname === 'api.themoviedb.org') return json(tmdb(u));
     if (u.hostname === 'api.ppv.st' || u.hostname === 'api.ppv.cx') {
       const how = ppv[u.hostname] ?? 'down';
-      return how === 'ok' ? json(directory()) : route.fulfill({ status: 502, headers, body: 'Bad Gateway' });
+      return how === 'ok' ? json(listedNow()) : route.fulfill({ status: 502, headers, body: 'Bad Gateway' });
     }
     if (u.hostname === EMBED_HOST || u.hostname === 'vidlink.pro') {
       framed.push({ url: u.href, referer: request.headers().referer ?? null });
@@ -185,7 +192,7 @@ async function visitor(device, { ppv = { 'api.ppv.st': 'ok' }, state } = {}) {
     await page.goto(`${site}${path}`);
     return page;
   };
-  return { context, open, errors, outside, framed };
+  return { context, open, errors, outside, framed, delisted };
 }
 
 const current = (page) => page.getByTestId('mode-switch').first().locator('[aria-current="true"]').textContent().catch(() => null);
@@ -375,6 +382,29 @@ section('C. Sports: what is on, and watching it');
   await gone.waitFor({ timeout: 8000 }).catch(() => {});
   check('an entry that isn’t listed (ended, or never safe to frame) gets a plain message and no frame', /isn’t on any more/.test(await text(gone)) && (await page.locator('iframe').count()) === 0 && (await gone.getByRole('link', { name: 'See what’s on' }).getAttribute('href')) === '/sports', await text(gone));
   check('nothing but the directory, TMDB and the framed player was contacted', v.outside.every((o) => /^(api\.ppv\.st\/api\/streams|api\.themoviedb\.org\/|taifood-blog\.asia\/embed\/)/.test(o)), [...new Set(v.outside.map((o) => o.split('/')[0]))].join(', '));
+  check('no page errors', v.errors.length === 0, v.errors.join(' | '));
+  await v.context.close();
+}
+{
+  // A game in extra time: the clock passes its scheduled end, and the directory takes it off.
+  const v = await visitor(DESKTOP);
+  const page = await v.context.newPage();
+  page.on('pageerror', (e) => v.errors.push(e.message));
+  await page.clock.install();
+  await page.goto(`${site}/sports/watch/${ID.live}`);
+  const frame = page.locator('iframe');
+  await frame.waitFor({ timeout: 8000 }).catch(() => {});
+  const src = await frame.getAttribute('src').catch(() => null);
+  const loads = v.framed.length;
+  const asks = () => v.outside.filter((o) => o.startsWith('api.ppv.st')).length;
+  const before = asks();
+  v.delisted.add('Gonzaga Bulldogs at Kansas State Wildcats');
+  await page.clock.fastForward('03:00:00');
+  await until(() => asks() > before, 5000);
+  await sleep(800);
+  check('a player that is open stays open past the scheduled end and after the directory drops the event', asks() > before && (await frame.getAttribute('src').catch(() => null)) === src && !!src && v.framed.length === loads && (await page.getByTestId('ended').count()) === 0 && (await page.getByTestId('sports-message').count()) === 0, `asked again ${asks() - before}×, ${v.framed.length - loads} reloads`);
+  await page.goto(`${site}/sports/watch/${ID.live}`);
+  check('…while opening it afresh then says it isn’t on any more', await until(async () => /isn’t on any more/.test(await text(page.getByTestId('sports-message')))));
   check('no page errors', v.errors.length === 0, v.errors.join(' | '));
   await v.context.close();
 }
