@@ -124,7 +124,7 @@ Nothing was deployed and no external system was changed.
 
 ## Phase 1. Verification and preparation
 
-- **Created**: `docs/platform/PLAN.md`.
+- **Created**: an implementation plan (removed once it was carried out; this report records what was built).
 - **Result**: every code reference in the research report re-checked against current `main`;
   baseline typecheck green; the hosted server re-measured (no provider `ok`); one correction to
   the research (the relay refused HTML pages but passed any other URL unsigned).

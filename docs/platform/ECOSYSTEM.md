@@ -103,7 +103,7 @@ Recommendation is one of *integrate directly*, *port* (named providers), *refere
 | Project | Last commit | Public code | Language | Licence | Provider shape and result | Runtime needs | Fit | Recommendation |
 |---|---|---|---|---|---|---|---|---|
 | `codeberg.org/eclipsia/nuvio-plugin` | 2026-11-24 | Yes | JavaScript | **AGPL-3.0-or-later** (LF, RM) | One file per scraper: `getStreams(tmdbId, mediaType, season, episode)` returning `[{name, title, url, quality, headers}]`. 51 scrapers | Global `fetch`; 7 files use `cheerio`, 2 `crypto-js`; several carry their own pure-JS SHA-256/AES | Port is easy technically; the result would be AGPL | Reference only for behaviour (VidNest v2, Vidrock, VidLink, VidFast, Castle, MovieBox, 4KHDHub, MoviesDrive, anime sites) |
-| `github.com/yoruix/nuvio-providers` (same repository as `tapframe/nuvio-providers`: both names return the same six branch heads) | `main` 2026-06-07 (default branch `template` 2026-02-12) | Yes | JavaScript | GPL-3.0 (LF, PJ; GitHub sidebar) | Same; 34 scrapers | `cheerio-without-node-native`, `crypto-js`; one uses `ws`, one `axios` | GPL derivative if ported | Reference only. Identical to the copy in `apps/server/vendor/nuvio-providers`; nothing newer upstream |
+| `github.com/yoruix/nuvio-providers` (same repository as `tapframe/nuvio-providers`: both names return the same six branch heads) | `main` 2026-06-07 (default branch `template` 2026-02-12) | Yes | JavaScript | GPL-3.0 (LF, PJ; GitHub sidebar) | Same; 34 scrapers | `cheerio-without-node-native`, `crypto-js`; one uses `ws`, one `axios` | GPL derivative if ported | Reference only (Castle was ported from it; the vendored copy has been removed) |
 | `github.com/NuvioPlugin/All-in-One-Nuvio` (`D3adlyRocket/All-in-One-Nuvio` returns the same commit) | 2026-10-02 | Yes | JavaScript | **Unclear**: README says GPL-3.0 "see the LICENSE file"; there is no LICENSE file and the GitHub sidebar shows none | Same; 66 scrapers, some bundled with Node shims | Mixed | Not portable without a licence | Reference only |
 | `codeberg.org/CENSORED/Nuvio-Plugin` | 2026-09-18 | Yes | JavaScript | GPL-3.0 (LF, RM) | Same; 15 scrapers, Indian sites, with a `domains.json` | `cheerio` | GPL derivative | Reference only |
 | `github.com/falsisdev/anthology` | 2026-11-23 | Yes | JavaScript | **Conflict**: LICENSE file is GPL-3.0, `package.json` says MIT | Same; 42 scrapers, Turkish sites and Turkish channel lists | `cheerio`, bundling | Treat as GPL | Reference only (Turkish) |
@@ -379,7 +379,7 @@ this in their headers. See section 2 for what "200" does and does not mean.
   `.one`, then `.art`), `animepahe` (`animepahe.pw`: challenge), `allanime`
   (`api.allanime.day`: challenge), `animekai` (`www3.anikai.cc`: DNS failure), `animetsu`
   (`animetsu.live`: no A record). Licence unclear, so reference only.
-- **`yoruix/nuvio-providers`**: unchanged since the copy Charcoal vendors.
+- **`yoruix/nuvio-providers`**: unchanged since 2026-11-08, when Castle was ported from it (the vendored copy that used to sit in `apps/server/vendor` was removed: nothing loaded it).
 
 ### 4.6 WebStreamr family (MIT, archived) — German, French, Italian, Spanish
 

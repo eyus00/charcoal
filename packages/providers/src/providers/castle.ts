@@ -1,5 +1,5 @@
 /**
- * Castle: adapted from nuvio-providers (GPL-3.0; see apps/server/vendor/nuvio-providers/LICENSE).
+ * Castle: adapted from castle.js in github.com/yoruix/nuvio-providers (GPL-3.0).
  *
  * Talks to the Castle app's film API: fetch a per-session key, search by title, read the movie or
  * season details, then ask for the video. Responses are AES-128-CBC encrypted with that key (plus
