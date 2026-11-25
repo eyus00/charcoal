@@ -1,6 +1,7 @@
 # Charcoal
 
-A movie & TV streaming frontend and the server that finds its streams, in one repository.
+A streaming frontend for movies and TV, anime and live sports, and the server that finds its
+streams, in one repository.
 
 ```
 apps/
@@ -20,6 +21,23 @@ packages/
 docs/platform/    Architecture, the provider SDK guide, operations, security review, testing,
                   the availability measurements and the provider status table
 ```
+
+## Three parts, one shell
+
+A switch below the logo (at the top of the page on a phone) chooses the part of Charcoal you are
+in. Each has its own home, navigation and search; your library, history and the player are shared.
+
+| Part | What it is | Where its streams come from |
+|---|---|---|
+| **Screen** | Movies and TV shows (and Indian cinema by language) | The provider platform below |
+| **Anime** | The same catalogue cut down to anime, with sub / dub | The provider platform, also asked by AniList / MAL entry |
+| **Sports** | Live events, what is coming up, channels, and a schedule with official links | A stream directory's own player in a frame; public free-to-air channels in Charcoal's player |
+
+Nothing needs setting up to watch: a title with no direct source after a few seconds starts in an
+embedded player, and a sports event is one tap from its player. Sports events and their players
+come from a third-party directory (PPV's public API); it gives player pages, not stream
+addresses, so they are framed and Charcoal cannot see or control what the frame shows.
+`docs/platform/PROVIDERS.md` says how far each of these has been verified.
 
 ## Where streams come from
 

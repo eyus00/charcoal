@@ -26,10 +26,14 @@ Configuration (`.env`, optional; see `.env.example`):
 ```
 src/
   main.tsx            routes, query client
-  lib/                tmdb client, image sizing, filters, local store, servers, episode logic
-  components/         layout, cards, rows, filters, episode list, skeletons
-  pages/              Home, Catalog (movies/tv), Search, Details, Watch, Library
-  player/             Player (Jelly / hls.js), EmbedPlayer (iframes)
+  lib/                tmdb client, image sizing, filters, local store, servers, episode logic,
+                      mode (Screen / Anime / Sports), the resolver, anime and sports adapters
+  components/         layout (sidebar, mode switch, search, phone bar), hero, cards, rows, filters
+  pages/              Screen: Home, Discover, Indian · Anime: Anime, AnimeBrowse ·
+                      Sports: Sports, SportsSchedule, SportsChannels, SportsWatch, Live ·
+                      shared: Details, Watch, Profile, Calendar
+  player/             Player (Jelly: hls.js, dash.js), EmbedPlayer (iframes)
+e2e/                  browser checks of the built site (npm run test:e2e)
 ```
 
 ## Notes

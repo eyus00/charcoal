@@ -1,3 +1,57 @@
+# Three parts and live sports: implementation report (phase 3)
+
+Branch `claude/gallant-fermi-kf7wqm`, with `main` (the visual updates, `69e7c93`) merged in.
+Nothing was deployed. The earlier reports follow below, unchanged.
+
+## What was delivered
+
+| Asked for | Delivered | Where |
+|---|---|---|
+| The platform work on top of the visual updates | `main` merged; three conflicts (player, layout, shortcuts) resolved keeping main's visuals and this branch's streaming | merge `061baa0` |
+| A switch below the logo: movies and TV (one word), anime, sports | **Screen**, **Anime**, **Sports**: a pill in the open sidebar, three icons in the collapsed one, a pill at the top of the page below `lg`. Each part has its own navigation, phone bar, search and home; the part follows the page, and opening the site lands in the one used last | `lib/mode.ts`, `components/Layout.tsx` |
+| The anime version | A home (banner, continue watching, six rows) and a browse page that also searches by name; shortcuts and search stay inside Anime | `pages/Anime.tsx`, `AnimeBrowse.tsx` |
+| The sports version, with the streams the listed sites embed | Live now, coming up (by day, in the viewer's time zone), sport pills, search; a watch page that frames the directory's player; channels; the schedule with official links kept as its own page | `pages/Sports*.tsx`, `packages/content/src/sports/directory.ts` |
+| Extract streams from the embed if possible, otherwise embed | Embed. See below | |
+| Minimal setup to start a stream | A viewer with no helper and no server of their own gets the embedded player after seven seconds of an empty search (was: when the whole search ended); sports events are one tap from their player; nothing asks for an install | `pages/Watch.tsx` |
+| Smooth and fast | The details peek loads on demand: main bundle 325 kB (350 before, 336 before this phase). Pointing at a part fetches its code, and for Sports what is on. Anime rows and the sports list paint from the last visit's copy | `main.tsx`, `lib/mode.ts`, `lib/persist.ts` |
+| Mobile | Every new page checked at 390 px and 320 px for overflow; the switch, the bar, search and the player page have phone layouts | `e2e/modes.mjs` section D |
+| Clean the repository | 110 files removed: an unused vendored reference library and its test tool and results, the carried-out plan, an intermediate benchmark run, two stray screenshots | commit `be8bcdd` |
+
+## The sports source
+
+The list of live-sports sites this project follows used to lead with Streamed, whose API many
+of them embedded. **Streamed has closed**: `streamed.pk` now serves a closure notice that
+recommends other sites, PPV first. One of the aggregators on the list (Reedstreams) serves PPV's
+images through its own API. So the directory read here is PPV's `GET /api/streams`:
+
+- It answers any web page (`Access-Control-Allow-Origin: *`), so the site reads it straight
+  from the browser: no server, nothing to set up.
+- On 2026-11-25 it listed 206 streams in ten categories: events with a start and an end, and
+  always-on channels, each with the address of a player page and alternatives (HD / SD, other
+  broadcasts).
+- Its answer carries the line "Interested in using our API? Contact us for more information."
+  It is open, and its owner asks integrators to get in touch. **That is a step for the operator
+  before this goes to production.**
+- A second address named by the site's own pages (`api.ppv.cx`) is tried when the first does not
+  answer. It did not connect from here; the fail-over is tested against a mock.
+
+**Extraction was not possible, so events are framed.** The player page is 269 KB of obfuscated
+script with an encrypted configuration and no stream address in it. Taking a stream out of it
+would mean defeating that, which this project does not do. The frame is given no referrer, and
+with "Block pop-ups" it is sandboxed (scripts yes; pop-ups and leaving the page no). The watch
+page says the player is another site's.
+
+## Evidence and limits
+
+- 374 unit tests and 218 browser checks pass; the typecheck is clean (TESTING.md).
+- **The framed player was not seen playing.** Its host answers curl with 200 and refused this
+  sandbox's test browser with 502, so the page tests use a stand-in. Whether the real player
+  starts inside a frame, and whether it still starts with pop-ups blocked, has to be checked in
+  an ordinary browser. If it refuses sandboxing, the default (pop-ups not blocked) still works
+  as the site's other embedded players do.
+- The name **Screen** for movies and TV is one constant (`MODES` in `lib/mode.ts`).
+- Removed files are in history: `git checkout be8bcdd^ -- <path>` restores any of them.
+
 # Source expansion: implementation report (phase 2)
 
 Branch `claude/gallant-fermi-kf7wqm`, on top of `fd7ce76` (the provider platform). Nothing was
