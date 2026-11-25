@@ -1,3 +1,121 @@
+# Source expansion: implementation report (phase 2)
+
+Branch `claude/gallant-fermi-kf7wqm`, on top of `fd7ce76` (the provider platform). Nothing was
+deployed and no external system was changed. The earlier report follows below, unchanged.
+
+The short version: from one cloud address, verified streams went from 55 to 127, providers with a
+verified stream from 2 to 10, and titles covered by two or more providers from 1 of 34 to 27 of
+34. The hosted server still returns nothing, because nothing is deployed and its failure is a
+connection problem of that host. No run from a home connection exists. AVAILABILITY.md has the
+measurements; PROVIDERS.md says, integration by integration, how far the evidence goes.
+
+## What was delivered
+
+| Objective | Delivered | Where |
+|---|---|---|
+| 1, 11. Measure availability | A benchmark (34 titles; discovered, unique, verified, started; per provider, category and failure code; single, side-by-side and matrix reports), a baseline, a final run | `packages/bench`, `docs/platform/data/`, AVAILABILITY.md |
+| 2. Port the twelve legacy providers | All twelve are SDK modules (two are rule packs); the classes are removed; a migration table | `packages/providers`, PROVIDERS.md |
+| 3. Research and integrate more providers | A second ecosystem survey with live probes; six providers added on evidence (five anime, VidLink); candidates that failed the gate documented | ECOSYSTEM.md, PROVIDERS.md |
+| 4. Browser extraction runtime | A Playwright worker with two network layers, sessions, limits, challenge and sign-in detection, health; a `render` step for rule packs | `packages/browser-runtime`, BROWSER.md |
+| 5. Scraper framework | Address trials with automatic promotion and rollback, per-address settings, DNS-over-HTTPS domain diagnosis, wider discovery rules, embedded-player and packed-script extraction, title matching | `packages/provider-sdk` |
+| 6. Remote execution | Measured where it could be; a placement verdict per provider and runtime from the kinds of failure; `works-elsewhere` | AVAILABILITY.md section 4, `health.ts` |
+| 7. Aggregation | Streams sent as discovered, then tried and reported as verified or failed; ranking uses it; per-provider verification counts | `validate.ts`, `/v2/sources`, `packages/client` |
+| 8. Playback | DASH in the existing player (lazy), DRM refused, undecodable codecs skipped with a reason, expired links renewed, live mode | `apps/web/src/player` |
+| 9. Content expansion | Anime, Indian cinema and sports as working pages and flows | `apps/web`, `packages/content` |
+| 10. User experience | Anime and regional titles need no extra step; audio language and sub/dub are preferences; sources say whether they were verified and why one cannot play | `apps/web` |
+
+## Files
+
+- **Created**: `packages/bench/`, `packages/browser-runtime/`; in
+  `packages/provider-sdk/src`: `validate.ts`, `browser.ts`, `match.ts`, `diagnose-domain.ts`,
+  `extract/players.ts` and five test files; in `packages/providers/src`: twelve ported providers
+  (`providers/*.ts`, `rules/icefy.ts`), `rules/vidlink.ts`, five `providers/anime-*.ts` with
+  `packs/anime.ts`, `providers/shared.ts`, three test files; in `apps/web/src`: `pages/Anime.tsx`,
+  `Indian.tsx`, `Sports.tsx`, `Live.tsx`, `lib/anime.ts`, `content.ts`, `regional.ts`,
+  `sports.ts`, `sportsConfig.ts`, `playback-engines.ts`, `player/dash.ts`,
+  `components/Segmented.tsx`, `e2e/content.mjs`, `e2e/playback.mjs`; docs AVAILABILITY.md,
+  PROVIDERS.md, BROWSER.md, ECOSYSTEM.md and `docs/platform/data/`.
+- **Modified**: the SDK (`types`, `net`, `policy`, `domains`, `engine`, `rules`, `health`, `rank`,
+  `playback`, `recovery`, `errors`), the server (`server.ts`, `platform/api.ts`, `overlay.ts`,
+  Dockerfile, `.env.example`), `packages/client/src/resolver.ts`, the website's Watch, Details,
+  Home and Profile pages, player, resolver and store, `packages/content` (TheSportsDB key
+  handling), the CI workflow, the existing docs.
+- **Removed**: the twelve legacy classes under `apps/server/src/providers/` (ported). The three
+  classes that were already disabled upstream are untouched.
+
+## Architecture changes
+
+- Providers can use a browser (`ctx.browser`, the `js-render` feature) and rule packs can render
+  a page. The server starts a worker only when asked.
+- A stream now has a `verification`; `/v2/sources` sends `verify` lines after results.
+- Health has a placement per provider and runtime, and a rollup across runtimes.
+- A domain role can carry a candidate address on trial, a watch after a change, and settings
+  that belong to an address.
+- Stages are assigned on evidence: `stable` needs a verified stream. A canary graduates by
+  itself after three monitor checks in a row with a verified stream.
+- The website asks for two identities for anime, and plays HLS, DASH and files through one
+  engine interface.
+
+## Dependencies introduced
+
+- `playwright-core` 1.63.0 (the browser driver; no browser is downloaded with it) in
+  `packages/browser-runtime`. Chromium itself is optional: `--build-arg WITH_BROWSER=true`.
+- `dashjs` 5.3 in the website, as a lazy chunk (825 kB, 243 kB gzipped; the main chunk grew by
+  0.1 kB).
+
+## Tests
+
+367 tests in nine packages and 145 browser and image checks, all passing; typecheck clean; both
+builds succeed. TESTING.md lists the suites and, at length, what is not proven.
+
+## Behaviour changes to know before deploying
+
+- **Stages.** Eleven ported providers that were "enabled" as classes (and returning nothing) are
+  now `canary`: they do not run for ordinary requests until they pass three monitor checks with a
+  verified stream, or someone promotes them. On a home server they will come back by themselves
+  where they work; `PROMOTE_CANARY_AFTER=0` turns that off.
+- **Verification** is on: the server makes up to four small requests per discovered stream.
+  `VERIFY_STREAMS=false` turns it off.
+- **VidLink and VidNest need a browser worker.** Without `BROWSER_WORKER=local` (and an image
+  built with Chromium) or `BROWSER_WS_ENDPOINT`, they are skipped, and the redundancy measured
+  here for films and series is not there.
+- **VidSrc now returns its player page as a frame** instead of failing. It is canary.
+- **The website** has four new pages, loads the anime mapping list (1.2 MB once, then cached for
+  seven days) for anime titles only, and contacts AniList, AniSkip, TheSportsDB and iptv-org from
+  the browser.
+
+## Decisions for the owner
+
+1. **Licence.** The legacy classes came from `cinepro-org/core`, published under PolyForm
+   Noncommercial 1.0.0; the ports are derived from them. Castle is adapted from a GPL-3.0
+   project. The repository has no root LICENSE. Nothing here changes that situation, but it
+   should be a decision rather than an accident. It also decides whether providers for Indian
+   catalogues can be added: the maintained code for those is copyleft or unlicensed.
+2. **Videasy** depends on a third-party decoding service that sees every lookup. Keep it canary,
+   or remove it.
+3. **Sports channels** are a hand-picked allow-list of 36 ids judged free-to-air. It needs a
+   review by whoever operates the site.
+4. **The hosted server.** Its providers fail at the connection level where another cloud network
+   connects. Deploy this branch there and read its health, or try another host with the
+   benchmark; either is a production change, so neither was made.
+
+## Remaining limitations
+
+- No measurement from a home connection, another region, or the extension in a real browser.
+- Two titles of 34 have no verified stream; Indian titles have no dedicated provider.
+- An alternate title containing a comma is not sent to providers.
+- DASH through the server relay is not supported (the relay rewrites only HLS playlists); HEVC
+  playback depends on the device.
+- The browser runtime with a remote browser, and the Docker image with Chromium, were not run.
+
+## Deployment requirements
+
+None are mandatory. In order: deploy the server (optionally from an image built with
+`WITH_BROWSER=true`, with `BROWSER_WORKER=local`), check `GET /v2/health` and run the benchmark
+against it, then deploy the website. OPERATIONS.md has the settings and the commands.
+
+---
+
 # Provider platform: implementation report
 
 Branch `claude/gallant-fermi-kf7wqm`, on top of `main` at `b672045`. 122 files changed: 89 added,

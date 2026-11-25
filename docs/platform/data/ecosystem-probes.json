@@ -1,0 +1,2170 @@
+[
+ {
+  "host": "api.tulnex.com",
+  "url": "https://api.tulnex.com/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: legacy:tulnex; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:22Z"
+ },
+ {
+  "host": "uwu.eat-peach.sbs",
+  "url": "https://uwu.eat-peach.sbs/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: legacy:peachify; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:22Z"
+ },
+ {
+  "host": "usa.eat-peach.sbs",
+  "url": "https://usa.eat-peach.sbs/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: legacy:peachify; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "peachify.top",
+  "url": "https://peachify.top/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: legacy:peachify; class: blocked (Cloudflare); server: cloudflare; content-type: text/html; charset=UTF-8; title: Attention Required! | Cloudflare; body: <!DOCTYPE html> <!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 7]> <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 8]> <html class=\"no-js ie8; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:22Z"
+ },
+ {
+  "host": "peachify.pro",
+  "url": "https://peachify.pro/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: mediamash:peachify; class: blocked (Cloudflare); server: cloudflare; content-type: text/html; charset=UTF-8; title: Attention Required! | Cloudflare; body: <!DOCTYPE html> <!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 7]> <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 8]> <html class=\"no-js ie8; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:22Z"
+ },
+ {
+  "host": "api.videasy.net",
+  "url": "https://api.videasy.net/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: legacy:videasy; no connection: timed out after 20 s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "api2.videasy.net",
+  "url": "https://api2.videasy.net/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: legacy:videasy; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "player.videasy.net",
+  "url": "https://player.videasy.net/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: legacy:videasy; class: redirect; server: cloudflare; location: https://player.videasy.to/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "player.videasy.to",
+  "url": "https://player.videasy.to/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: videasy-new (Jules-Astier fork, Mediamash); DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; DoH status 2; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "api.speedracelight.com",
+  "url": "https://api.speedracelight.com/seed?mediaId=27205",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: videasy-new API (Jules-Astier fork, Mediamash, CENSORED domains.json); no connection: timed out after 20 s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "api.wingsdatabase.com",
+  "url": "https://api.wingsdatabase.com/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: videasy API in cineflix-core (Jul 2026); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "cloudnestra.com",
+  "url": "https://cloudnestra.com/",
+  "dns": "no-record",
+  "status": null,
+  "note": "used by: legacy:vidsrc; name exists but has no A/AAAA record; name exists but has no A/AAAA record; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:24Z"
+ },
+ {
+  "host": "vsembed.ru",
+  "url": "https://vsembed.ru/embed/movie?tmdb=27205",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: legacy:vidsrc; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Player; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\"> <meta name=\"referrer\" content=\"or; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:23Z"
+ },
+ {
+  "host": "vidsrc.ru",
+  "url": "https://vidsrc.ru/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vidsrc in cineflix-core; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Loading...; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <link rel=\"icon\" type=\"image/svg+xml\" href=\"/vite.svg\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <tit; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:24Z"
+ },
+ {
+  "host": "themoviedb.vidsrc.su",
+  "url": "https://themoviedb.vidsrc.su/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: vidsrc in cineflix-core; class: http 404; server: cloudflare; content-type: application/json; body: {\"error\":\"Not Found\"}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:24Z"
+ },
+ {
+  "host": "vidsrc.me",
+  "url": "https://vidsrc.me/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: All-in-One-Nuvio vidsrc; class: redirect; server: cloudflare; location: https://vidsrc.sh/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:24Z"
+ },
+ {
+  "host": "vidsrc.net",
+  "url": "https://vidsrc.net/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: ThePrimeDev vidsrc; TLS certificate not verifiable from here (curl 60: unable to get local issuer certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:24Z"
+ },
+ {
+  "host": "fsharetv.cc",
+  "url": "https://fsharetv.cc/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: legacy:fshare; DNS: resolver gave a stale answer and reported the authoritative servers unreachable; connection reset by peer during TLS handshake (curl 35); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:26Z"
+ },
+ {
+  "host": "fsharetv.co",
+  "url": "https://fsharetv.co/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: fshare in cineflix-core and movie-web forks; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: FshareTV; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\"> <title>Fshar; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:25Z"
+ },
+ {
+  "host": "player.nhdapi.com",
+  "url": "https://player.nhdapi.com/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: legacy:streammafia; connection reset by peer during TLS handshake (curl 35); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:25Z"
+ },
+ {
+  "host": "vixsrc.to",
+  "url": "https://vixsrc.to/api/movie/27205",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: legacy/vixsrc; class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:25Z"
+ },
+ {
+  "host": "streams.icefy.top",
+  "url": "https://streams.icefy.top/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: legacy:icefy; class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:26Z"
+ },
+ {
+  "host": "new.vidnest.fun",
+  "url": "https://new.vidnest.fun/allmovies/movie/27205",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: legacy:vidnest (no nonce); class: auth/parameter required; server: cloudflare; content-type: text/plain; charset=utf-8; body: {\"error\":\"missing or invalid nonce\"}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:26Z"
+ },
+ {
+  "host": "new.vidnest.fun",
+  "url": "https://new.vidnest.fun/allmovies/movie/27205?_n=Ab3dEf6hIj9lMn2pQr5tUv",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vidnest v2 (random _n as in eclipsia quinox.js); class: answers; server: cloudflare; content-type: application/json; body: {\"d\":\"QKxWvYNrV1XfCOHDWWY1dVtAZrVBkAeQR6yUJvvHh7jOc0HOHq_H_NZjwmDDkhJlzq2WEniuAmXoHSdoEsVQz3-qa8BydRyYsSxFigIW0xfk_WsyP8YiZEWaHu6wupqM3nWUEwURUXHfeThBkbJ7_xxRuwZrB0dAAmCF8D6uOvMeAdt-z-dgpsjzNUczPrwlnR; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:26Z"
+ },
+ {
+  "host": "vidnest.fun",
+  "url": "https://vidnest.fun/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: legacy:vidnest; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: VidNest – Seamless Movie, TV &amp; Anime Streaming Embeds; body: <!DOCTYPE html><!--4U5LoTWYqLGa8FwMiXrRo--><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/med; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:27Z"
+ },
+ {
+  "host": "backend.vidnest.fun",
+  "url": "https://backend.vidnest.fun/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: ThePrimeDev vidnest; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:27Z"
+ },
+ {
+  "host": "cine.su",
+  "url": "https://cine.su/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: legacy:cinesu; class: redirect; server: cloudflare; location: https://koddo.to/; content-type: text/html; charset=UTF-8; title: 302 Found; body: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:27Z"
+ },
+ {
+  "host": "koddo.to",
+  "url": "https://koddo.to/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: cine.su redirect target; class: http 403; server: cloudflare; content-type: text/html; title: 403 Forbidden; body: <html> <head><title>403 Forbidden</title></head> <body> <center><h1>403 Forbidden</h1></center> <hr><center>nginx</center> <script type=\"module\" src=\"https://static.cloudflareinsights.com/beacon.min.j; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:28Z"
+ },
+ {
+  "host": "vidrock.net",
+  "url": "https://vidrock.net/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: legacy:vidrock; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: vidrock; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <title>vidrock</title> <meta name=\"description\" content=\"video; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:28Z"
+ },
+ {
+  "host": "vidrock.ru",
+  "url": "https://vidrock.ru/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: vidrock in cineflix-core, thingfoil; DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; DoH status 2; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:29Z"
+ },
+ {
+  "host": "vidrock.to",
+  "url": "https://vidrock.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Jules-Astier fork; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: vidrock; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <title>vidrock</title> <meta name=\"description\" content=\"video; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:31Z"
+ },
+ {
+  "host": "player.vidzee.wtf",
+  "url": "https://player.vidzee.wtf/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: legacy:vidzee; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Vidzee Player; body: <!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=I; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:32Z"
+ },
+ {
+  "host": "core.vidzee.wtf",
+  "url": "https://core.vidzee.wtf/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: legacy:vidzee; class: http 404; server: cloudflare; content-type: application/json; charset=utf-8; body: {\"error\":\"Not found\",\"path\":\"/\"}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:33Z"
+ },
+ {
+  "host": "popr.ink",
+  "url": "https://popr.ink/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: legacy:popr; class: parked (registration expired page); server: nginx/1.28.3 (Ubuntu); content-type: text/html; body: <!doctype html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <!-- Send the parked domain's origin as the referrer so the ma; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:37Z"
+ },
+ {
+  "host": "vaplayer.ru",
+  "url": "https://vaplayer.ru/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: cinepro vidapi; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: PlayBox - Stream & Share Videos; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta name=\"robots\" content=\"noindex, nofollow\"> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>PlayBox -; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:34Z"
+ },
+ {
+  "host": "streamdata.vaplayer.ru",
+  "url": "https://streamdata.vaplayer.ru/api.php",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: cinepro vidapi / playimdb; class: http 404; server: cloudflare; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:35Z"
+ },
+ {
+  "host": "www.vidking.net",
+  "url": "https://www.vidking.net/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: vidking (Jules-Astier, cineflix, All-in-One-Nuvio videasy); DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; DoH status 2; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:36Z"
+ },
+ {
+  "host": "player.vidlove.cc",
+  "url": "https://player.vidlove.cc/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: vidlove; DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; DoH status 2; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:37Z"
+ },
+ {
+  "host": "vidstorm.to",
+  "url": "https://vidstorm.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Jules-Astier vidstorm; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: vidstorm; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <title>vidstorm</title> <meta name=\"description\" content=\"vide; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:36Z"
+ },
+ {
+  "host": "framextv.tech",
+  "url": "https://framextv.tech/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: Jules-Astier framex; class: redirect; server: cloudflare; location: https://framextv.cc/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:37Z"
+ },
+ {
+  "host": "ezvidapi.com",
+  "url": "https://ezvidapi.com/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: Jules-Astier ezvidapi; class: http 404; server: cloudflare; content-type: text/plain; charset=utf-8; body: 404 page not found; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:37Z"
+ },
+ {
+  "host": "lordflix.org",
+  "url": "https://lordflix.org/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: lordflix; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:38Z"
+ },
+ {
+  "host": "vidlink.pro",
+  "url": "https://vidlink.pro/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vidlink; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: VidLink; body: <!DOCTYPE html><html lang=\"en\" class=\"dark\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/media/e4af272ccee0; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:38Z"
+ },
+ {
+  "host": "vidfast.vc",
+  "url": "https://vidfast.vc/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vidfast; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: VidFast; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <title>VidFast</title> <meta name=\"description\" content=\"Fast,; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:38Z"
+ },
+ {
+  "host": "mapple.fun",
+  "url": "https://mapple.fun/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: mapple; class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:38Z"
+ },
+ {
+  "host": "mapple.tv",
+  "url": "https://mapple.tv/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: mapple (thingfoil); class: redirect; server: cloudflare; location: https://mapple.fun/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:39Z"
+ },
+ {
+  "host": "play.xpass.top",
+  "url": "https://play.xpass.top/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: xpass / twoembed; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: XPass; body: <!doctype html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <title>XPass</title> <meta name=\"description\" content=\"XPass iframe; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:39Z"
+ },
+ {
+  "host": "enc-dec.app",
+  "url": "https://enc-dec.app/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: third-party decrypt API used by many scrapers; class: answers; server: cloudflare; content-type: text/html; title: EncDec Endpoints; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>EncDec Endpoints</title> <link rel=\"icon\" href=\"/favicon.ic; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:39Z"
+ },
+ {
+  "host": "api.youplex.site",
+  "url": "https://api.youplex.site/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: steveyout youplex bridge; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Express; body: <!DOCTYPE html><html><head><title>Express</title><link rel=\"stylesheet\" href=\"/stylesheets/style.css\"></head><body><h1>Express</h1><p>Welcome to Express</p><script>window.__CF$cv$params={r:'a5faf02a1d; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:39Z"
+ },
+ {
+  "host": "api.bingr.one",
+  "url": "https://api.bingr.one/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: mediamash:bingr; class: redirect; server: cloudflare; location: https://bingr.one; content-type: text/html; charset=utf-8; body: <p>Found. Redirecting to https://bingr.one</p>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:39Z"
+ },
+ {
+  "host": "dulo.cx",
+  "url": "https://dulo.cx/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: mediamash:dulo; class: redirect; location: https://fmhy.net/video#stream-aggregators; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:40Z"
+ },
+ {
+  "host": "dulo.mov",
+  "url": "https://dulo.mov/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: eclipsia novus (Dulo); class: answers; server: cloudflare; content-type: text/html; title: dulo — Watch Free Movies &amp; TV Shows Online | dulo.mov; body: <!doctype html> <!-- © Dulo (dulo.mov). All rights reserved. This site is NOT open source. The HTML, CSS, JavaScript, design, layout, artwork and text of this site belong to its owner. Copying, clonin; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:40Z"
+ },
+ {
+  "host": "filmo.to",
+  "url": "https://filmo.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: mediamash:filmo; class: answers; server: ddos-guard; content-type: text/html; charset=utf-8; title: Watch movies for free – Filmo; body: <!DOCTYPE html> <html lang=\"en\" data-auth-user=\"0\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"csrf-token\" content=\"aIjE2TZ7b5eZzNL3; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:40Z"
+ },
+ {
+  "host": "hdm2.ink",
+  "url": "https://hdm2.ink/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: mediamash:hdmovie2; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:40Z"
+ },
+ {
+  "host": "newhdmovie2.beer",
+  "url": "https://newhdmovie2.beer/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: mediamash:hdmovie2; class: redirect; server: cloudflare; location: https://newhdmovie2.best/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:40Z"
+ },
+ {
+  "host": "net27.cc",
+  "url": "https://net27.cc/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: mediamash:netmirror; class: redirect; server: cloudflare; location: https://net78.cc/; content-type: text/html; title: 302 Found; body: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>nginx/1.24.0 (Ubuntu)</center> <script type=\"module\" src=\"https://static.cloudflareinsights.com/beac; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:41Z"
+ },
+ {
+  "host": "net52.cc",
+  "url": "https://net52.cc/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: All-in-One-Nuvio netmirror; class: http 404; server: cloudflare; content-type: text/html; charset=UTF-8; body: <center><h2>Page Not Found!</h2></center>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:41Z"
+ },
+ {
+  "host": "net77.cc",
+  "url": "https://net77.cc/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: vega nfMirror; class: redirect; server: cloudflare; location: /login_<egress-ip>; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:41Z"
+ },
+ {
+  "host": "net79.cc",
+  "url": "https://net79.cc/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: eclipsia soryn (Netmirror); class: redirect; server: cloudflare; location: https://net78.cc/; content-type: text/html; title: 302 Found; body: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>nginx/1.24.0 (Ubuntu)</center> <script type=\"module\" src=\"https://static.cloudflareinsights.com/beac; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:41Z"
+ },
+ {
+  "host": "h5-api.aoneroom.com",
+  "url": "https://h5-api.aoneroom.com/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: MovieBox API (mediamash netmirror, eclipsia mavonyx); class: http 404; server: istio-envoy; content-type: text/plain; charset=utf-8; body: 404 page not found; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:41Z"
+ },
+ {
+  "host": "api3.aoneroom.com",
+  "url": "https://api3.aoneroom.com/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: MovieBox API; class: http 404; server: istio-envoy; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:42Z"
+ },
+ {
+  "host": "manoda.co",
+  "url": "https://manoda.co/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: mediamash:pikashow; class: answers; server: nginx/1.26.3; content-type: text/html; charset=utf-8; body: Welcome to manoda.co!; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:42Z"
+ },
+ {
+  "host": "streamingunity.vip",
+  "url": "https://streamingunity.vip/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: mediamash:streamingunity; class: redirect; server: cloudflare; location: https://streamingunity.day/; content-type: text/html; charset=utf-8; title: Redirecting to https://streamingunity.day/; body: <!DOCTYPE html> <html> <head> <meta charset=\"UTF-8\" /> <meta http-equiv=\"refresh\" content=\"0;url='https://streamingunity.day/'\" /> <title>Redirecting to https://streamingunity.day/</title> </head> <bo; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:42Z"
+ },
+ {
+  "host": "vixcloud.co",
+  "url": "https://vixcloud.co/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vixcloud embed; class: parked (domain for sale page); server: Angie; content-type: text/html; charset=utf-8; body: <!-- 924964311094 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"robots\" content=\"noindex,noarchive; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:43Z"
+ },
+ {
+  "host": "www.2embed.online",
+  "url": "https://www.2embed.online/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: mediamash:twoembed; class: redirect; server: cloudflare; location: https://2embed.stream/; content-type: text/html; charset=iso-8859-1; title: 301 Moved Permanently; body: <!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\"> <html><head> <title>301 Moved Permanently</title> </head><body> <h1>Moved Permanently</h1> <p>The document ha; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:43Z"
+ },
+ {
+  "host": "vaultplayer.co.uk",
+  "url": "https://vaultplayer.co.uk/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: mediamash:vaultplayer; class: answers; server: nginx; content-type: text/html; title: VaultPlayer; body: <!DOCTYPE html> <html lang=\"en\" class=\"vp-beta vp-party\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" /> <meta name=\"apple-m; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:43Z"
+ },
+ {
+  "host": "vidcore.org",
+  "url": "https://vidcore.org/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: mediamash:vidcore; class: answers; server: LiteSpeed; content-type: text/html; charset=UTF-8; title: VidCore — Next-Gen Video Embedding & Streaming API; body: <!DOCTYPE html> <html lang=\"en\" class=\"dark scroll-smooth\"> <head> <script> (function() { var affiliateUrl = \"https://dieiecj.euoffrs.com/s/1deef46def537?subsource=vidcore\"; var interval = 15 * 1000;; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:43Z"
+ },
+ {
+  "host": "www.rgshows.ru",
+  "url": "https://www.rgshows.ru/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:rgshows; class: parked (domain for sale page); server: Angie; content-type: text/html; charset=utf-8; body: <!-- 414671326151 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"robots\" content=\"noindex,noarchive; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:43Z"
+ },
+ {
+  "host": "ridomovies.tv",
+  "url": "https://ridomovies.tv/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: movie-web:ridomovies; class: blocked (Cloudflare); server: cloudflare; content-type: text/html; charset=UTF-8; title: Attention Required! | Cloudflare; body: <!DOCTYPE html> <!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 7]> <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 8]> <html class=\"no-js ie8; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:43Z"
+ },
+ {
+  "host": "lmscript.xyz",
+  "url": "https://lmscript.xyz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:lookmovie; class: answers; server: nginx; content-type: application/json; charset=UTF-8; body: {\"remoteIP\":\"<egress-ip>\"}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:44Z"
+ },
+ {
+  "host": "api2.vidsrc.vip",
+  "url": "https://api2.vidsrc.vip/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:vidsrcvip; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:44Z"
+ },
+ {
+  "host": "watch.autoembed.cc",
+  "url": "https://watch.autoembed.cc/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:autoembed; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:44Z"
+ },
+ {
+  "host": "mp4hydra.org",
+  "url": "https://mp4hydra.org/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:mp4hydra; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Mp4Hydra - Back soon; body: <!DOCTYPE html> <html lang=\"en\"> <head> <title>Mp4Hydra - Back soon</title> <link rel=\"shortcut icon\" href=\"/favicon.ico\"> <link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\"> <l; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:44Z"
+ },
+ {
+  "host": "primesrc.me",
+  "url": "https://primesrc.me/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:primesrc; class: answers; server: cloudflare; content-type: text/html; title: PrimeSrc - Movie and TV Embed Service; body: <!doctype html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <link rel=\"icon\" type=\"image/svg+xml\" href=\"/logo.svg\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <tit; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:44Z"
+ },
+ {
+  "host": "soaper.cc",
+  "url": "https://soaper.cc/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: movie-web:soapertv; class: redirect; server: Apache; location: https://ww17.soaper.cc/; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:45Z"
+ },
+ {
+  "host": "hdrezka.ag",
+  "url": "https://hdrezka.ag/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: movie-web:hdrezka; class: redirect; server: nginx; location: https://hdrezka-home.tv/; content-type: text/html; charset=UTF-8; body: Redirect; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:45Z"
+ },
+ {
+  "host": "ee3.me",
+  "url": "https://ee3.me/",
+  "dns": "ok",
+  "status": 303,
+  "note": "used by: movie-web:ee3; class: redirect; server: cloudflare; location: /login; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:45Z"
+ },
+ {
+  "host": "mbp.pirxcy.dev",
+  "url": "https://mbp.pirxcy.dev/",
+  "dns": "ok",
+  "status": 530,
+  "note": "used by: movie-web:pirxcy; class: origin unreachable behind Cloudflare; server: cloudflare; content-type: text/plain; charset=UTF-8; body: error code: 1033; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:45Z"
+ },
+ {
+  "host": "catflix.su",
+  "url": "https://catflix.su/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:catflix; class: parked (domain for sale page); server: Angie; content-type: text/html; charset=utf-8; body: <!-- 503666292983 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"robots\" content=\"noindex,noarchive; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:45Z"
+ },
+ {
+  "host": "api.coitus.ca",
+  "url": "https://api.coitus.ca/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:coitus; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:45Z"
+ },
+ {
+  "host": "vidjoy.pro",
+  "url": "https://vidjoy.pro/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: movie-web:streambox; class: redirect; server: Cowboy; location: http://click-v4.junimedclk.com/click?i=qChVKaYroPw_0; body: Redirecting; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:46Z"
+ },
+ {
+  "host": "vidapi.click",
+  "url": "https://vidapi.click/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:vidapiclick; no connection: timed out after 20 s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:46Z"
+ },
+ {
+  "host": "embed.su",
+  "url": "https://embed.su/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:embedsu; connection reset by peer during TLS handshake (curl 35); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:46Z"
+ },
+ {
+  "host": "isut.streamflix.one",
+  "url": "https://isut.streamflix.one/",
+  "dns": "ok",
+  "status": 522,
+  "note": "used by: movie-web:insertunit; class: origin unreachable behind Cloudflare; server: cloudflare; content-type: text/plain; charset=UTF-8; body: error code: 522; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:46Z"
+ },
+ {
+  "host": "zoechip.org",
+  "url": "https://zoechip.org/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:zoechip; class: answers; server: Cowboy; content-type: text/html; charset=utf-8; title: Loading...; body: <html><head><title>Loading...</title></head><body><script type='text/javascript'>window.location.replace('https://zoechip.org/?ch=1&js=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJKb2tlbiIsImV4cCI6; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:47Z"
+ },
+ {
+  "host": "dopebox.to",
+  "url": "https://dopebox.to/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:dopebox; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:47Z"
+ },
+ {
+  "host": "turbovid.eu",
+  "url": "https://turbovid.eu/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:turbovid; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:47Z"
+ },
+ {
+  "host": "multiembed.mov",
+  "url": "https://multiembed.mov/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:multiembed; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; body: Missing video_id; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:47Z"
+ },
+ {
+  "host": "m4ufree.page",
+  "url": "https://m4ufree.page/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: movie-web:m4ufree; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Watch Movies Online Free | M4ufree.page; body: <!DOCTYPE html><html lang=\"en\"><head><base href=\"https://m4ufree.page/\"/><title>Watch Movies Online Free | M4ufree.page</title><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:48Z"
+ },
+ {
+  "host": "movies4f.com",
+  "url": "https://movies4f.com/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:movies4f; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:48Z"
+ },
+ {
+  "host": "www.cuevana3.eu",
+  "url": "https://www.cuevana3.eu/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: movie-web:cuevana3 (es); class: redirect; server: cloudflare; location: https://wv3.cuevana3.eu/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:48Z"
+ },
+ {
+  "host": "ww3.pelisplus.to",
+  "url": "https://ww3.pelisplus.to/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:pelisplushd (es); TLS certificate not verifiable from here (curl 60: self-signed certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:48Z"
+ },
+ {
+  "host": "cinehdplus.gratis",
+  "url": "https://cinehdplus.gratis/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:cinehdplus (es); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:49Z"
+ },
+ {
+  "host": "tugaflix.love",
+  "url": "https://tugaflix.love/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:tugaflix (pt); TLS certificate not verifiable from here (curl 60: unable to get local issuer certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:49Z"
+ },
+ {
+  "host": "wecima.tube",
+  "url": "https://wecima.tube/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:wecima (ar); TLS certificate not verifiable from here (curl 60: unable to get local issuer certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:49Z"
+ },
+ {
+  "host": "www.fullhdfilmizlesene.tv",
+  "url": "https://www.fullhdfilmizlesene.tv/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:fullhdfilmizle (tr); TLS certificate not verifiable from here (curl 60: unable to get local issuer certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:50Z"
+ },
+ {
+  "host": "www3.fsonline.app",
+  "url": "https://www3.fsonline.app/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: movie-web:fsonline (ro); class: redirect; server: cloudflare; location: https://www3.fsonline.app/home2/; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:50Z"
+ },
+ {
+  "host": "warezcdn.link",
+  "url": "https://warezcdn.link/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:warezcdn (pt-BR); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:50Z"
+ },
+ {
+  "host": "www3.animeflv.net",
+  "url": "https://www3.animeflv.net/",
+  "dns": "ok",
+  "status": 522,
+  "note": "used by: movie-web:animeflv (es anime); class: origin unreachable behind Cloudflare; server: cloudflare; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:50Z"
+ },
+ {
+  "host": "anime.aether.mom",
+  "url": "https://anime.aether.mom/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: movie-web:myanime; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:50Z"
+ },
+ {
+  "host": "watchanimeworld.in",
+  "url": "https://watchanimeworld.in/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: movie-web:watchanimeworld; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:50Z"
+ },
+ {
+  "host": "iosmirror.cc",
+  "url": "https://iosmirror.cc/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: ThePrimeDev iosmirror; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:51Z"
+ },
+ {
+  "host": "filmezek.com",
+  "url": "https://filmezek.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: ThePrimeDev (hu); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Online filmek, Sorozatok - Filmezek.com; body: <!DOCTYPE html> <html> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>Online filmek, Sorozatok - Filmezek.com</title> <meta name=\"descripti; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:51Z"
+ },
+ {
+  "host": "mozibox.hu",
+  "url": "https://mozibox.hu/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: ThePrimeDev (hu); class: answers; server: RHProxy; content-type: text/html; charset=UTF-8; title: Film lista; body: <!DOCTYPE html> <html lang=\"hu\"> <head> <meta charset=\"utf-8\"> <title>Film lista</title> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <style> :root{ --bg:#0f0f10; --bg2:#171718; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:51Z"
+ },
+ {
+  "host": "netmozi.com",
+  "url": "https://netmozi.com/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: ThePrimeDev (hu); class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:51Z"
+ },
+ {
+  "host": "hianime.at",
+  "url": "https://hianime.at/search?keyword=naruto",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: ani-cli (anime); class: redirect; server: cloudflare; location: https://hianime.fm/search?keyword=naruto; content-type: text/html; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>nginx</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:52Z"
+ },
+ {
+  "host": "api.allanime.day",
+  "url": "https://api.allanime.day/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: anipy-cli allanime (anime); class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:52Z"
+ },
+ {
+  "host": "allanime.day",
+  "url": "https://allanime.day/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: All-in-One-Nuvio allanime; class: redirect; server: cloudflare; location: https://allanime.day//; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:53Z"
+ },
+ {
+  "host": "animeheaven.me",
+  "url": "https://animeheaven.me/search.php?s=naruto",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animeheaven; class: answers; server: Apache/2.4.55 (Ubuntu); content-type: text/html; charset=UTF-8; title: naruto Search Results | AnimeHeaven.Me; body: <!DOCTYPE html> <html lang='en'> <head> <title>naruto Search Results | AnimeHeaven.Me</title> <meta http-equiv='Content-Type' content='text/html; charset=UTF-8'> <meta property='og:url' content='https; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:53Z"
+ },
+ {
+  "host": "www.animegg.org",
+  "url": "https://www.animegg.org/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animegg; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Watch Anime Online - Streaming Subbed HD | Animegg.org; body: <!DOCTYPE html> <html> <head> <title>Watch Anime Online - Streaming Subbed HD | Animegg.org</title> <meta charset=\"utf-8\"> <meta name=\"author\" content=\"Animegg\"> <meta property=\"og:site_name\" content=; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:53Z"
+ },
+ {
+  "host": "animesaturn.ro",
+  "url": "https://animesaturn.ro/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animesaturnmirror (it); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: AnimeSaturn – Streaming di Anime in SUB ITA e ITA; body: <!DOCTYPE html> <html xmlns=\"https://www.w3.org/1999/xhtml\" lang=\"en-US\" prefix=\"og: https://ogp.me/ns#\"> <head profile=\"http://gmpg.org/xfn/11\"> <meta http-equiv=\"Content-Type\" content=\"text/html; ch; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:53Z"
+ },
+ {
+  "host": "animeunity.ch",
+  "url": "https://animeunity.ch/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: seanime:animeunitymirror (it); class: redirect; server: cloudflare; location: https://animeunity.io/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:53Z"
+ },
+ {
+  "host": "aniworld.to",
+  "url": "https://aniworld.to/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: seanime:aniworld (de); class: challenge (DDoS-Guard); server: ddos-guard; content-type: text/html; charset=UTF-8; title: DDoS-Guard; body: <!doctype html><html><head><title>DDoS-Guard</title><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><link rel=\"stylesheet\" href=\"/.well-known/ddos-guard/js-c; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:54Z"
+ },
+ {
+  "host": "www.animetoast.cc",
+  "url": "https://www.animetoast.cc/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animetoast (de); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Home | Anime Toast | Kostenlos Anime online anschauen; body: <!DOCTYPE html> <!--[if IE 7]> <html class=\"ie ie7\" lang=\"de\"> <![endif]--> <!--[if IE 8]> <html class=\"ie ie8\" lang=\"de\"> <![endif]--> <!--[if !(IE 7) | !(IE 8) ]><!--> <html lang=\"de\"> <!--<![endif]; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:54Z"
+ },
+ {
+  "host": "www.anitube.news",
+  "url": "https://www.anitube.news/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: seanime:anitube (pt); class: redirect; server: cloudflare; location: https://www.anitube.zip/; content-type: text/html; charset=iso-8859-1; title: 301 Moved Permanently; body: <!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>301 Moved Permanently</title> </head><body> <h1>Moved Permanently</h1> <p>The document has moved <a href=\"https://www.anitube.zip; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:54Z"
+ },
+ {
+  "host": "animeav1.com",
+  "url": "https://animeav1.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:AnimeAV1 (es); class: answers; server: cloudflare; content-type: text/html; title: Ver Anime Online Gratis en HD y Sub Español - AnimeAV1; body: <!doctype html> <html lang=\"es\"> <head> <meta charset=\"utf-8\" /> <link rel=\"icon\" type=\"image/png\" href=\"./favicon.png\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /> <link; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:55Z"
+ },
+ {
+  "host": "megaplay.buzz",
+  "url": "https://megaplay.buzz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:megaplay; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MegaPlay - Share the reel, earn for real!; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>MegaPlay - Share the reel, earn for real!</title> <link rel; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:55Z"
+ },
+ {
+  "host": "megavid.buzz",
+  "url": "https://megavid.buzz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:megavid; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Anime Player - Embed API; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <title>Anime Player - Embed API</title> <link rel=\"shortcut icon\" hr; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:56Z"
+ },
+ {
+  "host": "anv.to",
+  "url": "https://anv.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:shiro / eclipsia ozeris; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: anv - Watch Anime Online, Sub &amp; Dub; body: <!DOCTYPE html><html lang=\"en\" class=\"bg-background\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/brand/blob.svg\" as=\"im; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:56Z"
+ },
+ {
+  "host": "shonen.to",
+  "url": "https://shonen.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:shonen; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: shonen.to | Watch anime online free in HD; body: <!doctype html> <html lang=\"en\"> <head> <link rel=\"stylesheet\" href=\"/assets/site-notice.css?v=20261021-1\"> <script src=\"/assets/site-notice.js?v=20261021-1\" defer></script> <script src=\"/assets/analy; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:56Z"
+ },
+ {
+  "host": "zokoanime.video",
+  "url": "https://zokoanime.video/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:zokoanime; class: answers; server: nginx; content-type: text/html; title: Zokoanime - Embed Anime on Any Website; body: <!doctype html> <html lang=\"en\" class=\"dark\"> <head> <meta charset=\"utf-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /> <link rel=\"icon\" type=\"image/png\" href=\"/favicon.pn; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:57Z"
+ },
+ {
+  "host": "animotvslash.org",
+  "url": "https://animotvslash.org/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animotvslash; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: ANIMOTVSLASH - Watch Anime Online Free in HD (Sub &amp; Dub); body: <!DOCTYPE html> <html xmlns=\"https://www.w3.org/1999/xhtml\" lang=\"en-US\"> <head profile=\"http://gmpg.org/xfn/11\"> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /> <meta name=\"view; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:57Z"
+ },
+ {
+  "host": "donghuastream.org",
+  "url": "https://donghuastream.org/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:donghuastream; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: DonghuaStream; body: <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html xmlns=\"https://www.w3.org/1999/xhtml\" lang=\"en-US\" prefix=\"og: https://o; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:58Z"
+ },
+ {
+  "host": "animesfhd.net",
+  "url": "https://animesfhd.net/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animesfhd (pt-BR); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Animes FHD - Assistir Animes Online Grátis em Full HD | AnimesFHD; body: <!DOCTYPE html><html lang=\"pt-BR\"><head> <script src=\"/assets/js/ad-guard.js?v=2e686a81-20261124T185521Z\" data-active=\"1\"></script> <script src=\"/api/support/client.js\" async data-cfasync=\"false\"></sc; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:58Z"
+ },
+ {
+  "host": "animeunion.tv",
+  "url": "https://animeunion.tv/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animeunion (it); class: answers; server: cloudflare; content-type: text/html; title: AnimeUnion - Anime in streaming Sub ITA e Dub ITA; body: <!doctype html> <html lang=\"it\"> <head> <meta charset=\"utf-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /> <!-- NIENTE meta description statica qui: la emette SeoMeta per-; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:59Z"
+ },
+ {
+  "host": "animetvplus.xyz",
+  "url": "https://animetvplus.xyz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:animetvplus; class: answers; server: nginx; content-type: text/html; charset=utf-8; title: animeTVplus — Watch Anime Online in HD; body: <!DOCTYPE html><html lang=\"en\" class=\"h-full antialiased font-sans\"><head><script>window.__atvAfterPlay=function(){return new Promise(function(r){if(!/^\\/watch\\//.test(location.pathname))return r();va; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:59Z"
+ },
+ {
+  "host": "www.mynimeku.com",
+  "url": "https://www.mynimeku.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: seanime:mynimeku (id); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MyNimeku - Portal Anime &amp; Komik Indonesia; body: <!DOCTYPE html> <html lang=\"id\" prefix=\"og: https://ogp.me/ns#\"> <head profile=\"http://gmpg.org/xfn/11\"> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /> <title>MyNimeku - Portal; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:49:59Z"
+ },
+ {
+  "host": "www3.anikai.cc",
+  "url": "https://www3.anikai.cc/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: animekai (All-in-One-Nuvio, kRYstall9); DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:02Z"
+ },
+ {
+  "host": "animepahe.pw",
+  "url": "https://animepahe.pw/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: animepahe; class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:00Z"
+ },
+ {
+  "host": "animepahe.com",
+  "url": "https://animepahe.com/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: animepahe; class: redirect; server: cloudflare; location: https://animepahe.pw/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:00Z"
+ },
+ {
+  "host": "anizone.to",
+  "url": "https://anizone.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anizone; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Home — AniZone; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"csrf-token\" content=\"KFKczqHHRPFbhb4c5TZ7SkU4nXvMwE9d0cg; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:01Z"
+ },
+ {
+  "host": "kaa.lt",
+  "url": "https://kaa.lt/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega kickAssAnime; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: KickAssAnime - Watch Anime online with DUB and SUB for FREE; body: <!doctype html> <html data-n-head-ssr lang=\"en\" data-n-head=\"%7B%22lang%22:%7B%22ssr%22:%22en%22%7D%7D\"> <head > <meta data-n-head=\"ssr\" charset=\"utf-8\"><meta data-n-head=\"ssr\" name=\"viewport\" content; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:02Z"
+ },
+ {
+  "host": "anikototv.bz",
+  "url": "https://anikototv.bz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega anikoto; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Anikoto - Watch Anime Online, Free Anime Streaming; body: <!DOCTYPE html> <html lang=\"en\"> <head> <title>Anikoto - Watch Anime Online, Free Anime Streaming</title> <meta charset=\"utf-8\"/><meta http-equiv=\"content-language\" content=\"en\" /> <meta name=\"descrip; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:03Z"
+ },
+ {
+  "host": "anikoto.cz",
+  "url": "https://anikoto.cz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: eclipsia zyrvael (Anikoto); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Anikoto – Stream Anime Online Free in HD | Sub &amp; Dub Episodes; body: <!DOCTYPE html> <html lang=\"en\"> <head> <title>Anikoto – Stream Anime Online Free in HD | Sub &amp; Dub Episodes</title> <meta charset=\"utf-8\"/><meta http-equiv=\"content-language\" content=\"en\" /> <met; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:03Z"
+ },
+ {
+  "host": "anidream.to",
+  "url": "https://anidream.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega aniDream; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: AniDream - Watch Anime &amp; Read Manga Online Free; body: <!DOCTYPE html><html lang=\"en\" class=\"dark\" data-img-format=\"webp\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\"/><link rel=\"prel; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:04Z"
+ },
+ {
+  "host": "animetsu.live",
+  "url": "https://animetsu.live/",
+  "dns": "no-record",
+  "status": null,
+  "note": "used by: animetsu; name exists but has no A/AAAA record; name exists but has no A/AAAA record; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:05Z"
+ },
+ {
+  "host": "reanime.to",
+  "url": "https://reanime.to/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: reanime; class: redirect; server: cloudflare; location: https://reanime.cz/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:05Z"
+ },
+ {
+  "host": "watchanimeworld.one",
+  "url": "https://watchanimeworld.one/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: animeworld (hi dub anime); class: blocked (Cloudflare); server: cloudflare; content-type: text/html; charset=UTF-8; title: Attention Required! | Cloudflare; body: <!DOCTYPE html> <!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 7]> <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 8]> <html class=\"no-js ie8; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:06Z"
+ },
+ {
+  "host": "animesalt.in",
+  "url": "https://animesalt.in/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega animesalt (hi dub anime); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Anime Salt - Watch Anime Online Free in Hindi, Tamil, Telugu; body: <!DOCTYPE html> <html lang=\"en\"> <head> <!-- Meta Data --> <meta charset=\"UTF-8\"> <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"> <title>Anime Salt - Watch Anime Online Free in Hindi, Tamil, Tel; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:06Z"
+ },
+ {
+  "host": "ani.pm",
+  "url": "https://ani.pm/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: eclipsia onyxia; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: ani.pm is now anipm.pk; body: <!doctype html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <!-- the same address on anipm.pk: nginx writes it into the three ma; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:06Z"
+ },
+ {
+  "host": "anilight.live",
+  "url": "https://anilight.live/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: eclipsia vitrix; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: AniLight — Discover &amp; Watch Anime Faster; body: <!DOCTYPE html><html lang=\"en\" class=\"dark overflow-x-clip\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\"/><link rel=\"preload\" as; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:06Z"
+ },
+ {
+  "host": "anichan.to",
+  "url": "https://anichan.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: eclipsia xandril; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: AniChan — Watch Anime Online, Subbed &amp; Dubbed in HD; body: <!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover\"/><link rel=\"stylesheet\" href=\"/_nex; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:06Z"
+ },
+ {
+  "host": "anikage.cc",
+  "url": "https://anikage.cc/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: eclipsia xylos; class: answers; server: cloudflare; content-type: text/html; title: Anikage - Watch Anime Online Free in HD, Sub and Dub; body: <!doctype html> <html lang=\"en\" class=\"dark\" style=\"color-scheme: dark; background-color: #0a0a0a\"> <head> <meta charset=\"utf-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:07Z"
+ },
+ {
+  "host": "www.wcoflix.tv",
+  "url": "https://www.wcoflix.tv/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: eclipsia rylvane / Jules-Astier wco; class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:07Z"
+ },
+ {
+  "host": "graphql.anilist.co",
+  "url": "https://graphql.anilist.co/",
+  "dns": "ok",
+  "status": 404,
+  "note": "used by: anime metadata (AniList); class: http 404; server: cloudflare; content-type: application/json; body: {\"data\":null,\"errors\":[{\"message\":\"Not Found.\",\"hint\":\"Use POST request to access graphql subdomain.\",\"status\":404}]}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:07Z"
+ },
+ {
+  "host": "api.jikan.moe",
+  "url": "https://api.jikan.moe/v4/anime/20",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: anime metadata (Jikan/MAL); connection reset by peer during TLS handshake (curl 35); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:07Z"
+ },
+ {
+  "host": "api.ani.zip",
+  "url": "https://api.ani.zip/mappings?anilist_id=20",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anime id mapping; class: answers; server: cloudflare; content-type: application/json; charset=utf-8; body: {\"titles\":{\"x-jat\":\"NTV\",\"ja\":\"NARUTO\",\"fr\":\"Naruto\",\"vi\":\"Naruto\",\"uk\":\"Наруто\",\"en\":\"Naruto\",\"de\":\"Naruto\",\"it\":\"Naruto\",\"es\":\"Naruto\",\"ru\":\"Наруто\",\"ko\":\"나루토\",\"pl\":\"Naruto\",\"sv\":\"Naruto\",\"ar\":\"نارو; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:07Z"
+ },
+ {
+  "host": "arm.haglund.dev",
+  "url": "https://arm.haglund.dev/api/v2/ids?source=anilist&id=20",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anime id mapping; class: answers; server: cloudflare; content-type: application/json;charset=UTF-8; body: {\"anidb\":239,\"anilist\":20,\"animecountdown\":39508,\"animenewsnetwork\":1825,\"anime-planet\":\"naruto\",\"anisearch\":2788,\"imdb\":\"tt0409591\",\"kitsu\":11,\"livechart\":3585,\"myanimelist\":20,\"media\":\"TV\",\"simkl\":3; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:07Z"
+ },
+ {
+  "host": "api.aniskip.com",
+  "url": "https://api.aniskip.com/v2/skip-times/20/1?types=op&episodeLength=0",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anime skip times; class: answers; server: cloudflare; content-type: application/json; charset=utf-8; body: {\"found\":true,\"results\":[{\"interval\":{\"startTime\":1,\"endTime\":102},\"skipType\":\"op\",\"skipId\":\"d400d70f-4ed7-46d5-bfea-b7445bcff7d6\",\"episodeLength\":1429.2}],\"message\":\"Successfully found skip times\",\"s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:08Z"
+ },
+ {
+  "host": "animap.id",
+  "url": "https://animap.id/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anime id mapping (eclipsia lenyr); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: animap API; body: <!doctype html> <html lang=\"en\"> <head> <meta charset=\"utf-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /> <title>animap API</title> <link rel=\"stylesheet\" href=\"/docs/sty; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:08Z"
+ },
+ {
+  "host": "new16.hdhub4u.cl",
+  "url": "https://new16.hdhub4u.cl/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega hdhub (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: HDHub4u Official &#8211; Download HD Movies &amp; TV Shows; body: <!DOCTYPE html><html lang=\"en-US\"><head><meta name=\"google-site-verification\" content=\"bkl_ftkhgYxDN5jnAvoLksWHNseDYdLg8fu2Wq2AItI\" /><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:08Z"
+ },
+ {
+  "host": "4khdhub.one",
+  "url": "https://4khdhub.one/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega/eclipsia 4khdhub (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: 4KHDHub - High Quality Movies and TV Shows; body: <!DOCTYPE html> <html lang=\"en\" class=\"dark\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>4KHDHub - High Quality Movies and TV Shows</ti; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:08Z"
+ },
+ {
+  "host": "new4.moviesdrive.cyou",
+  "url": "https://new4.moviesdrive.cyou/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega drive / eclipsia vornix (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MoviesDrive &#8211; Download Movies &amp; Webseries in 4k; body: <!DOCTYPE html><html lang=\"en-US\"><head><meta name=\"google-site-verification\" content=\"InL2eBkdk2oBwKPYqmun9MoMx21pm9SavdV_dJk4EUk\" /><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:09Z"
+ },
+ {
+  "host": "moviesmod.fi",
+  "url": "https://moviesmod.fi/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega Moviesmod (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MoviesMod | Movies Mod 2025, MoviesMod Official, MoviesMod.fi; body: <!DOCTYPE html> <html class=\"no-js\" lang=\"en-US\"> <head> <meta charset=\"UTF-8\"> <!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame --> <!--[if IE ]> <meta http-equiv=\"X-UA-; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:09Z"
+ },
+ {
+  "host": "uhdmovies.ceo",
+  "url": "https://uhdmovies.ceo/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega UhdMovies (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: UHDMovies - 4k Dual Audio Movies, Ultra HD movies, 1080p Movies, 2160 Movies 2160p Movies, 1080p 60F; body: <!DOCTYPE html> <html lang=\"en-US\" class=\"no-js\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"> <meta name='robots' content='index, follow, max-im; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:09Z"
+ },
+ {
+  "host": "vegamovies.latino",
+  "url": "https://vegamovies.latino/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega Vega (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Vegamovies | Download Latest Bollywood, Hollywood &amp; Dual Audio HD Movies; body: <!DOCTYPE html><html lang=\"en-US\" prefix=\"og: https://ogp.me/ns#\"><head><script data-no-optimize=\"1\">var litespeed_docref=sessionStorage.getItem(\"litespeed_docref\");litespeed_docref&&(Object.definePro; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:09Z"
+ },
+ {
+  "host": "rogmovies.beauty",
+  "url": "https://rogmovies.beauty/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega lux (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Rogmovies 2026 | Download Free HD Movies, Bollywood, Hollywood &amp; Vegamovies Official LinkRogmovi; body: <!DOCTYPE html><html lang=\"en-US\" prefix=\"og: https://ogp.me/ns#\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"X-UA-Compatible\" c; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:09Z"
+ },
+ {
+  "host": "m1.multimovies.courses",
+  "url": "https://m1.multimovies.courses/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega multi (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MultiMovies - Watch Movies, TV Series and Anime Online Free; body: <!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"theme-color\" content=\"#080a0d\"><title>MultiMovies - Watch Movi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:09Z"
+ },
+ {
+  "host": "world4ufree.men",
+  "url": "https://world4ufree.men/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega w4u (Indian); class: answers; server: cloudflare; content-type: text/html; title: World4uFree Official - Latest Brand Updates & Portal; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>World4uFree Official - Latest Brand Updates & Portal</title; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:10Z"
+ },
+ {
+  "host": "new.katmoviehd.top",
+  "url": "https://new.katmoviehd.top/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega kat (Indian); class: answers; server: cloudflare; content-type: text/html; title: Home; body: <!doctype html> <html lang=\"en\"> <head> <meta charset=\"utf-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /> <meta name='robots' content='index, follow, max-image-preview:la; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:10Z"
+ },
+ {
+  "host": "officialmoviebox.com",
+  "url": "https://officialmoviebox.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega movieBoxWeb; class: answers; content-type: text/html;charset=utf-8; title: MovieBox - Watch Movies Free Online, Watch TV Series Online; body: <!DOCTYPE html><html class=\"pc-html\" lang=\"en\" dir=\"ltr\"><head><meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\"> <title; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:11Z"
+ },
+ {
+  "host": "filmyfiy.co.in",
+  "url": "https://filmyfiy.co.in/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: vega filmyfly (Indian); DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; DoH status 2; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:10Z"
+ },
+ {
+  "host": "www.moviezwap.boo",
+  "url": "https://www.moviezwap.boo/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega moviezwap (Telugu); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MoviezWap - Free Download Tamil New Full Movies, Telugu Mobile Movies Download Free HD Mp4 3gp Avi.; body: <!DOCTYPE html PUBLIC \"-//WAPFORUM//DTD XHTML Mobile 1.0//EN\" \"http://www.wapforum.org/DTD/xhtml-mobile10.dtd\"> <html> <head> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, min; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:11Z"
+ },
+ {
+  "host": "kmmovies.quest",
+  "url": "https://kmmovies.quest/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: vega kmmovies/cinevood (Indian); class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:11Z"
+ },
+ {
+  "host": "zeefliz2.xyz",
+  "url": "https://zeefliz2.xyz/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: vega zeefliz (Indian); class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:11Z"
+ },
+ {
+  "host": "movies4u.tc",
+  "url": "https://movies4u.tc/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: vega movies4u (Indian); class: redirect; server: cloudflare; location: https://movies4u.cm/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "new6.skymovieshd.clinic",
+  "url": "https://new6.skymovieshd.clinic/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega skymovieshd (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: SkymoviesHD.in ||SkymoviesHD -Bengali HD Pc Movies Download Bollywood HD Pc Movies Download Hollywoo; body: <!DOCTYPE html PUBLIC \"-//WAPFORUM//DTD XHTML Mobile 1.0//EN\" \"http://www.wapforum.org/DTD/xhtml-mobile10.dtd\"> <html> <head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"> <style; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "one.cinevood.business",
+  "url": "https://one.cinevood.business/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: vega 1cinevood (Indian); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "cinefreak.net",
+  "url": "https://cinefreak.net/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega cinefreak (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: CINEFREAK; body: <!DOCTYPE html><html lang=\"en-US\" prefix=\"og: https://ogp.me/ns#\" class=\"dark\"><head> <script data-cfasync=\"false\" data-no-optimize=\"1\" data-no-defer=\"1\">(function(){/* cfFsGuard: no new windows/tabs; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "wth3zq.movielinkbd.at",
+  "url": "https://wth3zq.movielinkbd.at/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: vega movielinkbd (Bangla); class: redirect; server: cloudflare; location: https://38jntc.movielinkbd.at/; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "gokuhd.nl",
+  "url": "https://gokuhd.nl/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega gokuHD; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Gokuhd.NL | Hindi Dubbed Anime Downloads | Free Movies &amp; Series; body: <!DOCTYPE html> <html lang=\"en-US\" prefix=\"og: https://ogp.me/ns#\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <!-- Search Engine Optimization b; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "e14.extraflix.mobi",
+  "url": "https://e14.extraflix.mobi/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega ExtraFlix (Indian); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: ExtraFlix - House of Entertainment; body: <!doctype html> <html lang=\"en-US\" prefix=\"og: https://ogp.me/ns#\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cove; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "api.hlowb.com",
+  "url": "https://api.hlowb.com/v0.1/system/getSecurityKey/1?channel=IndiaA&clientType=1&lang=en-US",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Castle API (Charcoal, vega, nuvio); class: answers; server: cloudflare; content-type: application/json; body: {\"code\":200,\"msg\":\"OK\",\"data\":\"ZkpBVG0qa2dmSg==\"}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "www.mxplayer.in",
+  "url": "https://www.mxplayer.in/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega mxplayer (official free Indian service); class: answers; server: CloudFront; content-type: text/html; title: MX Player; body: <!DOCTYPE html> <html lang=\"en\"> <title>MX Player</title> <meta name=\"theme-color\" content=\"#3C8CF0\" /> <meta name=\"viewport\" content=\"width=device-width, maximum-scale=1.0, initial-scale=1, user-scal; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:12Z"
+ },
+ {
+  "host": "einthusan.tv",
+  "url": "https://einthusan.tv/",
+  "dns": "ok",
+  "status": 307,
+  "note": "used by: All-in-One-Nuvio einthusan (South Asian); class: redirect; location: /intro/; content-type: text/html; charset=utf-8; body: <a href=\"/intro/\">Temporary Redirect</a>.; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "allmovieland.you",
+  "url": "https://allmovieland.you/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: All-in-One-Nuvio allmovieland (Indian dubs); class: redirect; server: cloudflare; location: https://allmovieland.one/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "hubcloud.cx",
+  "url": "https://hubcloud.cx/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: file-host resolver used by Indian chains; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "new6.gdflix.dad",
+  "url": "https://new6.gdflix.dad/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: file-host resolver used by Indian chains; class: redirect; server: cloudflare; location: https://gdlink.dev/?no=cache; content-type: text/html; charset=UTF-8; title: 302 Found; body: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "pixeldrain.com",
+  "url": "https://pixeldrain.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: file host used by Indian chains; class: answers; content-type: text/html; charset=utf-8; title: Cloud storage and data transfer services ~ pixeldrain; body: <!DOCTYPE html> <html lang=\"en\"> <head> <title>Cloud storage and data transfer services ~ pixeldrain</title> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "www.showbox.media",
+  "url": "https://www.showbox.media/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: showbox; class: answers; content-type: text/html; charset=utf-8; title: ShowBox - Free online movies streaming, watch movies online free; body: <!DOCTYPE html> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <script type=\"text/javascript\" src=\"/static/js/moatframe.js\"></script> <title>ShowBox - Free online movies st; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "www.febbox.com",
+  "url": "https://www.febbox.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: febbox; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: FEB; body: <!DOCTYPE html> <html> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes\"/> <meta http-equiv=\"X-UA-Compatible\"; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "kisskh.is",
+  "url": "https://kisskh.is/api/DramaList/Search?q=squid&type=0",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: vega kissKh (Asian drama); class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "kisskh.ovh",
+  "url": "https://kisskh.ovh/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: eclipsia fyron (KissKH); class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "asianc.id",
+  "url": "https://asianc.id/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega dramacool (Asian drama); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Dramacool - Asianc TV | Asian Drama, Movies and Shows English Sub Full HD; body: <!DOCTYPE html> <html lang=\"en-US\"> <head> <title>Dramacool - Asianc TV | Asian Drama, Movies and Shows English Sub Full HD</title> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:13Z"
+ },
+ {
+  "host": "mkvdrama.net",
+  "url": "https://mkvdrama.net/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: vega mkvDrama; class: challenge (Cloudflare); server: cloudflare; cf-mitigated: challenge; content-type: text/html; charset=UTF-8; title: Just a moment...; body: <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:14Z"
+ },
+ {
+  "host": "primewire.pw",
+  "url": "https://primewire.pw/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega primewire; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: PrimeWire Official - Watch Movies Online for Free; body: <html> <head> <title>PrimeWire Official - Watch Movies Online for Free</title> <meta name=\"description\" content=\"PrimeWire is a social movie and TV show site which lets you find new movies and TV show; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:14Z"
+ },
+ {
+  "host": "purstream.ad",
+  "url": "https://purstream.ad/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: eclipsia wrenok (fr); class: redirect; server: cloudflare; location: https://purstream.wiki/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:14Z"
+ },
+ {
+  "host": "www.papadustream.club",
+  "url": "https://www.papadustream.club/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Jules-Astier papadustream (fr); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Papadustream – Films et séries en streaming en France; body: <!DOCTYPE html> <html lang=\"fr\" dir=\"ltr\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover\"> <title>Papadustre; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:14Z"
+ },
+ {
+  "host": "frembed.work",
+  "url": "https://frembed.work/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: webstreamr Frembed (fr); class: answers; server: cloudflare; content-type: text/html; title: Frembed a changé d'adresse — frembed.pics; body: <!DOCTYPE html> <html lang=\"fr\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"> <meta name=\"robots\" content=\"noindex,follow\"> <title>Frembed a changé; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:14Z"
+ },
+ {
+  "host": "einschalten.in",
+  "url": "https://einschalten.in/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: webstreamr Einschalten (de); class: answers; server: cloudflare; content-type: text/html;charset=UTF-8; title: Filme kostenlos online anschauen | einschalten; body: <!DOCTYPE html><html lang=\"de\" data-beasties-container><head> <meta charset=\"utf-8\"> <base href=\"/\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"theme-color\" conte; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:14Z"
+ },
+ {
+  "host": "kinoger.com",
+  "url": "https://kinoger.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: webstreamr KinoGer (de); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Filme und Serien stream online schauen auf deutsch |Stream KinoGer; body: <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\"> <head> <meta name=\"galaksion-domai; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "megakino1.to",
+  "url": "https://megakino1.to/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: webstreamr MegaKino (de); class: redirect; server: cloudflare; location: https://megakino1.biz/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "meinecloud.click",
+  "url": "https://meinecloud.click/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: webstreamr MeineCloud (de); class: redirect; server: cloudflare; location: https://devideosrc.co/; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "mostraguarda.stream",
+  "url": "https://mostraguarda.stream/",
+  "dns": "no-record",
+  "status": null,
+  "note": "used by: webstreamr MostraGuarda (it); name exists but has no A/AAAA record; name exists but has no A/AAAA record; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "eurostreaming.luxe",
+  "url": "https://eurostreaming.luxe/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: webstreamr Eurostreaming (it); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "verhdlink.cam",
+  "url": "https://verhdlink.cam/",
+  "dns": "ok",
+  "status": 522,
+  "note": "used by: webstreamr VerHdLink (es); class: origin unreachable behind Cloudflare; server: cloudflare; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "hdfilmcehennemi.mobi",
+  "url": "https://hdfilmcehennemi.mobi/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: anthology hdfilmcehennemi (tr); class: blocked (Cloudflare); server: cloudflare; content-type: text/plain; charset=UTF-8; body: error code: 1005; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:15Z"
+ },
+ {
+  "host": "puhutv.com",
+  "url": "https://puhutv.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anthology puhutv (official free Turkish service); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: puhutv | Sen Nasıl İzlersen; body: <!DOCTYPE html><html lang=\"tr-TR\"><head><meta charSet=\"utf-8\"/><title>puhutv | Sen Nasıl İzlersen</title><meta name=\"viewport\" content=\"initial-scale=1.0, width=device-width\"/><meta name=\"description\"; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "www.diziyou.one",
+  "url": "https://www.diziyou.one/",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: anthology/nuviotr diziyou (tr); class: blocked (Cloudflare); server: cloudflare; content-type: text/html; charset=UTF-8; title: Attention Required! | Cloudflare; body: <!DOCTYPE html> <!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 7]> <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]--> <!--[if IE 8]> <html class=\"no-js ie8; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "iptv-org.github.io",
+  "url": "https://iptv-org.github.io/api/categories.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: iptv-org API (live channels metadata); class: answers; server: GitHub.com; content-type: application/json; charset=utf-8; body: [{\"id\":\"auto\",\"name\":\"Auto\",\"description\":\"Programming related to cars, motorcycles, and other automobiles\"},{\"id\":\"animation\",\"name\":\"Animation\",\"description\":\"Programming is mostly 2D or 3D animatio; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "iptv-org.github.io",
+  "url": "https://iptv-org.github.io/iptv/categories/sports.m3u",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: iptv-org sports playlist; class: answers; server: GitHub.com; content-type: audio/x-mpegurl; body: #EXTM3U #EXTINF:-1 tvg-id=\"5Gold.il@SD\" tvg-logo=\"https://i.imgur.com/zFLRfXh.png\" group-title=\"Sports\",5Gold (1080p) https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5_gold/live.livx/playli; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "raw.githubusercontent.com",
+  "url": "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Free-TV/IPTV playlist; class: answers; content-type: text/plain; charset=utf-8; body: #EXTM3U x-tvg-url=\"https://epgshare01.online/epgshare01/epg_ripper_AL1.xml.gz, https://epgshare01.online/epgshare01/epg_ripper_ALJAZEERA1.xml.gz, https://epgshare01.online/epgshare01/epg_ripper_ALL_SO; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "www.thesportsdb.com",
+  "url": "https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4328",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: TheSportsDB schedule API (free key 3); class: auth/parameter required; server: cloudflare; content-type: text/plain; body: The old '3' Free Sports API key is permanently disabled, Please use the new test key \"123\" or sign up to premium here https://www.thesportsdb.com/pricing; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "api.openf1.org",
+  "url": "https://api.openf1.org/v1/sessions?year=2026&session_name=Race",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: OpenF1 API; class: answers; server: nginx; content-type: application/json; body: [{\"session_key\":11234,\"session_type\":\"Race\",\"session_name\":\"Race\",\"date_start\":\"2026-03-08T04:00:00+00:00\",\"date_end\":\"2026-03-08T06:00:00+00:00\",\"meeting_key\":1279,\"circuit_key\":10,\"circuit_short_nam; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:16Z"
+ },
+ {
+  "host": "api.jolpi.ca",
+  "url": "https://api.jolpi.ca/ergast/f1/current.json",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: Jolpica F1 (Ergast successor); no connection: timed out after 20 s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "api-web.nhle.com",
+  "url": "https://api-web.nhle.com/v1/schedule/now",
+  "dns": "ok",
+  "status": 307,
+  "note": "used by: NHL public schedule API; class: redirect; server: cloudflare; location: https://api-web.nhle.com/v1/schedule/2026-11-24; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "statsapi.mlb.com",
+  "url": "https://statsapi.mlb.com/api/v1/schedule?sportId=1",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: MLB Stats API; class: answers; content-type: application/json;charset=UTF-8; body: {\"copyright\":\"Copyright 2026 MLB Advanced Media, L.P. Use of any content on this page acknowledges agreement to the terms posted here http://gdx.mlb.com/components/copyright.txt\",\"totalItems\":0,\"total; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "site.api.espn.com",
+  "url": "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: ESPN public scoreboard endpoint; class: answers; content-type: application/json;charset=UTF-8; body: {\"leagues\":[{\"id\":\"700\",\"uid\":\"s:600~l:700\",\"name\":\"English Premier League\",\"abbreviation\":\"Premier League\",\"midsizeName\":\"ENG.1\",\"slug\":\"eng.1\",\"season\":{\"year\":2026,\"startDate\":\"2026-06-01T04:00Z\",\"; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "api.football-data.org",
+  "url": "https://api.football-data.org/v4/competitions/PL/matches",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: football-data.org (token required); class: auth/parameter required; server: nginx; content-type: application/json;charset=UTF-8; body: {\"message\":\"The resource you are looking for is restricted and apparently not within your permissions. Please check your subscription.\",\"errorCode\":403}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "api.balldontlie.io",
+  "url": "https://api.balldontlie.io/v1/games",
+  "dns": "ok",
+  "status": 401,
+  "note": "used by: balldontlie (key required); class: auth/parameter required; server: cloudflare; content-type: text/plain; charset=utf-8; body: Unauthorized; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "i.mjh.nz",
+  "url": "https://i.mjh.nz/PlutoTV/.channels.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: FAST channel lists (Pluto TV etc.); class: answers; server: cloudflare; content-type: application/json; body: {\"regions\":{\"us\":{\"name\":\"USA\",\"headers\":{\"x-forwarded-for\":\"185.236.200.172\"},\"logo\":\"https://flagcdn.com/h240/us.png\",\"channels\":{\"673247127d5da5000817b4d6\":{\"chno\":5,\"name\":\"Pluto TV Trending Now\",; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "pluto.tv",
+  "url": "https://pluto.tv/",
+  "dns": "ok",
+  "status": 307,
+  "note": "used by: Pluto TV (official free); class: redirect; server: openresty; location: /us/watch/live-tv/; body: /us/watch/live-tv/; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:17Z"
+ },
+ {
+  "host": "www.ardmediathek.de",
+  "url": "https://www.ardmediathek.de/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: ARD Mediathek (official free, DE); class: answers; content-type: text/html; charset=utf-8; title: ARD Mediathek: Filme, Serien und Dokus online anschauen; body: <!DOCTYPE html> <html lang=\"de\" vocab=\"http://schema.org/\" > <head prefix=\"og: http://ogp.me/ns#\"> <meta name=\"viewport\" content=\"initial-scale=1, minimum-scale=1, width=device-width, shrink-to-fit=no; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:18Z"
+ },
+ {
+  "host": "www.raiplay.it",
+  "url": "https://www.raiplay.it/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: RaiPlay (official free, IT); class: answers; content-type: text/html;charset=UTF-8; title: RaiPlay, Molto più di quanto immagini; body: <!DOCTYPE html> <html lang=\"it\"> <head> <title>RaiPlay, Molto più di quanto immagini</title> <meta name=\"description\" content=\"I contenuti di RaiPlay sono gratuiti. L&#x27;offerta comprende: 14 canali; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:18Z"
+ },
+ {
+  "host": "www.rtve.es",
+  "url": "https://www.rtve.es/play/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: RTVE Play (official free, ES); class: redirect; server: RTVE Server; location: https://www.rtve.es/play/internacional/portada/; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:18Z"
+ },
+ {
+  "host": "www.france.tv",
+  "url": "https://www.france.tv/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: france.tv (official free, FR); class: answers; server: Microsoft IIS 4.0; content-type: text/html; charset=utf-8; title: France TV - Replay et Direct tv des chaînes France Télévisions; body: <!DOCTYPE html><html lang=\"fr\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" as=\"image\" href=\"/images/fallback-16_9.svg\" fetchPr; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:18Z"
+ },
+ {
+  "host": "www.redbull.com",
+  "url": "https://www.redbull.com/int-en/tv",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: Red Bull TV (official free sports); class: blocked (AkamaiGHost); server: AkamaiGHost; content-type: text/html; title: Access Denied; body: <HTML><HEAD> <TITLE>Access Denied</TITLE> </HEAD><BODY> <H1>Access Denied</H1> You don't have permission to access \"http&#58;&#47;&#47;www&#46;redbull&#46;com&#47;int&#45;en&#47;tv\" on this server.<P>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:19Z"
+ },
+ {
+  "host": "archive.org",
+  "url": "https://archive.org/advancedsearch.php?q=mediatype%3Amovies&rows=1&output=json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Internet Archive (public-domain films); class: answers; server: nginx/1.26.3; content-type: application/json; body: {\"responseHeader\":{\"status\":0,\"QTime\":524,\"params\":{\"query\":\"mediatype:movies\",\"qin\":\"mediatype:movies\",\"fields\":\"_default_\",\"wt\":\"json\",\"rows\":1,\"start\":0}},\"response\":{\"numFound\":17798761,\"start\":0,; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:19Z"
+ },
+ {
+  "host": "sub.wyzie.io",
+  "url": "https://sub.wyzie.io/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Wyzie subtitles API; class: answers; server: cloudflare; content-type: text/html; title: Wyzie Subs: Subtitle search API; body: <!doctype html> <html lang=\"en\" dir=\"ltr\" data-wz-lang> <head> <script>(function(){try{if(!matchMedia(\"(prefers-reduced-motion: reduce)\").matches)document.documentElement.classList.add(\"wz-motion\")}ca; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:19Z"
+ },
+ {
+  "host": "ww1.cuevana3.is",
+  "url": "https://ww1.cuevana3.is/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: webstreamr Cuevana (es); class: redirect; server: cloudflare; location: https://www3.cuevana3.is/; content-type: text/html; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body><a href=\"https://ww1.cuevana3.is/cdn-cgi/content?id=cGGJY89j7dz87IOOD7RqGjn.4W47wHZEqjKeDbgYh0w-1795549820.318259-1.2.1.1-ai8kcU8M_fv.jkY; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:20Z"
+ },
+ {
+  "host": "frenchcloud.cam",
+  "url": "https://frenchcloud.cam/",
+  "dns": "unknown",
+  "status": null,
+  "note": "used by: webstreamr FrenchCloud (fr); DNS SERVFAIL from two public resolvers (cloudflare-dns.com and dns.google): the authoritative name servers refuse or do not answer; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:22Z"
+ },
+ {
+  "host": "api.movix.site",
+  "url": "https://api.movix.site/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: webstreamr Movix (fr); class: answers; server: Cowboy; content-type: text/html; charset=utf-8; title: Loading...; body: <html><head><title>Loading...</title></head><body><script type='text/javascript'>window.location.replace('https://api.movix.site/?ch=1&js=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJKb2tlbiIsImV4c; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:20Z"
+ },
+ {
+  "host": "streamkiste.taxi",
+  "url": "https://streamkiste.taxi/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: webstreamr StreamKiste (de); class: redirect; server: cloudflare; location: https://streamkiste.bid/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:20Z"
+ },
+ {
+  "host": "kokoshka.digital",
+  "url": "https://kokoshka.digital/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: webstreamr Kokoshka (sq); TLS certificate not verifiable from here (curl 60: unable to get local issuer certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:21Z"
+ },
+ {
+  "host": "www3.homecine.to",
+  "url": "https://www3.homecine.to/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: webstreamr HomeCine (es); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; body: <!DOCTYPE html> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"es\"> <head> <meta charset=\"UTF-8\"> <meta name=\"robots\" content=\"index,follow\"> <meta http-equiv=\"content-language\" conten; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:21Z"
+ },
+ {
+  "host": "www.filmmodu.one",
+  "url": "https://www.filmmodu.one/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anthology filmmodu (tr); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Filmmodu: Film izle, 1080p Kalitesinde HD Film izle; body: <!DOCTYPE html> <html lang=\"tr-TR\"> <head> <meta charset=\"UTF-8\"> <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:21Z"
+ },
+ {
+  "host": "diziboxizle.com",
+  "url": "https://diziboxizle.com/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: anthology dizibox (tr); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Dizibox İzle - Güncel Yabancı Dizi izle, HD Diziler izle; body: <!DOCTYPE html> <html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"tr\" prefix=\"og: https://ogp.me/ns#\"> <head profile=\"http://gmpg.org/xfn/11\"> <meta http-equiv=\"Content-Type\" content=\"text/html; charse; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:22Z"
+ },
+ {
+  "host": "vidsrc-embed.ru",
+  "url": "https://vidsrc-embed.ru/",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: webstreamr VidSrc; TLS certificate not verifiable from here (curl 60: unable to get local issuer certificate); verification was not disabled; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:22Z"
+ },
+ {
+  "host": "api.rgshows.ru",
+  "url": "https://api.rgshows.ru/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: webstreamr RgShows API; class: parked (domain for sale page); server: Angie; content-type: text/html; charset=utf-8; body: <!-- 583546282208 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"robots\" content=\"noindex,noarchive; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:50:23Z"
+ },
+ {
+  "host": "hianime.fm",
+  "url": "https://hianime.fm/search?keyword=naruto",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of hianime.at (ani-cli); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Browse Anime | HiAnime; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /> <meta name=\"robots\" content=\"index,follow\" /> <meta http-equiv=\"content-language\" content=; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "net78.cc",
+  "url": "https://net78.cc/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of net27.cc / net79.cc (netmirror); class: answers; server: cloudflare; content-type: text/html; title: which is the tab title) --><meta name=\"apple-mobile-web-app-title\" content=\"NetMirror\"><!-- iOS read; body: <!DOCTYPE html><html lang=\"en\"> <head><meta charset=\"UTF-8\"><meta name=\"clckd\" content=\"502623715d0616ada312531d38452d6c\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-f; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "streamingunity.day",
+  "url": "https://streamingunity.day/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of streamingunity.vip (it); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; body: <!DOCTYPE html> <html lang=\"en\"> <head> <script defer data-domain=\"streamingcommunity.to\" src=\"https://analytics.vixcloud.cc/js/script.js\"></script> <!-- Global site tag (gtag.js) - Google Analytics -; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "2embed.stream",
+  "url": "https://2embed.stream/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of www.2embed.online; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: 2Embed — Stories, ready to stream; body: <!doctype html> <html lang=\"en\" data-theme=\"dark\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"theme-color\" content=\"#5cf7ff\"> <meta; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "newhdmovie2.best",
+  "url": "https://newhdmovie2.best/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: redirect target of newhdmovie2.beer (Indian); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "reanime.cz",
+  "url": "https://reanime.cz/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of reanime.to; class: answers; server: cloudflare; content-type: text/html; title: Re:ANIME — Stream Anime Free Online; body: <!doctype html> <!-- color-scheme is declared here, in the HTML, and nowhere else: the site is dark only, and setting it from script after load changes the root's default text colour mid-page (see the; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "animeunity.io",
+  "url": "https://animeunity.io/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of animeunity.ch (it); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: AnimeUnity ~ Streaming &amp; Download di Anime in SUB ITA/ITA; body: <!DOCTYPE html> <html xmlns=\"https://www.w3.org/1999/xhtml\" lang=\"en-US\"> <head profile=\"http://gmpg.org/xfn/11\"> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /> <meta name=\"view; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:23Z"
+ },
+ {
+  "host": "www.anitube.zip",
+  "url": "https://www.anitube.zip/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of www.anitube.news (pt); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: AniTube - Assistir Online no AniTube!; body: <!DOCTYPE html> <html lang=\"pt-BR\"> <head> <title>AniTube - Assistir Online no AniTube!</title> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-sca; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "vidsrc.sh",
+  "url": "https://vidsrc.sh/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of vidsrc.me; class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: VidSrc — Free Video Streaming API; body: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /> <meta name=\"description\" content=\"VidSrc — Free Video Streamin; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "framextv.cc",
+  "url": "https://framextv.cc/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of framextv.tech; class: answers; server: cloudflare; content-type: text/html; title: frameXTV; body: <!doctype html> <html lang=\"en\"> <head> <!-- Google tag (gtag.js) --> <script async src=\"https://www.googletagmanager.com/gtag/js?id=G-C6Z04QLBBE\"></script> <script> window.dataLayer = window.dataLaye; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "purstream.wiki",
+  "url": "https://purstream.wiki/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of purstream.ad (fr); class: answers; server: cloudflare; content-type: text/html; title: Purstream - Wiki officiel; body: <!DOCTYPE html> <html lang=\"fr\" data-lang=\"fr\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=5.0\"> <!-- SEO --> <title>Purstream -; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "allmovieland.one",
+  "url": "https://allmovieland.one/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: redirect target of allmovieland.you; class: redirect; server: cloudflare; location: https://allmovieland.art/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "movies4u.cm",
+  "url": "https://movies4u.cm/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: redirect target of movies4u.tc (Indian); class: redirect; server: cloudflare; location: https://movies4u.td/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "megakino1.biz",
+  "url": "https://megakino1.biz/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: redirect target of megakino1.to (de); class: redirect; server: cloudflare; location: https://megakino1.cx/; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsi; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "streamkiste.bid",
+  "url": "https://streamkiste.bid/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: redirect target of streamkiste.taxi (de); class: redirect; server: cloudflare; location: https://streamkiste.onl/; content-type: text/html; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>nginx/1.18.0 (Ubuntu)</center> <script type=\"module\" src=\"https://static.clo; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "wv3.cuevana3.eu",
+  "url": "https://wv3.cuevana3.eu/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of www.cuevana3.eu (es); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Cuevana 3: Peliculas, series y documentales nuevos en linea; body: <!DOCTYPE html><html lang=\"es\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width\"/><title>Cuevana 3: Peliculas, series y documentales nuevos en linea</title><meta name=\"ro; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:24Z"
+ },
+ {
+  "host": "www3.cuevana3.is",
+  "url": "https://www3.cuevana3.is/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of ww1.cuevana3.is (es); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: Cuevana 3 - Ver Películas, Ver Series online Gratis HD/4K ✔️; body: <!doctype html> <html lang=\"es\"> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"> <title; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "hdrezka-home.tv",
+  "url": "https://hdrezka-home.tv/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of hdrezka.ag; class: answers; server: nginx; content-type: text/html; charset=utf-8; body: (compressed or binary, not shown); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "frembed.pics",
+  "url": "https://frembed.pics/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: new address announced by frembed.work (fr); class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: Frembed : Voir des Films, Séries TV et TV en Direct Gratuitement; body: <!DOCTYPE html><html lang=\"fr\" class=\"dark\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" as=\"image\" href=\"/icons/frembed-red-da; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "anipm.pk",
+  "url": "https://anipm.pk/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: new address announced by ani.pm; class: answers; server: cloudflare; content-type: text/html; charset=utf-8; title: ani.pm — watch anime free, subbed &amp; dubbed, in HD; body: <!doctype html> <html lang=\"en\" class=\"dark\"> <head><script>if(location.hash.indexOf('#anipm-move=')==0)document.write('<scr'+'ipt src=/anipm-move/in.js?v=2></scr'+'ipt>')</script><script id=\"aclib\" t; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "bingr.one",
+  "url": "https://bingr.one/",
+  "dns": "ok",
+  "status": 308,
+  "note": "used by: redirect target of api.bingr.one; class: redirect; server: cloudflare; location: /home; content-type: text/html; charset=utf-8; title: Bingr — Movies, Shows, Anime &amp; Live Sports; body: <!DOCTYPE html><html id=\"__next_error__\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no\"/><link; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "38jntc.movielinkbd.at",
+  "url": "https://38jntc.movielinkbd.at/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: redirect target of wth3zq.movielinkbd.at (Bangla); class: answers; server: cloudflare; content-type: text/html; charset=UTF-8; title: MovieLinkBD — Open Your Download; body: <!DOCTYPE html> <html lang=\"en\"> <head> <style>html,body{background:#3a3f44}</style> <script>(function(){try{var ua=navigator.userAgent||\"\";var ios=/(iPhone|iPad|iPod)/.test(ua)||(/Macintosh/.test(ua); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "einthusan.tv",
+  "url": "https://einthusan.tv/intro/",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: einthusan intro page; class: answers; content-type: text/html; charset=utf-8; body: (compressed or binary, not shown); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "api-web.nhle.com",
+  "url": "https://api-web.nhle.com/v1/schedule/2026-11-24",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: NHL public schedule API (dated URL); class: answers; server: cloudflare; content-type: application/json; body: {\"nextStartDate\":\"2026-12-01\",\"previousStartDate\":\"2026-11-17\",\"gameWeek\":[{\"date\":\"2026-11-24\",\"dayAbbrev\":\"TUE\",\"numberOfGames\":1,\"datePromo\":[],\"games\":[{\"id\":2026020385,\"season\":20262027,\"gameType; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "www.thesportsdb.com",
+  "url": "https://www.thesportsdb.com/api/v1/json/123/eventsnextleague.php?id=4328",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: TheSportsDB schedule API (test key 123); class: answers; server: cloudflare; content-type: application/json; charset=utf-8; body: {\"events\":[{\"idEvent\":\"2494118\",\"idAPIfootball\":\"1557485\",\"strTimestamp\":\"2026-11-27T20:00:00\",\"strEvent\":\"Nottingham Forest vs Chelsea\",\"strEventAlternate\":\"Chelsea @ Nottingham Forest\",\"strFilename\"; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:25Z"
+ },
+ {
+  "host": "api.jikan.moe",
+  "url": "https://api.jikan.moe/v4/anime/20",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: anime metadata (Jikan/MAL), second attempt; connection reset by peer during TLS handshake (curl 35); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "api.jolpi.ca",
+  "url": "https://api.jolpi.ca/ergast/f1/2026.json",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: Jolpica F1, second attempt; no connection: timed out after 20 s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "iptv-org.github.io",
+  "url": "https://iptv-org.github.io/api/blocklist.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: iptv-org API blocklist; class: answers; server: GitHub.com; content-type: application/json; charset=utf-8; body: [{\"channel\":\"21Sextury.us\",\"reason\":\"nsfw\",\"ref\":\"https://github.com/iptv-org/iptv/issues/15723\"},{\"channel\":\"360Bundesliga.vn\",\"reason\":\"dmca\",\"ref\":\"https://github.com/github/dmca/blob/master/2020/0; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "codeberg.org",
+  "url": "https://codeberg.org/api/v1/repos/eclipsia/nuvio-plugin",
+  "dns": "ok",
+  "status": 403,
+  "note": "used by: Codeberg API (eclipsia/nuvio-plugin); class: http 403; content-type: text/plain; body: Access denied, old Chrome version.; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "raw.githubusercontent.com",
+  "url": "https://raw.githubusercontent.com/Zenda-Cross/vega-providers/refs/heads/main/urls.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: vega-providers domain list; class: answers; content-type: text/plain; charset=utf-8; body: { \"Moviesmod\": { \"name\": \"Moviesmod\", \"url\": \"https://moviesmod.fi\" }, \"Topmovies\": { \"name\": \"Topmovies\", \"url\": \"https://moviesleech.help\" }, \"UhdMovies\": { \"name\": \"UhdMovies\", \"url\": \"https://uhdm; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "allanime.day",
+  "url": "https://allanime.day/",
+  "dns": "ok",
+  "status": 301,
+  "note": "used by: allanime site, second attempt; class: redirect; server: cloudflare; location: https://allanime.day//; content-type: text/html; charset=UTF-8; title: 301 Moved Permanently; body: <html> <head><title>301 Moved Permanently</title></head> <body> <center><h1>301 Moved Permanently</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "api.videasy.net",
+  "url": "https://api.videasy.net/cdn/sources-with-title",
+  "dns": "ok",
+  "status": null,
+  "note": "used by: legacy:videasy API path; no connection: timed out after 20 s; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "api.themoviedb.org",
+  "url": "https://api.themoviedb.org/3/configuration",
+  "dns": "ok",
+  "status": 401,
+  "note": "used by: TMDB API (needs key); class: auth/parameter required; server: openresty; content-type: application/json; charset=utf-8; body: {\"status_code\":7,\"status_message\":\"Invalid API key: You must be granted a valid key.\",\"success\":false}; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "cinemeta-live.strem.io",
+  "url": "https://cinemeta-live.strem.io/meta/movie/tt1375666.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Stremio Cinemeta (metadata addon); class: answers; server: cloudflare; content-type: application/json; body: {\"meta\":{\"id\":\"tt1375666\",\"imdb_id\":\"tt1375666\",\"type\":\"movie\",\"poster\":\"https://live.metahub.space/poster/small/tt1375666/img\",\"logo\":\"https://live.metahub.space/logo/medium/tt1375666/img\",\"backgroun; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "v3-cinemeta.strem.io",
+  "url": "https://v3-cinemeta.strem.io/manifest.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Stremio Cinemeta manifest; class: answers; server: cloudflare; content-type: application/json; charset=utf-8; body: {\"id\":\"com.linvo.cinemeta\",\"version\":\"3.0.14\",\"description\":\"The official addon for movie and series catalogs\",\"name\":\"Cinemeta\",\"resources\":[\"catalog\",\"meta\",\"addon_catalog\"],\"types\":[\"movie\",\"series; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:26Z"
+ },
+ {
+  "host": "torrentio.strem.fun",
+  "url": "https://torrentio.strem.fun/manifest.json",
+  "dns": "ok",
+  "status": 200,
+  "note": "used by: Torrentio manifest (Stremio contract check); class: answers; server: cloudflare; content-type: application/json; charset=utf-8; body: {\"id\":\"com.stremio.torrentio.addon\",\"version\":\"0.0.15\",\"name\":\"Torrentio\",\"description\":\"Provides torrent streams from scraped torrent providers. Currently supports YTS(+), EZTV(+), RARBG(+), 1337x(+); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T19:52:27Z"
+ },
+ {
+  "host": "api.1anime.app",
+  "url": "https://api.1anime.app/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: StreamViva animekai source (consumet-style API); no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T20:03:00Z"
+ },
+ {
+  "host": "animetsu.net",
+  "url": "https://animetsu.net/",
+  "dns": "no-record",
+  "status": null,
+  "note": "used by: StreamViva animetsu source; name exists but has no A/AAAA record; name exists but has no A/AAAA record; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T20:03:01Z"
+ },
+ {
+  "host": "backend.animetsu.net",
+  "url": "https://backend.animetsu.net/",
+  "dns": "nxdomain",
+  "status": null,
+  "note": "used by: StreamViva animetsu API; no connection: egress proxy answered 502 to CONNECT (host unreachable or no DNS); measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T20:03:01Z"
+ },
+ {
+  "host": "backend.xaiby.sbs",
+  "url": "https://backend.xaiby.sbs/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: StreamViva zunime API; class: redirect; server: Apache; location: https://ww38.xaiby.sbs/; content-type: text/html; charset=UTF-8; body: ; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T20:03:00Z"
+ },
+ {
+  "host": "hubcloud.ist",
+  "url": "https://hubcloud.ist/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: file-host resolver used by Indian chains (eclipsia qyrvaen); class: redirect; server: cloudflare; location: https://hubcloud.mov/; content-type: text/html; charset=UTF-8; title: 302 Found; body: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>cloudflare</center> <script type=\"module\" src=\"https://static.cloudflareinsights.com/beacon.min.js/v; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T20:03:00Z"
+ },
+ {
+  "host": "new8.hdhub4u.cl",
+  "url": "https://new8.hdhub4u.cl/",
+  "dns": "ok",
+  "status": 302,
+  "note": "used by: eclipsia qyrvaen (HDHub4u); class: redirect; server: cloudflare; location: https://new16.hdhub4u.cl/; content-type: text/html; charset=UTF-8; title: 302 Found; body: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>cloudflare</center> </body> </html>; measured from a cloud address on 2026-11-24",
+  "checkedAt": "2026-11-24T20:03:01Z"
+ }
+]

@@ -14,8 +14,11 @@ packages/
   client/         Client side: bridge negotiation, registry client, the unified resolver
   content/        Category adapters: anime identity mapping, sports events, regional discovery
   control-plane/  Command line for the provider registry (stage, domains, rollback, signing)
+  browser-runtime/ A headless browser worker for providers that need page JavaScript
+  bench/          The source-availability benchmark and its reports
   streamviva/     StreamViva's provider engine (vendored, MIT), used as a fallback pack
-docs/platform/    Architecture, the provider SDK guide, operations, security review, testing
+docs/platform/    Architecture, the provider SDK guide, operations, security review, testing,
+                  the availability measurements and the provider status table
 ```
 
 ## Where streams come from
@@ -32,6 +35,8 @@ list that grows as providers answer. Playback starts on the first playable sourc
 3. **Embedded players** from other sites, when nothing else plays.
 
 See `docs/platform/ARCHITECTURE.md` for how it fits together and `docs/platform/SDK.md` to add a
+provider. `docs/platform/AVAILABILITY.md` says what was measured about source
+availability and from where; `docs/platform/PROVIDERS.md` says how far the evidence goes for each
 provider.
 
 ## Develop

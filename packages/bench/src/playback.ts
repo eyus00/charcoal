@@ -119,15 +119,16 @@ export async function createPlaybackChecker(o: PlaybackOptions = {}): Promise<Pl
   const videoCodecs = await (async () => {
     try {
       const page = await probe.newPage();
-      return await page.evaluate(() => {
-        const ok = (t: string) => typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported(t);
-        const out: string[] = [];
+      // As source text: a function compiled by the TypeScript loader carries helpers the page does not have.
+      return (await page.evaluate(`(() => {
+        const ok = (t) => typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported(t);
+        const out = [];
         if (ok('video/mp4; codecs="avc1.64001f"')) out.push('avc');
         if (ok('video/mp4; codecs="hvc1.1.6.L93.B0"') || ok('video/mp4; codecs="hev1.1.6.L93.B0"')) out.push('hevc');
         if (ok('video/mp4; codecs="av01.0.05M.08"')) out.push('av1');
         if (ok('video/webm; codecs="vp09.00.10.08"') || ok('video/mp4; codecs="vp09.00.10.08"')) out.push('vp9');
         return out;
-      });
+      })()` as never)) as string[];
     } catch {
       return undefined;
     } finally {
