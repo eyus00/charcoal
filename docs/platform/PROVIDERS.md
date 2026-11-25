@@ -134,6 +134,23 @@ address, those numbers were two and two.
   (Cloudflare "you have been blocked"), from Railway and from the test address. It can only work
   on a viewer's own connection.
 
+### From the enc-dec.app samples (2026-11-26, one cloud address)
+
+Each of these depends on enc-dec.app (third party, closed source): it sees what is looked up,
+and when it is down or behind a site's change, the provider stops.
+
+| Site | Result | Status |
+|---|---|---|
+| CineJoy | Four servers; four streams for Inception and for Breaking Bad S2E3, all verified to a media segment, up to 2160p | Added, stable. Server only (its sealed request is binary) |
+| MeowTV | Five servers; two to three verified streams per title (one is the file Castle also finds), one host refused (403) | Added, stable |
+| VidLink | See above | Rewritten, stable |
+| VidFast, VidCore, VidUp | The page gives a token, but the next step the sample describes answers 404 ("Route POST … not found"): the published flow is behind the sites | Not added |
+| Nexa | `BAD_ENVELOPE` from its API; the service says "Unknown server" for the first one | Not added |
+| AnimeKai | `animekai.to` answers "Page cannot be displayed" and both MegaUp mirrors do not connect (522, tunnel failure) from here | Not added; may work from a viewer's connection, unmeasured |
+| yFlix / 1movies | `yflix.to` does not connect from here; the service's database has no sources for the test film | Not added |
+| Hexa | Its flow redeems a human-verification challenge through the service | Not added: this project does not solve bot checks |
+| KissKH, OneTouchTV | Keyed by the sites' own ids, not TMDB or AniList; they need a search and matching step first | Not attempted |
+
 ## 4. Other integrations
 
 | Integration | Implemented | Unit-tested | Integration-tested | Live-validated | Playback-validated |

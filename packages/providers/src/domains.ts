@@ -43,6 +43,8 @@ export const DEFAULT_DOMAINS: Record<string, DomainConfig> = {
     roles: { site: { active: 'https://cine.su' } },
   },
   icefy: one('icefy', { site: 'https://streams.icefy.top' }),
+  cinejoy: one('cinejoy', { api: 'https://api.wing.st', site: 'https://cinejoy.pk', decoder: 'https://enc-dec.app' }),
+  meowtv: one('meowtv', { api: 'https://api.meowtv.ru', site: 'https://meowtv.ru', decoder: 'https://enc-dec.app' }),
   vidlink: one('vidlink', { site: 'https://vidlink.pro', decoder: 'https://enc-dec.app' }),
   fsharetv: one('fsharetv', { site: 'https://fsharetv.cc' }),
   popr: one('popr', { site: 'https://popr.ink' }),

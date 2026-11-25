@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeRuntime, validateDomainConfig, validateManifest, validateRulePack, type Media, type ProviderModule } from '@charcoal/provider-sdk';
 import { checkContract, createHarness, simulate, TITLES, type MockRoute } from '@charcoal/provider-sdk/testing';
-import { CODE_PROVIDERS, DEFAULT_DOMAINS, fsharetv, icefyManifest, icefyRules, loadCorePack, peachify, popr, RULE_PROVIDERS, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee } from './index.js';
+import { CODE_PROVIDERS, DEFAULT_DOMAINS, fsharetv, meowtv, icefyManifest, icefyRules, loadCorePack, peachify, popr, RULE_PROVIDERS, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee } from './index.js';
 import { base64ToBytes, bytesToBase64, bytesToHex, utf8 } from './providers/shared.js';
 import { encryptItemId } from './providers/vidrock.js';
 
@@ -198,6 +198,61 @@ test('VidLink: no browser needed; a missing title is empty, a refusing token ser
   assert.equal((await run('vidlink', MOVIE, { ...token, 'vidlink.pro': { body: { stream: { qualities: {} } } } })).code, 'NOT_FOUND');
   assert.equal((await run('vidlink', MOVIE, { 'enc-dec.app': { body: { status: 400, error: 'bad text' } } })).code, 'STRUCTURE_CHANGED');
   assert.equal((await run('vidlink', MOVIE, { ...token, 'vidlink.pro': { status: 403, body: 'no' } })).code, 'ACCESS_DENIED');
+});
+
+// ---------- CineJoy, MeowTV ----------
+
+test('CineJoy: servers listed, each request sealed and opened by the third-party service; bytes go out as bytes', async () => {
+  const posted: string[] = [];
+  const routes: Record<string, MockRoute> = {
+    'https://api.wing.st/servers': { body: { servers: [{ name: 'Light', status: 'ok' }, { name: 'Down', status: 'error' }, { name: 'Nebula', status: 'ok' }] } },
+    'https://enc-dec.app/api/enc-cinejoy*': (req) => ({ body: { status: 200, result: { data: bytesToBase64(new Uint8Array([0, 255, 128, 7])).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), state: `state:${new URL(new URL(req.url).searchParams.get('url')!).searchParams.get('server')}` } } }),
+    'POST https://api.wing.st/g': (req) => {
+      posted.push([...(req.body ?? '')].map((c) => c.charCodeAt(0)).join(','));
+      return { body: 'SEALED' };
+    },
+    'POST https://enc-dec.app/api/dec-cinejoy': (req) => {
+      const { state } = JSON.parse(req.body ?? '{}') as { state: string };
+      return state === 'state:Nebula' ? { body: { status: 500, error: 'cannot open' } } : { body: { status: 200, result: { data: { stream: [{ type: 'hls', playlist: 'https://cdn.example.org/light/master.m3u8', captions: [{ url: 'https://cdn.example.org/light/en.vtt', language: 'en' }] }] } } } };
+    },
+    'cdn.example.org': PLAYLIST,
+  };
+  const r = await run('cinejoy', MOVIE, routes);
+  assert.equal(r.outcome, 'ok', `${r.code}: ${r.message}`);
+  assert.deepEqual(r.streams.map((s) => [s.type, s.url, s.headers.Referer, s.note]), [['hls', 'https://cdn.example.org/light/master.m3u8', 'https://cinejoy.pk/', 'Light']]);
+  assert.deepEqual(r.captions.map((c) => [c.lang, c.format]), [['en', 'vtt']]);
+  assert.deepEqual(posted, ['0,255,128,7', '0,255,128,7'], 'the two working servers were asked, with the sealed bytes intact');
+  const asked = r.calls.filter((c) => c.url.pathname === '/api/enc-cinejoy').map((c) => new URL(c.url.searchParams.get('url')!).searchParams);
+  assert.deepEqual(asked.map((q) => [q.get('server'), q.get('tmdb'), q.get('type')]).sort(), [['Light', '27205', 'movie'], ['Nebula', '27205', 'movie']]);
+  assert.deepEqual(loaded('cinejoy')[0].module.manifest.runtimes, ['server', 'edge'], 'only where bytes can be sent');
+  assert.equal((await run('cinejoy', MOVIE, { ...routes, 'POST https://enc-dec.app/api/dec-cinejoy': { body: { status: 500 } } })).code, 'NOT_FOUND');
+  assert.equal((await run('cinejoy', MOVIE, { 'https://api.wing.st/servers': { body: { servers: [] } } })).code, 'STRUCTURE_CHANGED');
+});
+
+test('MeowTV: a fresh ticket for every server; the answer says the stream, its headers and its language', async () => {
+  let tickets = 0;
+  const used: string[] = [];
+  const routes: Record<string, MockRoute> = {
+    'POST https://api.meowtv.ru/streams/ticket': () => ({ body: { ticket: `t${++tickets}` } }),
+    'https://api.meowtv.ru/streams/movie/27205*': (req) => {
+      used.push(req.headers['X-Stream-Ticket']);
+      const s = new URL(req.url).searchParams.get('s');
+      return s === 'tik' ? { status: 404, body: { error: 'No stream' } } : { body: { sealed: s } };
+    },
+    'POST https://enc-dec.app/api/dec-meowtv': (req) => {
+      const s = (JSON.parse(req.body ?? '{}') as { data: { sealed: string } }).data.sealed;
+      return { body: { status: 200, result: s === 'acme' ? { language: 'Hindi', url: 'https://cdn.example.org/acme/index.m3u8', headers: { Referer: 'https://host.example/' } } : { language: 'Auto', url: `https://cdn.example.org/${s}/index.m3u8`, headers: {} } } };
+    },
+    'https://api.meowtv.ru/subs/movie/27205': { body: [{ label: 'English', file: 'https://subs.example.org/en.vtt' }] },
+    'cdn.example.org': PLAYLIST,
+  };
+  const r = await run('meowtv', MOVIE, routes);
+  assert.equal(r.outcome, 'ok', `${r.code}: ${r.message}`);
+  assert.deepEqual(r.streams.map((s) => [s.note, s.audio[0].lang, s.headers.Referer ?? '']).sort(), [['acme', 'hi', 'https://host.example/'], ['dcloud', 'und', ''], ['english', 'en', ''], ['hindi', 'hi', '']]);
+  assert.equal(new Set(used).size, 5, 'no ticket is used twice');
+  assert.equal(r.captions.length, 1);
+  assert.deepEqual(await contract(meowtv, MOVIE, routes), []);
+  assert.equal((await run('meowtv', MOVIE, { 'POST https://api.meowtv.ru/streams/ticket': { body: { ticket: 't' } }, 'api.meowtv.ru': simulate.notFound() })).code, 'NOT_FOUND');
 });
 
 // ---------- VidSrc ----------

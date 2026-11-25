@@ -11,7 +11,7 @@ import type { Fetcher, FetchOptions, FetchResponse } from './types.js';
 
 /** Plain fetch() as a transport: Node, an edge runtime, or anywhere headers and CORS aren't restricted. */
 export const fetchTransport: Fetcher = async (url, o = {}) => {
-  const res = await fetch(url, { method: o.method ?? 'GET', headers: o.headers, body: o.body, signal: o.signal, redirect: 'follow' });
+  const res = await fetch(url, { method: o.method ?? 'GET', headers: o.headers, body: o.binaryBody && o.body !== undefined ? Uint8Array.from(o.body, (c) => c.charCodeAt(0)) : o.body, signal: o.signal, redirect: 'follow' });
   const headers: Record<string, string> = {};
   res.headers.forEach((v, k) => (headers[k] = v));
   const meta = { status: res.status, ok: res.ok, url: res.url || url, headers };

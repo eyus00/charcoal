@@ -16,6 +16,8 @@ import { popr } from './providers/popr.js';
 import { streammafia } from './providers/streammafia.js';
 import { tulnex } from './providers/tulnex.js';
 import { videasy } from './providers/videasy.js';
+import { cinejoy } from './providers/cinejoy.js';
+import { meowtv } from './providers/meowtv.js';
 import { vidlink } from './providers/vidlink.js';
 import { vidnest } from './providers/vidnest.js';
 import { vidrock } from './providers/vidrock.js';
@@ -36,7 +38,7 @@ export { loadFallbackProviders };
 export { primesrc, STREAMVIVA_VERSION } from './streamviva.js';
 export { cinesuManifest, cinesuRules } from './rules/cinesu.js';
 export { icefyManifest, icefyRules } from './rules/icefy.js';
-export { castle, febbox, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee, vixsrc };
+export { castle, cinejoy, febbox, meowtv, fsharetv, peachify, popr, streammafia, tulnex, videasy, vidlink, vidnest, vidrock, vidsrc, vidzee, vixsrc };
 
 /**
  * Providers declared as data: a manifest and its rules.
@@ -70,6 +72,10 @@ export const CODE_PROVIDERS: { module: ProviderModule; stage: Stage }[] = [
   { module: vidnest, stage: 'stable' },
   // Its JSON API, with the id token from a third-party service. Verified from a cloud address on 2026-11-26.
   { module: vidlink, stage: 'stable' },
+  // Named servers behind an API whose requests enc-dec.app seals and opens. Each returned streams
+  // that verified from a cloud address on 2026-11-26.
+  { module: cinejoy, stage: 'stable' },
+  { module: meowtv, stage: 'stable' },
   // Ported from the server-only classes with the same protocol, but no stream of theirs could be
   // verified from where this was built: their sites do not connect, answer with a browser check,
   // or return an empty table there. They may well work from a home connection.

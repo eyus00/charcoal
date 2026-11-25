@@ -200,6 +200,8 @@ export interface FetchOptions {
   method?: 'GET' | 'POST' | 'HEAD';
   headers?: Record<string, string>;
   body?: string;
+  /** The body is a binary string (one character per byte), sent as those bytes. Only the Node and edge transports honour it. */
+  binaryBody?: boolean;
   signal?: AbortSignal;
   /**
    * Stop reading the response after about this many bytes (probing a large file without
