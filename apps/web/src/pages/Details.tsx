@@ -6,7 +6,6 @@ import EpisodeSelector from '../components/EpisodeSelector';
 import Community from '../components/Community';
 import { PlayTitleButton } from '../components/TitleActions';
 import LibraryButton from '../components/LibraryButton';
-import QualityTag from '../components/QualityTag';
 import { Facts } from '../player/DetailsPeek';
 import { seLabel } from '../components/AiringTile';
 import { ErrorBox } from '../components/Grid';
@@ -115,9 +114,7 @@ function DetailsView({ d, type }: { d: D; type: MediaType }) {
           {/* The next-episode card sits above the info card. */}
           {type === 'tv' && <NextEpisodeCard d={d} onOpen={openEpisodes} className="mb-3" />}
           <div className="relative max-w-xl rounded-3xl bg-black/35 p-5 ring-1 ring-white/10 backdrop-blur-xl md:p-7">
-            {/* What quality is out there for it (WEB-DL, BluRay, CAM…), top-right of the card. */}
-            <QualityTag d={d} type={type} className="absolute top-5 right-5 md:top-7 md:right-7" />
-            <h1 className="pr-20 text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
+            <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">{title}</h1>
             <Facts d={d} type={type} genresClassName="mt-2 text-sm" className="mt-1.5 text-sm" />
             <Overview text={d.overview} title={title} />
             <div className="mt-5 flex flex-wrap items-center gap-2.5">

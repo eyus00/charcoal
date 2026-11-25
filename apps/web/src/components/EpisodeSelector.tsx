@@ -11,7 +11,6 @@ import { useSwipeToClose } from '../lib/swipe';
 import { NoSynopsis, Synopsis } from './Synopsis';
 import { Frame, ReminderBell, dateLabel, seLabel } from './AiringTile';
 import Kbd from './Kbd';
-import { CARD_INFO } from './MediaCard';
 import { ErrorBox } from './Grid';
 import { Bone } from './Skeletons';
 import { allSeasons, epLabel, regularSeasons } from '../lib/episodes';
@@ -80,6 +79,8 @@ function releaseLabel(ep: Episode) {
 }
 
 /** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
+/** On a phone's small still, the corner chips are the small ones the player's picker uses. */
+const PHONE_CHIPS = 'max-sm:[&>span.absolute>span]:px-1.5 max-sm:[&>span.absolute>span]:py-px max-sm:[&>span.absolute>span]:text-micro max-sm:[&>span.top-2\\.5]:top-1 max-sm:[&>span.left-2\\.5]:left-1 max-sm:[&>span.bottom-2\\.5]:bottom-1 max-sm:[&>span.right-2\\.5]:right-1';
 const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
 
 export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick, prev, next, selected }: Props) {
@@ -244,8 +245,8 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
             {isPending ? (
               <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                 {Array.from({ length: 6 }, (_, i) => (
-                  <div key={i} className="flex gap-3 py-2.5 sm:block sm:py-0">
-                    <Bone className="aspect-video w-[44%] shrink-0 rounded-2xl sm:w-auto" />
+                  <div key={i} className="flex gap-3 p-1.5 sm:block sm:p-0">
+                    <Bone className="aspect-video w-[46%] shrink-0 rounded-xl sm:w-auto sm:rounded-2xl" />
                     <div className="flex-1 sm:h-[112px] sm:pt-3">
                       <Bone className="h-4 w-3/4" />
                       <Bone className="mt-2 h-3 w-1/3" />
@@ -270,10 +271,10 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                   const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
                   const body = (
                     <>
-                      {/* Phones: a row (still left, text right), like the player's small picker; larger: a card. */}
-                      <div className="w-[44%] shrink-0 self-start pt-2.5 sm:w-full sm:self-stretch sm:pt-0">
+                      {/* Phones: the player's small picker, a little larger (still left, text right, both starting at the same line); larger screens: a card. */}
+                      <div className="w-[46%] shrink-0 self-start sm:w-full sm:self-stretch">
                         <Frame label={upcoming ? releaseLabel(ep) : undefined} bg="bg-surface">
-                          <div className={cx('relative overflow-hidden rounded-2xl', isCurrent && !isSelected && 'ring-2 ring-white/70')}>
+                          <div className={cx('relative overflow-hidden rounded-xl sm:rounded-2xl', isCurrent && !isSelected && 'ring-2 ring-white/70', PHONE_CHIPS)}>
                             {ep.still_path ? (
                               <Img
                                 path={ep.still_path}
@@ -345,20 +346,24 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                           </div>
                         </Frame>
                       </div>
-                      <div className={cx(CARD_INFO, 'min-w-0 flex-1 pt-2.5 pb-3 sm:min-h-[112px] sm:pt-2')}>
+                      <div className="relative min-w-0 flex-1 py-0.5 sm:min-h-[112px] sm:pt-2 sm:pr-2.5 sm:pb-3">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm text-muted tabular-nums">{ep.episode_number}</span>
-                          <h3 className={cx('line-clamp-2 min-w-0 text-body-sm font-medium text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
+                          <h3 className={cx('line-clamp-1 min-w-0 text-sm font-medium sm:line-clamp-2 sm:text-body-sm sm:text-balance', upcoming ? 'text-white/70' : 'text-white/95')}>{ep.name}</h3>
                         </div>
-                        <div className="text-caption text-faint">
+                        <div className="text-xs text-faint sm:text-caption">
                           {upcoming ? (ep.air_date ? dateLabel(new Date(`${ep.air_date}T00:00:00`).getTime()) : 'Date TBA') : ep.air_date ? formatDate(ep.air_date) : ''}
                         </div>
-                        {ep.overview ? <Synopsis text={ep.overview} title={`${seLabel(season, ep.episode_number)} ${ep.name}`} /> : <NoSynopsis n={ep.episode_number} upcoming={upcoming} />}
+                        {/* Phones: two plain lines, as in the player's picker. */}
+                        {ep.overview && <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted sm:hidden">{ep.overview}</p>}
+                        <div className="hidden sm:block">
+                          {ep.overview ? <Synopsis text={ep.overview} title={`${seLabel(season, ep.episode_number)} ${ep.name}`} /> : <NoSynopsis n={ep.episode_number} upcoming={upcoming} />}
+                        </div>
                       </div>
                     </>
                   );
                   return upcoming ? (
-                    <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex gap-3 rounded-2xl sm:flex-col sm:gap-0', isSelected && SELECTED)}>
+                    <div key={ep.id} data-ep={ep.episode_number} aria-disabled className={cx('flex gap-3 rounded-2xl p-1.5 sm:flex-col sm:gap-0 sm:p-0', isSelected && SELECTED)}>
                       {body}
                     </div>
                   ) : (
@@ -368,7 +373,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                       to={href(season, ep.episode_number)}
                       replace={replace}
                       onClick={onPick}
-                      className={cx('group flex gap-3 rounded-2xl sm:flex-col sm:gap-0', isSelected && SELECTED)}
+                      className={cx('group flex gap-3 rounded-2xl p-1.5 sm:flex-col sm:gap-0 sm:p-0', isSelected && SELECTED)}
                       aria-current={isCurrent || undefined}
                     >
                       {body}

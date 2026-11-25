@@ -427,35 +427,20 @@ section('A. Anime');
   check('…and skipping lands at its end', offered && after.t >= 11.5 && after.t < 16, `now at ${after?.t.toFixed(1)}s`);
   check('AniSkip was asked for the MAL entry and its own episode number', outside.some((o) => o.includes('api.aniskip.com/v2/skip-times/48583/1')), outside.filter((o) => o.includes('aniskip')).join(' '));
 
-  // One list from both searches: alpha's two files and Anizen's three, one of them the same file.
-  await page.getByRole('button', { name: /^Audio:/ }).click();
-  const menu = page.getByTestId('audio-menu');
-  await until(async () => /2 sources/.test((await menu.locator('[data-lang="ja"]').textContent().catch(() => '')) ?? ''), 8000);
-  const ja = (await menu.locator('[data-lang="ja"]').textContent().catch(() => '')) ?? '';
-  const en = (await menu.locator('[data-lang="en"]').textContent().catch(() => '')) ?? '';
-  check('sources from both searches are one list, the shared file once', /Japanese/.test(ja) && /2 sources/.test(ja) && /English/.test(en) && /1 source\b/.test(en), `${ja} | ${en}`);
-  const identity = (await menu.getByTestId('anime-identity').textContent().catch(() => '')) ?? '';
-  check('the page says which anime entry was searched', /AniList 131681/.test(identity) && /episode 1\b/.test(identity), identity);
-  await shot(page, 'watch-anime-audio-menu');
-
-  // Sub → dub: a new anime query, and the dubbed source goes first.
-  const sub = await video(page);
-  await menu.getByRole('button', { name: 'Dub', exact: true }).click();
-  const again = await until(() => asked.some((q) => q.kind === 'anime' && q.audio === 'dub'));
-  const dub = asked.find((q) => q.kind === 'anime' && q.audio === 'dub');
-  check('choosing Dub asks the anime query again with audio=dub', again && dub?.anilist === '131681' && dub?.e === '1', JSON.stringify(dub && { anilist: dub.anilist, e: dub.e, audio: dub.audio }));
-  const switched = await until(async () => file((await video(page))?.src) === 'ani-dub.webm', 8000);
-  const now = await video(page);
-  check('…and the dubbed source is the one that plays', switched, `was ${file(sub?.src)}, now ${file(now?.src)}`);
-  await until(async () => (await video(page))?.t > 5, 5000);
-  const resumed = await video(page);
-  check('…from where the episode was', resumed?.t >= sub.t - 1, `was at ${sub.t.toFixed(1)}s, now at ${resumed?.t.toFixed(1)}s`);
+  check('the player’s top bar has no audio button (audio is in the player’s settings and in Profile)', (await page.getByRole('button', { name: /^Audio:/ }).count()) === 0);
   check('no page errors', errors.length === 0, errors.join(' | '));
 
-  // The choice is a setting: the settings page shows it.
+  // Sub or dub is a setting: choosing Dub there makes the next search ask for the dub.
   const settings = await open('/profile?tab=settings', { context });
-  const pressed = await settings.page.getByRole('group', { name: 'Anime audio' }).getByRole('button', { name: 'Dub', exact: true }).getAttribute('aria-pressed', { timeout: 8000 }).catch(() => null);
-  check('the sub / dub choice is kept as a setting', pressed === 'true', `Dub aria-pressed=${pressed}`);
+  const dubButton = settings.page.getByRole('group', { name: 'Anime audio' }).getByRole('button', { name: 'Dub', exact: true });
+  await dubButton.click({ timeout: 8000 }).catch(() => {});
+  check('the sub / dub choice is a setting', (await dubButton.getAttribute('aria-pressed').catch(() => null)) === 'true');
+  asked.length = 0;
+  await settings.page.goto(`${site}/watch/tv/1429?season=4&episode=17`);
+  const again = await until(() => asked.some((q) => q.kind === 'anime' && q.audio === 'dub'), 15000);
+  const dub = asked.find((q) => q.kind === 'anime' && q.audio === 'dub');
+  check('with Dub chosen, the anime query asks for audio=dub', again && dub?.anilist === '131681' && dub?.e === '1', JSON.stringify(dub && { anilist: dub.anilist, e: dub.e, audio: dub.audio }));
+  check('…and the dubbed source is the one that plays', await until(async () => file((await video(settings.page))?.src) === 'ani-dub.webm', 15000), file((await video(settings.page))?.src));
   await shot(settings.page, 'settings');
   await context.close();
 }
@@ -563,21 +548,7 @@ section('B. Regional titles');
   check('…leaving out what can’t travel or adds nothing (a name with a comma, the title itself)', !!q && !q.alt.includes('Agent') && !altOf(q).includes('Vikram') && !altOf(q).includes('Vikram (2022)'), q?.alt);
   check('a film that isn’t anime is searched once', asked.every((x) => x.kind === 'movie'), asked.map((x) => x.kind).join(','));
 
-  await page.getByRole('button', { name: /^Audio:/ }).click();
-  const menu = page.getByTestId('audio-menu');
-  const row = async (code) => ((await menu.locator(`[data-lang="${code}"]`).textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ');
-  const [ta, hi, te] = [await row('ta'), await row('hi'), await row('te')];
-  check('a frame, a DASH stream and a verification event among the answers upset nothing', errors.length === 0 && /Tamil/.test(ta), errors.join(' | '));
-  check('the audio languages the sources report are shown with their counts', /^ta\s*Tamil\s*2 sources/i.test(ta) && /^hi\s*Hindi\s*1 source/i.test(hi) && /^te\s*Telugu\s*1 source/i.test(te), `${ta} | ${hi} | ${te}`);
-  check('no anime control on a film that isn’t anime', (await menu.getByRole('group', { name: 'Anime audio' }).count()) === 0);
-  await shot(page, 'watch-regional-audio-menu');
-  const was = await video(page);
-  asked.length = 0;
-  await menu.locator('[data-lang="hi"]').click();
-  const switched = await until(async () => file((await video(page))?.src) === 'hindi.webm', 10000);
-  check('preferring Hindi searches again and plays the Hindi source', switched && asked.some((x) => x.tmdb === '900'), `was ${file(was?.src)}, now ${file((await video(page))?.src)}`);
-  const label = await page.getByRole('button', { name: /^Audio:/ }).getAttribute('aria-label');
-  check('…and is remembered as the audio language', /Hindi/.test(label ?? ''), label);
+  check('a frame, a DASH stream and a verification event among the answers upset nothing', errors.length === 0, errors.join(' | '));
   check('no page errors', errors.length === 0, errors.join(' | '));
   await context.close();
 }
