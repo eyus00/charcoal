@@ -23,7 +23,10 @@ cp -R "$ROOT/apps/server/." "$WORK/apps/server/"
 rm -rf "$WORK/apps/server/node_modules"
 
 cd "$WORK/apps/server"
-NODE_ENV=production HOST=127.0.0.1 PORT="$PORT" PUBLIC_URL="http://127.0.0.1:$PORT" MONITOR_INTERVAL_MINUTES=0 npx tsx src/server.ts >"$WORK/server.log" 2>&1 &
+# Something already answering on the port would be checked instead of this build: refuse.
+if curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/"; then echo "FAIL port $PORT is already in use; set PORT to a free one"; exit 1; fi
+# Started with node directly (not through npx), so that the process we kill at the end is the server itself.
+NODE_ENV=production HOST=127.0.0.1 PORT="$PORT" PUBLIC_URL="http://127.0.0.1:$PORT" MONITOR_INTERVAL_MINUTES=0 node --import tsx src/server.ts >"$WORK/server.log" 2>&1 &
 PID=$!
 for _ in $(seq 1 60); do
   curl -fs -m 2 "http://127.0.0.1:$PORT/v1/health" >/dev/null 2>&1 && break
