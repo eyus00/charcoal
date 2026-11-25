@@ -400,3 +400,29 @@ test('GET /v2/sources: discovered streams are followed by a verdict for each; he
   const plain = await h.sources(`kind=movie&tmdb=27205&title=Inception&${ONLY}&verify=0`);
   assert.ok(!plain.events.some((e) => (e as { t: string }).t === 'verify'));
 });
+
+test('monitoring: a canary provider graduates by itself after three checks with a verified stream, and not on a URL alone', async () => {
+  const media = '#EXTM3U\n#EXTINF:6,\nseg0.ts\n#EXT-X-ENDLIST\n';
+  const h = await harness({
+    ...ROUTES,
+    // alpha's stream answers with media; beta returns a link that is dead.
+    'cdn.alpha.example.net': (req) => (req.url.pathname.endsWith('.m3u8') ? { body: media } : { body: 'G' + '\0'.repeat(187) + 'G' }),
+    'cdn.beta.example.net': simulate.notFound(),
+  });
+  h.overlay.setStage('alpha', 'canary', 'ops', 'new version');
+  h.overlay.setStage('beta', 'canary', 'ops', 'new version');
+  const stage = (id: string) => h.catalog.find(id)!.stage;
+
+  await h.platform.recover('monitor');
+  await h.platform.recover('monitor');
+  assert.deepEqual([stage('alpha'), stage('beta')], ['canary', 'canary'], 'two passes are not enough');
+  await h.platform.recover('monitor');
+  assert.equal(stage('alpha'), 'stable');
+  assert.equal(stage('beta'), 'canary', 'it keeps finding a stream, but the stream never answers');
+  const promotion = h.overlay.audit(20).find((a) => a.provider === 'alpha' && a.by === 'auto');
+  assert.match(JSON.stringify(promotion), /passed 3 monitor checks in a row, each with a verified stream/);
+  // Ordinary requests now include it without being named.
+  const { results } = await h.sources('kind=movie&tmdb=27205&title=Inception&verify=0');
+  assert.ok(results.some((r) => r.provider.id === 'alpha'));
+  assert.ok(!results.some((r) => r.provider.id === 'beta'));
+});

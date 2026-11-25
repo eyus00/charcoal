@@ -23,8 +23,8 @@ test('every provider in the pack has a valid manifest and a domain config for ea
     assert.deepEqual(validateRulePack(rules, manifest), [], manifest.id);
     assert.deepEqual(validateDomainConfig(DEFAULT_DOMAINS[manifest.id], manifest.domainRoles), [], manifest.id);
   }
-  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidrock', 'popr', 'fsharetv', 'streammafia', 'anime-animotvslash', 'anime-shonen', 'anime-zokoanime', 'anime-animeheaven', 'icefy', 'vidlink']);
-  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'canary').map((p) => p.module.manifest.id), ['vidsrc', 'videasy', 'vidzee', 'vidnest', 'tulnex', 'peachify', 'anime-megavid', 'cinesu']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'stable').map((p) => p.module.manifest.id), ['febbox', 'castle', 'vixsrc', 'vidnest', 'anime-animotvslash', 'anime-shonen', 'anime-zokoanime', 'anime-animeheaven', 'vidlink']);
+  assert.deepEqual(loadCorePack().filter((p) => p.stage === 'canary').map((p) => p.module.manifest.id), ['vidrock', 'popr', 'fsharetv', 'streammafia', 'vidsrc', 'videasy', 'vidzee', 'tulnex', 'peachify', 'anime-megavid', 'cinesu', 'icefy']);
 });
 
 test('the vendored fallback pack loads as open-network providers with valid manifests', async () => {

@@ -18,7 +18,7 @@ import { checkDomains, switchActive, type DomainAuditEntry, type DomainCheckResu
 import type { Engine, LoadedProvider, ProviderOutcome } from './engine.js';
 import { FAILURES, type FailureCode, type FailureScope } from './errors.js';
 import type { HealthStore } from './health.js';
-import type { Fetcher, Media, MediaKind } from './types.js';
+import type { Fetcher, Media, MediaKind, Stream } from './types.js';
 
 export type CanaryTitles = Partial<Record<MediaKind, Media[]>>;
 
@@ -27,12 +27,25 @@ export interface CanaryResult {
   runs: { title: string; outcome: ProviderOutcome['outcome']; code?: FailureCode; ms: number; streams: number }[];
   /** At least one known title produced streams. */
   passed: boolean;
+  /** One of those streams was tried and answered with media (only when the caller asked for streams to be tried). */
+  verified?: boolean;
   /** Domain fail-overs that happened inside runs that went on to find streams. */
   failovers: { role: string; from: string; to: string; reason: FailureCode }[];
 }
 
 /** Runs every (non-disabled) provider against the known titles for the kinds it supports. Outcomes go into the health store. */
-export async function runCanary(engine: Engine, titles: CanaryTitles, opts: { only?: string[]; record?: boolean; domains?: (p: LoadedProvider) => DomainConfig | undefined; signal?: AbortSignal } = {}): Promise<CanaryResult[]> {
+export async function runCanary(
+  engine: Engine,
+  titles: CanaryTitles,
+  opts: {
+    only?: string[];
+    record?: boolean;
+    domains?: (p: LoadedProvider) => DomainConfig | undefined;
+    signal?: AbortSignal;
+    /** Tries one stream of a passing provider (a URL alone proves nothing). Returns whether it answered with media. */
+    verify?: (stream: Stream) => Promise<boolean>;
+  } = {},
+): Promise<CanaryResult[]> {
   const out: CanaryResult[] = [];
   for (const p of engine.providers()) {
     const m = p.module.manifest;
@@ -40,14 +53,18 @@ export async function runCanary(engine: Engine, titles: CanaryTitles, opts: { on
     const mine = m.kinds.flatMap((k) => titles[k] ?? []);
     if (!mine.length) continue;
     const failovers: CanaryResult['failovers'] = [];
+    let sample: Stream | undefined;
     const runs = await Promise.all(
       mine.map(async (media) => {
         const r = await engine.runProvider(p, media, opts.signal, undefined, opts.record ?? true, opts.domains?.(p));
         if (r.outcome === 'ok') for (const f of r.failovers ?? []) if (!failovers.some((x) => x.role === f.role && x.to === f.to)) failovers.push(f);
+        if (r.outcome === 'ok' && !sample) sample = r.streams.find((s) => s.type !== 'frame');
         return { title: media.title, outcome: r.outcome, code: r.code, ms: r.ms, streams: r.streams.length };
       }),
     );
-    out.push({ provider: m.id, runs, passed: runs.some((r) => r.outcome === 'ok'), failovers });
+    const passed = runs.some((r) => r.outcome === 'ok');
+    const verified = opts.verify && passed && sample ? await opts.verify(sample).catch(() => false) : undefined;
+    out.push({ provider: m.id, runs, passed, verified, failovers });
   }
   return out;
 }

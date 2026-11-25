@@ -271,7 +271,8 @@ test('provider unavailable: DNS failure with no alternate is a domain-scoped fai
   h.advance(1);
   const after = await collect(h.engine.resolve({ media: TITLES.movie }));
   assert.equal(after.results.length, 0);
-  assert.match(after.plan!.skipped[0].reason, /resting for \d+s after repeated failures/);
+  // The reason says what kind of rest it is: an address that does not answer, not a broken provider.
+  assert.match(after.plan!.skipped[0].reason, /resting for \d+s: its address does not answer from here/);
   assert.equal(h.health.status('gone', 'server'), 'benched');
 });
 

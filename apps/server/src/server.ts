@@ -127,7 +127,8 @@ const SERVER_SETTINGS: Record<string, unknown> | undefined = process.env.FEBBOX_
 /** Known titles the monitor checks providers with. */
 const CANARIES: CanaryTitles = {
     movie: [{ kind: 'movie', ids: { tmdb: '27205', imdb: 'tt1375666' }, title: 'Inception', year: 2010, runtime: 148 }],
-    tv: [{ kind: 'tv', ids: { tmdb: '1396', imdb: 'tt0903747' }, title: 'Breaking Bad', year: 2008, season: 2, episode: 3 }]
+    tv: [{ kind: 'tv', ids: { tmdb: '1396', imdb: 'tt0903747' }, title: 'Breaking Bad', year: 2008, season: 2, episode: 3 }],
+    anime: [{ kind: 'anime', ids: { anilist: '16498', mal: '16498', tmdb: '1429' }, title: 'Attack on Titan', altTitles: ['Shingeki no Kyojin'], year: 2013, episode: 1, season: 1, seasonEpisode: 1, audio: 'sub', originalLanguage: 'ja' }]
 };
 
 const dnsCache = new Map<string, { ok: boolean; until: number }>();
@@ -354,6 +355,7 @@ async function main() {
         canaries: CANARIES,
         adminToken: process.env.ADMIN_TOKEN || undefined,
         verifyStreams: process.env.VERIFY_STREAMS !== 'false',
+        promoteCanaryAfter: Number(process.env.PROMOTE_CANARY_AFTER ?? 3),
         browserHealth: browser ? (): BrowserWorkerHealth => browser!.health() : undefined,
         autoFailoverTtlMs: Number(process.env.AUTO_DOMAIN_FAILOVER_MINUTES ?? 0) * 60_000,
         limits: { sourcesPerMinute: Number(process.env.RATE_LIMIT_SOURCES_PER_MINUTE ?? 60), sourcesBurst: Number(process.env.RATE_LIMIT_SOURCES_BURST ?? 20) }

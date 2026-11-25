@@ -49,27 +49,39 @@ export { castle, febbox, fsharetv, peachify, popr, streammafia, tulnex, videasy,
 export const RULE_PROVIDERS: { manifest: ProviderManifest; rules: RulePack; stage: Stage }[] = [
   // Its address redirects elsewhere and the new host refuses the playlist path.
   { manifest: cinesuManifest, rules: cinesuRules, stage: 'canary' },
-  { manifest: icefyManifest, rules: icefyRules, stage: 'stable' },
+  // The site answers with a browser check from a cloud address; not verified anywhere yet.
+  { manifest: icefyManifest, rules: icefyRules, stage: 'canary' },
   // Needs a browser worker; live-validated through one from a cloud address on 2026-11-24.
   { manifest: vidlinkManifest, rules: vidlinkRules, stage: 'stable' },
 ];
 
-/** First-party code providers, with the stage each ships in. */
+/**
+ * First-party code providers, with the stage each ships in.
+ *
+ * The rule for `stable`: a stream from this provider has been tried and answered with media from a
+ * network we could measure (the dated evidence is in docs/platform/PROVIDERS.md), or the provider
+ * was already first-party and is unchanged. Everything else is `canary`: it is watched by the
+ * monitor, and a server promotes it by itself once it has passed three checks in a row with a
+ * verified stream (or a person does, with one command).
+ */
 export const CODE_PROVIDERS: { module: ProviderModule; stage: Stage }[] = [
   { module: febbox, stage: 'stable' },
   { module: castle, stage: 'stable' },
   { module: vixsrc, stage: 'stable' },
-  // Ported from the server-only classes, same protocol as before.
-  { module: vidrock, stage: 'stable' },
-  { module: popr, stage: 'stable' },
-  { module: fsharetv, stage: 'stable' },
-  { module: streammafia, stage: 'stable' },
+  // Needs a browser worker. Verified through one from a cloud address on 2026-11-24.
+  { module: vidnest, stage: 'stable' },
+  // Ported from the server-only classes with the same protocol, but no stream of theirs could be
+  // verified from where this was built: their sites do not connect, answer with a browser check,
+  // or return an empty table there. They may well work from a home connection.
+  { module: vidrock, stage: 'canary' },
+  { module: popr, stage: 'canary' },
+  { module: fsharetv, stage: 'canary' },
+  { module: streammafia, stage: 'canary' },
   // Ported, but the live site no longer speaks the protocol they were written for (or their
   // extraction changed in the port and has not been validated from a network that reaches the site).
   { module: vidsrc, stage: 'canary' },
   { module: videasy, stage: 'canary' },
   { module: vidzee, stage: 'canary' },
-  { module: vidnest, stage: 'canary' },
   // Ported, but their API hosts no longer exist in DNS.
   { module: tulnex, stage: 'canary' },
   { module: peachify, stage: 'canary' },

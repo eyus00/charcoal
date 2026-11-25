@@ -22,6 +22,7 @@ import {
   runCanary,
   stageDomain,
   summarizePlacement,
+  validateStream,
   withVerification,
   runRecovery,
   summarize,
@@ -175,6 +176,11 @@ export interface ApiOptions {
   browserHealth?: () => BrowserWorkerHealth;
   /** Try each discovered stream (manifest and first media bytes) and report it as verified or not. Default on. */
   verifyStreams?: boolean;
+  /**
+   * A canary-stage provider that passes this many monitor checks in a row, each with a stream that
+   * verified, is promoted to stable by itself (audited). 0 leaves promotion to a person. Default 3.
+   */
+  promoteCanaryAfter?: number;
   /** Lets automatic recovery put a validated alternate domain in force for this long (0 = propose only). */
   autoFailoverTtlMs?: number;
   /** Per client address. `sourcesBurst` is how many may arrive at once before the per-minute rate applies. */
@@ -312,10 +318,26 @@ export function registerApi(o: ApiOptions): Platform {
   // ---------- recovery ----------
 
   let recovering: Promise<RecoveryAction[]> | null = null;
+  /** Consecutive verified canary passes of canary-stage providers (in memory: a restart starts the count again). */
+  const canaryPasses = new Map<string, number>();
   const recover = (by: string) => {
     recovering ??= (async () => {
       try {
-        const observed = await runCanary(engine, o.canaries);
+        // A canary check tries one of the streams it finds: a provider graduates on evidence, not on returning a URL.
+        const observed = await runCanary(engine, o.canaries, { verify: async (s) => (await validateStream(s, o.transport, { runtime: engine.runtime, timeoutMs: 6000 })).state === 'verified' });
+        const needed = o.promoteCanaryAfter ?? 3;
+        for (const c of observed) {
+          if (catalog.find(c.provider)?.stage !== 'canary') {
+            canaryPasses.delete(c.provider);
+            continue;
+          }
+          const passes = c.passed && c.verified ? (canaryPasses.get(c.provider) ?? 0) + 1 : 0;
+          canaryPasses.set(c.provider, passes);
+          if (needed > 0 && passes >= needed) {
+            overlay.setStage(c.provider, 'stable', 'auto', `passed ${passes} monitor checks in a row, each with a verified stream`);
+            canaryPasses.delete(c.provider);
+          }
+        }
         const actions = await runRecovery({ engine, health, transport: o.transport, canaries: o.canaries, actor: by, observed });
         for (const a of actions) {
           if (a.action === 'switch-domain' && a.proposal) {

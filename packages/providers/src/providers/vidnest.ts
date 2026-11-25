@@ -72,8 +72,9 @@ export const vidnest = defineProvider({
     description: 'Ten named back-ends behind one API. With a browser, the site’s own player page is opened and its stream taken; without one, the API is asked directly.',
     kinds: ['movie', 'tv'],
     lookup: ['tmdb'],
-    runtimes: ['server', 'edge', 'extension', 'app'],
-    requires: { features: ['forbidden-headers'] },
+    runtimes: ['server'],
+    // The site's API wants a per-request nonce only its own page produces, so this needs a browser.
+    requires: { features: ['forbidden-headers', 'js-render'] },
     domainRoles: ['site', 'api'],
     followDiscovered: true,
     output: { types: ['hls', 'mp4', 'mkv', 'dash', 'webm'] },
