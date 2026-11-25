@@ -29,6 +29,7 @@ function summaryRows(s: Summary, playback: boolean): (string | number)[][] {
     ['Unique streams', s.unique],
     ['Unique streams verified (manifest and first media bytes)', s.verified],
     ['Streams that started in a browser player', playback ? `${s.started} of ${s.playbackTried} tried` : 'not checked'],
+    ...(playback && s.undecodable ? [['Verified streams the test browser cannot decode (not tried)', s.undecodable] as (string | number)[]] : []),
     ['Titles with at least one stream', `${s.titlesWithAnyStream} of ${s.titles}`],
     ['Titles with at least one verified stream', `${s.titlesWithVerified} of ${s.titles}`],
     ['Titles with a stream that started', playback ? `${s.titlesWithPlayback} of ${s.titles}` : 'not checked'],
@@ -104,7 +105,7 @@ export function renderReport(r: BenchReport): string {
     for (const b of bad) byReason[`${b.provider}: ${b.verification.code} (${b.verification.message ?? ''})`.replace(/\([^()]*\.[a-z]{2,}[^()]*\)/g, '(host)')] = (byReason[`${b.provider}: ${b.verification.code} (${b.verification.message ?? ''})`.replace(/\([^()]*\.[a-z]{2,}[^()]*\)/g, '(host)')] ?? 0) + 1;
     out.push('## Discovered streams that did not verify', '', table(['Provider and reason', 'Streams'], Object.entries(byReason).sort((a, b) => b[1] - a[1]).slice(0, 25)), '');
   }
-  const failed = r.titles.flatMap((t) => t.streams.filter((x) => x.playback && !x.playback.started).map((x) => [t.key, x.provider, x.type, x.playback!.error ?? '']));
+  const failed = r.titles.flatMap((t) => t.streams.filter((x) => x.playback && !x.playback.started && !x.playback.undecodable).map((x) => [t.key, x.provider, x.type, x.playback!.error ?? '']));
   if (failed.length) out.push('## Verified streams that did not start in the player', '', table(['Title', 'Provider', 'Type', 'Why'], failed.slice(0, 40)), '');
   return out.join('\n');
 }
@@ -160,6 +161,46 @@ export function renderComparison(before: BenchReport, after: BenchReport): strin
     table(
       ['Failure', 'Before', 'After'],
       [...new Set([...Object.keys(a.failures), ...Object.keys(b.failures)])].sort().map((c) => [`\`${c}\``, a.failures[c] ?? 0, b.failures[c] ?? 0]),
+    ),
+    '',
+  );
+  return out.join('\n');
+}
+
+const BLOCKED = new Set(['CHALLENGE', 'ACCESS_DENIED']);
+const UNREACHABLE = new Set(['DNS', 'CONNECT', 'TLS', 'TIMEOUT', 'NETWORK', 'REDIRECTED']);
+const BROKEN = new Set(['STRUCTURE_CHANGED', 'SELECTOR_MISSING', 'INVALID_RESULT']);
+
+/** What one run says about one provider, in a few words. */
+function cell(b: Summary['byProvider'][string] | undefined, titles: number): string {
+  if (!b) return '–';
+  if (b.ok) return `**works**: streams for ${b.ok}/${titles}, ${b.verified} verified`;
+  const top = Object.entries(b.codes).sort((x, y) => y[1] - x[1])[0]?.[0];
+  if (top) {
+    const kind = BLOCKED.has(top) ? 'refused here' : UNREACHABLE.has(top) ? 'unreachable' : BROKEN.has(top) ? 'needs updating' : top === 'LEGACY' ? 'failed (no detail)' : 'failed';
+    return `${kind} (\`${top}\`)`;
+  }
+  if (b.empty) return 'answers, had none of the titles';
+  if (b.skipped) return 'not run here';
+  return '–';
+}
+
+/**
+ * One row per provider, one column per run: the same providers seen from different places (a
+ * hosted server, a cloud machine, a home connection). A provider that is refused in one column and
+ * works in another is not broken; it has to run where it works.
+ */
+export function renderMatrix(reports: BenchReport[]): string {
+  const ids = [...new Set(reports.flatMap((r) => Object.keys(r.summary.byProvider)))].sort();
+  const name = (id: string) => reports.map((r) => r.summary.byProvider[id]?.name).find(Boolean) ?? id;
+  const head = ['Provider', ...reports.map((r) => `${r.label}${r.mode === 'fixtures' ? ' (FIXTURES)' : ''}`)];
+  const out = ['# Providers by where they ran', '', ...reports.map((r) => `**${r.label}**\n\n${banner(r)}\n`), table(head, ids.map((id) => [`${name(id)} (\`${id}\`)`, ...reports.map((r) => cell(r.summary.byProvider[id], r.summary.titles))])), ''];
+  out.push(
+    '## Totals',
+    '',
+    table(
+      ['Run', 'Providers that returned a stream', 'Unique streams', 'Verified', 'Titles with a verified stream'],
+      reports.map((r) => [r.label, r.summary.providersEverReturning, r.summary.unique, r.summary.verified, `${r.summary.titlesWithVerified}/${r.summary.titles}`]),
     ),
     '',
   );

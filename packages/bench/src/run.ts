@@ -7,7 +7,7 @@
  *   verified    unique streams whose manifest parsed and whose first media bytes answered
  *   started     verified streams that began playing in a real browser player
  */
-import { describeRuntime, fetchTransport, validateStream, type Fetcher, type Media, type RuntimeDescriptor, type Verification } from '@charcoal/provider-sdk';
+import { codecFamilies, describeRuntime, fetchTransport, validateStream, type Fetcher, type Media, type RuntimeDescriptor, type Verification } from '@charcoal/provider-sdk';
 import type { FoundStream, ProviderRun, Target, TargetInfo } from './targets.js';
 import type { BenchTitle, Category } from './titles.js';
 
@@ -15,6 +15,8 @@ export interface PlaybackResult {
   started: boolean;
   /** From asking the player to load until the first frame advanced. */
   ms: number;
+  /** Not tried: the test browser has no decoder for this stream's video (a real device may). */
+  undecodable?: string;
   width?: number;
   height?: number;
   error?: string;
@@ -22,6 +24,8 @@ export interface PlaybackResult {
 
 export interface PlaybackChecker {
   check(stream: { url: string; type: string; headers: Record<string, string> }): Promise<PlaybackResult>;
+  /** Video codec families the test browser decodes ("avc", "hevc", …), when it can say. */
+  videoCodecs?: string[];
   close(): Promise<void>;
 }
 
@@ -54,6 +58,8 @@ export interface TitleResult {
   unchecked: number;
   playbackTried: number;
   started: number;
+  /** Verified streams set aside because the test browser cannot decode their video codec. */
+  undecodable: number;
   firstResultMs?: number;
   /** Arrival of the earliest stream that verified, plus the time its check took. */
   firstVerifiedMs?: number;
@@ -96,6 +102,8 @@ export interface Summary {
   verified: number;
   started: number;
   playbackTried: number;
+  /** Verified streams the test browser could not decode (HEVC and the like), not counted as tried. */
+  undecodable: number;
   meanProviderMs: number;
   medianFirstResultMs?: number;
   medianFirstVerifiedMs?: number;
@@ -214,9 +222,19 @@ async function runTitle(target: Target, title: BenchTitle, o: RunOptions, checke
   }));
   let playbackTried = 0;
   if (o.playback) {
+    // A stream whose every video codec the test browser lacks is not a playback failure: it is set aside and counted.
+    const decodes = o.playback.videoCodecs;
+    const unsupported = (i: number): string | undefined => {
+      const video = codecFamilies(verifications[i].detail?.codecs?.join(' ')).filter((f) => ['hevc', 'av1', 'vp9', 'avc'].includes(f));
+      return decodes && video.length && !video.some((f) => decodes.includes(f)) ? video[0] : undefined;
+    };
+    unique.forEach((_u, i) => {
+      const family = verifications[i].state === 'verified' ? unsupported(i) : undefined;
+      if (family) reported[i].playback = { started: false, ms: 0, undecodable: family, error: `the test browser cannot decode ${family.toUpperCase()}` };
+    });
     const candidates = unique
       .map((u, i) => ({ u, i }))
-      .filter(({ i }) => verifications[i].state === 'verified')
+      .filter(({ i }) => verifications[i].state === 'verified' && !reported[i].playback?.undecodable)
       .sort((a, b) => (Number(b.u.stream.quality) || 0) - (Number(a.u.stream.quality) || 0));
     const picked: typeof candidates = [];
     const usedProviders = new Set<string>();
@@ -250,6 +268,7 @@ async function runTitle(target: Target, title: BenchTitle, o: RunOptions, checke
     unchecked: reported.filter((s) => s.verification.state === 'unchecked').length,
     playbackTried,
     started: startedStreams.length,
+    undecodable: reported.filter((s) => s.playback?.undecodable).length,
     firstResultMs,
     firstVerifiedMs: verified.length ? Math.min(...verified.map((s) => s.arrivedMs + s.verification.ms)) : undefined,
     firstStartedMs: startedStreams.length ? Math.min(...startedStreams.map((s) => s.arrivedMs + s.verification.ms + (s.playback?.ms ?? 0))) : undefined,
@@ -317,6 +336,7 @@ export function summarize(info: TargetInfo, titles: TitleResult[]): Summary {
     verified: sum((t) => t.verified),
     started: sum((t) => t.started),
     playbackTried: sum((t) => t.playbackTried),
+    undecodable: sum((t) => t.undecodable ?? 0),
     meanProviderMs: msCount ? Math.round(msTotal / msCount) : 0,
     medianFirstResultMs: median(titles.map((t) => t.firstResultMs).filter((n): n is number => n !== undefined)),
     medianFirstVerifiedMs: median(titles.map((t) => t.firstVerifiedMs).filter((n): n is number => n !== undefined)),

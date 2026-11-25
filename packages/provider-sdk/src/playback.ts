@@ -75,6 +75,11 @@ export function checkCompatibility(stream: Stream, caps: PlaybackCapabilities): 
   if (badVideo) return { playable: false, reason: `This device can’t decode ${badVideo.toUpperCase()} video` };
   const audioFamilies = families.filter((f) => ['eac3', 'ac3', 'dts', 'flac', 'opus', 'aac', 'mp3'].includes(f));
   if (audioFamilies.length && !audioFamilies.some((f) => audio.has(f))) return { playable: false, reason: `This device can’t decode ${audioFamilies[0].toUpperCase()} audio` };
+  // A manifest that was read when the stream was tried lists every quality's codecs. An adaptive
+  // stream plays if the device decodes at least one of its video codecs.
+  const listed = codecFamilies(stream.verification?.detail?.codecs?.join(' '));
+  const listedVideo = listed.filter((f) => ['hevc', 'av1', 'vp9', 'avc'].includes(f));
+  if (listedVideo.length && !listedVideo.some((f) => video.has(f))) return { playable: false, reason: `This device can’t decode ${listedVideo[0].toUpperCase()} video` };
   return { playable: true };
 }
 

@@ -16,6 +16,7 @@
  *     --out <file.json>              where to write the result (default: docs/platform/data/bench-<label>.json)
  *
  *   npm run report --workspace packages/bench -- <run.json> [<after.json>] [--out <file.md>]
+ *   npm run report --workspace packages/bench -- --matrix <run.json> <run.json> …   one column per run
  *   npx tsx src/cli.ts domains [--label <name>] [--extra pack.ts,…]   diagnose every configured provider address
  *
  * Run it from a home connection with --egress user to measure what viewers' own networks reach.
@@ -26,7 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeRuntime } from '@charcoal/provider-sdk';
 import { createPlaybackChecker } from './playback.js';
-import { renderComparison, renderReport } from './report.js';
+import { renderComparison, renderMatrix, renderReport } from './report.js';
 import { runBenchmark, type BenchReport } from './run.js';
 import { engineTarget, v1Target, v2Target, type Target } from './targets.js';
 import { QUICK, TITLES } from './titles.js';
@@ -52,8 +53,8 @@ async function main() {
 
   if (command === 'report') {
     const reports = rest.map((f) => JSON.parse(readFileSync(f, 'utf8')) as BenchReport);
-    if (!reports.length) throw new Error('report needs one or two result files');
-    const md = reports.length > 1 ? renderComparison(reports[0], reports[1]) : renderReport(reports[0]);
+    if (!reports.length) throw new Error('report needs at least one result file');
+    const md = flags.matrix === true ? renderMatrix(reports) : reports.length > 1 ? renderComparison(reports[0], reports[1]) : renderReport(reports[0]);
     if (str('out')) writeFileSync(str('out')!, md);
     else process.stdout.write(md + '\n');
     return;

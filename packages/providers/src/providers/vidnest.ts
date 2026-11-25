@@ -77,7 +77,8 @@ export const vidnest = defineProvider({
     domainRoles: ['site', 'api'],
     followDiscovered: true,
     output: { types: ['hls', 'mp4', 'mkv', 'dash', 'webm'] },
-    limits: { timeoutMs: 12_000, maxRequests: 14 },
+    // Opening the player page (and waiting for a free browser) takes longer than asking the API.
+    limits: { timeoutMs: 25_000, maxRequests: 14 },
     rank: 100,
     origin: 'apps/server/src/providers/vidnest (cinepro-org/core)',
   },

@@ -1,7 +1,7 @@
 /** Discovered versus verified streams, and where the measurements place a provider. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeRuntime, diagnose, HealthStore, ProviderError, rankStreams, summarize, summarizePlacement, withVerification, type FailureCode, type Stream, type Verification, type VerifyEvent } from './index.js';
+import { checkCompatibility, describeRuntime, diagnose, HealthStore, ProviderError, rankStreams, summarize, summarizePlacement, withVerification, type FailureCode, type PlaybackCapabilities, type Stream, type Verification, type VerifyEvent } from './index.js';
 import { mockTransport, simulate } from './testing/index.js';
 
 const server = describeRuntime('server');
@@ -109,4 +109,17 @@ test('ranking: verified beats merely discovered, and a stream that did not answe
   h.recordVerification('p', 'server', false);
   assert.equal(h.verifyRate('p', 'server'), 0.6);
   assert.deepEqual([summarize(h)[0].verified, summarize(h)[0].unverified], [2, 1]);
+});
+
+test('codec compatibility uses what the manifest listed when the stream was tried', () => {
+  const caps: PlaybackCapabilities = { bridge: false, relay: true, hls: true, dash: true, mp4: true, mkv: false, webm: true, frames: true, videoCodecs: ['avc', 'vp9'] };
+  const tried = (codecs: string[]): Verification => ({ state: 'verified', level: 'manifest', by: 'server', at: 0, ms: 5, detail: { codecs } });
+  // Every quality is HEVC: this device cannot show it, and says why.
+  assert.deepEqual(checkCompatibility(stream('h', { type: 'dash', verification: tried(['hev1.1.6.L120.90', 'mp4a.40.2']) }), caps), { playable: false, reason: 'This device can’t decode HEVC video' });
+  // An adaptive stream with one decodable codec plays.
+  assert.equal(checkCompatibility(stream('m', { type: 'dash', verification: tried(['hev1.1.6.L120.90', 'avc1.640028', 'mp4a.40.2']) }), caps).playable, true);
+  // The same HEVC stream on a device that decodes it.
+  assert.equal(checkCompatibility(stream('h', { type: 'dash', verification: tried(['hev1.1.6.L120.90', 'mp4a.40.2']) }), { ...caps, videoCodecs: ['avc', 'hevc'] }).playable, true);
+  // Nothing listed: the benefit of the doubt, as before.
+  assert.equal(checkCompatibility(stream('u'), caps).playable, true);
 });

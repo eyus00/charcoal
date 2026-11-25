@@ -11,7 +11,8 @@
  * simply reports playback as "not checked" where it is absent.
  */
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { PlaybackChecker, PlaybackResult } from './run.js';
 
 const PAGE = `<!doctype html><meta charset="utf-8"><video id="v" muted playsinline></video>
@@ -53,6 +54,11 @@ function findLibrary(name: string): string | undefined {
     } catch {
       /* try the next place */
     }
+  }
+  // A package that does not export its dist files by name can still be read from where it is installed.
+  for (const root of ['../../../node_modules/', '../../../apps/web/node_modules/']) {
+    const file = fileURLToPath(new URL(root + name, import.meta.url));
+    if (existsSync(file)) return file;
   }
   return undefined;
 }
@@ -108,7 +114,29 @@ export async function createPlaybackChecker(o: PlaybackOptions = {}): Promise<Pl
   const ORIGIN = 'https://player.bench.invalid';
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-expose-headers': '*' };
 
+  // What this browser can decode, asked once: a stream in a codec it lacks is not a playback failure.
+  const probe = await browser.newContext();
+  const videoCodecs = await (async () => {
+    try {
+      const page = await probe.newPage();
+      return await page.evaluate(() => {
+        const ok = (t: string) => typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported(t);
+        const out: string[] = [];
+        if (ok('video/mp4; codecs="avc1.64001f"')) out.push('avc');
+        if (ok('video/mp4; codecs="hvc1.1.6.L93.B0"') || ok('video/mp4; codecs="hev1.1.6.L93.B0"')) out.push('hevc');
+        if (ok('video/mp4; codecs="av01.0.05M.08"')) out.push('av1');
+        if (ok('video/webm; codecs="vp09.00.10.08"') || ok('video/mp4; codecs="vp09.00.10.08"')) out.push('vp9');
+        return out;
+      });
+    } catch {
+      return undefined;
+    } finally {
+      await probe.close().catch(() => undefined);
+    }
+  })();
+
   return {
+    videoCodecs,
     async check(stream): Promise<PlaybackResult> {
       const context = await browser.newContext({ ignoreHTTPSErrors: false });
       const started = Date.now();
