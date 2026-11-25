@@ -15,5 +15,6 @@ export * from './sports/model.js';
 export * from './sports/thesportsdb.js';
 export * from './sports/channels.js';
 export * from './sports/linkouts.js';
+export * from './sports/directory.js';
 
 export * from './discovery/languages.js';
