@@ -249,17 +249,17 @@ section('A. One app: titles and anime together, Sports beside them');
   await anime.scrollIntoViewIfNeeded().catch(() => {});
   await anime.locator('a[data-anime]').first().waitFor({ timeout: 10000 }).catch(() => {});
   const pills = await anime.getByRole('group', { name: 'Anime' }).getByRole('button').allTextContents();
-  check('Home has an Anime section with its own pills, from AniList in one request', JSON.stringify(pills) === JSON.stringify(['Trending', 'Airing', 'Popular', 'Top rated', 'Films']) && (await anime.locator('a[data-anime="131681"]').count()) === 1 && anilistAsked.filter((b) => /trending: Page/.test(b.query ?? '')).length === 1, pills.join(', '));
+  check('Home has an Anime section with its own pills, from AniList in one request', JSON.stringify(pills) === JSON.stringify(['Trending', 'Popular', 'Films']) && (await anime.locator('a[data-anime="131681"]').count()) === 1 && anilistAsked.filter((b) => /trending: Page/.test(b.query ?? '')).length === 1, pills.join(', '));
   check('…titles as posters, with no episode number on them', !/Ep \d/.test(await text(anime)));
-  await anime.getByRole('button', { name: 'Airing' }).click();
-  check('…and what is airing as episode banner cards', await until(async () => /Episode 1180/.test(await text(anime))) && (await anime.locator('a[data-anime="21"]').count()) === 1, (await text(anime)).slice(0, 120));
+  await anime.getByRole('button', { name: 'Popular' }).click();
+  check('…and a pill switches the list', await until(async () => (await anime.getByRole('button', { name: 'Popular' }).getAttribute('aria-pressed')) === 'true') && (await anime.locator('a[data-anime]').count()) >= 2);
   await shot(page, 'home-anime');
 
   // Discover narrows by where a title is from.
   await page.goto(`${site}/discover`);
   const from = page.getByRole('group', { name: 'From' });
   await from.waitFor({ timeout: 10000 }).catch(() => {});
-  check('Discover can be narrowed to a part of the world', JSON.stringify(await from.getByRole('button').allTextContents()) === JSON.stringify(['Everywhere', 'Western', 'Bollywood', 'Asian', 'Anime']));
+  check('Discover can be narrowed to a part of the world', JSON.stringify(await from.getByRole('button').allTextContents()) === JSON.stringify(['All', 'Western', 'Bollywood', 'Asian', 'Anime']));
   tmdbLog.length = 0;
   await from.getByRole('button', { name: 'Anime' }).click();
   await until(() => tmdbLog.some((r) => r.path === 'discover/tv' && r.q.with_original_language === 'ja'));
@@ -269,6 +269,13 @@ section('A. One app: titles and anime together, Sports beside them');
   await until(() => tmdbLog.some((r) => /ko/.test(r.q.with_original_language ?? '')));
   const asian = tmdbLog.find((r) => /ko/.test(r.q.with_original_language ?? ''));
   check('“Asian” asks for Korean, Chinese, Thai and Japanese titles that are not animation', asian?.q.with_original_language === 'ko|zh|cn|th|ja' && asian?.q.without_genres === '16', JSON.stringify(asian?.q));
+
+  // The same choice is in the search bar's filter menu.
+  await page.goto(`${site}/`);
+  await page.getByRole('button', { name: /^Filters/ }).click();
+  await page.getByRole('button', { name: 'Bollywood', exact: true }).click();
+  await page.getByRole('button', { name: /^Search$|^Show results|^Apply/ }).last().click().catch(() => {});
+  check('…and in the search bar’s filter menu', await until(() => /\/discover\?.*region=bollywood/.test(page.url()), 5000), page.url().replace(site, ''));
 
   // The old addresses still lead somewhere.
   const redirects = [];

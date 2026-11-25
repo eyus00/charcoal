@@ -189,7 +189,7 @@ function StreamMenu({ labels, current, onPick, blockPopups, external }: { labels
       {open && (
         <div
           role="menu"
-          className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10"
+          className="toast-in absolute right-0 z-40 mt-2 max-h-[min(24rem,52dvh)] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10"
         >
           <div className="px-3 pt-1.5 pb-1 text-xs text-faint">{labels.length > 1 ? 'Streams' : 'Stream'}</div>
           {labels.map((label, i) => (

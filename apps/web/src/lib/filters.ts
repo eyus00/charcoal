@@ -63,7 +63,7 @@ const LANGUAGES: Record<Exclude<Region, 'all' | 'anime'>, string[]> = {
   asian: ['ko', 'zh', 'cn', 'th', 'ja'],
 };
 export const REGIONS: { key: Region; label: string }[] = [
-  { key: 'all', label: 'Everywhere' },
+  { key: 'all', label: 'All' },
   { key: 'western', label: 'Western' },
   { key: 'bollywood', label: 'Bollywood' },
   { key: 'asian', label: 'Asian' },
@@ -138,7 +138,7 @@ export function writeFilters(sp: URLSearchParams, f: Partial<Filters>): URLSearc
 
 export const hasActiveFilters = (f: Filters) => (!!f.region && f.region !== 'all') || f.genres.length > 0 || !!f.from || !!f.to || f.rating > 0;
 export const activeFilterCount = (f: Filters, withType = false) =>
-  f.genres.length + (f.from || f.to ? 1 : 0) + (f.rating ? 1 : 0) + (withType && f.type !== 'all' ? 1 : 0);
+  (f.region && f.region !== 'all' ? 1 : 0) + f.genres.length + (f.from || f.to ? 1 : 0) + (f.rating ? 1 : 0) + (withType && f.type !== 'all' ? 1 : 0);
 export const EMPTY_FILTERS: Filters = { type: 'all', genres: [], rating: 0, sort: 'popular' };
 
 function genreIds(type: MediaType, slugs: string[]): number[] {

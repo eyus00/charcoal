@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { Star, X } from 'lucide-react';
-import { RATINGS, YEAR_PRESETS, genresFor, writeFilters, type Filters } from '../lib/filters';
+import { RATINGS, REGIONS, YEAR_PRESETS, genresFor, writeFilters, type Filters } from '../lib/filters';
 import { cx } from '../lib/util';
 import { Pill, RowArrows, useRowScroll } from './Row';
 import { btn } from './Button';
@@ -90,6 +90,13 @@ function Sections({ f, set, withType, compact }: { f: Filters; set: Set; withTyp
           ))}
         </Section>
       )}
+      <Section title="From">
+        {REGIONS.filter((r) => r.key !== 'all').map((r) => (
+          <Chip key={r.key} on={f.region === r.key} onClick={() => set({ region: f.region === r.key ? 'all' : r.key })}>
+            {r.label}
+          </Chip>
+        ))}
+      </Section>
       <Section title="Rating">
         {RATINGS.map((r) => (
           <Chip key={r} on={f.rating === r} onClick={() => set({ rating: f.rating === r ? 0 : r })}>

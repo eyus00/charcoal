@@ -12,9 +12,7 @@ import { webFetcher, within } from './content';
 /** The home page's anime lists, one per pill. Asked for in one request (AniList allows 30 a minute). */
 export const HOME_ROWS = {
   trending: { title: 'Trending', query: { sort: 'trending' } },
-  airing: { title: 'Airing', query: { kind: 'series', sort: 'trending', airing: true } },
   popular: { title: 'Popular', query: { kind: 'series', sort: 'popular' } },
-  top: { title: 'Top rated', query: { kind: 'series', sort: 'rating' } },
   films: { title: 'Films', query: { kind: 'film', sort: 'popular' } },
 } satisfies Record<string, { title: string; query: AnimeListQuery }>;
 export type HomeRow = keyof typeof HOME_ROWS;

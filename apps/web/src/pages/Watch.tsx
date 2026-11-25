@@ -449,7 +449,7 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
         <Kbd light={open}>S</Kbd>
       </button>
       {open && (
-        <div className="toast-in absolute right-0 z-40 mt-2 max-h-[75vh] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
+        <div className="toast-in absolute right-0 z-40 mt-2 max-h-[min(24rem,52dvh)] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10">
           {/* Jelly: our own player, the one to use. */}
           <button
             aria-pressed={jellyOn}

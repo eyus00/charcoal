@@ -232,6 +232,21 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     setMenuState(m);
     setView('main');
   }, []);
+  // A tap or click anywhere outside an open menu closes it: on the picture, the bars, the header,
+  // or (on a phone, where a menu is a sheet) the page around it. The press that closed it does
+  // nothing else (it must not also pause the film).
+  const menuClosedAt = useRef(0);
+  useEffect(() => {
+    if (!menu) return;
+    const onDown = (e: PointerEvent) => {
+      const el = e.target as Element | null;
+      if (el?.closest?.('[data-popover], [aria-expanded="true"]')) return;
+      menuClosedAt.current = Date.now();
+      setMenu(null);
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, [menu, setMenu]);
 
   const source = data.sources[sourceIdx];
   /** A bridged source loads straight from its host: Charcoal Helper (or the app) adds the headers.
@@ -1109,6 +1124,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   const onSurfaceUp = (e: React.PointerEvent) => {
     if (endHold()) return; // releasing a hold isn't a click
     if (menu) return setMenu(null);
+    if (Date.now() - menuClosedAt.current < 700) return; // this press just closed a menu
     if (e.pointerType === 'mouse') return toggle();
     const now = Date.now();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1944,9 +1960,9 @@ const Popover = ({ children, wide, split, onScroll, className }: { children: Rea
     className={cx(
       'toast-in absolute right-0 bottom-12 z-30 rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
       // Phones: a sheet across the bottom of the screen.
-      'max-sm:fixed max-sm:inset-x-2 max-sm:right-2 max-sm:bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:max-h-[70dvh] max-sm:rounded-3xl max-sm:p-2',
+      'max-sm:fixed max-sm:inset-x-2 max-sm:right-2 max-sm:bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:max-h-[52dvh] max-sm:rounded-3xl max-sm:p-2',
       // split: a scrolling list on top, fixed controls below (the subtitles menu).
-      split ? 'flex max-h-[min(26rem,60vh)] flex-col' : 'max-h-[64vh] overflow-y-auto overscroll-contain',
+      split ? 'flex max-h-[min(22rem,52vh)] flex-col' : 'max-h-[min(24rem,52vh)] overflow-y-auto overscroll-contain',
       wide ? 'w-[min(24rem,calc(100vw-1.5rem))]' : 'w-72',
       'max-sm:w-auto',
       className,

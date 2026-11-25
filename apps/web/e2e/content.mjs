@@ -427,6 +427,18 @@ section('A. Anime');
   check('…and skipping lands at its end', offered && after.t >= 11.5 && after.t < 16, `now at ${after?.t.toFixed(1)}s`);
   check('AniSkip was asked for the MAL entry and its own episode number', outside.some((o) => o.includes('api.aniskip.com/v2/skip-times/48583/1')), outside.filter((o) => o.includes('aniskip')).join(' '));
 
+  // A menu closes on a press anywhere outside it, and that press does nothing else.
+  await page.mouse.move(640, 300);
+  await page.getByRole('button', { name: 'Subtitles (C)' }).click();
+  const pop = page.locator('[data-popover]');
+  const opened = await pop.waitFor({ timeout: 4000 }).then(() => true, () => false);
+  const box = await pop.boundingBox();
+  const tall = await page.evaluate(() => innerHeight);
+  await page.mouse.click(400, 250); // on the picture, away from the menu
+  const closed = await until(async () => (await pop.count()) === 0, 3000);
+  await sleep(400);
+  check('the subtitles menu closes on a press outside it, without pausing', opened && closed && (await video(page))?.paused === false, `opened=${opened} closed=${closed} paused=${(await video(page))?.paused}`);
+  check('…and takes no more than about half the screen’s height', !!box && box.height <= tall * 0.56, box ? `${Math.round(box.height)}px of ${tall}px` : 'no box');
   check('the player’s top bar has no audio button (audio is in the player’s settings and in Profile)', (await page.getByRole('button', { name: /^Audio:/ }).count()) === 0);
   check('no page errors', errors.length === 0, errors.join(' | '));
 
