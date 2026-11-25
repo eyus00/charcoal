@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import RouteError, { clearChunkReloadFlag } from './pages/RouteError';
+import { openInLastMode } from './lib/mode';
 import { persistQueries } from './lib/persist';
 import './index.css';
 
@@ -17,8 +18,12 @@ const Watch = lazy(() => import('./pages/Watch'));
 const TraktCallback = lazy(() => import('./pages/TraktCallback'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Anime = lazy(() => import('./pages/Anime'));
+const AnimeBrowse = lazy(() => import('./pages/AnimeBrowse'));
 const Indian = lazy(() => import('./pages/Indian'));
 const Sports = lazy(() => import('./pages/Sports'));
+const SportsSchedule = lazy(() => import('./pages/SportsSchedule'));
+const SportsChannels = lazy(() => import('./pages/SportsChannels'));
+const SportsWatch = lazy(() => import('./pages/SportsWatch'));
 const Live = lazy(() => import('./pages/Live'));
 
 const queryClient = new QueryClient({
@@ -55,6 +60,8 @@ function LibraryRedirect() {
   return <Navigate to={`/profile${hash}`} replace />;
 }
 
+openInLastMode();
+
 const router = createBrowserRouter([
   {
     element: <Layout />,
@@ -71,8 +78,11 @@ const router = createBrowserRouter([
       { path: 'trakt/callback', element: <TraktCallback /> },
       { path: 'calendar', element: <Calendar /> },
       { path: 'anime', element: <Anime /> },
+      { path: 'anime/browse', element: <AnimeBrowse /> },
       { path: 'indian', element: <Indian /> },
       { path: 'sports', element: <Sports /> },
+      { path: 'sports/schedule', element: <SportsSchedule /> },
+      { path: 'sports/channels', element: <SportsChannels /> },
       { path: 'library', element: <LibraryRedirect /> },
       { path: '*', element: <NotFound /> },
     ],
@@ -84,7 +94,14 @@ const router = createBrowserRouter([
     children: [{ index: true, element: <Watch /> }],
   },
   {
-    // A public channel, live (the Sports page's free channels).
+    // An event or a channel from the sports directory, in its own player.
+    path: 'sports/watch/:id',
+    element: <Layout bare />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <SportsWatch /> }],
+  },
+  {
+    // A public free-to-air channel, live in Charcoal's player (Sports → Channels).
     path: 'live/:channelId',
     element: <Layout bare />,
     errorElement: <RouteError />,

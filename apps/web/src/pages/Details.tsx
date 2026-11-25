@@ -20,7 +20,7 @@ import { imageSrcSet, imageUrl } from '../lib/images';
 import { useAnime } from '../lib/anime';
 import { cleanList, HttpError, q, titleOf, trailersOf, type Details as D, type MediaItem, type MediaType, type Video } from '../lib/tmdb';
 import { cx, useKeys, useTitle } from '../lib/util';
-import { BLEED } from './Home';
+import { BLEED } from '../components/Hero';
 import NotFound from './NotFound';
 
 export default function Details({ type }: { type: MediaType }) {

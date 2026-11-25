@@ -23,6 +23,8 @@ export interface HistoryItem {
   isCompleted?: boolean;
   /** For TV: the episode after this one, if it exists (computed when recorded). */
   nextEpisode?: EpisodeKey | null;
+  /** Anime (Japanese animation): it is also in Anime's Continue watching. */
+  anime?: boolean;
   lastWatched: number;
 }
 
@@ -57,6 +59,8 @@ export interface Settings {
   useExtension: boolean;
   /** Desktop sidebar shows labels. */
   sidebarOpen: boolean;
+  /** The part of Charcoal used last: movies and TV, anime, or sports (see lib/mode). */
+  mode: 'screen' | 'anime' | 'sports';
   /** Skip intros and recaps automatically (segments from TheIntroDB). */
   autoSkip: boolean;
   /** When the end credits start, offer the next episode (with the autoplay countdown). */
@@ -119,6 +123,7 @@ const defaultSettings: Settings = {
   serverUrl: '',
   useExtension: true,
   sidebarOpen: false,
+  mode: 'screen',
   autoSkip: false,
   creditsNext: true,
   pauseOverlay: true,
@@ -153,7 +158,9 @@ function safeRead(key: string): unknown {
 function sanitize(raw: Partial<State> | null): State {
   const history = Array.isArray(raw?.history) ? raw!.history.filter((h) => h && typeof h.id === 'number') : [];
   const watchlist = Array.isArray(raw?.watchlist) ? raw!.watchlist.filter((w) => w && typeof w.id === 'number') : [];
-  return { history, watchlist, settings: { ...defaultSettings, ...(raw?.settings ?? {}) } };
+  const settings = { ...defaultSettings, ...(raw?.settings ?? {}) };
+  if (!['screen', 'anime', 'sports'].includes(settings.mode)) settings.mode = defaultSettings.mode;
+  return { history, watchlist, settings };
 }
 
 function load(): State {

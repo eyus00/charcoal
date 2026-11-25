@@ -32,8 +32,8 @@ function LiveView({ entry }: { entry: PlayableChannel }) {
   const { channel } = entry;
   const navigate = useNavigate();
   const location = useLocation();
-  // Close returns to wherever the channel was opened from; opened directly, to the Sports page.
-  const leave = useCallback(() => (location.key !== 'default' ? navigate(-1) : navigate('/sports')), [location.key, navigate]);
+  // Close returns to wherever the channel was opened from; opened directly, to the channel list.
+  const leave = useCallback(() => (location.key !== 'default' ? navigate(-1) : navigate('/sports/channels')), [location.key, navigate]);
   useKeys({ Escape: () => !document.fullscreenElement && !document.querySelector('[aria-expanded="true"]') && leave() });
 
   // Ask each stream whether it answers before the player gets it: a channel that is off the air or
@@ -130,8 +130,8 @@ function Message({ title, body, retry, official }: { title: string; body: string
               <ExternalLink className="size-4" strokeWidth={1.5} /> The channel’s own site
             </a>
           )}
-          <Link to="/sports" className={btn({ variant: 'primary' })}>
-            Back to Sports
+          <Link to="/sports/channels" className={btn({ variant: 'primary' })}>
+            Back to Channels
           </Link>
         </div>
       </div>

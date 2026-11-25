@@ -9,7 +9,7 @@ const KEY = 'charcoal:query-cache';
 const VERSION = 1;
 const MAX_AGE = 24 * 60 * 60_000;
 const MAX_BYTES = 1_500_000;
-const KEEP = new Set(['hybrid', 'trending', 'trending-pages', 'list', 'lite', 'schedule', 'discover', 'release-dates', 'season', 'details']);
+const KEEP = new Set(['hybrid', 'trending', 'trending-pages', 'list', 'lite', 'schedule', 'discover', 'discover-language', 'sports-directory', 'release-dates', 'season', 'details']);
 
 export function persistQueries(client: QueryClient) {
   try {

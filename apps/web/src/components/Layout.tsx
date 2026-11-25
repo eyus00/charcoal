@@ -1,8 +1,9 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { ArrowUp, CalendarDays, Heart, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
+import { ArrowUp, CalendarClock, CalendarDays, Clapperboard, Heart, Compass, Film, History, Home, Keyboard, PanelLeftClose, PanelLeftOpen, Radio, Search, Settings, SlidersHorizontal, Tv, User, X } from 'lucide-react';
 import { EMPTY_FILTERS, activeFilterCount, genresFor, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { addRecent, clearRecent, getRecent, removeRecent, restoreRecent } from '../lib/recent';
+import { MODES, modeHome, useMode, type Mode } from '../lib/mode';
 import { actions, useStore } from '../lib/store';
 import { cx, scrollBehavior } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
@@ -98,9 +99,12 @@ function useSection() {
   if (pathname === '/') return 'home';
   if (pathname === '/discover') return params.get('type') === 'movie' ? 'movies' : params.get('type') === 'tv' ? 'tv' : 'discover';
   if (pathname === '/calendar') return 'calendar';
-  if (pathname === '/anime') return 'anime';
   if (pathname === '/indian') return 'indian';
+  if (pathname === '/anime') return 'anime';
+  if (pathname === '/anime/browse') return params.get('type') === 'movie' ? 'anime-films' : 'anime-series';
   if (pathname === '/sports') return 'sports';
+  if (pathname === '/sports/schedule') return 'sports-schedule';
+  if (pathname === '/sports/channels') return 'sports-channels';
   if (pathname === '/profile') return hash && hash !== '#profile' ? `profile${hash}` : 'profile';
   return '';
 }
@@ -146,6 +150,26 @@ const DISCOVER: RailGroup = {
       id: 'tv',
       keys: 'G T',
     },
+    {
+      to: '/indian',
+      label: 'Indian cinema',
+      icon: Clapperboard,
+      id: 'indian',
+      keys: 'G I',
+    },
+  ],
+};
+/** Anime and Sports are three pages each: a flat list, in the order the phone bar shows them. */
+const FLAT: Record<Exclude<Mode, 'screen'>, RailItem[]> = {
+  anime: [
+    { to: '/anime', label: 'Home', icon: Home, id: 'anime', keys: 'G H' },
+    { to: '/anime/browse', label: 'Series', icon: Tv, id: 'anime-series', keys: 'G T' },
+    { to: '/anime/browse?type=movie', label: 'Films', icon: Film, id: 'anime-films', keys: 'G M' },
+  ],
+  sports: [
+    { to: '/sports', label: 'Live', icon: Radio, id: 'sports', keys: 'G H' },
+    { to: '/sports/schedule', label: 'Schedule', icon: CalendarClock, id: 'sports-schedule' },
+    { to: '/sports/channels', label: 'Channels', icon: Tv, id: 'sports-channels' },
   ],
 };
 const PROFILE: RailGroup = {
@@ -241,8 +265,53 @@ function RailGroupBox({ group, section, open }: { group: RailGroup; section: str
 
 const Sep = () => <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" />;
 
+/**
+ * Screen, Anime or Sports. In the open sidebar it is the app's usual pill switch; in the narrow
+ * one the same three stack as icons. The compact version sits at the top of the page below lg.
+ */
+function ModeSwitch({ mode, layout }: { mode: Mode; layout: 'row' | 'column' | 'compact' }) {
+  return (
+    <nav
+      aria-label="Screen, Anime or Sports"
+      data-testid="mode-switch"
+      className={cx(
+        'flex shrink-0 rounded-[24px] p-1',
+        layout === 'column' ? 'flex-col bg-surface' : layout === 'row' ? 'bg-surface' : cx('ring-1 backdrop-blur-xl', FLOAT),
+      )}
+    >
+      {MODES.map((m) => {
+        const on = m.key === mode;
+        return (
+          <Link
+            key={m.key}
+            to={m.home}
+            aria-current={on ? 'true' : undefined}
+            aria-label={layout === 'column' ? m.label : undefined}
+            title={layout === 'column' ? undefined : m.about}
+            className={cx(
+              'group relative flex touch-manipulation items-center justify-center rounded-full text-sm transition-colors',
+              layout === 'column' ? 'size-10' : layout === 'row' ? 'h-9 flex-1' : 'h-9 px-3 min-[400px]:px-4',
+              on ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white',
+            )}
+          >
+            {layout === 'column' ? (
+              <>
+                <m.icon className="size-5" strokeWidth={on ? 2 : 1.75} />
+                <Tip label={m.label} />
+              </>
+            ) : (
+              m.label
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 function Rail() {
   const section = useSection();
+  const mode = useMode();
   const open = useStore((s) => s.settings.sidebarOpen);
   const toggle = () => actions.updateSettings({ sidebarOpen: !open });
   return (
@@ -264,14 +333,25 @@ function Rail() {
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
         {open && (
-          <Link to="/" className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
+          <Link to={modeHome(mode)} className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
             <Wordmark />
           </Link>
         )}
       </div>
-      <nav className="flex flex-col gap-5" aria-label="Browse">
-        <RailLink item={HOME} open={open} active={section === 'home'} />
-        <RailGroupBox group={DISCOVER} section={section} open={open} />
+      <ModeSwitch mode={mode} layout={open ? 'row' : 'column'} />
+      <nav className="mt-5 flex flex-col gap-5" aria-label="Browse">
+        {mode === 'screen' ? (
+          <>
+            <RailLink item={HOME} open={open} active={section === 'home'} />
+            <RailGroupBox group={DISCOVER} section={section} open={open} />
+          </>
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            {FLAT[mode].map((item) => (
+              <RailLink key={item.id} item={item} open={open} active={section === item.id} />
+            ))}
+          </div>
+        )}
       </nav>
       <nav className="mt-auto flex flex-col gap-3" aria-label="Your library">
         <RailGroupBox group={PROFILE} section={section} open={open} />
@@ -303,6 +383,16 @@ const PLACEHOLDER: Record<Filters['type'], string> = {
 };
 
 /**
+ * What the search bar searches in each part of Charcoal, and the page that shows the results.
+ * Screen has the full filter set; Anime and Sports search by text, on a page with its own switches.
+ */
+const SEARCH: Record<Mode, { path: string; filters?: boolean; placeholder?: string }> = {
+  screen: { path: '/discover', filters: true },
+  anime: { path: '/anime/browse', placeholder: 'Search anime' },
+  sports: { path: '/sports', placeholder: 'Search teams and leagues' },
+};
+
+/**
  * Universal search. The bar keeps a draft (text + type + quick filters):
  * - the search button always starts a universal search (type All, no filters);
  * - on the results page (/discover) typing writes text, type and filters to the URL live,
@@ -313,7 +403,10 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
-  const onDiscover = pathname === '/discover';
+  const mode = useMode();
+  const target = SEARCH[mode];
+  // "onDiscover": on the page that shows this part's results (Discover, for Screen).
+  const onDiscover = pathname === target.path;
   const urlQ = onDiscover ? (params.get('q') ?? '') : '';
   const urlKey = onDiscover ? params.toString() : '';
   const [text, setText] = useState(urlQ);
@@ -325,11 +418,21 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   const typing = useRef(false);
   const form = useRef<HTMLFormElement>(null);
 
+  // Discover is the search page, so its field is always out. Anime's and Sports' results pages are
+  // pages in their own right: the field is out there only while there is something searched for.
+  const showing = onDiscover && (!!target.filters || !!urlQ);
   useEffect(() => {
-    if (onDiscover) setOpen(true);
-    else if (!searchInput.current?.value) setOpen(false);
+    if (showing) setOpen(true);
+    else if (!searchInput.current?.value || !onDiscover) setOpen(false);
     setMenu(false);
-  }, [onDiscover, pathname]);
+  }, [showing, onDiscover, pathname]);
+
+  // Another part of Charcoal: what was typed for the last one doesn't carry over.
+  useEffect(() => {
+    typing.current = false;
+    setText('');
+    setDraft(EMPTY_FILTERS);
+  }, [mode]);
 
   // URL → draft (results page only), unless the user is mid-typing.
   useEffect(() => {
@@ -340,9 +443,13 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   }, [onDiscover, urlKey]);
 
   const apply = (q: string, f: Filters, replace: boolean) => {
-    const next = writeFilters(new URLSearchParams(), f);
+    // Screen: the draft is the whole query. Anime and Sports: the page's own switches stay as they are.
+    // (Read from the address itself: this also runs from a timer, a moment after the last render.)
+    const next = target.filters ? writeFilters(new URLSearchParams(), f) : new URLSearchParams(onDiscover ? window.location.search : undefined);
     if (q) next.set('q', q);
-    navigate(`/discover?${next}`, { replace, preventScrollReset: true });
+    else next.delete('q');
+    const qs = next.toString();
+    navigate(qs ? `${target.path}?${qs}` : target.path, { replace, preventScrollReset: true });
   };
 
   // Live results while typing on the results page.
@@ -351,7 +458,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
     const t = setTimeout(() => {
       typing.current = false;
       const v = text.trim();
-      if (v !== urlQ || draft.type !== parseFilters(params).type) apply(v, draft, true);
+      if (v !== urlQ || (target.filters && draft.type !== parseFilters(params).type)) apply(v, draft, true);
     }, 350);
     return () => clearTimeout(t);
   }, [text]);
@@ -374,7 +481,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
     setOpen(true);
     setMenu(false);
     // Keep the page's type on Movies / TV (results page); elsewhere start a universal search.
-    setDraft(onDiscover ? parseFilters(params) : EMPTY_FILTERS);
+    setDraft(onDiscover && target.filters ? parseFilters(params) : EMPTY_FILTERS);
   };
 
   const submit = () => {
@@ -398,24 +505,34 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   };
   // Type isn't counted: it's shown by the placeholder (and the page switch on results).
   const count = activeFilterCount(draft);
-  const atHome = useLocation().pathname === '/';
+  const atHome = pathname === modeHome(mode);
+  // Below lg there is no sidebar: the switch sits at the top of the pages a section is made of
+  // (not on a title's page), and makes way for the search field.
+  const section = useSection();
 
   return (
     <>
       {/* The wordmark sits at the top of the page and scrolls away with it. */}
       <Link
-        to="/"
+        to={modeHome(mode)}
         className={cx(
           'absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
           // With the sidebar open, the wordmark moves into it.
           hideLogo && 'lg:hidden',
-          // Phones: the wordmark is on Home only; other pages start with their own title.
+          // Phones: the wordmark is on Home only; other pages start with their own title. The
+          // narrowest phones have room for the switch alone.
           (open || !atHome) && 'max-md:hidden',
+          'max-[359px]:hidden',
         )}
         aria-label="Charcoal home"
       >
         <Wordmark />
       </Link>
+      {section && !open && (
+        <div className="absolute top-0 right-4 z-30 flex h-[76px] items-center md:right-8 md:h-[92px] lg:hidden">
+          <ModeSwitch mode={mode} layout="compact" />
+        </div>
+      )}
       <header
         // Only the search field floats and sticks (as a pill, no bar behind it). The header itself
         // ignores clicks so the page around the pill stays usable.
@@ -461,7 +578,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               type="search"
               enterKeyHint="search"
               autoComplete="off"
-              placeholder={PLACEHOLDER[draft.type]}
+              placeholder={target.placeholder ?? PLACEHOLDER[draft.type]}
               aria-label="Search"
               className="ml-1.5 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint md:text-sm [&::-webkit-search-cancel-button]:hidden"
             />
@@ -477,7 +594,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
               </button>
             )}
             {/* Filters live in the search bar on every page; the clear button sits before them so it doesn't shift. */}
-            {
+            {target.filters && (
               <button
                 type="button"
                 onClick={() => setMenu((m) => !m)}
@@ -493,7 +610,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
                 <HoverTip label="Filters" side="bottom" align="end" hidden={menu} />
                 {count > 0 && <span className="text-xs font-medium tabular-nums">{count}</span>}
               </button>
-            }
+            )}
           </div>
           {focused && !text && !menu && recent.length > 0 && (
             <div
@@ -580,10 +697,20 @@ function BottomBar() {
       {label}
     </Link>
   );
+  const mode = useMode();
+  // Two places either side of Search, then your profile: the same shape in every part.
+  const [first, second, third] =
+    mode === 'screen'
+      ? [
+          { to: '/', icon: Home, label: 'Home', id: 'home' },
+          { to: '/discover?type=movie', icon: Film, label: 'Movies', id: 'movies' },
+          { to: '/discover?type=tv', icon: Tv, label: 'TV', id: 'tv' },
+        ]
+      : FLAT[mode];
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 flex items-end border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
-      {item('/', Home, 'Home', section === 'home')}
-      {item('/discover?type=movie', Film, 'Movies', section === 'movies')}
+      {item(first.to, first.icon, first.label, section === first.id)}
+      {item(second.to, second.icon, second.label, section === second.id)}
       <div className="flex flex-1 justify-center">
         {/* Plain static styles: no hover/active states that stick after a tap on touch screens. */}
         <button
@@ -596,7 +723,7 @@ function BottomBar() {
           <Search className="size-6" />
         </button>
       </div>
-      {item('/discover?type=tv', Tv, 'TV', section === 'tv')}
+      {item(third.to, third.icon, third.label, section === third.id)}
       {item('/profile', User, 'Profile', section.startsWith('profile'))}
     </nav>
   );

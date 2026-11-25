@@ -37,6 +37,8 @@ export default function Img({ path, kind, sizes, alt, className, imgClassName, p
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}
           decoding="async"
+          // An image from another site (a sports poster) isn't told which page asked for it.
+          referrerPolicy={direct ? 'no-referrer' : undefined}
           draggable={false}
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}

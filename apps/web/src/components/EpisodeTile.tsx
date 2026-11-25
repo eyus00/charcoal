@@ -18,7 +18,8 @@ export const TILE_SIZES = '(min-width: 640px) 344px, 288px';
 
 interface Props {
   to: string;
-  type: MediaType;
+  /** Movie or show, for the small icon beside the second line; leave out for anything else. */
+  type?: MediaType;
   image: { path: string | null | undefined; kind: ImageKind; src?: string };
   /** First line (e.g. "S2 E5 Name" or a movie title). */
   primary: ReactNode;
@@ -104,7 +105,7 @@ export default function EpisodeTile({
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
             <span className="min-w-0 truncate">{line('secondary', secondary)}</span>
-            <TypeIcon type={type} />
+            {type && <TypeIcon type={type} />}
           </div>
           <CornerArc />
         </div>

@@ -1,16 +1,31 @@
 /**
- * Sports: fixtures, public channels and official links, from @charcoal/content.
+ * Sports, from @charcoal/content.
  *
- *   events    TheSportsDB (schedules only: it has no streams)
- *   channels  iptv-org's public channel list, cut down to free-to-air sports channels that have an
- *             HLS stream a browser can load. These are the only things that play here.
- *   links     the competition's own "how to watch" page, opened in a new tab
- *
- * Nothing else is offered: no stream search for events, no third-party stream sites.
+ *   live      a stream directory (PPV): what is on now and next, each with the directory's own
+ *             player page, which plays here in a frame. It gives no stream addresses, so nothing
+ *             from it goes through Charcoal's player.
+ *   channels  the directory's always-on sports channels (framed the same way), and iptv-org's
+ *             public free-to-air channels, which play in Charcoal's own player.
+ *   schedule  TheSportsDB fixtures (it has no streams) with each competition's official
+ *             "how to watch" page, opened in a new tab.
  */
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { createTheSportsDb, effectiveStatus, loadChannelCatalog, resolveLinkouts, type BroadcasterLink, type Channel, type ChannelStream, type EventStatus, type SportsEvent } from '@charcoal/content';
-import { cacheGet, cacheSet, webFetcher } from './content';
+import {
+  createStreamDirectory,
+  createTheSportsDb,
+  effectiveStatus,
+  loadChannelCatalog,
+  resolveLinkouts,
+  type BroadcasterLink,
+  type Channel,
+  type ChannelStream,
+  type EventStatus,
+  type SportsEvent,
+  type StreamDirectory,
+  type StreamOption,
+} from '@charcoal/content';
+import { cacheGet, cacheSet, webFetcher, within } from './content';
 import type { JellyResult } from './servers';
 import { FREE_TO_AIR_CHANNELS, OFFICIAL_LINKOUTS, type SportTab } from './sportsConfig';
 
@@ -189,3 +204,52 @@ export const PROBLEM_TEXT: Record<StreamProblem, string> = {
   offline: 'The channel’s stream isn’t on the air right now. Some channels only broadcast during events.',
   unreachable: 'The channel’s stream didn’t answer. It may be offline, or it may not allow playing on other websites.',
 };
+
+// ---------- the stream directory ----------
+
+const directory = createStreamDirectory(webFetcher);
+
+/**
+ * What the directory lists now. It is asked again every minute while a page that shows it is open
+ * (its own answer is cached for ten seconds), and a copy kept from the last visit paints first.
+ */
+export function useDirectory() {
+  return useQuery<StreamDirectory>({
+    queryKey: ['sports-directory'],
+    queryFn: ({ signal }) => within(directory.load(signal), 15_000, 'The sports directory'),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/** The clock, ticking every half minute: an event moves from "coming up" to "live" between refreshes. */
+export function useNow(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+  return now;
+}
+
+/** "in 2 h 10 min", "in 25 min", "in 3 days"; '' once it has started. */
+export function startsIn(startsAt: number, now: number): string {
+  const mins = Math.ceil((startsAt - now) / 60_000);
+  if (mins <= 0) return '';
+  if (mins < 60) return `in ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return mins % 60 ? `in ${hours} h ${mins % 60} min` : `in ${hours} h`;
+  const days = Math.round(hours / 24);
+  return `in ${days} day${days === 1 ? '' : 's'}`;
+}
+
+/** What to call one way of watching: "HD · ESPN"; numbered when two would read the same. */
+export function optionLabels(options: StreamOption[]): string[] {
+  const names = options.map((o) => [o.quality, o.broadcaster].filter(Boolean).join(' · ') || 'Stream');
+  return names.map((name, i) => (names.filter((n) => n === name).length > 1 ? `${name} (${names.slice(0, i + 1).filter((n) => n === name).length})` : name));
+}
+
+/** "1.2K", "51": how many are watching, as the directory counts them. */
+export const viewerCount = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}K` : String(n));

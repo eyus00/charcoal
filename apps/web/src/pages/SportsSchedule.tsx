@@ -1,34 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { ExternalLink, MapPin, Play, Radio, Trophy } from 'lucide-react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router';
+import { CalendarClock, ExternalLink, MapPin } from 'lucide-react';
 import { ErrorBox } from '../components/Grid';
 import { Empty, PageTitle } from '../components/PageHeader';
-import { Pill, SectionHeader } from '../components/Row';
+import { Pill } from '../components/Row';
 import { Bone } from '../components/Skeletons';
 import { btn } from '../components/Button';
-import { countryName, listEvents, localStart, useChannels, useSportsEvents, viewerRegion, type ListedEvent, type PlayableChannel } from '../lib/sports';
+import { listEvents, localStart, useNow, useSportsEvents, viewerRegion, type ListedEvent } from '../lib/sports';
 import { SPORTS } from '../lib/sportsConfig';
 import { cx, useTitle } from '../lib/util';
 
-/** The two kinds of thing on this page, labelled the same way everywhere they appear. */
-const PlaysHere = ({ className }: { className?: string }) => (
-  <span data-kind="plays-here" className={cx('inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-success/15 px-2.5 text-micro font-semibold tracking-wide text-success uppercase', className)}>
-    <Play className="size-3 fill-current" strokeWidth={0} /> Plays here
-  </span>
-);
-const OfficialSite = ({ className }: { className?: string }) => (
-  <span data-kind="official-site" className={cx('inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 text-micro font-semibold tracking-wide text-white/80 uppercase', className)}>
-    <ExternalLink className="size-3" /> Official site
-  </span>
-);
-
 /**
- * Sports: what is on, where to watch it officially, and the public channels that play here.
- * Fixtures are a schedule, not streams: an event is watched on a free channel below or on the
- * rights holder's own site.
+ * The schedule: fixtures with each competition's official place to watch. A fixture here is not a
+ * stream (those are on the Live page); its links open the rights holder's own site in a new tab.
  */
-export default function Sports() {
-  useTitle('Sports');
+export default function SportsSchedule() {
+  useTitle('Schedule · Sports');
   const [params, setParams] = useSearchParams();
   const tab = SPORTS.find((s) => s.key === params.get('sport')) ?? SPORTS[0];
   const choose = (key: string) => {
@@ -39,35 +26,16 @@ export default function Sports() {
   };
 
   return (
-    <div className="space-y-10 pb-10 md:space-y-12">
-      <div>
-        <PageTitle title="Sports" body="Fixtures with start times in your own time zone, free public channels you can watch right here, and links to each competition’s official broadcaster." />
-        {/* What plays in Charcoal and what leaves it, said once up front. */}
-        <ul className="grid gap-3 text-sm sm:grid-cols-2" aria-label="How to watch">
-          <li className="flex items-start gap-3 rounded-2xl bg-surface p-4">
-            <PlaysHere className="mt-0.5" />
-            <span className="text-muted">Public, free-to-air channels. They open in Charcoal’s player.</span>
-          </li>
-          <li className="flex items-start gap-3 rounded-2xl bg-surface p-4">
-            <OfficialSite className="mt-0.5" />
-            <span className="text-muted">The competition’s own page or service. It opens in a new tab; Charcoal doesn’t carry these games.</span>
-          </li>
-        </ul>
+    <div className="pb-10">
+      <PageTitle title="Schedule" body="Fixtures with start times in your own time zone, and where each competition is shown officially. Those links open in a new tab." />
+      <div className="no-scrollbar scroll-row -mx-4 mb-7 flex gap-2.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="Sport">
+        {SPORTS.map((s) => (
+          <Pill key={s.key} on={s.key === tab.key} onClick={() => choose(s.key)}>
+            {s.label}
+          </Pill>
+        ))}
       </div>
-
-      <section aria-label="Live and upcoming events">
-        <SectionHeader title="Live and upcoming" />
-        <div className="no-scrollbar scroll-row mb-5 flex gap-2.5 overflow-x-auto" role="group" aria-label="Sport">
-          {SPORTS.map((s) => (
-            <Pill key={s.key} on={s.key === tab.key} onClick={() => choose(s.key)}>
-              {s.label}
-            </Pill>
-          ))}
-        </div>
-        <Events key={tab.key} tab={tab} />
-      </section>
-
-      <Channels />
+      <Events key={tab.key} tab={tab} />
     </div>
   );
 }
@@ -77,11 +45,7 @@ export default function Sports() {
 function Events({ tab }: { tab: (typeof SPORTS)[number] }) {
   const query = useSportsEvents(tab);
   // The clock moves events from "upcoming" to "live" between refreshes of the schedule.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(t);
-  }, []);
+  const now = useNow();
   const region = useMemo(viewerRegion, []);
   const events = useMemo(() => listEvents(query.data?.events ?? [], now, region), [query.data, now, region]);
   const zone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
@@ -96,7 +60,7 @@ function Events({ tab }: { tab: (typeof SPORTS)[number] }) {
     );
   }
   if (query.error) return <ErrorBox onRetry={() => query.refetch()} message="Couldn’t load the schedule. The free schedule service limits how often it can be asked; try again in a minute." />;
-  if (!events.length) return <Empty icon={Trophy} title={`No ${tab.label.toLowerCase()} coming up`} body="Nothing is listed for today or tomorrow. The schedule service’s free tier only lists a few events per day." />;
+  if (!events.length) return <Empty icon={CalendarClock} title={`No ${tab.label.toLowerCase()} coming up`} body="Nothing is listed for today or tomorrow. The schedule service’s free tier only lists a few events per day." />;
   return (
     <>
       <ul className="space-y-3" data-testid="events">
@@ -172,63 +136,6 @@ function EventRow({ event: e, now }: { event: ListedEvent; now: number }) {
           <span className="text-caption text-faint">No official link listed</span>
         )}
       </div>
-    </li>
-  );
-}
-
-// ---------- channels ----------
-
-function Channels() {
-  const channels = useChannels();
-  return (
-    <section aria-label="Free public channels that play here">
-      <SectionHeader title="Free channels" action={<PlaysHere />} />
-      {channels.isPending ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Bone key={i} className="h-[76px] rounded-2xl!" />
-          ))}
-        </div>
-      ) : channels.error ? (
-        <ErrorBox onRetry={() => channels.refetch()} message="Couldn’t load the channel list. Check your connection and try again." />
-      ) : !channels.data.length ? (
-        <Empty icon={Radio} title="No free channels available" body="None of the public sports channels has a stream that can play in a browser right now." />
-      ) : (
-        <>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="channels">
-            {channels.data.map((c) => (
-              <ChannelCard key={c.channel.id} entry={c} />
-            ))}
-          </ul>
-          <p className="mt-4 text-xs text-faint">Public free-to-air channels from the iptv-org list. A channel can be off the air, or limited to its own country; you’ll be told if it can’t play.</p>
-        </>
-      )}
-    </section>
-  );
-}
-
-function ChannelCard({ entry: { channel, streams } }: { entry: PlayableChannel }) {
-  // Said only when it holds for every stream: one open mirror is enough to play.
-  const regional = streams.every((s) => s.hazards.includes('geo-blocked'));
-  const partTime = streams.every((s) => s.hazards.includes('not-24-7'));
-  const notes = [countryName(channel.country), regional && 'Home region only', partTime && 'Not always on air'].filter(Boolean).join(' · ');
-  return (
-    <li>
-      <Link
-        to={`/live/${encodeURIComponent(channel.id)}`}
-        data-channel={channel.id}
-        data-kind="plays-here"
-        aria-label={`${channel.name}: plays here`}
-        className="group flex items-center gap-3.5 rounded-2xl bg-surface p-4 transition-colors hover:bg-raised"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 transition-colors group-hover:bg-white group-hover:text-black">
-          <Play className="ml-0.5 size-4 fill-current" strokeWidth={0} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-sm font-medium">{channel.name}</span>
-          <span className="block truncate text-caption text-muted">{notes}</span>
-        </span>
-      </Link>
     </li>
   );
 }

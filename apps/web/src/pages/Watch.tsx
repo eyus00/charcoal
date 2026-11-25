@@ -7,8 +7,9 @@ import EpisodeSelector from '../components/EpisodeSelector';
 import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
 import { imageUrl } from '../lib/images';
 import { toast } from '../components/Toast';
+import { getBridge } from '../lib/extension';
 import { useSources } from '../lib/resolver';
-import { useAnime, type AnimeAudio, type AnimeState } from '../lib/anime';
+import { looksLikeAnime, useAnime, type AnimeAudio, type AnimeState } from '../lib/anime';
 import { EMBEDS, embedById, languageName, type JellySource, type Target } from '../lib/servers';
 import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
 import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
@@ -70,6 +71,9 @@ export default function Watch() {
 
   return <WatchView key={`${type}-${id}-${season}-${episode}`} type={type} id={id} season={season} episode={episode} restart={sp.get('t') === '0'} />;
 }
+
+/** How long a viewer with nothing set up waits for Jelly before the embedded player starts. */
+const UNAIDED_PATIENCE_MS = 7_000;
 
 function WatchView({ type, id, season, episode, restart }: { type: MediaType; id: number; season?: number; episode?: number; restart: boolean }) {
   const navigate = useNavigate();
@@ -136,6 +140,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
         posterPath: d.poster_path,
         backdropPath: d.backdrop_path,
         ...(type === 'tv' ? { season, episode, episodeTitle: ep?.name, nextEpisode: next } : {}),
+        ...(looksLikeAnime(d) ? { anime: true } : {}),
         progress: duration > 0 ? { watched, duration } : undefined,
         ended,
       });
@@ -153,6 +158,28 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     setFallbackNote(null);
     actions.updateSettings({ server: s });
   };
+
+  // Nothing set up: no helper in this browser and no server of the viewer's own, so sources can
+  // only come from Charcoal's server. When it hasn't found one in a few seconds, the default
+  // embedded player starts instead of a spinner; Jelly stays one tap away in the server menu.
+  const [unaided, setUnaided] = useState(false);
+  useEffect(() => {
+    let current = true;
+    if (settings.serverUrl) return setUnaided(false);
+    (settings.useExtension ? getBridge() : Promise.resolve(null)).then((bridge) => current && setUnaided(!bridge));
+    return () => {
+      current = false;
+    };
+  }, [settings.serverUrl, settings.useExtension]);
+  const stillLooking = server === 'jelly' && unaided && !streams && found.searching;
+  useEffect(() => {
+    if (!stillLooking) return;
+    const t = window.setTimeout(() => {
+      setFallbackNote(`Jelly hadn’t found a source yet, so ${EMBEDS[0].name} is playing. Choose Jelly in the server menu to keep looking.`);
+      setServer(EMBEDS[0].id);
+    }, UNAIDED_PATIENCE_MS);
+    return () => window.clearTimeout(t);
+  }, [stillLooking]);
 
   const embed = server !== 'jelly' ? (embedById(server) ?? EMBEDS[0]) : null;
 
