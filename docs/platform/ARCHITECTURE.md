@@ -60,11 +60,11 @@ answered.
 | Runtime | What it is | Status |
 |---|---|---|
 | `server` | A long-running process (Railway container, VPS, a home machine with `EGRESS=user`) | Implemented: `apps/server` |
-| `edge` | Serverless / edge function (fetch + WebCrypto, no state) | Contract only. Providers that need nothing more declare it (`castle`, `vixsrc`, `cinesu-rules`); the SDK has no Node dependencies, so the engine runs there. No edge deployment is included |
+| `edge` | Serverless / edge function (fetch + WebCrypto, no state) | Contract only. Providers that need nothing more declare it (`castle`, `vixsrc`, most of the ported ones); the SDK has no Node dependencies, so the engine runs there. No edge deployment is included |
 | `extension` | The website through the helper extension | Implemented: `apps/extension` (protocol 2) + `@charcoal/client` |
 | `app` | The website inside an app shell with a native bridge | Client side implemented and tested (`window.__charcoalBridge`, same protocol). The shell itself is not built |
 | `remote` | Behind someone else's HTTP API | The hosted resolver is used this way by clients (`/v2/sources`). A Stremio-addon adapter is not included |
-| `browser` | An automated browser for pages that need JavaScript | Contract only, by decision (below) |
+| `browser` | An automated browser for pages that need JavaScript | Implemented as a feature of the server runtime (`js-render`): `packages/browser-runtime`, a Playwright worker with its own network guard. Optional; see BROWSER.md |
 | `frame` | Another site's player in an iframe, in the viewer's own browser | Existing embeds (`apps/web/src/lib/servers.ts`); the page falls back to it when nothing else plays |
 
 Planning (`planExecution`): a provider runs locally when a local runtime fits (the viewer's own
@@ -158,7 +158,7 @@ override simply expires). An extraction change never enters production by itself
 | Decision | Reason |
 |---|---|
 | A new SDK package rather than growing `@omss/framework` | The framework is archived upstream, waits for the slowest provider, and its providers can't run outside Node. `/v1` still uses it, unchanged |
-| Legacy OMSS classes are adapted, not rewritten | They work as before (`network: 'unmanaged'`, `runtimes: ['server']` say honestly what they are). Porting is incremental; `cinesu-rules` shows the path |
+| The twelve legacy OMSS classes were ported to SDK modules (phase 2) | As classes they caught their own errors, so an outage looked like "not found", and they could only run in Node on a server. The adapter (`platform/legacy.ts`) stays for OMSS-style classes; today it only sees the three that were already disabled upstream. PROVIDERS.md has the table |
 | NDJSON over a plain GET for progressive results | Works with `fetch`, proxies and `AbortSignal`; no SSE reconnection semantics to fight; one line per provider |
 | Registry is a document, served by the resolver and publishable as a static file | Discovery must not be a second service or a single point of failure. Clients keep the last good copy and work with none |
 | Ed25519 signatures with keys pinned in the client | A resolver or mirror that is compromised or replaced cannot push providers or domains to clients built with pinned keys |
@@ -188,24 +188,24 @@ re-search, Febbox's token staying on the device, the extension's original four m
 
 ## 9. Content categories
 
-The shared infrastructure handles every category; what differs lives in `packages/content`.
-
-| Category | In place | Not in place |
-|---|---|---|
-| Movies and TV | End to end | |
-| Anime | `Media` kind, API parameters, TMDB ↔ AniList/MAL mapping, AniList titles, AniSkip client (113 tests with real data samples) | No anime provider is enabled in the pack; no anime UI |
-| Indian and regional cinema | Language as a stream attribute and ranking input; discovery parameters; title matching across scripts; audio languages from release names | No UI for language browsing; MKV sources still need a native player |
-| Sports | Event model with live status and TTLs; TheSportsDB schedule source; iptv-org channel catalogue with blocklist and hazard flags; data-driven official link-outs (empty table) | No sports UI; no live player mode; no provider wiring events to channels |
+| Category | In the product | Providers | Not there |
+|---|---|---|---|
+| Anime | Anime titles are recognised (TMDB genre and language, confirmed by the AniList/MAL mapping); the Watch page asks for both identities (the TMDB episode and the anime entry with its absolute episode and alternate titles) and merges the answers; sub/dub preference; skip-intro times from AniSkip; an Anime browse page; alternate titles on the title page | Five, each kept or staged by a live gate (PROVIDERS.md) | Playback of anime sources was not exercised in a browser against live sites; episodes beyond the first were not live-checked |
+| Indian and regional cinema | A browse page with twelve language tabs and language-scoped search (TMDB discover); alternate titles and transliterations sent to providers; an Audio menu listing the languages sources report, with a saved preference | No provider dedicated to Indian catalogues: maintained ones exist only under copyleft or no licence (ECOSYSTEM.md 6.3, 6.4). Indian titles are served by the general providers, chiefly Castle, which carries Indian-language audio | MKV-on-file-host sources still need a native player |
+| Sports | A Sports page: events from TheSportsDB with local start times and live state, official "how to watch" link-outs for eleven leagues, and public free-to-air channels from iptv-org that play in the app | None: schedules, public channels and official link-outs only, by decision | The channel list is a hand-picked allow-list that needs an operator's review; no real channel was played in a browser; the player has no dedicated live mode yet unless noted in REPORT.md |
 
 ## 10. Known limitations
 
-- The twelve legacy server classes are unmanaged (no policy, no trace, no domain separation)
-  until ported. Their failures are classified from their messages, coarsely.
+- Availability from the hosted server is not shown to have improved: nothing in this branch is
+  deployed, and the hosted server's failures are at the connection level (AVAILABILITY.md).
+- No run from a home connection has been made. Every live number comes from one cloud address.
+- Most of the ported legacy providers do not return a verified stream from that address (dead
+  names, moved sites, browser checks, changed APIs). They ship `canary` and graduate by
+  themselves when they pass monitor checks with a verified stream (PROVIDERS.md).
 - The vendored fallback pack runs with an open network policy (any public host, still traced,
-  capped and kept off private addresses).
-- `cinesu-rules` is canary. On 2026-11-24 its address redirected to another host, which failed
-  validation from the test environment; see OPERATIONS.md.
-- Nothing here changes which addresses stream hosts accept. The hosted server remains on a
-  data-centre address; the gain for viewers without a bridge is speed and honesty, not more
-  sources. More sources come from local runtimes (the extension today, an app shell next).
-- No app shell, no edge deployment, no browser worker, no Stremio-addon adapter.
+  capped and kept off private addresses), and most of it fails from a cloud address.
+- A browser worker on a data-centre address is refused by the same sites that refuse a server
+  there. It adds sites that need JavaScript; it does not make a refused network welcome.
+- Bot checks and run-time playback gates are reported, never passed. Sites behind them are
+  offered as their own player in a frame, or not at all.
+- No app shell, no edge deployment, no Stremio-addon adapter.

@@ -1,6 +1,8 @@
 # Type-checks and tests every workspace, builds the website, and checks that the server's image
 # recipe still installs and boots. Nothing here contacts a streaming site: provider tests run
-# against fixtures and a mock network.
+# against fixtures and a mock network, and the browser runtime's against a local fixture site.
+# Not run here: the website's browser checks (apps/web/e2e, which need ffmpeg and a build with the
+# test resolver address) and anything live (the benchmark).
 name: Test
 
 on:
@@ -22,6 +24,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # The browser runtime's tests drive a real headless Chromium against a local fixture site.
+      - name: Chromium for the browser runtime tests
+        run: npx playwright-core install --with-deps chromium
       - run: npm test
       - run: npm run build:web
       - run: npm run build:extension
