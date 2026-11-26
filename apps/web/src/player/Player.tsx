@@ -178,8 +178,20 @@ function bestIndex(
   );
 }
 
-/** A source's top picture height as far as it says (its label, or its best level); 0 when it doesn't. */
+/**
+ * Picture heights measured while sources played this visit (by stream id, else address): an "auto"
+ * source says nothing in its label, but once seen its real top quality is known and counts.
+ */
+const seenHeight = new Map<string, number>();
+const sourceKey = (s: JellySource) => s.id ?? s.url;
+
+/**
+ * A source's top picture height: measured (here, or from its playlist when the resolver read it),
+ * else as far as its label or levels say; 0 when nothing does.
+ */
 function heightOf(s: JellySource): number {
+  const measured = seenHeight.get(sourceKey(s)) ?? s.verification?.maxHeight;
+  if (measured) return measured;
   const read = (q?: string) => {
     const t = (q ?? "").toLowerCase();
     if (/4k|2160|uhd/.test(t)) return 2160;
@@ -346,7 +358,12 @@ export default function Player({
   const [muted, setMuted] = useState(settings.muted);
   const [rate, setRate] = useState(settings.playbackRate);
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([]);
-  useEffect(() => void (levelsRef.current = levels), [levels]);
+  useEffect(() => {
+    levelsRef.current = levels;
+    const top = Math.max(0, ...levels.map((l) => l.height));
+    if (top && source) seenHeight.set(sourceKey(source), top);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levels]);
   const [level, setLevel] = useState(-1);
   const [audioTracks, setAudioTracks] = useState<
     { id: number; name: string }[]
@@ -954,6 +971,30 @@ export default function Player({
   const failRef = useRef(fail);
   failRef.current = fail;
 
+  /**
+   * The stream turned out to carry only other languages than the wanted one (its playlist names
+   * its audio tracks, e.g. a Hindi dub sold as the original). Unless the viewer chose it, move on to
+   * the next source the way a failure would, but keep this one playing if nothing else is left.
+   */
+  const wrongAudio = (heard: string[]) => {
+    if (userPicked.current || live) return;
+    failed.current.add(sourceIdx);
+    if (source?.id) failedIds.current.add(source.id);
+    const name = languageName(heard[0]) || heard[0];
+    failReason.current.set(sourceIdx, `Audio in ${name}`);
+    const nextIdx = bestIndex(data.sources, failed.current.has);
+    if (nextIdx === -1) return;
+    console.info(
+      `[player] source ${sourceIdx + 1} is in ${heard.join(", ")}, trying ${nextIdx + 1}`,
+    );
+    keepPosition();
+    flash(`That source was in ${name} — trying another`);
+    switchWhy.current = `Switched to ${languageName(audioPref.current) || "your language"} audio`;
+    setSourceIdx(nextIdx);
+  };
+  const wrongAudioRef = useRef(wrongAudio);
+  wrongAudioRef.current = wrongAudio;
+
   useEffect(() => {
     const v = video.current;
     if (!v || !source) return;
@@ -1152,6 +1193,16 @@ export default function Player({
           );
           if (i >= 0 && i !== h.audioTrack) h.audioTrack = i;
           setAudioTrack(i >= 0 ? i : h.audioTrack);
+          // Every track names a language and none is the wanted one: the wrong audio altogether.
+          const heard = h.audioTracks.map((t) =>
+            (t.lang ?? "").toLowerCase().slice(0, 2),
+          );
+          if (
+            i < 0 &&
+            heard.length &&
+            heard.every((l) => /^[a-z]{2}$/.test(l) && l !== "un" && l !== "mu")
+          )
+            wrongAudioRef.current([...new Set(heard)]);
         });
         h.on(HlsCtor.Events.AUDIO_TRACK_SWITCHED, (_e, d) =>
           setAudioTrack(d.id),

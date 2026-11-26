@@ -4,11 +4,11 @@
  */
 
 export const CONTRACT_VERSION = 2;
-export const SDK_VERSION = '0.1.0';
+export const SDK_VERSION = "0.1.0";
 
 // ---------- what to find ----------
 
-export type MediaKind = 'movie' | 'tv' | 'anime' | 'live';
+export type MediaKind = "movie" | "tv" | "anime" | "live";
 
 /** Ids a title can be known by. A provider's manifest says which of them it can look up. */
 export interface MediaIds {
@@ -23,7 +23,7 @@ export interface MediaIds {
   /** A channel id (e.g. an iptv-org channel id). */
   channel?: string;
 }
-export type IdKind = keyof MediaIds | 'title';
+export type IdKind = keyof MediaIds | "title";
 
 interface MediaCommon {
   ids: MediaIds;
@@ -38,26 +38,26 @@ interface MediaCommon {
   runtime?: number;
 }
 export interface MovieMedia extends MediaCommon {
-  kind: 'movie';
+  kind: "movie";
 }
 export interface EpisodeMedia extends MediaCommon {
-  kind: 'tv';
+  kind: "tv";
   season: number;
   episode: number;
   seasonTmdbId?: string;
   episodeTmdbId?: string;
 }
 export interface AnimeMedia extends MediaCommon {
-  kind: 'anime';
+  kind: "anime";
   /** Episode number inside the entry named by ids.anilist / ids.mal (not the TMDB season number). */
   episode: number;
   /** The TMDB season and episode this maps to, when known. */
   season?: number;
   seasonEpisode?: number;
-  audio?: 'sub' | 'dub';
+  audio?: "sub" | "dub";
 }
 export interface LiveMedia extends MediaCommon {
-  kind: 'live';
+  kind: "live";
   /** Scheduled start, epoch ms. */
   startsAt?: number;
   channel?: string;
@@ -67,7 +67,7 @@ export type Media = MovieMedia | EpisodeMedia | AnimeMedia | LiveMedia;
 // ---------- what comes back ----------
 
 /** 'frame' is another site's player to show in an iframe: playable, but not a stream we control. */
-export type StreamType = 'hls' | 'dash' | 'mp4' | 'mkv' | 'webm' | 'frame';
+export type StreamType = "hls" | "dash" | "mp4" | "mkv" | "webm" | "frame";
 
 export interface AudioInfo {
   /** ISO 639-1 code, or 'und' when the source doesn't say. */
@@ -116,7 +116,7 @@ export interface RawStream {
   live?: { dvrSeconds?: number };
 }
 
-export type CaptionFormat = 'vtt' | 'srt' | 'ass' | 'ssa' | 'ttml';
+export type CaptionFormat = "vtt" | "srt" | "ass" | "ssa" | "ttml";
 export interface Caption {
   url: string;
   label: string;
@@ -140,10 +140,13 @@ export interface SourceResult {
 }
 
 /** How a stream can reach a player. Decided by the client for its own capabilities. */
-export type Delivery = 'direct' | 'headers' | 'relay' | 'frame' | 'unplayable';
+export type Delivery = "direct" | "headers" | "relay" | "frame" | "unplayable";
 
 /** A stream after normalisation: every field filled, tagged with where it came from. */
-export interface Stream extends Omit<RawStream, 'quality' | 'audio' | 'headers' | 'language' | 'languageCode'> {
+export interface Stream extends Omit<
+  RawStream,
+  "quality" | "audio" | "headers" | "language" | "languageCode"
+> {
   /** Stable across re-resolves: provider + upstream host + path, without tokens. */
   id: string;
   /** Same for the same upstream file from any provider (duplicate detection). */
@@ -170,9 +173,9 @@ export interface Stream extends Omit<RawStream, 'quality' | 'audio' | 'headers' 
  * - unchecked it could not be tried from here (a frame, a link bound to another address)
  */
 export interface Verification {
-  state: 'verified' | 'failed' | 'unchecked';
+  state: "verified" | "failed" | "unchecked";
   /** How far the check got: nothing, the manifest, a media segment, a file header, or real playback in a player. */
-  level: 'none' | 'manifest' | 'segment' | 'header' | 'playback';
+  level: "none" | "manifest" | "segment" | "header" | "playback";
   /** Failure code when state is 'failed' (same vocabulary as provider failures). */
   code?: string;
   message?: string;
@@ -197,7 +200,7 @@ export interface Verification {
 // ---------- the network ----------
 
 export interface FetchOptions {
-  method?: 'GET' | 'POST' | 'HEAD';
+  method?: "GET" | "POST" | "HEAD";
   headers?: Record<string, string>;
   body?: string;
   /** The body is a binary string (one character per byte), sent as those bytes. Only the Node and edge transports honour it. */
@@ -225,7 +228,10 @@ export interface FetchResponse {
  * The only way a provider reaches the network. A runtime supplies the transport (Node fetch, the
  * extension bridge, an app's native HTTP); the SDK wraps it with policy, timeouts and tracing.
  */
-export type Fetcher = (url: string, options?: FetchOptions) => Promise<FetchResponse>;
+export type Fetcher = (
+  url: string,
+  options?: FetchOptions,
+) => Promise<FetchResponse>;
 
 // ---------- where code runs ----------
 
@@ -238,26 +244,27 @@ export type Fetcher = (url: string, options?: FetchOptions) => Promise<FetchResp
  * frame     another site's player in an iframe, in the viewer's own browser
  * remote    behind someone else's HTTP API (the hosted resolver, a Stremio-style addon)
  */
-export type RuntimeKind = 'server' | 'edge' | 'extension' | 'app' | 'browser' | 'frame' | 'remote';
+export type RuntimeKind =
+  "server" | "edge" | "extension" | "app" | "browser" | "frame" | "remote";
 
 export type Feature =
   /** Can set Referer / Origin / User-Agent on requests. */
-  | 'forbidden-headers'
+  | "forbidden-headers"
   /** Can send a Cookie header. */
-  | 'cookies'
+  | "cookies"
   /** Node built-ins are available (legacy server-only providers). */
-  | 'node'
+  | "node"
   /** State survives between requests of one run and across runs (ctx.store is durable). */
-  | 'session'
+  | "session"
   /** Holds per-device settings such as a personal account token. */
-  | 'user-settings'
+  | "user-settings"
   /** Runs page JavaScript. */
-  | 'js-render';
+  | "js-render";
 
 export interface RuntimeDescriptor {
   kind: RuntimeKind;
   /** Whose network the requests leave from. */
-  egress: 'datacenter' | 'user';
+  egress: "datacenter" | "user";
   features: Feature[];
   sdk: string;
   contract: number;
@@ -271,13 +278,13 @@ export interface ProviderRequirements {
   /** Features the runtime must have. */
   features?: Feature[];
   /** 'user' = only worth running on the viewer's own connection. */
-  egress?: 'any' | 'user';
+  egress?: "any" | "user";
   /** A per-device setting it cannot run without (e.g. "febboxToken"). Never sent to a remote runtime. */
   setting?: string;
 }
 
 export interface ConfigField {
-  type: 'string' | 'number' | 'boolean';
+  type: "string" | "number" | "boolean";
   description?: string;
   default?: string | number | boolean;
   /** Secret values are never logged or reported. */
@@ -316,11 +323,17 @@ export interface ProviderManifest {
    * - unmanaged legacy code that calls the global fetch itself; nothing is enforced or traced
    * A runtime may refuse anything but 'declared'.
    */
-  network?: 'declared' | 'open' | 'unmanaged';
+  network?: "declared" | "open" | "unmanaged";
   output: { types: StreamType[] };
   limits?: { timeoutMs?: number; maxRequests?: number };
   /** Author's default priority (higher first). The registry may override; health adjusts it. */
   rank?: number;
+  /**
+   * 0..1: how often a stream it does NOT label with a language turns out to be a dub (some sites
+   * serve a Hindi dub as their default). The ranker then trusts "unlabelled = original" less for
+   * it; a stream it labels, or whose playlist declares its audio, is unaffected.
+   */
+  dubRisk?: number;
   config?: Record<string, ConfigField>;
   dependencies?: { sdk?: string; providers?: string[] };
   /** For a service the viewer has an account with: where their own session comes from, and how its absence shows. */
@@ -372,7 +385,7 @@ export interface ProviderContext {
    */
   discovered(text: string): void;
   /** A real browser, in runtimes that have one (`js-render`). Declare the feature to be planned only there. */
-  browser?: import('./browser.js').BrowserSession;
+  browser?: import("./browser.js").BrowserSession;
 }
 
 export interface ProviderModule {
@@ -380,7 +393,10 @@ export interface ProviderModule {
   /** Find streams for a title. Throw ProviderError('NOT_FOUND') when the title isn't there. */
   getSources(media: Media, ctx: ProviderContext): Promise<SourceResult>;
   /** Optional: fresh URLs for a stream found earlier (expired token), or streams from a host link. */
-  resolve?(ref: { streamId?: string; link?: HostLink; media: Media }, ctx: ProviderContext): Promise<RawStream[]>;
+  resolve?(
+    ref: { streamId?: string; link?: HostLink; media: Media },
+    ctx: ProviderContext,
+  ): Promise<RawStream[]>;
   /** Optional cheap probe. Real health is measured from runs. */
   health?(ctx: ProviderContext): Promise<{ ok: boolean; detail?: string }>;
 }

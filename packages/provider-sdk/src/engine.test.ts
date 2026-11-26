@@ -606,3 +606,25 @@ test('defineProvider refuses a malformed manifest at load time', () => {
   assert.throws(() => simple('ok-id').manifest.id.toUpperCase() && Object.assign(simple('frozen').manifest, { id: 'changed' }), TypeError);
   assert.throws(() => new ProviderError('NOT_FOUND') && defineProvider({ manifest: base('nofn') } as never), /no getSources/);
 });
+
+test('ranking: a provider whose unlabelled audio is often a dub ranks below one that labels English; measured beats labelled', () => {
+  const s = (id: string, raw: Partial<RawStream>, provider = id) => ({ ...norm({ url: `https://cdn.${id}.example/a.m3u8`, type: 'hls', ...raw }, provider) });
+  const ctx = {
+    preferredLanguage: 'en',
+    compatibility: (x: Stream) => checkCompatibility(x, browser),
+    delivery: (x: Stream) => decideDelivery(x, browser, false),
+    reliability: () => 0.8,
+    dubRisk: (id: string) => (id === 'risky' ? 0.7 : 0),
+  };
+  const order = (list: Stream[]) => rankStreams(list, ctx).map((x) => x.provider.id);
+  // An unlabelled 1080p from a dub-prone site loses to a labelled English 720p; an unlabelled one elsewhere doesn't.
+  const a = order([s('risky', { quality: '1080' }), s('eng720', { quality: '720', language: 'English' }), s('plain', { quality: '1080' })]);
+  assert.deepEqual(a, ['plain', 'eng720', 'risky']);
+  // The playlist said Hindi: a dub, whatever the label claims. It said English: trusted even from a risky site.
+  const said = (langs: string[]) => ({ state: 'verified' as const, level: 'manifest' as const, by: 'server' as const, at: 0, ms: 1, detail: { audioLanguages: langs } });
+  const b = order([{ ...s('plain', { quality: '1080', language: 'English' }), verification: said(['hin']) }, { ...s('risky', { quality: '1080' }), verification: said(['eng']) }]);
+  assert.equal(b[0], 'risky');
+  // "auto" measured at 1080 lines up with a labelled 1080, above a 720.
+  const c = order([s('lab720', { quality: '720' }), { ...s('auto', { quality: 'auto' }), verification: { ...said([]), detail: { maxHeight: 1080 } } }]);
+  assert.equal(c[0], 'auto');
+});
