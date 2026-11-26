@@ -51,7 +51,24 @@ export default function Modal({ label, onClose, children }: { label: string; onC
  * A standard dialog: a centered card on larger screens, a sheet from the bottom on phones. Title
  * and close button on top, a scrolling body, and an optional footer that stays put.
  */
-export function Dialog({ title, subtitle, onClose, footer, wide, children }: { title: ReactNode; subtitle?: ReactNode; onClose: () => void; footer?: ReactNode; wide?: boolean; children: ReactNode }) {
+export function Dialog({
+  title,
+  subtitle,
+  action,
+  onClose,
+  footer,
+  wide,
+  children,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  /** Sits right after the title (e.g. a library button), as on a title's own page. */
+  action?: ReactNode;
+  onClose: () => void;
+  footer?: ReactNode;
+  wide?: boolean;
+  children: ReactNode;
+}) {
   const sheet = useRef<HTMLDivElement>(null);
   useSwipeToClose(sheet, onClose);
   return (
@@ -68,9 +85,12 @@ export function Dialog({ title, subtitle, onClose, footer, wide, children }: { t
           {/* Phones: a handle that says it swipes down. */}
           <span aria-hidden className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 sm:hidden" />
           <header className="flex shrink-0 items-center gap-3 px-5 pt-5 pb-3">
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-semibold tracking-tight">{title}</h2>
-              {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold tracking-tight">{title}</h2>
+                {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
+              </div>
+              {action}
             </div>
             <button type="button" onClick={onClose} aria-label="Close" className={btn({ icon: true })}>
               <X className="size-4" />

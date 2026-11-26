@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { Bell, BellRing } from 'lucide-react';
 import { Dialog } from './Modal';
@@ -7,12 +8,14 @@ import Img from './Img';
 import { Chip } from './EpisodeTile';
 import { CARD_IMAGE, CARD_INFO, CARD_TITLE, CornerArc, TypeIcon } from './MediaCard';
 import { Tip } from './Tip';
+import LibraryButton from './LibraryButton';
 import { toast } from './Toast';
 import { episodePeekProps, peekProps } from '../lib/peek';
 import { useInLibrary } from '../lib/library';
 import { toggleReminder, useReminders, type Reminder } from '../lib/reminders';
 import { DAY, startOfDay, type Airing, type AiringEpisode, type Label } from '../lib/schedule';
 import { cx, formatRuntime } from '../lib/util';
+import { q } from '../lib/tmdb';
 
 const fullDate = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -231,8 +234,8 @@ export default function AiringTile({ a, calendar, className }: { a: Airing; cale
       <Card a={a} ep={undefined} label={labelOf(a, 0, eps.length)} stacked={eps.slice(1)} showDate={!calendar} className={className} onClick={() => setOpen(true)} />
       {/* Tapping a stack: its episodes in a pop-up, laid out like the episode list. */}
       {open && (
-        <Dialog title={a.title} subtitle={`${eps.length} episodes`} onClose={() => setOpen(false)} wide>
-          <div className="grid grid-cols-1 gap-1 pt-5 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-8">
+        <Dialog title={a.title} subtitle={`${eps.length} episodes`} action={<StackLibraryButton a={a} />} onClose={() => setOpen(false)} wide>
+          <div className="grid grid-cols-1 gap-1 pt-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-8 sm:pt-5">
             {eps.map((e, i) => (
               <EpisodeCard key={`${e.season}-${e.number}`} a={a} ep={e} label={labelOf(a, i, eps.length)} />
             ))}
@@ -243,33 +246,59 @@ export default function AiringTile({ a, calendar, className }: { a: Airing; cale
   );
 }
 
-/** One episode of a stack, like a card in the episode list: still, number and name, date, synopsis. */
+/** The show's library button for a stack's sheet (the show's TMDB entry gives the poster the library shows). */
+function StackLibraryButton({ a }: { a: Airing }) {
+  const d = useQuery(q.lite(a.type, a.id)).data;
+  return (
+    <LibraryButton
+      size="md"
+      item={{
+        id: a.id,
+        mediaType: a.type,
+        title: a.title,
+        posterPath: d?.poster_path ?? null,
+        releaseDate: d?.first_air_date ?? d?.release_date,
+        ratingScore: d?.vote_average,
+      }}
+    />
+  );
+}
+
+/**
+ * One episode of a stack, as in the episode menu. Phones: the still on the left, the number and
+ * name, date and two lines of synopsis beside it, as tall as the still. Larger screens: a card.
+ */
 function EpisodeCard({ a, ep, label }: { a: Airing; ep: AiringEpisode; label?: string }) {
   const upcoming = startOfDay(new Date(a.at)).getTime() > Date.now();
+  const name = ep.name || `Episode ${ep.number}`;
   return (
-    <Link to={`/tv/${a.id}?episodes=${ep.season}&ep=${ep.number}`} className="group flex gap-3 rounded-2xl py-2.5 sm:flex-col sm:gap-0 sm:py-0">
-      <div className="w-[44%] shrink-0 self-start pt-2 sm:w-full sm:pt-0">
+    <Link to={`/tv/${a.id}?episodes=${ep.season}&ep=${ep.number}`} className={cx('group flex gap-3 rounded-2xl p-1.5 sm:flex-col sm:gap-0 sm:p-0', label && 'max-sm:pt-4')}>
+      <div className="w-[46%] shrink-0 self-start sm:w-full">
         <Frame label={label} bg="bg-surface">
-          <div className={CARD_IMAGE}>
+          <div className={cx(CARD_IMAGE, 'max-sm:rounded-xl')}>
             <Img path={null} src={ep.image ?? a.image} kind="still" sizes="(min-width: 640px) 320px, 45vw" alt="" className="aspect-video" />
             {ep.runtime ? (
-              <span className="absolute right-2 bottom-2">
+              <span className="absolute right-1 bottom-1 sm:right-2 sm:bottom-2 max-sm:[&>span]:px-1.5 max-sm:[&>span]:py-px max-sm:[&>span]:text-micro">
                 <Chip>{formatRuntime(ep.runtime)}</Chip>
               </span>
             ) : null}
-            <span className="absolute top-2 right-2 z-10">
+            <span className="absolute top-1 right-1 z-10 origin-top-right max-sm:scale-75 sm:top-2 sm:right-2">
               <ReminderBell a={a} ep={ep} />
             </span>
           </div>
         </Frame>
       </div>
-      <div className={cx(CARD_INFO, 'min-w-0 flex-1 sm:pt-2.5')}>
+      <div className={cx(CARD_INFO, 'min-w-0 flex-1 py-0.5 sm:pt-2.5')}>
         <div className="flex items-baseline gap-2">
           <span className="text-sm text-muted tabular-nums">{ep.season === 0 ? 'Special' : ep.number}</span>
-          <h3 className="line-clamp-2 min-w-0 text-body-sm font-medium text-balance text-white/95">{ep.name || `Episode ${ep.number}`}</h3>
+          <h3 className="line-clamp-1 min-w-0 text-sm font-medium text-white/95 sm:line-clamp-2 sm:text-body-sm sm:text-balance">{name}</h3>
         </div>
-        <div className="text-caption text-faint">{dateLabel(a.at)}</div>
-        {ep.overview ? <Synopsis text={ep.overview} title={`${seLabel(ep.season, ep.number)} ${ep.name}`} /> : <NoSynopsis n={ep.number} upcoming={upcoming} />}
+        <div className="text-xs text-faint sm:text-caption">{dateLabel(a.at)}</div>
+        {/* Phones: two plain lines, as in the episode menu. */}
+        <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted sm:hidden">{ep.overview || (upcoming ? 'Synopsis coming soon' : 'No synopsis yet')}</p>
+        <div className="hidden sm:block">
+          {ep.overview ? <Synopsis text={ep.overview} title={`${seLabel(ep.season, ep.number)} ${ep.name}`} /> : <NoSynopsis n={ep.number} upcoming={upcoming} />}
+        </div>
       </div>
     </Link>
   );

@@ -92,10 +92,10 @@ export default function Calendar() {
               )
             }
             aria-label="Add your shows this week to your calendar app"
-            className={cx(btn({ icon: true }), 'group/tip relative ml-auto')}
+            className={cx(btn({ icon: true }), 'group/tip relative')}
           >
             <CalendarPlus className="size-4" />
-            <Tip label="Add your shows this week to your calendar app (.ics)" side="bottom" align="end" />
+            <Tip label="Add your shows this week to your calendar app (.ics)" side="bottom" align="start" />
           </button>
         )}
       </div>

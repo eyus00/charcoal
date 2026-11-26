@@ -444,7 +444,12 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
       <header
         // Only the search field floats and sticks (as a pill, no bar behind it). The header itself
         // ignores clicks so the page around the pill stays usable.
-        className="pointer-events-none sticky top-0 z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4"
+        className={cx(
+          'pointer-events-none sticky top-0 z-30 flex h-[76px] items-center gap-3 md:h-[92px] md:gap-4',
+          // Phones search from the bottom bar: with no wordmark to show (pages other than Home and
+          // Sports) and search closed, this bar is empty, so it only leaves a little room at the top.
+          !open && !atHome && !part && 'max-md:h-5',
+        )}
       >
         <form
           ref={form}

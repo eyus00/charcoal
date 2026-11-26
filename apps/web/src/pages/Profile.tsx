@@ -312,7 +312,17 @@ function YourShows() {
           ))}
         </Scroller>
       ) : (
-        <EmptyCard compact icon={CalendarDays} title="Nothing from your shows this week" body="New episodes and streaming days of what’s in your library show up here." />
+        <EmptyCard
+          compact
+          icon={CalendarDays}
+          title="Nothing from your shows this week"
+          body="New episodes and streaming days of what’s in your library show up here."
+          action={
+            <Link to="/calendar" className={btn({ variant: 'primary' })}>
+              Browse the calendar
+            </Link>
+          }
+        />
       )}
     </section>
   );
@@ -1124,7 +1134,7 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; o
 }
 
 /** The app's one empty state; with an icon, it offers a way to find something to watch. */
-function EmptyCard({ icon, title, body, compact }: { icon?: typeof Film; title: string; body?: string; compact?: boolean }) {
+function EmptyCard({ icon, title, body, compact, action }: { icon?: typeof Film; title: string; body?: string; compact?: boolean; action?: React.ReactNode }) {
   return (
     <Empty
       icon={icon}
@@ -1132,11 +1142,12 @@ function EmptyCard({ icon, title, body, compact }: { icon?: typeof Film; title: 
       body={body}
       compact={compact}
       action={
-        icon && !compact ? (
+        action ??
+        (icon && !compact ? (
           <Link to="/discover" className={btn({ variant: 'primary' })}>
             Browse titles
           </Link>
-        ) : undefined
+        ) : undefined)
       }
     />
   );
