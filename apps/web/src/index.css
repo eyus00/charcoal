@@ -208,27 +208,29 @@ video::cue {
     --row-k: 4.4;
   }
 }
-@container (min-width: 1200px) {
+/* Desktop: posters about as wide as the release / continue-watching cards are tall-ish, so a
+   row of posters doesn't tower over the rows of landscape cards around it. */
+@container (min-width: 1040px) {
   .row-item {
     --row-k: 5.4;
   }
 }
-@container (min-width: 1432px) {
+@container (min-width: 1150px) {
   .row-item {
     --row-k: 6.4;
   }
 }
-@container (min-width: 1664px) {
+@container (min-width: 1400px) {
   .row-item {
     --row-k: 7.4;
   }
 }
-@container (min-width: 1896px) {
+@container (min-width: 1650px) {
   .row-item {
     --row-k: 8.4;
   }
 }
-@container (min-width: 2128px) {
+@container (min-width: 1900px) {
   .row-item {
     --row-k: 9.4;
   }

@@ -127,14 +127,14 @@ export default function Profile() {
               <AnimeShelfRow title="Anime outside TMDB" show="history" bleed={false} />
             </div>
           </div>
+          <div id="your-shows" className={cx(PANEL, 'scroll-mt-4')}>
+            <YourShows />
+          </div>
           <div id="library" className={cx(PANEL, 'scroll-mt-4')}>
             <Watchlist />
             <div className="mt-10 empty:hidden">
               <AnimeShelfRow title="Anime outside TMDB" show="library" bleed={false} />
             </div>
-          </div>
-          <div id="your-shows" className={cx(PANEL, 'scroll-mt-4')}>
-            <YourShows />
           </div>
         </>
       ) : tab === 'activity' ? (
@@ -298,19 +298,7 @@ function YourShows() {
   const { ref, scroll } = useRowScroll();
   return (
     <section>
-      <SectionHeader
-        title="Your shows this week"
-        action={
-          yours.length ? (
-            <div className="flex items-center gap-3">
-              <Link to="/calendar?section=yours" className="text-sm text-muted transition-colors hover:text-white">
-                Calendar
-              </Link>
-              <RowArrows onScroll={scroll} />
-            </div>
-          ) : undefined
-        }
-      />
+      <SectionHeader title="Your shows this week" action={yours.length ? <RowArrows onScroll={scroll} /> : undefined} />
       {isPending ? (
         <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 4 }, (_, i) => (
