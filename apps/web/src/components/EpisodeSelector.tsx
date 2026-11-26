@@ -194,7 +194,8 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   // clicking a card always plays it.
   const sel = selected ?? null;
   const selEp = sel && sel.season === season ? data?.episodes.find((x) => x.episode_number === sel.episode) : undefined;
-  const selUnaired = !!selEp && isFuture(selEp.air_date);
+  // No air date yet counts as not out (TMDB lists announced episodes without one).
+  const selUnaired = !!selEp && (!selEp.air_date || isFuture(selEp.air_date));
   const resumeCta = resume?.season !== undefined ? { s: resume.season, e: resume.episode!, label: resume.isNext ? 'Play' : 'Resume' } : null;
   const cta =
     sel && !selUnaired
@@ -270,7 +271,7 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 {data.episodes.map((ep) => {
                   const h = progress.get(ep.episode_number);
                   const pct = percent(h);
-                  const upcoming = isFuture(ep.air_date);
+                  const upcoming = !ep.air_date || isFuture(ep.air_date);
                   const isCurrent = current?.season === season && current.episode === ep.episode_number;
                   const isSelected = sel?.season === season && sel.episode === ep.episode_number;
                   const watched = h?.progress && !h.isCompleted ? Math.max(1, Math.round(h.progress.watched / 60)) : 0;
@@ -424,26 +425,18 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
                 </button>
               </div>
             )}
-            {!current &&
-              (selUnaired && sel ? (
-                // The selected episode isn't out yet: nothing to play; say when, and offer the library.
-                <div className="ml-auto flex min-w-0 items-center gap-3">
-                  <span className="min-w-0 truncate text-sm text-muted">
-                    {epLabel(sel.season, sel.episode)} · {selEp?.air_date ? dateLabel(new Date(`${selEp.air_date}T00:00:00`).getTime()) : 'Date TBA'}
-                  </span>
-                  <LibraryButton item={{ id: show.id, mediaType: 'tv', title: titleOf(show), posterPath: show.poster_path, releaseDate: show.first_air_date, ratingScore: show.vote_average }} />
-                </div>
-              ) : (
-                <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
-                  <Play className="size-4 fill-current" strokeWidth={0} />
-                  {cta.label} {epLabel(cta.s, cta.e)}
-                  {!current && (
-                    <Kbd light className="ml-1">
-                      P
-                    </Kbd>
-                  )}
-                </Link>
-              ))}
+            {/* An episode not out yet has nothing to play: no button (its date is on its card, the ♥ in the header). */}
+            {!current && !(selUnaired && sel) && (
+              <Link to={href(cta.s, cta.e)} replace={replace} onClick={onPick} className={cx(btn({ variant: 'primary', size: 'lg' }), 'ml-auto')}>
+                <Play className="size-4 fill-current" strokeWidth={0} />
+                {cta.label} {epLabel(cta.s, cta.e)}
+                {!current && (
+                  <Kbd light className="ml-1">
+                    P
+                  </Kbd>
+                )}
+              </Link>
+            )}
           </div>
         </div>
       </div>

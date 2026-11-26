@@ -48,14 +48,14 @@ export function Synopsis({ text, title }: { text: string; title: string }) {
   );
 }
 
-/** No synopsis yet: blurred stand-in text with a short note (reads as "not available", not "loading"). */
-export function NoSynopsis({ n, upcoming }: { n: number; upcoming: boolean }) {
+/** No synopsis yet: blurred stand-in text with a short note (reads as "on its way", not "loading"). */
+export function NoSynopsis({ n }: { n: number; upcoming?: boolean }) {
   return (
     <div className="relative mt-1.5">
       <p aria-hidden className="text-caption leading-[1.4] text-muted blur-[3px] select-none">
         {FILLER[n % FILLER.length]}
       </p>
-      <span className="absolute inset-0 grid place-items-center text-caption text-white/70">{upcoming ? 'Coming soon' : 'No synopsis'}</span>
+      <span className="absolute inset-0 grid place-items-center text-caption text-white/70">Synopsis coming soon</span>
     </div>
   );
 }
