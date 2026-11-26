@@ -1,31 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
-import {
-  CARD_IMAGE,
-  CARD_INFO,
-  CARD_TITLE,
-  CornerArc,
-  Meta,
-  TypeIcon,
-} from "./MediaCard";
-import { fetchAnimeList, type AnimeCard } from "@charcoal/content";
-import { FORMAT_LABEL } from "../lib/anilist";
-import { webFetcher } from "../lib/content";
-import { imageUrl } from "../lib/images";
-import {
-  cleanList,
-  titleOf,
-  tmdb,
-  typeOf,
-  yearOf,
-  type MediaItem,
-  type MediaType,
-  type Page,
-} from "../lib/tmdb";
-import { cx } from "../lib/util";
-import Kbd from "./Kbd";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { ArrowRight } from 'lucide-react';
+import { CARD_IMAGE, CARD_INFO, CARD_TITLE, CornerArc, Meta, TypeIcon } from './MediaCard';
+import { fetchAnimeList, type AnimeCard } from '@charcoal/content';
+import { FORMAT_LABEL } from '../lib/anilist';
+import { webFetcher } from '../lib/content';
+import { imageUrl } from '../lib/images';
+import { cleanList, titleOf, tmdb, typeOf, yearOf, type MediaItem, type MediaType, type Page } from '../lib/tmdb';
+import { cx } from '../lib/util';
+import Kbd from './Kbd';
 
 /** One thing found, whichever catalogue it came from. */
 interface Found {
@@ -41,8 +25,7 @@ interface Found {
   overview?: string;
 }
 
-const norm = (s: string | undefined) =>
-  (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+const norm = (s: string | undefined) => (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 const LIMIT = 6;
 
 function fromTmdb(m: MediaItem): Found {
@@ -51,12 +34,12 @@ function fromTmdb(m: MediaItem): Found {
     key: type + m.id,
     to: `/${type}/${m.id}`,
     title: titleOf(m),
-    kind: type === "movie" ? "Movie" : "TV show",
+    kind: type === 'movie' ? 'Movie' : 'TV show',
     type,
     year: yearOf(m) || undefined,
     rating: m.vote_average || undefined,
-    poster: imageUrl(m.poster_path, "poster", 185),
-    backdrop: imageUrl(m.backdrop_path, "backdrop", 780),
+    poster: imageUrl(m.poster_path, 'poster', 185),
+    backdrop: imageUrl(m.backdrop_path, 'backdrop', 780),
     overview: m.overview || undefined,
   };
 }
@@ -64,8 +47,8 @@ const fromAniList = (a: AnimeCard): Found => ({
   key: `anilist${a.id}`,
   to: `/anime/title/${a.id}`,
   title: a.title,
-  kind: `Anime · ${a.format ? (FORMAT_LABEL[a.format] ?? a.format) : "Series"}`,
-  type: a.format === "MOVIE" ? "movie" : "tv",
+  kind: `Anime · ${a.format ? (FORMAT_LABEL[a.format] ?? a.format) : 'Series'}`,
+  type: a.format === 'MOVIE' ? 'movie' : 'tv',
   year: a.year ? String(a.year) : undefined,
   rating: a.score,
   poster: a.cover,
@@ -78,39 +61,18 @@ const fromAniList = (a: AnimeCard): Found => ({
  * have is shown once (TMDB's, which has the full title page), and AniList adds the ones TMDB
  * lacks. Arrow keys move through it, Enter opens the one marked (or the full results), Shift+Enter the top one.
  */
-export default function SearchPreview({
-  query,
-  onPick,
-  onAll,
-  onCount,
-}: {
-  query: string;
-  onPick: () => void;
-  onAll: () => void;
-  onCount?: (query: string, count: number) => void;
-}) {
+export default function SearchPreview({ query, onPick, onAll, onCount }: { query: string; onPick: () => void; onAll: () => void; onCount?: (query: string, count: number) => void }) {
   const navigate = useNavigate();
   const titles = useQuery({
-    queryKey: ["preview-titles", query],
-    queryFn: async ({ signal }) =>
-      cleanList(
-        (
-          await tmdb<Page<MediaItem>>(
-            "/search/multi",
-            { query, include_adult: "false" },
-            signal,
-          )
-        ).results,
-      ),
+    queryKey: ['preview-titles', query],
+    queryFn: async ({ signal }) => cleanList((await tmdb<Page<MediaItem>>('/search/multi', { query, include_adult: 'false' }, signal)).results),
     staleTime: 5 * 60_000,
     retry: false,
     placeholderData: keepPreviousData,
   });
   const anime = useQuery({
-    queryKey: ["preview-anime", query],
-    queryFn: async ({ signal }) =>
-      (await fetchAnimeList(webFetcher, { search: query, perPage: 8 }, signal))
-        .items,
+    queryKey: ['preview-anime', query],
+    queryFn: async ({ signal }) => (await fetchAnimeList(webFetcher, { search: query, perPage: 8 }, signal)).items,
     staleTime: 5 * 60_000,
     retry: false,
     placeholderData: keepPreviousData,
@@ -118,32 +80,15 @@ export default function SearchPreview({
 
   const found = useMemo(() => {
     const main = (titles.data ?? []).slice(0, 7);
-    const have = new Set(
-      main
-        .flatMap((m) => [
-          norm(titleOf(m)),
-          norm(m.original_title ?? m.original_name),
-        ])
-        .filter(Boolean),
-    );
-    const extra = (anime.data ?? []).filter(
-      (a) =>
-        !have.has(norm(a.title)) &&
-        !have.has(norm(a.romaji)) &&
-        !have.has(norm(a.native)),
-    );
+    const have = new Set(main.flatMap((m) => [norm(titleOf(m)), norm(m.original_title ?? m.original_name)]).filter(Boolean));
+    const extra = (anime.data ?? []).filter((a) => !have.has(norm(a.title)) && !have.has(norm(a.romaji)) && !have.has(norm(a.native)));
     return [...main.map(fromTmdb), ...extra.map(fromAniList)].slice(0, LIMIT);
   }, [titles.data, anime.data]);
   // The skeleton only before the very first answer; after that the last results stay while the next load.
   const loading = !found.length && (titles.isPending || anime.isPending);
-  const busy =
-    titles.isPlaceholderData || anime.isPlaceholderData || titles.isFetching;
+  const busy = titles.isPlaceholderData || anime.isPlaceholderData || titles.isFetching;
   // Tell the field whether there's anything (Enter with nothing found shakes instead of opening results).
-  const settled =
-    !titles.isPlaceholderData &&
-    !anime.isPlaceholderData &&
-    !titles.isPending &&
-    !anime.isPending;
+  const settled = !titles.isPlaceholderData && !anime.isPlaceholderData && !titles.isPending && !anime.isPending;
   useEffect(() => {
     if (settled) onCount?.(query, found.length);
   }, [settled, query, found.length, onCount]);
@@ -156,31 +101,25 @@ export default function SearchPreview({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const { found: list, marked: at } = state.current;
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         if (!list.length) return;
         e.preventDefault();
-        setMarked(
-          e.key === "ArrowDown"
-            ? (at + 1) % list.length
-            : at <= 0
-              ? list.length - 1
-              : at - 1,
-        );
-      } else if (e.key === "Enter" && e.shiftKey && list.length) {
+        setMarked(e.key === 'ArrowDown' ? (at + 1) % list.length : at <= 0 ? list.length - 1 : at - 1);
+      } else if (e.key === 'Enter' && e.shiftKey && list.length) {
         // Shift+Enter: straight to the marked result's page, or the top result's.
         e.preventDefault();
         e.stopPropagation();
         onPick();
         navigate(list[Math.max(0, at)].to);
-      } else if (e.key === "Enter" && at >= 0 && list[at]) {
+      } else if (e.key === 'Enter' && at >= 0 && list[at]) {
         e.preventDefault();
         e.stopPropagation();
         onPick();
         navigate(list[at].to);
       }
     };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
   }, [navigate, onPick]);
 
   const [top, ...rest] = found;
@@ -197,27 +136,15 @@ export default function SearchPreview({
       {loading ? (
         <PreviewSkeleton />
       ) : !top ? (
-        <p className="px-3 py-6 text-center text-sm text-muted">
-          No matches for “{query}”
-        </p>
+        <p className="px-3 py-6 text-center text-sm text-muted">No matches for “{query}”</p>
       ) : (
         // While the next search loads, these results stay (dimmed a touch) instead of flashing.
-        <div
-          className={cx(
-            "transition-opacity duration-150",
-            busy && "opacity-70",
-          )}
-        >
+        <div className={cx('transition-opacity duration-150', busy && 'opacity-70')}>
           <TopResult f={top} marked={marked === 0} onPick={onPick} />
           {rest.length > 0 && (
             <div className="mt-3 grid grid-cols-3 gap-x-2.5 gap-y-3 px-0.5 sm:grid-cols-5">
               {rest.map((f, i) => (
-                <ResultCard
-                  key={f.key}
-                  f={f}
-                  marked={marked === i + 1}
-                  onPick={onPick}
-                />
+                <ResultCard key={f.key} f={f} marked={marked === i + 1} onPick={onPick} />
               ))}
             </div>
           )}
@@ -229,8 +156,7 @@ export default function SearchPreview({
           onClick={onAll}
           className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm text-muted transition-colors hover:bg-white/[0.06] hover:text-white"
         >
-          All results for “{query}”{" "}
-          <ArrowRight className="size-4" strokeWidth={1.5} />
+          All results for “{query}” <ArrowRight className="size-4" strokeWidth={1.5} />
           <Kbd className="ml-1">Enter</Kbd>
         </button>
       )}
@@ -239,15 +165,7 @@ export default function SearchPreview({
 }
 
 /** The best match, like the hover preview: its banner, the title over it, the facts and a line of story. */
-function TopResult({
-  f,
-  marked,
-  onPick,
-}: {
-  f: Found;
-  marked: boolean;
-  onPick: () => void;
-}) {
+function TopResult({ f, marked, onPick }: { f: Found; marked: boolean; onPick: () => void }) {
   return (
     <Link
       to={f.to}
@@ -255,19 +173,11 @@ function TopResult({
       role="option"
       aria-selected={marked}
       data-result={f.key}
-      className={cx(
-        "group relative block overflow-hidden rounded-2xl bg-surface ring-1 transition",
-        marked ? "ring-white/40" : "ring-white/[0.06] hover:ring-white/15",
-      )}
+      className={cx('group relative block overflow-hidden rounded-2xl bg-surface ring-1 transition', marked ? 'ring-white/40' : 'ring-white/[0.06] hover:ring-white/15')}
     >
       <span className="relative block aspect-[16/5] overflow-hidden">
         {f.backdrop || f.poster ? (
-          <img
-            src={f.backdrop ?? f.poster}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="size-full object-cover object-[70%_25%] transition duration-200 group-hover:brightness-110"
-          />
+          <img src={f.backdrop ?? f.poster} alt="" referrerPolicy="no-referrer" className="size-full object-cover object-[70%_25%] transition duration-200 group-hover:brightness-110" />
         ) : (
           <span className="skeleton block size-full" />
         )}
@@ -278,70 +188,24 @@ function TopResult({
         Open <Kbd className="bg-white/10 ring-0">⇧ Enter</Kbd>
       </span>
       <span className="relative -mt-9 block px-3.5 pb-3.5">
-        <span className="block truncate text-lg leading-tight font-semibold tracking-tight">
-          {f.title}
-        </span>
-        <Meta
-          year={f.year}
-          rating={f.rating}
-          className="mt-1.5"
-          extra={<TypeIcon type={f.type} />}
-        />
-        {f.overview && (
-          <span className="mt-1.5 line-clamp-2 block text-caption text-pretty text-white/70">
-            {f.overview}
-          </span>
-        )}
+        <span className="block truncate text-lg leading-tight font-semibold tracking-tight">{f.title}</span>
+        <Meta year={f.year} rating={f.rating} className="mt-1.5" extra={<TypeIcon type={f.type} />} />
+        {f.overview && <span className="mt-1.5 line-clamp-2 block text-caption text-pretty text-white/70">{f.overview}</span>}
       </span>
     </Link>
   );
 }
 
 /** Every other match as the app's poster card: poster, title, then year · rating with the type icon. */
-function ResultCard({
-  f,
-  marked,
-  onPick,
-}: {
-  f: Found;
-  marked: boolean;
-  onPick: () => void;
-}) {
+function ResultCard({ f, marked, onPick }: { f: Found; marked: boolean; onPick: () => void }) {
   return (
-    <Link
-      to={f.to}
-      onClick={onPick}
-      role="option"
-      aria-selected={marked}
-      data-result={f.key}
-      className="group relative block"
-    >
-      <span
-        className={cx(
-          CARD_IMAGE,
-          "block aspect-[2/3] bg-surface",
-          marked && "ring-2 ring-white/70",
-        )}
-      >
-        {f.poster && (
-          <img
-            src={f.poster}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            className="size-full object-cover"
-          />
-        )}
+    <Link to={f.to} onClick={onPick} role="option" aria-selected={marked} data-result={f.key} className="group relative block">
+      <span className={cx(CARD_IMAGE, 'block aspect-[2/3] bg-surface', marked && 'ring-2 ring-white/70')}>
+        {f.poster && <img src={f.poster} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="size-full object-cover" />}
       </span>
-      <span className={cx(CARD_INFO, "block")}>
-        <span className={cx(CARD_TITLE, "block")}>{f.title}</span>
-        <Meta
-          year={f.year}
-          rating={f.rating}
-          className="mt-0.5"
-          extra={<TypeIcon type={f.type} />}
-        />
+      <span className={cx(CARD_INFO, 'block')}>
+        <span className={cx(CARD_TITLE, 'block')}>{f.title}</span>
+        <Meta year={f.year} rating={f.rating} className="mt-0.5" extra={<TypeIcon type={f.type} />} />
         <CornerArc />
       </span>
     </Link>

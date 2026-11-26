@@ -1,10 +1,8 @@
-import type { MediaType } from "./tmdb";
-import { getState } from "./store";
+import type { MediaType } from './tmdb';
+import { getState } from './store';
 
 /** Charcoal's own server (Jelly). People can run their own and set it in Settings. */
-export const HOSTED_SERVER = (
-  import.meta.env.VITE_JELLY_URL || "https://jelly.up.railway.app"
-).replace(/\/+$/, "");
+export const HOSTED_SERVER = (import.meta.env.VITE_JELLY_URL || 'https://jelly.up.railway.app').replace(/\/+$/, '');
 /** The server in use: the viewer's own if set, else the hosted one. */
 export const serverBase = () => getState().settings.serverUrl || HOSTED_SERVER;
 
@@ -12,7 +10,7 @@ export const serverBase = () => getState().settings.serverUrl || HOSTED_SERVER;
 
 export interface JellySource {
   url: string;
-  type: "hls" | "mp4" | "mkv" | string;
+  type: 'hls' | 'mp4' | 'mkv' | string;
   quality: string;
   audioTracks?: { language: string; label: string }[];
   provider: { id: string; name: string };
@@ -23,7 +21,7 @@ export interface JellySource {
   /** Loaded straight from the host through the bridge (Charcoal Helper or the app), not through a relay. */
   bridged?: boolean;
   /** How it reaches the player: from its origin, through the bridge, or through the server's relay. */
-  delivery?: "direct" | "headers" | "relay" | "frame";
+  delivery?: 'direct' | 'headers' | 'relay' | 'frame';
   /** Epoch ms after which its link must be fetched again. */
   expiresAt?: number;
   /** Short file description (e.g. "BluRay · x265 · 1.4 GB"). */
@@ -33,22 +31,9 @@ export interface JellySource {
   /** Adaptive streams built from several qualities: each one and its size. */
   levels?: { quality: string; size?: number }[];
   /** What happened when the resolver tried the stream itself, when it did. */
-  verification?: {
-    state: "verified" | "failed" | "unchecked";
-    level?: string;
-    code?: string;
-    message?: string;
-    /** Read from its playlist: its top picture height and declared audio languages. */ maxHeight?: number;
-    audioLanguages?: string[];
-  };
+  verification?: { state: 'verified' | 'failed' | 'unchecked'; level?: string; code?: string; message?: string; /** Read from its playlist: its top picture height and declared audio languages. */ maxHeight?: number; audioLanguages?: string[] };
 }
-export interface JellySubtitle {
-  url: string;
-  format: "vtt" | "srt" | string;
-  label: string;
-  headers?: Record<string, string>;
-  /** Fetched through the bridge. */ bridged?: boolean;
-}
+export interface JellySubtitle { url: string; format: 'vtt' | 'srt' | string; label: string; headers?: Record<string, string>; /** Fetched through the bridge. */ bridged?: boolean }
 export interface JellyResponse {
   responseId: string;
   expiresAt: string;
@@ -65,122 +50,76 @@ export interface ProviderReport {
   /** Shown folded under one row with this name (e.g. the StreamViva fallback sources). */
   group?: string;
   /** Where it ran: in this browser (through the bridge) or on a server. */
-  where?: "local" | "remote";
+  where?: 'local' | 'remote';
   /** The classified failure, when it failed (see @charcoal/provider-sdk FailureCode). */
   code?: string;
   /** It found a stream, but one this device can't play (`reason` says why): listed greyed in the player's Source menu. */
   unplayable?: boolean;
 }
 
-export interface Target {
-  type: MediaType;
-  id: number;
-  season?: number;
-  episode?: number;
-}
+export interface Target { type: MediaType; id: number; season?: number; episode?: number }
 
 const JELLY_TIMEOUT_MS = 45_000;
 
 /** Where a response came from: the viewer's own server, or the hosted one (also as a fallback). */
 export type JellyResult = JellyResponse & {
   /** extension: found and played from this browser through Charcoal Helper (no server involved). */
-  via: "extension" | "own" | "hosted";
+  via: 'extension' | 'own' | 'hosted';
   ownError?: string;
   report?: ProviderReport[];
 };
 
 /** Sources for a title: from the viewer's own server if set, falling back to the hosted one. */
-export async function fetchJelly(
-  t: Target,
-  signal: AbortSignal,
-): Promise<JellyResult> {
+export async function fetchJelly(t: Target, signal: AbortSignal): Promise<JellyResult> {
   const own = getState().settings.serverUrl;
   let ownError: string | undefined;
   if (own) {
     try {
-      return { ...(await fetchFrom(own, t, signal)), via: "own" };
+      return { ...(await fetchFrom(own, t, signal)), via: 'own' };
     } catch (e) {
       if (signal.aborted) throw e;
       ownError = (e as Error).message;
-      console.warn(
-        "[server] own server failed, using the hosted one:",
-        ownError,
-      );
+      console.warn('[server] own server failed, using the hosted one:', ownError);
     }
   }
-  return {
-    ...(await fetchFrom(HOSTED_SERVER, t, signal)),
-    via: "hosted",
-    ownError,
-  };
+  return { ...(await fetchFrom(HOSTED_SERVER, t, signal)), via: 'hosted', ownError };
 }
 
-async function fetchFrom(
-  base: string,
-  t: Target,
-  signal: AbortSignal,
-): Promise<JellyResponse & { report: ProviderReport[] }> {
+async function fetchFrom(base: string, t: Target, signal: AbortSignal): Promise<JellyResponse & { report: ProviderReport[] }> {
   const path =
-    t.type === "movie"
-      ? `/v1/movies/${t.id}`
-      : `/v1/tv/${t.id}/seasons/${t.season}/episodes/${t.episode}`;
+    t.type === 'movie' ? `/v1/movies/${t.id}` : `/v1/tv/${t.id}/seasons/${t.season}/episodes/${t.episode}`;
 
   // Abort on unmount/episode change (signal) OR after the timeout.
   const ctrl = new AbortController();
-  const timer = setTimeout(
-    () => ctrl.abort(new DOMException("timeout", "TimeoutError")),
-    JELLY_TIMEOUT_MS,
-  );
+  const timer = setTimeout(() => ctrl.abort(new DOMException('timeout', 'TimeoutError')), JELLY_TIMEOUT_MS);
   const onAbort = () => ctrl.abort(signal.reason);
-  signal.addEventListener("abort", onAbort);
+  signal.addEventListener('abort', onAbort);
   try {
     const res = await fetch(base + path, { signal: ctrl.signal });
     const body = await res.json().catch(() => null);
-    if (!res.ok)
-      throw new Error(
-        body?.error?.message || `The server returned ${res.status}`,
-      );
+    if (!res.ok) throw new Error(body?.error?.message || `The server returned ${res.status}`);
     const data = body as JellyResponse;
     const sources = (data.sources ?? []).filter((s) => s?.url);
-    if (!sources.length) throw new Error("No sources found for this title");
-    return {
-      ...data,
-      sources: sortSources(sources),
-      subtitles: data.subtitles ?? [],
-      report: reportFrom(sources, data.diagnostics),
-    };
+    if (!sources.length) throw new Error('No sources found for this title');
+    return { ...data, sources: sortSources(sources), subtitles: data.subtitles ?? [], report: reportFrom(sources, data.diagnostics) };
   } catch (e) {
-    if (ctrl.signal.aborted && !signal.aborted)
-      throw new Error("The server took too long to respond");
-    if (e instanceof TypeError) throw new Error("Couldn’t reach the server");
+    if (ctrl.signal.aborted && !signal.aborted) throw new Error('The server took too long to respond');
+    if (e instanceof TypeError) throw new Error('Couldn’t reach the server');
     throw e;
   } finally {
     clearTimeout(timer);
-    signal.removeEventListener("abort", onAbort);
+    signal.removeEventListener('abort', onAbort);
   }
 }
 
 /** Turns the server's diagnostics ("Name: reason", "Provider 'Name' failed: reason") into a report. */
-function reportFrom(
-  sources: JellySource[],
-  diagnostics: JellyResponse["diagnostics"] = [],
-): ProviderReport[] {
-  const ok = [...new Set(sources.map((s) => s.provider.name))].map((name) => ({
-    name,
-    ok: true,
-  }));
+function reportFrom(sources: JellySource[], diagnostics: JellyResponse['diagnostics'] = []): ProviderReport[] {
+  const ok = [...new Set(sources.map((s) => s.provider.name))].map((name) => ({ name, ok: true }));
   const failed: ProviderReport[] = [];
   for (const d of diagnostics) {
-    const m = d.message ?? "";
-    const hit =
-      m.match(/^Provider '([^']+)' failed: (.*)$/) ??
-      m.match(/^([A-Za-z0-9 ]{2,30}): (.*)$/);
-    if (
-      hit &&
-      !ok.some((o) => o.name === hit[1]) &&
-      !failed.some((f) => f.name === hit[1])
-    )
-      failed.push({ name: hit[1], ok: false, reason: hit[2] });
+    const m = d.message ?? '';
+    const hit = m.match(/^Provider '([^']+)' failed: (.*)$/) ?? m.match(/^([A-Za-z0-9 ]{2,30}): (.*)$/);
+    if (hit && !ok.some((o) => o.name === hit[1]) && !failed.some((f) => f.name === hit[1])) failed.push({ name: hit[1], ok: false, reason: hit[2] });
   }
   return [...ok, ...failed];
 }
@@ -190,86 +129,62 @@ function reportFrom(
 /** Cleans up a pasted server address: origin + path, no trailing slash or /v1…; '' if invalid. */
 export function normalizeServer(input: string): string {
   const raw = input.trim();
-  if (!raw) return "";
+  if (!raw) return '';
   try {
     const u = new URL(/^https?:\/\//i.test(raw) ? raw : `http://${raw}`);
-    if (u.protocol !== "https:" && u.protocol !== "http:") return "";
-    return (u.origin + u.pathname)
-      .replace(/\/+$/, "")
-      .replace(/\/v1(\/.*)?$/, "");
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+    return (u.origin + u.pathname).replace(/\/+$/, '').replace(/\/v1(\/.*)?$/, '');
   } catch {
-    return "";
+    return '';
   }
 }
 
-const isLocal = (u: URL) =>
-  ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname) ||
-  u.hostname.endsWith(".localhost");
+const isLocal = (u: URL) => ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname) || u.hostname.endsWith('.localhost');
 
 /** Checks that an address is a reachable Charcoal server (its /v1/health). */
-export async function checkServer(
-  base: string,
-): Promise<{ ok: true; providers: string } | { ok: false; error: string }> {
+export async function checkServer(base: string): Promise<{ ok: true; providers: string } | { ok: false; error: string }> {
   const u = new URL(base);
   // An https site may not load from a plain-http server, except one on this computer.
-  if (location.protocol === "https:" && u.protocol === "http:" && !isLocal(u)) {
-    return {
-      ok: false,
-      error:
-        "this site is https, so the server must be too (http only works for localhost). See the self-hosting guide for HTTPS on a VPS",
-    };
+  if (location.protocol === 'https:' && u.protocol === 'http:' && !isLocal(u)) {
+    return { ok: false, error: 'this site is https, so the server must be too (http only works for localhost). See the self-hosting guide for HTTPS on a VPS' };
   }
   try {
-    const res = await fetch(`${base}/v1/health`, {
-      signal: AbortSignal.timeout?.(8000),
-    });
-    if (!res.ok)
-      return { ok: false, error: `it answered with error ${res.status}` };
+    const res = await fetch(`${base}/v1/health`, { signal: AbortSignal.timeout?.(8000) });
+    if (!res.ok) return { ok: false, error: `it answered with error ${res.status}` };
     const body = await res.json().catch(() => null);
-    if (body?.status !== "operational" || !body?.endpoints?.proxy)
-      return { ok: false, error: "that address isn’t a Charcoal server" };
-    const count = String(body.note ?? "").match(/(\d+) provider/)?.[1];
-    return { ok: true, providers: count ? `${count} sources` : "running" };
+    if (body?.status !== 'operational' || !body?.endpoints?.proxy) return { ok: false, error: 'that address isn’t a Charcoal server' };
+    const count = String(body.note ?? '').match(/(\d+) provider/)?.[1];
+    return { ok: true, providers: count ? `${count} sources` : 'running' };
   } catch {
     return {
       ok: false,
       error: isLocal(u)
-        ? "couldn’t reach it. Is the server running? Your browser may also ask to allow access to devices on your network"
-        : "couldn’t reach it. Check the address and that the server is running",
+        ? 'couldn’t reach it. Is the server running? Your browser may also ask to allow access to devices on your network'
+        : 'couldn’t reach it. Check the address and that the server is running',
     };
   }
 }
 
 export function qualityLabel(q: string): string {
-  const s = (q || "").toLowerCase();
-  if (/2160|4k/.test(s)) return "4K";
-  if (/1440|2k/.test(s)) return "1440p";
-  if (/1080/.test(s)) return "1080p";
-  if (/720/.test(s)) return "720p";
-  if (/480/.test(s)) return "480p";
-  if (/360/.test(s)) return "360p";
-  if (/orig/.test(s)) return "Original";
-  if (/hd|auto|adaptive/.test(s)) return "Auto";
-  const n = s.replace(/\D/g, "");
-  return n ? `${n}p` : "SD";
+  const s = (q || '').toLowerCase();
+  if (/2160|4k/.test(s)) return '4K';
+  if (/1440|2k/.test(s)) return '1440p';
+  if (/1080/.test(s)) return '1080p';
+  if (/720/.test(s)) return '720p';
+  if (/480/.test(s)) return '480p';
+  if (/360/.test(s)) return '360p';
+  if (/orig/.test(s)) return 'Original';
+  if (/hd|auto|adaptive/.test(s)) return 'Auto';
+  const n = s.replace(/\D/g, '');
+  return n ? `${n}p` : 'SD';
 }
 
-const RANK: Record<string, number> = {
-  "4K": 0,
-  "1440p": 1,
-  "1080p": 2,
-  Auto: 3,
-  "720p": 4,
-  Original: 5,
-  "480p": 6,
-  "360p": 7,
-  SD: 8,
-};
+const RANK: Record<string, number> = { '4K': 0, '1440p': 1, '1080p': 2, Auto: 3, '720p': 4, Original: 5, '480p': 6, '360p': 7, SD: 8 };
 
 /** Display name of a language code ("en" → "English"). */
 export const languageName = (code: string) => {
   try {
-    return new Intl.DisplayNames(["en"], { type: "language" }).of(code) ?? code;
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code;
   } catch {
     return code;
   }
@@ -277,23 +192,11 @@ export const languageName = (code: string) => {
 
 /** 0 = the preferred language, or original / unknown (most sources don't say); 1 = another
  *  language (a dub), which goes last. Within 0, quality decides. */
-export function languageRank(
-  audio: { language: string; label: string }[] | undefined,
-  pref: string,
-): number {
+export function languageRank(audio: { language: string; label: string }[] | undefined, pref: string): number {
   const a = audio?.[0];
-  if (
-    !a ||
-    /^(und|original)$/i.test(a.language) ||
-    /^(original|unknown)$/i.test(a.label)
-  )
-    return 0;
+  if (!a || /^(und|original)$/i.test(a.language) || /^(original|unknown)$/i.test(a.label)) return 0;
   const code = a.language.toLowerCase().slice(0, 2);
-  if (
-    code === pref ||
-    a.label.toLowerCase() === languageName(pref).toLowerCase()
-  )
-    return 0;
+  if (code === pref || a.label.toLowerCase() === languageName(pref).toLowerCase()) return 0;
   return 1;
 }
 
@@ -301,18 +204,16 @@ export function languageRank(
  *  language, then quality: 4K, 1440p, 1080p, adaptive, 720p, original files…; bigger files first
  *  within a quality; MKV last (most browsers can't play it). */
 /** Providers in order of preference: originals first, the dubbed 720p catalogue last. */
-const PROVIDER_ORDER = ["febbox", "sv-lookmovie", "vixsrc"];
-const LAST_PROVIDERS = ["castle"];
+const PROVIDER_ORDER = ['febbox', 'sv-lookmovie', 'vixsrc'];
+const LAST_PROVIDERS = ['castle'];
 const providerRank = (id: string) => {
   const i = PROVIDER_ORDER.indexOf(id);
   if (i >= 0) return i;
-  return LAST_PROVIDERS.includes(id)
-    ? PROVIDER_ORDER.length + 1
-    : PROVIDER_ORDER.length;
+  return LAST_PROVIDERS.includes(id) ? PROVIDER_ORDER.length + 1 : PROVIDER_ORDER.length;
 };
 
 export function sortSources(list: JellySource[]): JellySource[] {
-  const typeRank = (t: string) => (t === "hls" ? 0 : t === "mp4" ? 1 : 2);
+  const typeRank = (t: string) => (t === 'hls' ? 0 : t === 'mp4' ? 1 : 2);
   const pref = getState().settings.audioLang;
   return [...list].sort(
     (a, b) =>
@@ -320,8 +221,7 @@ export function sortSources(list: JellySource[]): JellySource[] {
       providerRank(a.provider.id) - providerRank(b.provider.id) ||
       languageRank(a.audioTracks, pref) - languageRank(b.audioTracks, pref) ||
       typeRank(a.type) - typeRank(b.type) ||
-      (RANK[qualityLabel(a.quality)] ?? 8) -
-        (RANK[qualityLabel(b.quality)] ?? 8) ||
+      (RANK[qualityLabel(a.quality)] ?? 8) - (RANK[qualityLabel(b.quality)] ?? 8) ||
       // Same quality: the bigger file has the higher bitrate.
       (b.size ?? 0) - (a.size ?? 0),
   );
@@ -330,7 +230,7 @@ export function sortSources(list: JellySource[]): JellySource[] {
 export interface ProviderHealth {
   id: string;
   name: string;
-  status: "ok" | "failing" | "benched" | "unknown";
+  status: 'ok' | 'failing' | 'benched' | 'unknown';
   success: number;
   empty: number;
   failure: number;
@@ -340,9 +240,7 @@ export interface ProviderHealth {
 }
 
 /** Jelly's provider health table (GET /v1/providers/health); null if Jelly is older or down. */
-export async function fetchProviderHealth(
-  signal?: AbortSignal,
-): Promise<ProviderHealth[] | null> {
+export async function fetchProviderHealth(signal?: AbortSignal): Promise<ProviderHealth[] | null> {
   const res = await fetch(`${serverBase()}/v1/providers/health`, { signal });
   if (!res.ok) return null;
   const body = await res.json().catch(() => null);
@@ -359,86 +257,68 @@ export interface EmbedServer {
   url: (t: Target, resumeAt?: number) => string;
 }
 
-const ACCENT = "ffffff";
+const ACCENT = 'ffffff';
 const sec = (n?: number) => (n && n > 5 ? Math.floor(n) : 0);
 
 // The first entry is the default embed (also the fallback when Jelly finds nothing).
 export const EMBEDS: EmbedServer[] = [
   {
-    id: "vidlink.pro",
-    name: "VidLink",
+    id: 'vidlink.pro',
+    name: 'VidLink',
     tracksProgress: true,
     url: (t, r) => {
-      const q = `?primaryColor=${ACCENT}&poster=true&autoplay=true${sec(r) ? `&startAt=${sec(r)}` : ""}`;
-      return t.type === "movie"
+      const q = `?primaryColor=${ACCENT}&poster=true&autoplay=true${sec(r) ? `&startAt=${sec(r)}` : ''}`;
+      return t.type === 'movie'
         ? `https://vidlink.pro/movie/${t.id}${q}`
         : `https://vidlink.pro/tv/${t.id}/${t.season}/${t.episode}${q}`;
     },
   },
   {
-    id: "videasy.net",
-    name: "Videasy",
+    id: 'videasy.net',
+    name: 'Videasy',
     tracksProgress: true,
     url: (t, r) =>
-      t.type === "movie"
-        ? `https://player.videasy.net/movie/${t.id}?color=${ACCENT}&autoplay=true${sec(r) ? `&progress=${sec(r)}` : ""}`
-        : `https://player.videasy.net/tv/${t.id}/${t.season}/${t.episode}?color=${ACCENT}&nextEpisode=true&episodeSelector=false&autoplayNextEpisode=false${sec(r) ? `&progress=${sec(r)}` : ""}`,
+      t.type === 'movie'
+        ? `https://player.videasy.net/movie/${t.id}?color=${ACCENT}&autoplay=true${sec(r) ? `&progress=${sec(r)}` : ''}`
+        : `https://player.videasy.net/tv/${t.id}/${t.season}/${t.episode}?color=${ACCENT}&nextEpisode=true&episodeSelector=false&autoplayNextEpisode=false${sec(r) ? `&progress=${sec(r)}` : ''}`,
   },
   {
-    id: "vidsrc.pro",
-    name: "VidSrc Pro",
-    url: (t) =>
-      t.type === "movie"
-        ? `https://vidsrc.pro/embed/movie/${t.id}`
-        : `https://vidsrc.pro/embed/tv/${t.id}/${t.season}/${t.episode}`,
+    id: 'vidsrc.pro',
+    name: 'VidSrc Pro',
+    url: (t) => (t.type === 'movie' ? `https://vidsrc.pro/embed/movie/${t.id}` : `https://vidsrc.pro/embed/tv/${t.id}/${t.season}/${t.episode}`),
   },
   {
-    id: "vidsrc.to",
-    name: "VidSrc.to",
-    url: (t) =>
-      t.type === "movie"
-        ? `https://vidsrc.to/embed/movie/${t.id}`
-        : `https://vidsrc.to/embed/tv/${t.id}/${t.season}/${t.episode}`,
+    id: 'vidsrc.to',
+    name: 'VidSrc.to',
+    url: (t) => (t.type === 'movie' ? `https://vidsrc.to/embed/movie/${t.id}` : `https://vidsrc.to/embed/tv/${t.id}/${t.season}/${t.episode}`),
   },
   {
-    id: "moviesapi.club",
-    name: "Movies Club",
-    url: (t) =>
-      t.type === "movie"
-        ? `https://moviesapi.club/movie/${t.id}`
-        : `https://moviesapi.club/tv/${t.id}-${t.season}-${t.episode}`,
+    id: 'moviesapi.club',
+    name: 'Movies Club',
+    url: (t) => (t.type === 'movie' ? `https://moviesapi.club/movie/${t.id}` : `https://moviesapi.club/tv/${t.id}-${t.season}-${t.episode}`),
   },
   {
-    id: "vidsrc.cc",
-    name: "VidSrc.cc",
-    url: (t) =>
-      t.type === "movie"
-        ? `https://vidsrc.cc/v2/embed/movie/${t.id}`
-        : `https://vidsrc.cc/v2/embed/tv/${t.id}/${t.season}/${t.episode}`,
+    id: 'vidsrc.cc',
+    name: 'VidSrc.cc',
+    url: (t) => (t.type === 'movie' ? `https://vidsrc.cc/v2/embed/movie/${t.id}` : `https://vidsrc.cc/v2/embed/tv/${t.id}/${t.season}/${t.episode}`),
   },
   {
-    id: "superembed",
-    name: "SuperEmbed",
+    id: 'superembed',
+    name: 'SuperEmbed',
     url: (t) =>
-      t.type === "movie"
+      t.type === 'movie'
         ? `https://multiembed.mov/?tmdb=1&video_id=${t.id}`
         : `https://multiembed.mov/?tmdb=1&video_id=${t.id}&s=${t.season}&e=${t.episode}`,
   },
   {
-    id: "vidsrc.dev",
-    name: "VidBinge",
-    url: (t) =>
-      t.type === "movie"
-        ? `https://vidsrc.dev/embed/movie/${t.id}`
-        : `https://vidsrc.dev/embed/tv/${t.id}/${t.season}/${t.episode}`,
+    id: 'vidsrc.dev',
+    name: 'VidBinge',
+    url: (t) => (t.type === 'movie' ? `https://vidsrc.dev/embed/movie/${t.id}` : `https://vidsrc.dev/embed/tv/${t.id}/${t.season}/${t.episode}`),
   },
   {
-    id: "vidsrc.vip",
-    name: "VidSrc VIP",
-    url: (t) =>
-      t.type === "movie"
-        ? `https://vidsrc.vip/embed/movie/${t.id}`
-        : `https://vidsrc.vip/embed/tv/${t.id}/${t.season}/${t.episode}`,
+    id: 'vidsrc.vip',
+    name: 'VidSrc VIP',
+    url: (t) => (t.type === 'movie' ? `https://vidsrc.vip/embed/movie/${t.id}` : `https://vidsrc.vip/embed/tv/${t.id}/${t.season}/${t.episode}`),
   },
 ];
 
@@ -446,8 +326,6 @@ export const embedById = (id: string) => EMBEDS.find((e) => e.id === id);
 
 /** "6100000000" → "6.1 GB". */
 export function formatSize(bytes?: number): string {
-  if (!bytes) return "";
-  return bytes >= 1e9
-    ? `${(bytes / 1e9).toFixed(bytes >= 1e10 ? 0 : 1)} GB`
-    : `${Math.round(bytes / 1e6)} MB`;
+  if (!bytes) return '';
+  return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(bytes >= 1e10 ? 0 : 1)} GB` : `${Math.round(bytes / 1e6)} MB`;
 }

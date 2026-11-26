@@ -1,46 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, Keyboard, ShieldAlert, X } from "lucide-react";
-import Modal from "../components/Modal";
-import EpisodeSelector from "../components/EpisodeSelector";
-import {
-  allSeasons,
-  epLabel,
-  neighbors,
-  regularSeasons,
-  resolveEpisode,
-} from "../lib/episodes";
-import { imageUrl } from "../lib/images";
-import { toast } from "../components/Toast";
-import { useSources } from "../lib/resolver";
-import { looksLikeAnime, useAnime } from "../lib/anime";
-import { EMBEDS, embedById, type Target } from "../lib/servers";
-import {
-  actions,
-  findProgress,
-  getState,
-  resumeTarget,
-  useStore,
-} from "../lib/store";
-import { HttpError, q, titleOf, type MediaType } from "../lib/tmdb";
-import { cx, useDismiss, useKeys, useTitle } from "../lib/util";
-import { hotkeysCtl } from "../components/Hotkeys";
-import Kbd from "../components/Kbd";
-import { btn } from "../components/Button";
-import EmbedPlayer from "../player/EmbedPlayer";
-import Player, { TitleInfo, usePlayerSources } from "../player/Player";
-import MiniEpisodes from "../player/MiniEpisodes";
-import { Tip } from "../components/Tip";
-import SetupGuide, { shouldOfferSetup } from "../components/SetupGuide";
-import { checkFebboxToken } from "@charcoal/providers";
-import { adoptFebboxToken, extensionFetcher } from "../lib/extension";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { Check, ChevronDown, Keyboard, ShieldAlert, X } from 'lucide-react';
+import Modal from '../components/Modal';
+import EpisodeSelector from '../components/EpisodeSelector';
+import { allSeasons, epLabel, neighbors, regularSeasons, resolveEpisode } from '../lib/episodes';
+import { imageUrl } from '../lib/images';
+import { toast } from '../components/Toast';
+import { useSources } from '../lib/resolver';
+import { looksLikeAnime, useAnime } from '../lib/anime';
+import { EMBEDS, embedById, type Target } from '../lib/servers';
+import { actions, findProgress, getState, resumeTarget, useStore } from '../lib/store';
+import { HttpError, q, titleOf, type MediaType } from '../lib/tmdb';
+import { cx, useDismiss, useKeys, useTitle } from '../lib/util';
+import { hotkeysCtl } from '../components/Hotkeys';
+import Kbd from '../components/Kbd';
+import { btn } from '../components/Button';
+import EmbedPlayer from '../player/EmbedPlayer';
+import Player, { TitleInfo, usePlayerSources } from '../player/Player';
+import MiniEpisodes from '../player/MiniEpisodes';
+import { Tip } from '../components/Tip';
+import SetupGuide, { shouldOfferSetup } from '../components/SetupGuide';
+import { checkFebboxToken } from '@charcoal/providers';
+import { adoptFebboxToken, extensionFetcher } from '../lib/extension';
 
 /** Searches for one title before Jelly gives way to an embed server. */
 const MAX_SEARCHES = 3;
@@ -51,74 +33,39 @@ export default function Watch() {
   const navigate = useNavigate();
   const type = params.type as MediaType;
   const id = Number(params.id);
-  const valid =
-    (type === "movie" || type === "tv") && Number.isInteger(id) && id > 0;
+  const valid = (type === 'movie' || type === 'tv') && Number.isInteger(id) && id > 0;
   const details = useQuery({ ...q.details(type, id), enabled: valid });
   const d = details.data;
 
-  const rawS = sp.get("season");
-  const rawE = sp.get("episode");
+  const rawS = sp.get('season');
+  const rawE = sp.get('episode');
   const season = rawS === null ? undefined : Number(rawS);
   const episode = rawE === null ? undefined : Number(rawE);
 
   // TV without (valid) season/episode: go to the resume point / first episode.
   const fix = useMemo(() => {
-    if (type !== "tv" || !d) return null;
-    if (
-      season === undefined ||
-      episode === undefined ||
-      Number.isNaN(season) ||
-      Number.isNaN(episode)
-    ) {
-      const r = resumeTarget(getState().history, "tv", id);
-      const first =
-        regularSeasons(d)[0]?.season_number ?? allSeasons(d)[0]?.season_number;
-      if (r?.season !== undefined)
-        return { season: r.season, episode: r.episode! };
-      return first !== undefined ? { season: first, episode: 1 } : "invalid";
+    if (type !== 'tv' || !d) return null;
+    if (season === undefined || episode === undefined || Number.isNaN(season) || Number.isNaN(episode)) {
+      const r = resumeTarget(getState().history, 'tv', id);
+      const first = regularSeasons(d)[0]?.season_number ?? allSeasons(d)[0]?.season_number;
+      if (r?.season !== undefined) return { season: r.season, episode: r.episode! };
+      return first !== undefined ? { season: first, episode: 1 } : 'invalid';
     }
     const ok = resolveEpisode(d, season, episode);
-    if (!ok) return "invalid";
+    if (!ok) return 'invalid';
     return ok.season === season && ok.episode === episode ? null : ok;
   }, [type, d, id, season, episode]);
 
   useEffect(() => {
-    if (fix && fix !== "invalid")
-      navigate(`/watch/tv/${id}?season=${fix.season}&episode=${fix.episode}`, {
-        replace: true,
-      });
+    if (fix && fix !== 'invalid') navigate(`/watch/tv/${id}?season=${fix.season}&episode=${fix.episode}`, { replace: true });
   }, [fix, id, navigate]);
 
-  useTitle(
-    d
-      ? type === "tv" && season !== undefined
-        ? `${titleOf(d)} ${epLabel(season, episode)}`
-        : titleOf(d)
-      : "Watch",
-  );
+  useTitle(d ? (type === 'tv' && season !== undefined ? `${titleOf(d)} ${epLabel(season, episode)}` : titleOf(d)) : 'Watch');
 
-  if (
-    !valid ||
-    (details.error instanceof HttpError && details.error.status === 404) ||
-    fix === "invalid"
-  ) {
-    return (
-      <Message
-        title="Can’t play this"
-        body="This title or episode doesn’t exist."
-        back={valid ? `/${type}/${id}` : "/"}
-      />
-    );
+  if (!valid || (details.error instanceof HttpError && details.error.status === 404) || fix === 'invalid') {
+    return <Message title="Can’t play this" body="This title or episode doesn’t exist." back={valid ? `/${type}/${id}` : '/'} />;
   }
-  if (details.error)
-    return (
-      <Message
-        title="Couldn’t load this title"
-        body="Check your connection and try again."
-        back="/"
-        retry={() => details.refetch()}
-      />
-    );
+  if (details.error) return <Message title="Couldn’t load this title" body="Check your connection and try again." back="/" retry={() => details.refetch()} />;
   if (!d || fix)
     return (
       <div className="fixed inset-0 grid place-items-center bg-black">
@@ -126,80 +73,36 @@ export default function Watch() {
       </div>
     );
 
-  return (
-    <WatchView
-      key={`${type}-${id}-${season}-${episode}`}
-      type={type}
-      id={id}
-      season={season}
-      episode={episode}
-      restart={sp.get("t") === "0"}
-    />
-  );
+  return <WatchView key={`${type}-${id}-${season}-${episode}`} type={type} id={id} season={season} episode={episode} restart={sp.get('t') === '0'} />;
 }
 
-function WatchView({
-  type,
-  id,
-  season,
-  episode,
-  restart,
-}: {
-  type: MediaType;
-  id: number;
-  season?: number;
-  episode?: number;
-  restart: boolean;
-}) {
+function WatchView({ type, id, season, episode, restart }: { type: MediaType; id: number; season?: number; episode?: number; restart: boolean }) {
   const navigate = useNavigate();
   const { data: d } = useQuery(q.details(type, id));
-  const { data: seasonData } = useQuery({
-    ...q.season(id, season ?? 1),
-    enabled: type === "tv",
-  });
+  const { data: seasonData } = useQuery({ ...q.season(id, season ?? 1), enabled: type === 'tv' });
   const settings = useStore((s) => s.settings);
   const [server, setServer] = useState(settings.server);
   const [fallbackNote, setFallbackNote] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
   const closeDrawer = useCallback(() => setDrawer(false), []);
 
-  const target = useMemo<Target>(
-    () => ({ type, id, season, episode }),
-    [type, id, season, episode],
-  );
-  const title = d ? titleOf(d) : "";
+  const target = useMemo<Target>(() => ({ type, id, season, episode }), [type, id, season, episode]);
+  const title = d ? titleOf(d) : '';
   const ep = seasonData?.episodes.find((e) => e.episode_number === episode);
-  const { prev, next } = useMemo(
-    () =>
-      type === "tv"
-        ? neighbors(d, season!, episode!)
-        : { prev: null, next: null },
-    [type, d, season, episode],
-  );
-  const detailsUrl = `/${type}/${id}${type === "tv" ? `?season=${season}` : ""}`;
+  const { prev, next } = useMemo(() => (type === 'tv' ? neighbors(d, season!, episode!) : { prev: null, next: null }), [type, d, season, episode]);
+  const detailsUrl = `/${type}/${id}${type === 'tv' ? `?season=${season}` : ''}`;
   // Close / Esc return to wherever the player was opened from (home, the hero, a row, the title
   // page). Episode changes replace the history entry, so one step back always leaves the player.
   // Opened directly (a link or a refresh), there is nothing to go back to, so use the title page.
   const location = useLocation();
-  const leave = useCallback(
-    () => (location.key !== "default" ? navigate(-1) : navigate(detailsUrl)),
-    [location.key, navigate, detailsUrl],
-  );
-  const go = useCallback(
-    (s: number, e: number) =>
-      navigate(`/watch/tv/${id}?season=${s}&episode=${e}`, { replace: true }),
-    [id, navigate],
-  );
+  const leave = useCallback(() => (location.key !== 'default' ? navigate(-1) : navigate(detailsUrl)), [location.key, navigate, detailsUrl]);
+  const go = useCallback((s: number, e: number) => navigate(`/watch/tv/${id}?season=${s}&episode=${e}`, { replace: true }), [id, navigate]);
 
   // Resume point, read once per episode (not reactive: progress updates must not restart playback).
   const resumeAt = useMemo(() => {
     if (restart) return 0;
     const p = findProgress(getState().history, type, id, season, episode);
-    return p?.progress &&
-      !p.isCompleted &&
-      p.progress.watched < p.progress.duration - 30
-      ? p.progress.watched
-      : 0;
+    return p?.progress && !p.isCompleted && p.progress.watched < p.progress.duration - 30 ? p.progress.watched : 0;
   }, [restart, type, id, season, episode]);
 
   // One search, wherever the sources come from: providers that can run in this browser (through
@@ -208,17 +111,14 @@ function WatchView({
   // A title that is anime is also searched for as its AniList / MAL entry (lib/resolver does that
   // by itself); what is known about it here is for the audio control.
   const anime = useAnime(type, id, d, season, episode);
-  const found = useSources(target, d, ep?.id, server === "jelly");
+  const found = useSources(target, d, ep?.id, server === 'jelly');
   const streams = found.data;
   // Search again with fresh links (the player calls it once by itself before giving up).
   const refreshSources = found.refetch;
   // Their own server didn't work, so the hosted one answered: say so once.
   const ownError = streams?.ownError;
   useEffect(() => {
-    if (ownError)
-      toast(
-        `Your server didn’t work (${ownError.replace(/\.$/, "")}), so Charcoal’s server is being used`,
-      );
+    if (ownError) toast(`Your server didn’t work (${ownError.replace(/\.$/, '')}), so Charcoal’s server is being used`);
   }, [ownError]);
 
   // Nothing playable: search again before giving up on Jelly. The first search after a while often
@@ -228,17 +128,15 @@ function WatchView({
   const searches = useRef(1);
   const [attempt, setAttempt] = useState(1);
   useEffect(() => {
-    if (server !== "jelly" || !found.error || found.searching) return;
+    if (server !== 'jelly' || !found.error || found.searching) return;
     if (searches.current < MAX_SEARCHES) {
       const n = searches.current++;
       setAttempt(n + 1);
       const t = window.setTimeout(() => found.refetch(), n === 1 ? 1500 : 4000);
       return () => window.clearTimeout(t);
     }
-    console.warn("Jelly:", found.error.message);
-    setFallbackNote(
-      `Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`,
-    );
+    console.warn('Jelly:', found.error.message);
+    setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
     setServer(EMBEDS[0].id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server, found.error, found.searching]);
@@ -252,9 +150,7 @@ function WatchView({
         title: titleOf(d),
         posterPath: d.poster_path,
         backdropPath: d.backdrop_path,
-        ...(type === "tv"
-          ? { season, episode, episodeTitle: ep?.name, nextEpisode: next }
-          : {}),
+        ...(type === 'tv' ? { season, episode, episodeTitle: ep?.name, nextEpisode: next } : {}),
         ...(looksLikeAnime(d) ? { anime: true } : {}),
         progress: duration > 0 ? { watched, duration } : undefined,
         ended,
@@ -268,17 +164,12 @@ function WatchView({
   // Helper there but no Febbox token: take the viewer's Febbox sign-in if they have one (once a visit),
   // and search again so Febbox's sources join the list.
   useEffect(() => {
-    if (
-      setup ||
-      getState().settings.febboxToken ||
-      !getState().settings.useExtension
-    )
-      return;
+    if (setup || getState().settings.febboxToken || !getState().settings.useExtension) return;
     void adoptFebboxToken(
       (t) => checkFebboxToken(extensionFetcher, t),
       (t) => {
         actions.updateSettings({ febboxToken: t });
-        toast("Febbox connected from your Febbox sign-in");
+        toast('Febbox connected from your Febbox sign-in');
       },
     );
   }, [setup]);
@@ -286,15 +177,9 @@ function WatchView({
   // Switching from Jelly to an embed: first say what embeds are (once, unless turned off).
   const [embedAsk, setEmbedAsk] = useState<string | null>(null);
   const pickServer = (s: string, confirmed = false) => {
-    if (
-      s !== "jelly" &&
-      server === "jelly" &&
-      !confirmed &&
-      !getState().settings.embedNoticeOff
-    )
-      return setEmbedAsk(s);
+    if (s !== 'jelly' && server === 'jelly' && !confirmed && !getState().settings.embedNoticeOff) return setEmbedAsk(s);
     setEmbedAsk(null);
-    if (s === "jelly") {
+    if (s === 'jelly') {
       searches.current = 1;
       setAttempt(1);
       if (found.error) found.refetch();
@@ -304,32 +189,21 @@ function WatchView({
     actions.updateSettings({ server: s });
   };
 
-  const embed = server !== "jelly" ? (embedById(server) ?? EMBEDS[0]) : null;
+  const embed = server !== 'jelly' ? (embedById(server) ?? EMBEDS[0]) : null;
 
   // Page shortcuts (the Jelly player adds its own: space, arrows, f, m, c, n, i).
   useKeys({
     // Esc: back to the title page, unless a menu is open (it closes that) or the video is
     // fullscreen (the browser exits fullscreen).
-    Escape: () =>
-      !document.fullscreenElement &&
-      !document.querySelector('[aria-expanded="true"]') &&
-      leave(),
-    ...(type === "tv" ? { e: () => setDrawer(true) } : {}),
+    Escape: () => !document.fullscreenElement && !document.querySelector('[aria-expanded="true"]') && leave(),
+    ...(type === 'tv' ? { e: () => setDrawer(true) } : {}),
     ...(prev ? { P: () => go(prev.season, prev.episode) } : {}),
     // The Jelly player already handles Shift N; embeds can't, so the page does.
     ...(next && embed ? { N: () => go(next.season, next.episode) } : {}),
   });
-  const subtitle =
-    type === "tv"
-      ? `${epLabel(season, episode)}${ep?.name ? ` · ${ep.name}` : ""}`
-      : undefined;
+  const subtitle = type === 'tv' ? `${epLabel(season, episode)}${ep?.name ? ` · ${ep.name}` : ''}` : undefined;
 
-  const meta = [
-    (d?.release_date || d?.first_air_date || "").slice(0, 4),
-    d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : "",
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const meta = [(d?.release_date || d?.first_air_date || '').slice(0, 4), d?.vote_average ? `★ ${d.vote_average.toFixed(1)}` : ''].filter(Boolean).join(' · ');
   const makeHeader = (pausedInfo?: React.ReactNode) => (
     <Header
       pausedInfo={pausedInfo}
@@ -337,22 +211,8 @@ function WatchView({
       subtitle={subtitle}
       detailsUrl={detailsUrl}
       onClose={leave}
-      onEpisodes={type === "tv" ? () => setDrawer(true) : undefined}
-      serverMenu={
-        <ServerMenu
-          current={embed ? embed.id : "jelly"}
-          onPick={pickServer}
-          jellyState={
-            found.error
-              ? "failed"
-              : found.data
-                ? "ok"
-                : found.searching
-                  ? "loading"
-                  : "idle"
-          }
-        />
-      }
+      onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
+      serverMenu={<ServerMenu current={embed ? embed.id : 'jelly'} onPick={pickServer} jellyState={found.error ? 'failed' : found.data ? 'ok' : found.searching ? 'loading' : 'idle'} />}
     />
   );
   const header = makeHeader();
@@ -360,28 +220,13 @@ function WatchView({
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
       {setup && <SetupGuide onClose={() => setSetup(false)} />}
-      {embedAsk && (
-        <EmbedNotice
-          name={embedById(embedAsk)?.name ?? "this server"}
-          onCancel={() => setEmbedAsk(null)}
-          onContinue={() => pickServer(embedAsk, true)}
-        />
-      )}
+      {embedAsk && <EmbedNotice name={embedById(embedAsk)?.name ?? 'this server'} onCancel={() => setEmbedAsk(null)} onContinue={() => pickServer(embedAsk, true)} />}
       {embed ? (
         <>
           <div className="relative z-10 shrink-0 bg-bg">{header}</div>
-          {fallbackNote && (
-            <Banner text={fallbackNote} onClose={() => setFallbackNote(null)} />
-          )}
+          {fallbackNote && <Banner text={fallbackNote} onClose={() => setFallbackNote(null)} />}
           <div className="relative min-h-0 flex-1">
-            <EmbedPlayer
-              server={embed}
-              target={target}
-              resumeAt={resumeAt}
-              sandbox={settings.blockPopups}
-              onProgress={record}
-              onStarted={() => record(0, 0)}
-            />
+            <EmbedPlayer server={embed} target={target} resumeAt={resumeAt} sandbox={settings.blockPopups} onProgress={record} onStarted={() => record(0, 0)} />
           </div>
         </>
       ) : streams && !setup ? (
@@ -391,57 +236,27 @@ function WatchView({
           media={target}
           title={title}
           subtitle={subtitle}
-          overview={(type === "tv" ? ep?.overview : undefined) || d?.overview}
+          overview={(type === 'tv' ? ep?.overview : undefined) || d?.overview}
           detailsUrl={detailsUrl}
-          onEpisodes={type === "tv" ? () => setDrawer(true) : undefined}
+          onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
           onDetails={d ? () => navigate(detailsUrl) : undefined}
           meta={meta}
-          poster={imageUrl(d?.poster_path, "poster", 342)}
+          poster={imageUrl(d?.poster_path, 'poster', 342)}
           resumeAt={resumeAt}
-          audioLang={
-            anime.isAnime && settings.animeAudio === "sub"
-              ? "ja"
-              : settings.audioLang
-          }
+          audioLang={anime.isAnime && settings.animeAudio === 'sub' ? 'ja' : settings.audioLang}
           header={makeHeader}
-          prev={
-            type === "tv"
-              ? prev
-                ? {
-                    label: nextLabel(prev, seasonData?.episodes),
-                    go: () => go(prev.season, prev.episode),
-                  }
-                : null
-              : undefined
-          }
-          next={
-            type === "tv"
-              ? next
-                ? {
-                    label: nextLabel(next, seasonData?.episodes),
-                    go: () => go(next.season, next.episode),
-                  }
-                : null
-              : undefined
-          }
+          prev={type === 'tv' ? (prev ? { label: nextLabel(prev, seasonData?.episodes), go: () => go(prev.season, prev.episode) } : null) : undefined}
+          next={type === 'tv' ? (next ? { label: nextLabel(next, seasonData?.episodes), go: () => go(next.season, next.episode) } : null) : undefined}
           episodes={
-            type === "tv" && d
+            type === 'tv' && d
               ? (close) => (
                   <MiniEpisodes
                     show={d}
                     current={{ season: season!, episode: episode! }}
                     onPick={(s, e) => (close(), go(s, e))}
                     onAll={() => (close(), setDrawer(true))}
-                    onPrev={
-                      prev
-                        ? () => (close(), go(prev.season, prev.episode))
-                        : undefined
-                    }
-                    onNext={
-                      next
-                        ? () => (close(), go(next.season, next.episode))
-                        : undefined
-                    }
+                    onPrev={prev ? () => (close(), go(prev.season, prev.episode)) : undefined}
+                    onNext={next ? () => (close(), go(next.season, next.episode)) : undefined}
                   />
                 )
               : undefined
@@ -452,9 +267,7 @@ function WatchView({
           generation={found.generation}
           onRefresh={refreshSources}
           onExhausted={() => {
-            setFallbackNote(
-              `Jelly’s sources wouldn’t play. Switched to ${EMBEDS[0].name}.`,
-            );
+            setFallbackNote(`Jelly’s sources wouldn’t play. Switched to ${EMBEDS[0].name}.`);
             setServer(EMBEDS[0].id);
           }}
         />
@@ -468,51 +281,38 @@ function WatchView({
                 meta={meta}
                 detailsUrl={detailsUrl}
                 onDetails={d ? () => navigate(detailsUrl) : undefined}
-                onEpisodes={type === "tv" ? () => setDrawer(true) : undefined}
+                onEpisodes={type === 'tv' ? () => setDrawer(true) : undefined}
               />,
             )}
           </div>
-          <JellyLoading
-            backdrop={d?.backdrop_path}
-            attempt={attempt}
-            onSkip={() => pickServer(EMBEDS[0].id)}
-          />
+          <JellyLoading backdrop={d?.backdrop_path} attempt={attempt} onSkip={() => pickServer(EMBEDS[0].id)} />
         </>
       )}
 
-      {drawer && type === "tv" && d && (
+      {drawer && type === 'tv' && d && (
         <EpisodeSelector
           show={d}
           current={{ season: season!, episode: episode! }}
           onClose={closeDrawer}
           onPick={closeDrawer}
           replace
-          prev={
-            prev ? () => (closeDrawer(), go(prev.season, prev.episode)) : null
-          }
-          next={
-            next ? () => (closeDrawer(), go(next.season, next.episode)) : null
-          }
+          prev={prev ? () => (closeDrawer(), go(prev.season, prev.episode)) : null}
+          next={next ? () => (closeDrawer(), go(next.season, next.episode)) : null}
         />
       )}
     </div>
   );
 }
 
-function nextLabel(
-  n: { season: number; episode: number },
-  eps?: { season_number: number; episode_number: number; name: string }[],
-) {
-  const name = eps?.find(
-    (e) => e.season_number === n.season && e.episode_number === n.episode,
-  )?.name;
-  return `${epLabel(n.season, n.episode)}${name ? ` · ${name}` : ""}`;
+function nextLabel(n: { season: number; episode: number }, eps?: { season_number: number; episode_number: number; name: string }[]) {
+  const name = eps?.find((e) => e.season_number === n.season && e.episode_number === n.episode)?.name;
+  return `${epLabel(n.season, n.episode)}${name ? ` · ${name}` : ''}`;
 }
 
 // ---------- header ----------
 
 /** Text links brighten on hover (the app-wide convention for links that are text). */
-const TEXT_LINK = "transition-colors hover:text-white";
+const TEXT_LINK = 'transition-colors hover:text-white';
 
 function Header({
   title,
@@ -536,16 +336,7 @@ function Header({
     // Close and the title on the left, shortcuts then the server on the far right. No boxes: plain round
     // controls like the details page.
     <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      {pausedInfo ? (
-        <div className="min-w-0 px-1">{pausedInfo}</div>
-      ) : (
-        <TitleBox
-          title={title}
-          subtitle={subtitle}
-          detailsUrl={detailsUrl}
-          onEpisodes={onEpisodes}
-        />
-      )}
+      {pausedInfo ? <div className="min-w-0 px-1">{pausedInfo}</div> : <TitleBox title={title} subtitle={subtitle} detailsUrl={detailsUrl} onEpisodes={onEpisodes} />}
       <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
         {/* Same as the sidebar's shortcuts button: no background, the icon and its key. */}
         <button
@@ -573,32 +364,13 @@ function Header({
  * whole hub opens the episode list; previous / next and the title link sit on top of it.
  */
 /** What's playing, top-left (embedded players): the title and the episode. */
-function TitleBox({
-  title,
-  subtitle,
-  detailsUrl,
-  onEpisodes,
-}: {
-  title: string;
-  subtitle?: string;
-  detailsUrl: string;
-  onEpisodes?: () => void;
-}) {
+function TitleBox({ title, subtitle, detailsUrl, onEpisodes }: { title: string; subtitle?: string; detailsUrl: string; onEpisodes?: () => void }) {
   const text = (
     <div className="min-w-0 leading-snug">
-      <Link
-        to={detailsUrl}
-        title={`${title}: details`}
-        className={cx(
-          TEXT_LINK,
-          "pointer-events-auto block truncate text-base font-semibold text-white md:text-lg",
-        )}
-      >
+      <Link to={detailsUrl} title={`${title}: details`} className={cx(TEXT_LINK, 'pointer-events-auto block truncate text-base font-semibold text-white md:text-lg')}>
         {title}
       </Link>
-      {subtitle && (
-        <div className="truncate text-sm text-white/80">{subtitle}</div>
-      )}
+      {subtitle && <div className="truncate text-sm text-white/80">{subtitle}</div>}
     </div>
   );
   if (!onEpisodes) return <div className="min-w-0 px-1 pt-0.5">{text}</div>;
@@ -607,7 +379,7 @@ function TitleBox({
       <button
         type="button"
         onClick={onEpisodes}
-        aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ""} (E)`}
+        aria-label={`Episodes${subtitle ? `, now playing ${subtitle}` : ''} (E)`}
         title={subtitle}
         className="absolute inset-0 rounded-xl transition-colors hover:bg-white/[0.05] focus-visible:bg-white/[0.05]"
       />
@@ -641,20 +413,15 @@ function HeaderButton({
   to?: string;
   disabled?: boolean;
   children: React.ReactNode;
-  tipSide?: "left" | "right";
+  tipSide?: 'left' | 'right';
   solid?: boolean;
   quiet?: boolean;
 }) {
   // Buttons near the left edge open their label to the right, so it stays on screen.
-  const align =
-    (tipSide ?? (to ? "left" : "right")) === "left" ? "start" : "end";
+  const align = (tipSide ?? (to ? 'left' : 'right')) === 'left' ? 'start' : 'end';
   // `solid`: the app's round close button (filled); otherwise a plain round icon button.
   // `solid` (the close button) is a secondary button; the rest are ghost buttons.
-  const cls = cx(
-    btn({ variant: solid ? "secondary" : "ghost", icon: true }),
-    "group/tip relative",
-    quiet && "text-white/60",
-  );
+  const cls = cx(btn({ variant: solid ? 'secondary' : 'ghost', icon: true }), 'group/tip relative', quiet && 'text-white/60');
   const tip = <Tip label={label} keys={keys} side="bottom" align={align} />;
   return to ? (
     <Link to={to} aria-label={label} className={cls}>
@@ -662,58 +429,38 @@ function HeaderButton({
       {tip}
     </Link>
   ) : (
-    <button
-      type="button"
-      aria-label={keys ? `${label} (${keys})` : label}
-      onClick={onClick}
-      disabled={disabled}
-      className={cls}
-    >
+    <button type="button" aria-label={keys ? `${label} (${keys})` : label} onClick={onClick} disabled={disabled} className={cls}>
       {children}
       {tip}
     </button>
   );
 }
 
-const DOT: Record<"idle" | "loading" | "ok" | "failed", string> = {
-  idle: "bg-white/40",
-  loading: "animate-pulse bg-warning",
-  ok: "bg-success",
-  failed: "bg-danger",
+const DOT: Record<'idle' | 'loading' | 'ok' | 'failed', string> = {
+  idle: 'bg-white/40',
+  loading: 'animate-pulse bg-warning',
+  ok: 'bg-success',
+  failed: 'bg-danger',
 };
 
-function ServerMenu({
-  current,
-  onPick,
-  jellyState,
-}: {
-  current: string;
-  onPick: (id: string) => void;
-  jellyState: "idle" | "loading" | "ok" | "failed";
-}) {
+function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: (id: string) => void; jellyState: 'idle' | 'loading' | 'ok' | 'failed' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const close = useCallback(() => {
     setOpen(false);
-    ref.current?.querySelector("button")?.focus({ preventScroll: true });
+    ref.current?.querySelector('button')?.focus({ preventScroll: true });
   }, []);
   useDismiss(open, close, ref);
   const blockPopups = useStore((s) => s.settings.blockPopups);
   const quick = usePlayerSources();
-  const name =
-    current === "jelly" ? "Jelly" : (embedById(current)?.name ?? "Server");
+  const name = current === 'jelly' ? 'Jelly' : (embedById(current)?.name ?? 'Server');
   useKeys({ s: () => setOpen((o) => !o) });
   const pick = (id: string) => {
     onPick(id);
     setOpen(false);
   };
-  const jellyOn = current === "jelly";
-  const jellyNote =
-    jellyState === "failed"
-      ? "Nothing found for this title"
-      : jellyState === "loading"
-        ? "Finding sources…"
-        : "Ad-free · best quality";
+  const jellyOn = current === 'jelly';
+  const jellyNote = jellyState === 'failed' ? 'Nothing found for this title' : jellyState === 'loading' ? 'Finding sources…' : 'Ad-free · best quality';
   return (
     <div ref={ref} className="relative shrink-0">
       <button
@@ -722,25 +469,13 @@ function ServerMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Server: ${name} (S)`}
-        className={cx(
-          btn({ variant: open ? "primary" : "secondary" }),
-          "group/tip relative max-sm:px-3",
-        )}
+        className={cx(btn({ variant: open ? 'primary' : 'secondary' }), 'group/tip relative max-sm:px-3')}
       >
         <Tip label="Choose a server" side="bottom" align="end" hidden={open} />
-        {current === "jelly" && (
-          <span
-            aria-hidden
-            className={cx("size-2 shrink-0 rounded-full", DOT[jellyState])}
-          />
-        )}
+        {current === 'jelly' && <span aria-hidden className={cx('size-2 shrink-0 rounded-full', DOT[jellyState])} />}
         {/* Phones: just the arrow (and Jelly's status dot), so the title gets the room. */}
-        <span className="hidden max-w-[7rem] truncate font-medium sm:inline">
-          {name}
-        </span>
-        <ChevronDown
-          className={cx("size-4 transition", open && "rotate-180")}
-        />
+        <span className="hidden max-w-[7rem] truncate font-medium sm:inline">{name}</span>
+        <ChevronDown className={cx('size-4 transition', open && 'rotate-180')} />
         <Kbd light={open}>S</Kbd>
       </button>
       {open && (
@@ -748,52 +483,20 @@ function ServerMenu({
           {/* Jelly: our own player, the one to use. */}
           <button
             aria-pressed={jellyOn}
-            onClick={() => pick("jelly")}
-            className={cx(
-              "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors",
-              jellyOn
-                ? "bg-white text-black"
-                : "bg-white/[0.06] hover:bg-white/10",
-            )}
+            onClick={() => pick('jelly')}
+            className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors', jellyOn ? 'bg-white text-black' : 'bg-white/[0.06] hover:bg-white/10')}
           >
-            <span
-              aria-hidden
-              className={cx("size-2.5 shrink-0 rounded-full", DOT[jellyState])}
-            />
+            <span aria-hidden className={cx('size-2.5 shrink-0 rounded-full', DOT[jellyState])} />
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">Jelly</span>
-              <span
-                className={cx(
-                  "block text-xs",
-                  jellyOn
-                    ? "text-black/60"
-                    : jellyState === "failed"
-                      ? "text-warning"
-                      : "text-muted",
-                )}
-              >
-                {jellyNote}
-              </span>
+              <span className={cx('block text-xs', jellyOn ? 'text-black/60' : jellyState === 'failed' ? 'text-warning' : 'text-muted')}>{jellyNote}</span>
             </span>
-            <span
-              className={cx(
-                "rounded-full px-2 max-sm:hidden py-0.5 text-micro font-medium",
-                jellyOn
-                  ? "bg-black/10 text-black/70"
-                  : "bg-white/10 text-white/80",
-              )}
-            >
-              Recommended
-            </span>
+            <span className={cx('rounded-full px-2 max-sm:hidden py-0.5 text-micro font-medium', jellyOn ? 'bg-black/10 text-black/70' : 'bg-white/10 text-white/80')}>Recommended</span>
           </button>
 
           {/* Jelly's sources, under it: a quick way to switch (also in the player's settings). */}
           {jellyOn && quick && quick.list.length > 1 && (
-            <div
-              className="mt-1 max-h-56 overflow-y-auto overscroll-contain border-l border-white/10 py-1 pl-2 ml-4"
-              role="group"
-              aria-label="Jelly's sources"
-            >
+            <div className="mt-1 max-h-56 overflow-y-auto overscroll-contain border-l border-white/10 py-1 pl-2 ml-4" role="group" aria-label="Jelly's sources">
               {quick.list.map((q) => (
                 <button
                   key={q.url}
@@ -803,24 +506,12 @@ function ServerMenu({
                     setOpen(false);
                   }}
                   className={cx(
-                    "flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-sm transition-colors",
-                    q.selected
-                      ? "bg-white/15 text-white"
-                      : "text-white/75 hover:bg-white/10 hover:text-white",
+                    'flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-sm transition-colors',
+                    q.selected ? 'bg-white/15 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white',
                   )}
                 >
-                  <span
-                    className={cx(
-                      "shrink-0 font-medium",
-                      q.height >= 2160 && "text-amber-200",
-                      q.height >= 1080 && q.height < 2160 && "text-white",
-                    )}
-                  >
-                    {q.height >= 2160 ? "4K" : q.label}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-xs text-muted">
-                    {q.provider}
-                  </span>
+                  <span className={cx('shrink-0 font-medium', q.height >= 2160 && 'text-amber-200', q.height >= 1080 && q.height < 2160 && 'text-white')}>{q.height >= 2160 ? '4K' : q.label}</span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-muted">{q.provider}</span>
                   {q.selected && <Check className="size-4 shrink-0" />}
                 </button>
               ))}
@@ -828,9 +519,7 @@ function ServerMenu({
           )}
 
           {/* Embeds: other sites' players, a quiet list. */}
-          <div className="px-3 pt-3 pb-1 text-xs text-faint">
-            Embedded players
-          </div>
+          <div className="px-3 pt-3 pb-1 text-xs text-faint">Embedded players</div>
           {EMBEDS.map((e) => {
             const on = current === e.id;
             return (
@@ -839,48 +528,24 @@ function ServerMenu({
                 aria-pressed={on}
                 onClick={() => pick(e.id)}
                 className={cx(
-                  "flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-colors",
-                  on
-                    ? "bg-white text-black"
-                    : "text-white/70 hover:bg-white/10 hover:text-white",
+                  'flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-colors',
+                  on ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10 hover:text-white',
                 )}
               >
                 <span className="flex-1 truncate">{e.name}</span>
-                {e.tracksProgress && (
-                  <span
-                    className={cx(
-                      "text-xs",
-                      on ? "text-black/50" : "text-faint",
-                    )}
-                  >
-                    Saves progress
-                  </span>
-                )}
+                {e.tracksProgress && <span className={cx('text-xs', on ? 'text-black/50' : 'text-faint')}>Saves progress</span>}
               </button>
             );
           })}
           <div className="my-1.5 h-px bg-white/[0.06]" />
           <button
             aria-pressed={blockPopups}
-            onClick={() =>
-              actions.updateSettings({ blockPopups: !blockPopups })
-            }
+            onClick={() => actions.updateSettings({ blockPopups: !blockPopups })}
             className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-white/80 transition-colors hover:bg-white/10"
           >
             <span className="min-w-0 flex-1">Block pop-ups in embeds</span>
-            <span
-              aria-hidden
-              className={cx(
-                "relative h-5 w-9 shrink-0 rounded-full transition-colors",
-                blockPopups ? "bg-white" : "bg-white/15",
-              )}
-            >
-              <span
-                className={cx(
-                  "absolute top-0.5 left-0.5 size-4 rounded-full transition-transform",
-                  blockPopups ? "translate-x-4 bg-black" : "bg-white",
-                )}
-              />
+            <span aria-hidden className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', blockPopups ? 'bg-white' : 'bg-white/15')}>
+              <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', blockPopups ? 'translate-x-4 bg-black' : 'bg-white')} />
             </span>
           </button>
         </div>
@@ -890,15 +555,7 @@ function ServerMenu({
 }
 
 /** Shown before leaving Jelly for an embed: those players are other sites', with their ads. */
-function EmbedNotice({
-  name,
-  onCancel,
-  onContinue,
-}: {
-  name: string;
-  onCancel: () => void;
-  onContinue: () => void;
-}) {
+function EmbedNotice({ name, onCancel, onContinue }: { name: string; onCancel: () => void; onContinue: () => void }) {
   const [dontAsk, setDontAsk] = useState(false);
   const go = () => {
     if (dontAsk) actions.updateSettings({ embedNoticeOff: true });
@@ -906,39 +563,22 @@ function EmbedNotice({
   };
   return (
     <Modal label="About embedded players" onClose={onCancel}>
-      <div
-        className="fixed inset-0 grid place-items-center bg-black/70 p-4"
-        onClick={onCancel}
-      >
-        <div
-          className="toast-in w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div className="fixed inset-0 grid place-items-center bg-black/70 p-4" onClick={onCancel}>
+        <div className="toast-in w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <ShieldAlert className="size-6 text-warning" />
           <h2 className="mt-3 text-lg font-semibold">Switch to {name}?</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Embedded players are run by other sites, not Charcoal. We can’t
-            control their ads, pop-ups or redirects, and some don’t save your
-            progress. Jelly is ad-free.
+            Embedded players are run by other sites, not Charcoal. We can’t control their ads, pop-ups or redirects, and some don’t save your progress. Jelly is ad-free.
           </p>
           <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-white/80">
-            <input
-              type="checkbox"
-              checked={dontAsk}
-              onChange={(e) => setDontAsk(e.target.checked)}
-              className="size-4 accent-white"
-            />
+            <input type="checkbox" checked={dontAsk} onChange={(e) => setDontAsk(e.target.checked)} className="size-4 accent-white" />
             Don’t show this again
           </label>
           <div className="mt-5 flex justify-end gap-2">
             <button onClick={onCancel} className={btn()}>
               Stay on Jelly
             </button>
-            <button
-              onClick={go}
-              autoFocus
-              className={btn({ variant: "primary" })}
-            >
+            <button onClick={go} autoFocus className={btn({ variant: 'primary' })}>
               Continue
             </button>
           </div>
@@ -950,35 +590,16 @@ function EmbedNotice({
 
 // ---------- states ----------
 
-function JellyLoading({
-  backdrop,
-  attempt,
-  onSkip,
-}: {
-  backdrop?: string | null;
-  attempt: number;
-  onSkip: () => void;
-}) {
+function JellyLoading({ backdrop, attempt, onSkip }: { backdrop?: string | null; attempt: number; onSkip: () => void }) {
   const [secs, setSecs] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setSecs((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
-  const why =
-    attempt > 1
-      ? `Nothing yet, looking again (${attempt} of ${MAX_SEARCHES})`
-      : secs >= 12
-        ? "Waking the server up, this can take a moment"
-        : "Jelly is checking providers";
+  const why = attempt > 1 ? `Nothing yet, looking again (${attempt} of ${MAX_SEARCHES})` : secs >= 12 ? 'Waking the server up, this can take a moment' : 'Jelly is checking providers';
   return (
     <div className="absolute inset-0 grid place-items-center overflow-hidden">
-      {backdrop && (
-        <img
-          src={imageUrl(backdrop, "backdrop", 780)}
-          alt=""
-          className="absolute inset-0 size-full scale-105 object-cover opacity-25 blur-sm"
-        />
-      )}
+      {backdrop && <img src={imageUrl(backdrop, 'backdrop', 780)} alt="" className="absolute inset-0 size-full scale-105 object-cover opacity-25 blur-sm" />}
       <div className="relative flex flex-col items-center gap-4 px-6 text-center">
         <Spinner />
         <div>
@@ -1001,32 +622,16 @@ function Banner({ text, onClose }: { text: string; onClose: () => void }) {
   return (
     <div className="flex shrink-0 items-center gap-3 bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
       <span className="flex-1">{text}</span>
-      <button
-        onClick={onClose}
-        aria-label="Dismiss"
-        className="text-amber-100/70 hover:text-white"
-      >
+      <button onClick={onClose} aria-label="Dismiss" className="text-amber-100/70 hover:text-white">
         <X className="size-4" />
       </button>
     </div>
   );
 }
 
-const Spinner = () => (
-  <div className="size-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />
-);
+const Spinner = () => <div className="size-12 animate-spin rounded-full border-4 border-white/20 border-t-white" />;
 
-function Message({
-  title,
-  body,
-  back,
-  retry,
-}: {
-  title: string;
-  body: string;
-  back: string;
-  retry?: () => void;
-}) {
+function Message({ title, body, back, retry }: { title: string; body: string; back: string; retry?: () => void }) {
   return (
     <div className="fixed inset-0 grid place-items-center bg-bg p-6 text-center">
       <div className="space-y-3">
@@ -1038,8 +643,8 @@ function Message({
               Try again
             </button>
           )}
-          <Link to={back} className={btn({ variant: "primary" })}>
-            {back === "/" ? "Go home" : "Back to details"}
+          <Link to={back} className={btn({ variant: 'primary' })}>
+            {back === '/' ? 'Go home' : 'Back to details'}
           </Link>
         </div>
       </div>

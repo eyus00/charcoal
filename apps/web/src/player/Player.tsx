@@ -1,13 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
-import { Link } from "react-router";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Link } from 'react-router';
 import {
   Airplay,
   AlertTriangle,
@@ -40,55 +32,23 @@ import {
   Volume1,
   Volume2,
   VolumeX,
-} from "lucide-react";
-import {
-  formatSize,
-  languageName,
-  qualityLabel,
-  type JellyResult,
-  type JellySource,
-  type JellySubtitle,
-} from "../lib/servers";
-import { actions, getState, useStore } from "../lib/store";
-import {
-  segmentAt,
-  SEGMENT_LABEL,
-  useSegments,
-  type Segment,
-} from "../lib/segments";
-import type { MediaType } from "../lib/tmdb";
-import { cx, formatClock } from "../lib/util";
-import { btn } from "../components/Button";
-import { useCast } from "./cast";
-import {
-  allowStream,
-  extensionFetcher,
-  releaseStreams,
-} from "../lib/extension";
-import { captureFrame, frameKey } from "../lib/frames";
-import { scrobble } from "../lib/trakt";
-import {
-  activeCues,
-  CaptionOverlay,
-  CueText,
-  parseCaptions,
-  subColorName,
-  SubtitleStyleControls,
-  type Cue,
-} from "./captions";
-import {
-  linkRanOut,
-  REFUSALS,
-  retryBudget,
-  undecodableIn,
-  unplayable,
-  unplayableReason,
-  type PlaybackEngine,
-} from "../lib/playback-engines";
-import { splitKeys, Tip } from "../components/Tip";
+} from 'lucide-react';
+import { formatSize, languageName, qualityLabel, type JellyResult, type JellySource, type JellySubtitle } from '../lib/servers';
+import { actions, getState, useStore } from '../lib/store';
+import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segments';
+import type { MediaType } from '../lib/tmdb';
+import { cx, formatClock } from '../lib/util';
+import { btn } from '../components/Button';
+import { useCast } from './cast';
+import { allowStream, extensionFetcher, releaseStreams } from '../lib/extension';
+import { captureFrame, frameKey } from '../lib/frames';
+import { scrobble } from '../lib/trakt';
+import { activeCues, CaptionOverlay, CueText, parseCaptions, subColorName, SubtitleStyleControls, type Cue } from './captions';
+import { linkRanOut, REFUSALS, retryBudget, undecodableIn, unplayable, unplayableReason, type PlaybackEngine } from '../lib/playback-engines';
+import { splitKeys, Tip } from '../components/Tip';
 
 interface Props {
-  data: Omit<JellyResult, "via"> & { via?: JellyResult["via"] };
+  data: Omit<JellyResult, 'via'> & { via?: JellyResult['via'] };
   /** What is playing (for skip segments). */
   media: { type: MediaType; id: number; season?: number; episode?: number };
   title: string;
@@ -149,7 +109,7 @@ const READABLE_SUBS = /^(vtt|webvtt|srt|subrip)$/i;
 function upstreamHost(url: string): string {
   try {
     const u = new URL(url);
-    const data = u.searchParams.get("data");
+    const data = u.searchParams.get('data');
     if (data) return new URL(JSON.parse(data).url).hostname;
     return u.hostname;
   } catch {
@@ -158,24 +118,16 @@ function upstreamHost(url: string): string {
 }
 
 /** Another site's player page, not a stream: never something for the video engines. */
-const isFrame = (s: JellySource) =>
-  s.type === "frame" || s.delivery === "frame";
+const isFrame = (s: JellySource) => s.type === 'frame' || s.delivery === 'frame';
 
 /**
  * The source to try next when the player chooses by itself: the first that hasn't failed here,
  * leaving those the resolver already tried without an answer for when nothing else remains.
  * -1 when there is none.
  */
-function bestIndex(
-  list: JellySource[],
-  failedAt: (i: number) => boolean = () => false,
-): number {
-  const open = list
-    .map((_, i) => i)
-    .filter((i) => !failedAt(i) && !isFrame(list[i]));
-  return (
-    open.find((i) => list[i].verification?.state !== "failed") ?? open[0] ?? -1
-  );
+function bestIndex(list: JellySource[], failedAt: (i: number) => boolean = () => false): number {
+  const open = list.map((_, i) => i).filter((i) => !failedAt(i) && !isFrame(list[i]));
+  return open.find((i) => list[i].verification?.state !== 'failed') ?? open[0] ?? -1;
 }
 
 /**
@@ -193,15 +145,12 @@ function heightOf(s: JellySource): number {
   const measured = seenHeight.get(sourceKey(s)) ?? s.verification?.maxHeight;
   if (measured) return measured;
   const read = (q?: string) => {
-    const t = (q ?? "").toLowerCase();
+    const t = (q ?? '').toLowerCase();
     if (/4k|2160|uhd/.test(t)) return 2160;
     const m = /(\d{3,4})\s*p?\b/.exec(t);
     return m ? Number(m[1]) : 0;
   };
-  return Math.max(
-    read(s.quality),
-    ...(s.levels ?? []).map((l) => read(l.quality)),
-  );
+  return Math.max(read(s.quality), ...(s.levels ?? []).map((l) => read(l.quality)));
 }
 
 /**
@@ -216,8 +165,7 @@ export interface QuickSource {
   height: number;
   selected: boolean;
 }
-let quickSources: { list: QuickSource[]; pick: (url: string) => void } | null =
-  null;
+let quickSources: { list: QuickSource[]; pick: (url: string) => void } | null = null;
 const quickSubs = new Set<() => void>();
 const publishQuick = (q: typeof quickSources) => {
   quickSources = q;
@@ -230,18 +178,10 @@ export const usePlayerSources = () =>
   );
 
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
-type Track = {
-  label: string;
-  url?: string;
-  text?: string;
-  format?: string;
-  headers?: Record<string, string>;
-  bridged?: boolean;
-};
+type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string>; bridged?: boolean };
 
-type Menu = null | "captions" | "settings" | "episodes";
-type View =
-  "main" | "quality" | "source" | "audio" | "speed" | "style" | "transcript";
+type Menu = null | 'captions' | 'settings' | 'episodes';
+type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
 export default function Player({
   data,
@@ -275,12 +215,10 @@ export default function Player({
 
   // ---------- casting (Chromecast through the Cast SDK; AirPlay through Safari) ----------
   const cast = useCast();
-  const casting = cast.state === "CONNECTED";
+  const casting = cast.state === 'CONNECTED';
   const castingRef = useRef(casting);
   castingRef.current = casting;
-  const [airplay, setAirplay] = useState<"none" | "available" | "active">(
-    "none",
-  );
+  const [airplay, setAirplay] = useState<'none' | 'available' | 'active'>('none');
 
   // Start with the provider that last played, if it's in this response.
   // The selected source and failures are kept by URL: the list can be re-sorted when more sources
@@ -288,32 +226,23 @@ export default function Player({
   const dataRef = useRef(data);
   dataRef.current = data;
   const urlAt = (i: number) => dataRef.current.sources[i]?.url;
-  const [selectedUrl, setSelectedUrl] = useState(
-    () => data.sources[Math.max(0, bestIndex(data.sources))]?.url,
-  );
+  const [selectedUrl, setSelectedUrl] = useState(() => data.sources[Math.max(0, bestIndex(data.sources))]?.url);
   // The source playing is kept as an object too: a fresh search hands out new links for the same
   // streams, and the one playing must carry on (not reload) even though its address isn't listed.
   const pinned = useRef<JellySource | undefined>(undefined);
   const listedAt = data.sources.findIndex((x) => x.url === selectedUrl);
-  const keepPinned =
-    listedAt < 0 && !!pinned.current && pinned.current.url === selectedUrl;
+  const keepPinned = listedAt < 0 && !!pinned.current && pinned.current.url === selectedUrl;
   /** Where the playing stream sits in the list (its fresh twin, when the list is newer than it). */
-  const twinAt =
-    keepPinned && pinned.current?.id
-      ? data.sources.findIndex((x) => x.id === pinned.current!.id)
-      : -1;
+  const twinAt = keepPinned && pinned.current?.id ? data.sources.findIndex((x) => x.id === pinned.current!.id) : -1;
   const sourceIdx = listedAt >= 0 ? listedAt : Math.max(0, twinAt);
-  const setSourceIdx = useCallback(
-    (i: number) => setSelectedUrl(dataRef.current.sources[i]?.url),
-    [],
-  );
+  const setSourceIdx = useCallback((i: number) => setSelectedUrl(dataRef.current.sources[i]?.url), []);
   const failedUrls = useRef(new Set<string>());
   /** Streams (by id) that failed here: a fresh link for one of them isn't a reason to try it again by itself. */
   const failedIds = useRef(new Set<string>());
   const failed = useRef({
-    has: (i: number) => failedUrls.current.has(urlAt(i) ?? ""),
+    has: (i: number) => failedUrls.current.has(urlAt(i) ?? ''),
     add: (i: number) => void (urlAt(i) && failedUrls.current.add(urlAt(i)!)),
-    delete: (i: number) => void failedUrls.current.delete(urlAt(i) ?? ""),
+    delete: (i: number) => void failedUrls.current.delete(urlAt(i) ?? ''),
     clear: () => failedUrls.current.clear(),
   });
   const seekOnLoad = useRef(resumeAt);
@@ -328,15 +257,9 @@ export default function Player({
   const [exhausted, setExhausted] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   /** Shown when a source starts playing: its quality, where it's from, and why it's this one. */
-  const [srcPill, setSrcPill] = useState<{
-    key: number;
-    height: number;
-    quality: string;
-    from: string;
-    why: string;
-  } | null>(null);
+  const [srcPill, setSrcPill] = useState<{ key: number; height: number; quality: string; from: string; why: string } | null>(null);
   /** Why the next source to start was chosen (read when it starts playing). */
-  const switchWhy = useRef("Playing");
+  const switchWhy = useRef('Playing');
   const pillTimer = useRef<number>(undefined);
   const levelsRef = useRef<{ height: number }[]>([]);
   /** The stream playing turned out to be live (its playlist has no end). */
@@ -365,14 +288,12 @@ export default function Player({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levels]);
   const [level, setLevel] = useState(-1);
-  const [audioTracks, setAudioTracks] = useState<
-    { id: number; name: string }[]
-  >([]);
+  const [audioTracks, setAudioTracks] = useState<{ id: number; name: string }[]>([]);
   const [audioTrack, setAudioTrack] = useState(-1);
   const [fullscreen, setFullscreen] = useState(false);
   const [fill, setFill] = useState(false);
   const [menu, setMenuState] = useState<Menu>(null);
-  const [view, setView] = useState<View>("main");
+  const [view, setView] = useState<View>('main');
   const [controls, setControls] = useState(true);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [held, setHeld] = useState(false);
@@ -380,38 +301,27 @@ export default function Player({
 
   /** The source whose details are shown in the Source menu (its ⓘ button). */
   // The ⓘ card of one source: which one, and where it sits (next to the menu, not inside it).
-  const [info, setInfo] = useState<{
-    url: string;
-    style: React.CSSProperties;
-  } | null>(null);
+  const [info, setInfo] = useState<{ url: string; style: React.CSSProperties } | null>(null);
   const settingsBox = useRef<HTMLDivElement>(null);
   useEffect(() => setInfo(null), [menu, view]);
   const openInfo = (url: string, btnEl: HTMLElement) => {
     if (info?.url === url) return setInfo(null);
     const box = settingsBox.current?.getBoundingClientRect();
-    const pop = btnEl.closest("[data-popover]")?.getBoundingClientRect();
+    const pop = btnEl.closest('[data-popover]')?.getBoundingClientRect();
     const root = wrap.current?.getBoundingClientRect();
     const r = btnEl.getBoundingClientRect();
     if (!box || !pop || !root) return;
     const W = 240;
     const lowerHalf = r.top + r.height / 2 > root.top + root.height / 2;
-    const vertical = lowerHalf
-      ? { bottom: box.bottom - r.bottom }
-      : { top: r.top - box.top };
+    const vertical = lowerHalf ? { bottom: box.bottom - r.bottom } : { top: r.top - box.top };
     // Beside the menu when there's room, else just above the row.
     const style: React.CSSProperties =
-      pop.left - root.left >= W + 16
-        ? { width: W, right: box.right - pop.left + 8, ...vertical }
-        : {
-            width: Math.min(W, pop.width - 12),
-            right: box.right - r.right,
-            bottom: box.bottom - r.top + 4,
-          };
+      pop.left - root.left >= W + 16 ? { width: W, right: box.right - pop.left + 8, ...vertical } : { width: Math.min(W, pop.width - 12), right: box.right - r.right, bottom: box.bottom - r.top + 4 };
     setInfo({ url, style });
   };
   const setMenu = useCallback((m: Menu) => {
     setMenuState(m);
-    setView("main");
+    setView('main');
   }, []);
   // A tap or click anywhere outside an open menu closes it: on the picture, the bars, the header,
   // or (on a phone, where a menu is a sheet) the page around it. The press that closed it does
@@ -425,13 +335,11 @@ export default function Player({
       menuClosedAt.current = Date.now();
       setMenu(null);
     };
-    document.addEventListener("pointerdown", onDown, true);
-    return () => document.removeEventListener("pointerdown", onDown, true);
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
   }, [menu, setMenu]);
 
-  const source = (
-    keepPinned ? pinned.current : data.sources[sourceIdx]
-  ) as JellySource;
+  const source = (keepPinned ? pinned.current : data.sources[sourceIdx]) as JellySource;
   pinned.current = source;
   /** It has played (the current source): from then on new lists never interrupt it, only a clearly better source does. */
   const healthy = useRef(false);
@@ -441,10 +349,7 @@ export default function Player({
    *  Decided per source: one list can mix bridged, plain and relayed sources. */
   const direct = !!source?.bridged;
   const anyBridged = data.sources.some((s) => s.bridged);
-  useEffect(
-    () => (anyBridged ? () => releaseStreams() : undefined),
-    [anyBridged],
-  );
+  useEffect(() => (anyBridged ? () => releaseStreams() : undefined), [anyBridged]);
 
   // ---------- notices ----------
   const noticeTimer = useRef<number>(undefined);
@@ -456,23 +361,14 @@ export default function Player({
 
   // ---------- subtitles ----------
   const [localTracks, setLocalTracks] = useState<Track[]>([]);
-  const tracks = useMemo<Track[]>(
-    () => [...localTracks, ...sortSubtitles(data.subtitles)],
-    [localTracks, data.subtitles],
-  );
+  const tracks = useMemo<Track[]>(() => [...localTracks, ...sortSubtitles(data.subtitles)], [localTracks, data.subtitles]);
   const [subIdx, setSubIdx] = useState<number>(() => {
     const want = settings.subtitleLabel;
-    return want
-      ? sortSubtitles(data.subtitles).findIndex((s) => s.label === want)
-      : -1;
+    return want ? sortSubtitles(data.subtitles).findIndex((s) => s.label === want) : -1;
   });
   const [cues, setCues] = useState<Cue[]>([]);
   const [delay, setDelay] = useState(0); // + shows subtitles later
-  const lastSub = useRef(
-    subIdx >= 0
-      ? subIdx
-      : tracks.findIndex((s) => /english|^en/i.test(s.label)),
-  );
+  const lastSub = useRef(subIdx >= 0 ? subIdx : tracks.findIndex((s) => /english|^en/i.test(s.label)));
   const subLabel = subIdx >= 0 ? tracks[subIdx]?.label : undefined;
 
   useEffect(() => {
@@ -482,27 +378,20 @@ export default function Player({
     let stale = false;
     // Bridged subtitles may need headers and aren't readable cross-site: the bridge fetches them.
     const load = t.bridged
-      ? extensionFetcher(t.url!, { headers: t.headers }).then((r) =>
-          r.ok ? r.body : Promise.reject(new Error(String(r.status))),
-        )
-      : fetch(t.url!).then((r) =>
-          r.ok ? r.text() : Promise.reject(new Error(String(r.status))),
-        );
+      ? extensionFetcher(t.url!, { headers: t.headers }).then((r) => (r.ok ? r.body : Promise.reject(new Error(String(r.status)))))
+      : fetch(t.url!).then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))));
     load
       .then((text) => {
         if (stale) return;
         const parsed = parseCaptions(text);
         setCues(parsed);
         // A track that isn't really WebVTT or SRT would otherwise just show nothing.
-        if (!parsed.length)
-          flash("Those subtitles couldn’t be read. Pick another track.");
+        if (!parsed.length) flash('Those subtitles couldn’t be read. Pick another track.');
       })
       .catch(() => {
         if (stale) return;
         setCues([]);
-        flash(
-          "Couldn’t load those subtitles. Pick another track or turn them off.",
-        );
+        flash('Couldn’t load those subtitles. Pick another track or turn them off.');
       });
     return () => {
       stale = true;
@@ -513,9 +402,7 @@ export default function Player({
     (i: number, label?: string) => {
       setSubIdx(i);
       if (i >= 0) lastSub.current = i;
-      actions.updateSettings({
-        subtitleLabel: i >= 0 ? (label ?? tracks[i]?.label ?? null) : null,
-      });
+      actions.updateSettings({ subtitleLabel: i >= 0 ? (label ?? tracks[i]?.label ?? null) : null });
     },
     [tracks],
   );
@@ -524,16 +411,11 @@ export default function Player({
   const fileInput = useRef<HTMLInputElement>(null);
   const loadFile = useCallback(
     async (file: File) => {
-      if (!/\.(srt|vtt)$/i.test(file.name))
-        return flash("Use an .srt or .vtt subtitle file");
+      if (!/\.(srt|vtt)$/i.test(file.name)) return flash('Use an .srt or .vtt subtitle file');
       const text = await file.text();
-      if (!parseCaptions(text).length)
-        return flash("That file has no subtitles in it");
-      const label = file.name.replace(/\.(srt|vtt)$/i, "");
-      setLocalTracks((l) => [
-        { label, text },
-        ...l.filter((x) => x.label !== label),
-      ]);
+      if (!parseCaptions(text).length) return flash('That file has no subtitles in it');
+      const label = file.name.replace(/\.(srt|vtt)$/i, '');
+      setLocalTracks((l) => [{ label, text }, ...l.filter((x) => x.label !== label)]);
       // The new file goes first in the list.
       setSubIdx(0);
       lastSub.current = 0;
@@ -551,54 +433,28 @@ export default function Player({
   }, [localTracks.length]);
 
   // iOS fullscreen is the native player, which can't show our overlay: give it a real track.
-  const nativeVtt = useMemo(
-    () =>
-      cues.length
-        ? URL.createObjectURL(
-            new Blob([toVtt(cues, delay)], { type: "text/vtt" }),
-          )
-        : null,
-    [cues, delay],
-  );
-  useEffect(
-    () => () => void (nativeVtt && URL.revokeObjectURL(nativeVtt)),
-    [nativeVtt],
-  );
+  const nativeVtt = useMemo(() => (cues.length ? URL.createObjectURL(new Blob([toVtt(cues, delay)], { type: 'text/vtt' })) : null), [cues, delay]);
+  useEffect(() => () => void (nativeVtt && URL.revokeObjectURL(nativeVtt)), [nativeVtt]);
 
   // ---------- skip segments ----------
-  const segments = useSegments(
-    media.type,
-    media.id,
-    media.season,
-    media.episode,
-  );
+  const segments = useSegments(media.type, media.id, media.season, media.episode);
   // While casting, the TV's clock drives everything.
   const now = casting ? cast.remote.time : time;
   const dur = casting && cast.remote.duration ? cast.remote.duration : duration;
-  const isPlaying = casting
-    ? cast.remote.active && !cast.remote.paused
-    : playing;
+  const isPlaying = casting ? cast.remote.active && !cast.remote.paused : playing;
   const nowRef = useRef(now);
   nowRef.current = now;
   const durRef = useRef(dur);
   durRef.current = dur;
   const segment = dur ? segmentAt(segments, now, dur) : undefined;
   const inCredits = useRef(false);
-  inCredits.current = segment?.type === "credits";
+  inCredits.current = segment?.type === 'credits';
   /**
    * The credits end well before the video does, and nothing known (a preview) starts where they
    * end: more of the episode follows (an anime's scene after the ending).
    */
   const sceneAfter =
-    segment?.type === "credits" &&
-    segment.end !== null &&
-    dur - segment.end > 20 &&
-    !segments.some(
-      (s) =>
-        s !== segment &&
-        Math.abs(s.start - segment.end!) < 5 &&
-        !!segmentAt([s], s.start, dur),
-    );
+    segment?.type === 'credits' && segment.end !== null && dur - segment.end > 20 && !segments.some((s) => s !== segment && Math.abs(s.start - segment.end!) < 5 && !!segmentAt([s], s.start, dur));
 
   // Stills for Continue watching: every 90 s while playing, and on pause / leaving (see lib/frames).
   // Trakt (when connected): tell it what's playing. Stopping at 80 %+ marks it watched there.
@@ -611,22 +467,21 @@ export default function Player({
     const pct = () => (v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0);
     const onPlaying = () => {
       started = true;
-      scrobble("start", scrobbleMedia.current, pct());
+      scrobble('start', scrobbleMedia.current, pct());
     };
-    const onPause = () =>
-      started && !v.ended && scrobble("pause", scrobbleMedia.current, pct());
+    const onPause = () => started && !v.ended && scrobble('pause', scrobbleMedia.current, pct());
     const onEnded = () => {
       started = false;
-      scrobble("stop", scrobbleMedia.current, 100);
+      scrobble('stop', scrobbleMedia.current, 100);
     };
-    v.addEventListener("playing", onPlaying);
-    v.addEventListener("pause", onPause);
-    v.addEventListener("ended", onEnded);
+    v.addEventListener('playing', onPlaying);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('ended', onEnded);
     return () => {
-      v.removeEventListener("playing", onPlaying);
-      v.removeEventListener("pause", onPause);
-      v.removeEventListener("ended", onEnded);
-      if (started) scrobble("stop", scrobbleMedia.current, pct());
+      v.removeEventListener('playing', onPlaying);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('ended', onEnded);
+      if (started) scrobble('stop', scrobbleMedia.current, pct());
     };
   }, [media.type, media.id, media.season, media.episode]);
 
@@ -636,24 +491,15 @@ export default function Player({
     const v = video.current;
     const grab = () => {
       const el = video.current;
-      if (
-        el &&
-        el.currentTime > 20 &&
-        !inCredits.current &&
-        !(el.duration && el.duration - el.currentTime < 60)
-      )
-        captureFrame(el, stillKey);
+      if (el && el.currentTime > 20 && !inCredits.current && !(el.duration && el.duration - el.currentTime < 60)) captureFrame(el, stillKey);
     };
-    const tick = window.setInterval(
-      () => video.current && !video.current.paused && grab(),
-      90_000,
-    );
+    const tick = window.setInterval(() => video.current && !video.current.paused && grab(), 90_000);
     const first = window.setTimeout(grab, 25_000);
-    v?.addEventListener("pause", grab);
+    v?.addEventListener('pause', grab);
     return () => {
       window.clearInterval(tick);
       window.clearTimeout(first);
-      v?.removeEventListener("pause", grab);
+      v?.removeEventListener('pause', grab);
       grab();
     };
   }, [stillKey, settings.frameThumbs, live]);
@@ -671,21 +517,14 @@ export default function Player({
     if (i < 0) return;
     setExhausted(false);
     setSourceIdx(i);
-    flash("Found more sources");
+    flash('Found more sources');
   }, [sourceCount, exhausted, data.sources, flash]);
 
   // Every source failed: links may simply have expired, so search again once by itself before
   // offering other servers.
   const autoRefreshed = useRef(false);
   useEffect(() => {
-    if (
-      !exhausted ||
-      searching ||
-      refreshing ||
-      !onRefresh ||
-      autoRefreshed.current
-    )
-      return;
+    if (!exhausted || searching || refreshing || !onRefresh || autoRefreshed.current) return;
     autoRefreshed.current = true;
     onRefresh();
   }, [exhausted, searching, refreshing, onRefresh]);
@@ -694,8 +533,7 @@ export default function Player({
   const onExhaustedRef = useRef(onExhausted);
   onExhaustedRef.current = onExhausted;
   useEffect(() => {
-    if (exhausted && liveSaid && !onRefresh && !searching)
-      onExhaustedRef.current();
+    if (exhausted && liveSaid && !onRefresh && !searching) onExhaustedRef.current();
   }, [exhausted, liveSaid, onRefresh, searching]);
 
   // ---------- expired links ----------
@@ -718,9 +556,7 @@ export default function Player({
   /** Asks for fresh links for an expired source. False when that can't be done (again): skip it instead. */
   const renew = (s: JellySource): boolean => {
     const now = Date.now();
-    renewedAt.current = renewedAt.current.filter(
-      (t) => now - t < RENEW_WINDOW_MS,
-    );
+    renewedAt.current = renewedAt.current.filter((t) => now - t < RENEW_WINDOW_MS);
     // Rationed, so a resolver that keeps handing out stale links can't hold the player in a loop.
     if (!onRefresh || renewedAt.current.length >= MAX_RENEWALS) return false;
     renewedAt.current.push(now);
@@ -730,7 +566,7 @@ export default function Player({
     setRenewing(true);
     setBuffering(true);
     if (!refreshing) onRefresh();
-    flash("This link expired. Getting a fresh one…");
+    flash('This link expired. Getting a fresh one…');
     return true;
   };
   const renewRef = useRef(renew);
@@ -748,29 +584,24 @@ export default function Player({
     if (pos.current.t > 5) seekOnLoad.current = pos.current.t;
     setExhausted(false);
     // While an expired stream is being waited for, the effect below picks the source.
-    if (!renewingRef.current)
-      setSourceIdx(Math.max(0, bestIndex(data.sources)));
-    flash("Got fresh links");
+    if (!renewingRef.current) setSourceIdx(Math.max(0, bestIndex(data.sources)));
+    flash('Got fresh links');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generation]);
 
   /** The wait is over: carry on with the expired stream's fresh copy, or the best source there is. */
   const settle = () => {
-    const back = comeBackTo.current
-      ? dataRef.current.sources.findIndex((s) => s.id === comeBackTo.current)
-      : -1;
+    const back = comeBackTo.current ? dataRef.current.sources.findIndex((s) => s.id === comeBackTo.current) : -1;
     comeBackTo.current = null;
     setRenewing(false);
-    setSourceIdx(
-      Math.max(0, back >= 0 ? back : bestIndex(dataRef.current.sources)),
-    );
+    setSourceIdx(Math.max(0, back >= 0 ? back : bestIndex(dataRef.current.sources)));
     setAttempt((n) => n + 1);
   };
   /** No fresh list came: skip the source after all. */
   const giveUp = () => {
     comeBackTo.current = null;
     setRenewing(false);
-    failRef.current("link expired");
+    failRef.current('link expired');
   };
   const settleRef = useRef(settle);
   settleRef.current = settle;
@@ -784,8 +615,7 @@ export default function Player({
   useEffect(() => {
     if (!fresh) return;
     const wanted = comeBackTo.current;
-    if (!wanted || !searching || data.sources.some((s) => s.id === wanted))
-      return settleRef.current();
+    if (!wanted || !searching || data.sources.some((s) => s.id === wanted)) return settleRef.current();
     const t = window.setTimeout(() => settleRef.current(), COME_BACK_WAIT_MS);
     return () => window.clearTimeout(t);
   }, [fresh, data.sources, searching]);
@@ -798,10 +628,7 @@ export default function Player({
   }, [renewing, refreshing, fresh]);
   useEffect(() => {
     if (!renewing) return;
-    const t = window.setTimeout(
-      () => (freshRef.current ? settleRef.current() : giveUpRef.current()),
-      RENEW_WAIT_MS,
-    );
+    const t = window.setTimeout(() => (freshRef.current ? settleRef.current() : giveUpRef.current()), RENEW_WAIT_MS);
     return () => window.clearTimeout(t);
   }, [renewing]);
 
@@ -813,17 +640,7 @@ export default function Player({
   // (several often arrive together) so the best of them is taken, not the first.
   const upgrades = useRef(0);
   useEffect(() => {
-    if (
-      !playing ||
-      !healthy.current ||
-      userPicked.current ||
-      exhausted ||
-      renewing ||
-      casting ||
-      live ||
-      upgrades.current >= 2
-    )
-      return;
+    if (!playing || !healthy.current || userPicked.current || exhausted || renewing || casting || live || upgrades.current >= 2) return;
     const t = window.setTimeout(
       () => {
         if (!healthy.current || userPicked.current) return;
@@ -832,20 +649,11 @@ export default function Player({
         const now = Math.max(heightOf(cur), ...levels.map((l) => l.height));
         if (!now) return; // unknown: it may already be the best there is
         const lang = audioPref.current;
-        const speaks = (x: JellySource) =>
-          !x.audioTracks?.length ||
-          x.audioTracks.some((a) => a.language === lang);
+        const speaks = (x: JellySource) => !x.audioTracks?.length || x.audioTracks.some((a) => a.language === lang);
         const list = dataRef.current.sources;
         let best = -1;
         list.forEach((x, i) => {
-          if (
-            failed.current.has(i) ||
-            (x.id && failedIds.current.has(x.id)) ||
-            isFrame(x) ||
-            x.type === "mkv" ||
-            x.verification?.state === "failed"
-          )
-            return;
+          if (failed.current.has(i) || (x.id && failedIds.current.has(x.id)) || isFrame(x) || x.type === 'mkv' || x.verification?.state === 'failed') return;
           if ((x.id && x.id === cur.id) || x.url === cur.url) return;
           if (speaks(cur) && !speaks(x)) return;
           const h = heightOf(x);
@@ -857,23 +665,14 @@ export default function Player({
         keepPosition();
         const h = heightOf(list[best]);
         console.info(`[player] switching to a ${h}p source (was ${now}p)`);
-        switchWhy.current = "Found a sharper source";
+        switchWhy.current = 'Found a sharper source';
         setSourceIdx(best);
       },
       searching ? 6000 : 1500,
     );
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    data.sources,
-    searching,
-    playing,
-    exhausted,
-    renewing,
-    casting,
-    live,
-    levels,
-  ]);
+  }, [data.sources, searching, playing, exhausted, renewing, casting, live, levels]);
 
   // ---------- picking a source (the player's menu, or the page's server menu) ----------
   const pickSource = (i: number) => {
@@ -881,7 +680,7 @@ export default function Player({
     keepPosition();
     failed.current.delete(i);
     userPicked.current = true;
-    switchWhy.current = "Source changed";
+    switchWhy.current = 'Source changed';
     // The viewer chose: a wait for fresh links doesn't override it.
     comeBackTo.current = null;
     setRenewing(false);
@@ -893,28 +692,9 @@ export default function Player({
   useEffect(() => {
     const list = data.sources
       .map((s, i) => ({ s, i }))
-      .filter(
-        ({ s, i }) =>
-          i === sourceIdx ||
-          (!failed.current.has(i) &&
-            !isFrame(s) &&
-            s.verification?.state !== "failed"),
-      )
-      .map(({ s, i }) => ({
-        url: s.url,
-        label: sourceLabel(s),
-        tag: sourceTag(s) || undefined,
-        provider: s.provider.name,
-        height: heightOf(s),
-        selected: i === sourceIdx,
-      }));
-    publishQuick({
-      list,
-      pick: (url) =>
-        pickRef.current(
-          dataRef.current.sources.findIndex((x) => x.url === url),
-        ),
-    });
+      .filter(({ s, i }) => i === sourceIdx || (!failed.current.has(i) && !isFrame(s) && s.verification?.state !== 'failed'))
+      .map(({ s, i }) => ({ url: s.url, label: sourceLabel(s), tag: sourceTag(s) || undefined, provider: s.provider.name, height: heightOf(s), selected: i === sourceIdx }));
+    publishQuick({ list, pick: (url) => pickRef.current(dataRef.current.sources.findIndex((x) => x.url === url)) });
   }, [data.sources, sourceIdx, exhausted]);
   useEffect(() => () => publishQuick(null), []);
 
@@ -922,9 +702,8 @@ export default function Player({
   /** Why each failed source failed, in words (shown in the Source menu). */
   const reasons = useRef(new Map<string, string>());
   const failReason = useRef({
-    get: (i: number) => reasons.current.get(urlAt(i) ?? ""),
-    set: (i: number, why: string) =>
-      void (urlAt(i) && reasons.current.set(urlAt(i)!, why)),
+    get: (i: number) => reasons.current.get(urlAt(i) ?? ''),
+    set: (i: number, why: string) => void (urlAt(i) && reasons.current.set(urlAt(i)!, why)),
     clear: () => reasons.current.clear(),
   });
   const fail = useCallback(
@@ -951,17 +730,11 @@ export default function Player({
         setBuffering(false);
         return;
       }
-      console.warn(
-        `[player] source ${sourceIdx + 1} failed (${why}), trying ${nextIdx + 1}`,
-      );
+      console.warn(`[player] source ${sourceIdx + 1} failed (${why}), trying ${nextIdx + 1}`);
       // A source this device can't play at all is skipped with the reason, not reported as broken.
       const cant = unplayableReason(why);
-      flash(
-        cant
-          ? `Skipped source ${sourceIdx + 1}: ${cant}`
-          : `Source ${sourceIdx + 1} failed — trying another`,
-      );
-      switchWhy.current = "Switched source";
+      flash(cant ? `Skipped source ${sourceIdx + 1}: ${cant}` : `Source ${sourceIdx + 1} failed — trying another`);
+      switchWhy.current = 'Switched source';
       setSourceIdx(nextIdx);
     },
     [data.sources, sourceIdx, flash, setSourceIdx, keepPinned, twinAt, source],
@@ -984,12 +757,10 @@ export default function Player({
     failReason.current.set(sourceIdx, `Audio in ${name}`);
     const nextIdx = bestIndex(data.sources, failed.current.has);
     if (nextIdx === -1) return;
-    console.info(
-      `[player] source ${sourceIdx + 1} is in ${heard.join(", ")}, trying ${nextIdx + 1}`,
-    );
+    console.info(`[player] source ${sourceIdx + 1} is in ${heard.join(', ')}, trying ${nextIdx + 1}`);
     keepPosition();
     flash(`That source was in ${name} — trying another`);
-    switchWhy.current = `Switched to ${languageName(audioPref.current) || "your language"} audio`;
+    switchWhy.current = `Switched to ${languageName(audioPref.current) || 'your language'} audio`;
     setSourceIdx(nextIdx);
   };
   const wrongAudioRef = useRef(wrongAudio);
@@ -1003,12 +774,12 @@ export default function Player({
     // A link past its expiry would only fail slowly: ask for fresh links now, and skip the source
     // only if that can't be done.
     if (source.expiresAt && source.expiresAt <= Date.now()) {
-      if (!renewRef.current(source)) failRef.current("link expired");
+      if (!renewRef.current(source)) failRef.current('link expired');
       return;
     }
     // Another site's player page is not a stream: it is never handed to the video element or an engine.
     if (isFrame(source)) {
-      failRef.current(unplayable("It is another site’s player, not a stream"));
+      failRef.current(unplayable('It is another site’s player, not a stream'));
       return;
     }
     let cancelled = false;
@@ -1024,50 +795,35 @@ export default function Player({
     // A live stream starts at its live edge, whatever position another source had reached.
     const startAt = liveRef.current ? 0 : seekOnLoad.current;
 
-    const startup = window.setTimeout(
-      () =>
-        !cancelled && v.readyState < 3 && failRef.current("startup timeout"),
-      STARTUP_TIMEOUT_MS,
-    );
+    const startup = window.setTimeout(() => !cancelled && v.readyState < 3 && failRef.current('startup timeout'), STARTUP_TIMEOUT_MS);
     const clearStartup = () => window.clearTimeout(startup);
     // Remember the provider that actually played, so it's tried first next time.
     const onPlaying = () => {
       clearStartup();
       healthy.current = true;
       // Say what's playing: the quality (the best of what it says and what it turned out to carry).
-      const height = Math.max(
-        heightOf(source),
-        ...levelsRef.current.map((l) => l.height),
-        v.videoHeight || 0,
-      );
+      const height = Math.max(heightOf(source), ...levelsRef.current.map((l) => l.height), v.videoHeight || 0);
       const why = switchWhy.current;
-      switchWhy.current = "Playing";
+      switchWhy.current = 'Playing';
       if (!liveRef.current) {
-        setSrcPill({
-          key: Date.now(),
-          height,
-          quality: source.quality,
-          from: source.provider.name,
-          why,
-        });
+        setSrcPill({ key: Date.now(), height, quality: source.quality, from: source.provider.name, why });
         window.clearTimeout(pillTimer.current);
         pillTimer.current = window.setTimeout(() => setSrcPill(null), 3800);
       }
-      if (getState().settings.lastProvider !== source.provider.id)
-        actions.updateSettings({ lastProvider: source.provider.id });
+      if (getState().settings.lastProvider !== source.provider.id) actions.updateSettings({ lastProvider: source.provider.id });
     };
-    v.addEventListener("playing", onPlaying, { once: true });
-    v.addEventListener("canplay", clearStartup, { once: true });
+    v.addEventListener('playing', onPlaying, { once: true });
+    v.addEventListener('canplay', clearStartup, { once: true });
 
     const play = () => v.play().catch(() => setPlaying(false)); // autoplay may be blocked; show the play button
 
     const stop = () => {
       cancelled = true;
       clearStartup();
-      v.removeEventListener("playing", onPlaying);
+      v.removeEventListener('playing', onPlaying);
       engine.current?.destroy();
       engine.current = null;
-      v.removeAttribute("src");
+      v.removeAttribute('src');
       v.load(); // stop downloading
     };
     // The host refused a request (401/403/404/410): that won't fix itself. On a link that carries an
@@ -1077,13 +833,13 @@ export default function Player({
       failRef.current(`${why} ${status}`, status === 401 || status === 403);
     };
 
-    const nativeHls = v.canPlayType("application/vnd.apple.mpegurl") !== "";
+    const nativeHls = v.canPlayType('application/vnd.apple.mpegurl') !== '';
     // Safari plays HLS itself. Letting it (instead of hls.js) is what makes AirPlay work: AirPlay
     // hands the TV the real stream address, which hls.js's in-tab blob: address can't be.
-    const airplayCapable = "WebKitPlaybackTargetAvailabilityEvent" in window;
-    if (source.type === "dash") {
+    const airplayCapable = 'WebKitPlaybackTargetAvailabilityEvent' in window;
+    if (source.type === 'dash') {
       // dash.js arrives only now, as its own chunk: nobody who never meets a DASH stream downloads it.
-      import("./dash")
+      import('./dash')
         .then(({ startDash }) => {
           if (cancelled) return;
           engine.current = startDash(
@@ -1093,9 +849,7 @@ export default function Player({
               startAt,
               audioLang: audioPref.current,
               // Direct streams: before the first request to each host, have the bridge allow it.
-              allow: direct
-                ? (host) => allowStream(host, source.headers ?? {})
-                : undefined,
+              allow: direct ? (host) => allowStream(host, source.headers ?? {}) : undefined,
             },
             {
               ready: play,
@@ -1109,22 +863,18 @@ export default function Player({
               fail: (why, status) => {
                 if (cancelled) return;
                 cancelled = true;
-                if (status && REFUSALS.includes(status))
-                  refused(why.replace(/ \d{3}$/, ""), status);
+                if (status && REFUSALS.includes(status)) refused(why.replace(/ \d{3}$/, ''), status);
                 else failRef.current(why);
               },
             },
           );
         })
         .catch((e) => {
-          console.warn("[player] dash", e);
-          if (!cancelled) failRef.current("Couldn’t start the DASH player");
+          console.warn('[player] dash', e);
+          if (!cancelled) failRef.current('Couldn’t start the DASH player');
         });
-    } else if (
-      source.type === "hls" &&
-      !(nativeHls && (airplayCapable || !("MediaSource" in window)))
-    ) {
-      import("hls.js").then(({ default: HlsCtor }) => {
+    } else if (source.type === 'hls' && !(nativeHls && (airplayCapable || !('MediaSource' in window)))) {
+      import('hls.js').then(({ default: HlsCtor }) => {
         if (cancelled) return;
         if (!HlsCtor.isSupported()) {
           v.src = source.url;
@@ -1132,22 +882,13 @@ export default function Player({
         }
         // Direct streams: before the first request to each host, have the extension allow it.
         const headers = source.headers ?? {};
-        const Base = HlsCtor.DefaultConfig.loader as unknown as new (
-          config: unknown,
-        ) => {
-          load(
-            context: { url: string },
-            config: unknown,
-            callbacks: unknown,
-          ): void;
-        };
+        const Base = HlsCtor.DefaultConfig.loader as unknown as new (config: unknown) => { load(context: { url: string }, config: unknown, callbacks: unknown): void };
         class HelperLoader extends Base {
           load(context: { url: string }, config: unknown, callbacks: unknown) {
             // data: playlists (Febbox's adaptive list) are built here and need no host rule.
-            if (!/^https?:/.test(context.url))
-              return super.load(context, config, callbacks);
+            if (!/^https?:/.test(context.url)) return super.load(context, config, callbacks);
             allowStream(new URL(context.url).hostname, headers)
-              .catch((e) => console.warn("[helper]", e.message))
+              .catch((e) => console.warn('[helper]', e.message))
               .finally(() => super.load(context, config, callbacks));
           }
         }
@@ -1155,12 +896,7 @@ export default function Player({
           capLevelToPlayerSize: true,
           startPosition: startAt > 0 ? startAt : -1,
           maxBufferLength: 30,
-          ...(direct
-            ? {
-                loader:
-                  HelperLoader as unknown as typeof HlsCtor.DefaultConfig.loader,
-              }
-            : {}),
+          ...(direct ? { loader: HelperLoader as unknown as typeof HlsCtor.DefaultConfig.loader } : {}),
         });
         engine.current = {
           setLevel: (i) => void (h.currentLevel = i),
@@ -1177,43 +913,22 @@ export default function Player({
           play();
         });
         h.on(HlsCtor.Events.AUDIO_TRACKS_UPDATED, () => {
-          setAudioTracks(
-            h.audioTracks.map((t, i) => ({
-              id: i,
-              name: t.name || t.lang || `Track ${i + 1}`,
-            })),
-          );
+          setAudioTracks(h.audioTracks.map((t, i) => ({ id: i, name: t.name || t.lang || `Track ${i + 1}` })));
           // Several audio languages in one stream (e.g. VixSrc): switch to the preferred one.
           const pref = audioPref.current;
           const want = languageName(pref).toLowerCase();
-          const i = h.audioTracks.findIndex(
-            (t) =>
-              t.lang?.toLowerCase().startsWith(pref) ||
-              t.name?.toLowerCase().startsWith(want),
-          );
+          const i = h.audioTracks.findIndex((t) => t.lang?.toLowerCase().startsWith(pref) || t.name?.toLowerCase().startsWith(want));
           if (i >= 0 && i !== h.audioTrack) h.audioTrack = i;
           setAudioTrack(i >= 0 ? i : h.audioTrack);
           // Every track names a language and none is the wanted one: the wrong audio altogether.
-          const heard = h.audioTracks.map((t) =>
-            (t.lang ?? "").toLowerCase().slice(0, 2),
-          );
-          if (
-            i < 0 &&
-            heard.length &&
-            heard.every((l) => /^[a-z]{2}$/.test(l) && l !== "un" && l !== "mu")
-          )
-            wrongAudioRef.current([...new Set(heard)]);
+          const heard = h.audioTracks.map((t) => (t.lang ?? '').toLowerCase().slice(0, 2));
+          if (i < 0 && heard.length && heard.every((l) => /^[a-z]{2}$/.test(l) && l !== 'un' && l !== 'mu')) wrongAudioRef.current([...new Set(heard)]);
         });
-        h.on(HlsCtor.Events.AUDIO_TRACK_SWITCHED, (_e, d) =>
-          setAudioTrack(d.id),
-        );
+        h.on(HlsCtor.Events.AUDIO_TRACK_SWITCHED, (_e, d) => setAudioTrack(d.id));
         // A playlist with no end is a live stream.
-        h.on(HlsCtor.Events.LEVEL_LOADED, (_e, d) =>
-          setLiveSeen(d.details.live),
-        );
+        h.on(HlsCtor.Events.LEVEL_LOADED, (_e, d) => setLiveSeen(d.details.live));
         h.on(HlsCtor.Events.ERROR, (_e, d) => {
-          const status =
-            (d.response as { code?: number } | undefined)?.code ?? 0;
+          const status = (d.response as { code?: number } | undefined)?.code ?? 0;
           // Don't sit through hls.js retries on a refusal: 401/403/404/410 won't fix themselves.
           if (REFUSALS.includes(status) && /LoadError$/.test(d.details)) {
             if (!cancelled) {
@@ -1225,23 +940,13 @@ export default function Player({
           if (!d.fatal || cancelled) return;
           // Nothing in the playlist this browser can decode. No recovery changes that, and hls.js
           // would only sit there: skip the source now, with the reason.
-          if (
-            d.details ===
-            HlsCtor.ErrorDetails.MANIFEST_INCOMPATIBLE_CODECS_ERROR
-          ) {
+          if (d.details === HlsCtor.ErrorDetails.MANIFEST_INCOMPATIBLE_CODECS_ERROR) {
             cancelled = true;
             return failRef.current(unplayable(undecodableIn(d.reason)));
           }
-          if (
-            d.type === HlsCtor.ErrorTypes.NETWORK_ERROR &&
-            d.details !== "manifestLoadError" &&
-            retry("network")
-          ) {
+          if (d.type === HlsCtor.ErrorTypes.NETWORK_ERROR && d.details !== 'manifestLoadError' && retry('network')) {
             h.startLoad();
-          } else if (
-            d.type === HlsCtor.ErrorTypes.MEDIA_ERROR &&
-            retry("media")
-          ) {
+          } else if (d.type === HlsCtor.ErrorTypes.MEDIA_ERROR && retry('media')) {
             h.recoverMediaError();
           } else {
             failRef.current(d.details);
@@ -1254,7 +959,7 @@ export default function Player({
       const onMeta = () => {
         if (startAt > 0 && startAt < v.duration - 10) v.currentTime = startAt;
       };
-      v.addEventListener("loadedmetadata", onMeta, { once: true });
+      v.addEventListener('loadedmetadata', onMeta, { once: true });
       const start = () => {
         if (cancelled) return;
         v.src = source.url;
@@ -1318,14 +1023,7 @@ export default function Player({
     hideTimer.current = window.setTimeout(() => setControls(false), 3000);
   }, []);
   // Paused and left alone: fade the controls and show what's playing (like a TV's pause screen).
-  const idleEligible =
-    !casting &&
-    !playing &&
-    !buffering &&
-    !exhausted &&
-    countdown === null &&
-    menu === null &&
-    settings.pauseOverlay;
+  const idleEligible = !casting && !playing && !buffering && !exhausted && countdown === null && menu === null && settings.pauseOverlay;
   useEffect(() => {
     if (!idleEligible) return setPausedIdle(false);
     const t = window.setTimeout(() => setPausedIdle(true), PAUSE_OVERLAY_MS);
@@ -1333,27 +1031,11 @@ export default function Player({
   }, [idleEligible, pokes]);
   // Phones (and small touch tablets): iOS-style controls in the middle, menus as bottom sheets.
   const compact = useCompact();
-  const showControls =
-    !pausedIdle &&
-    (controls ||
-      !isPlaying ||
-      casting ||
-      menu !== null ||
-      exhausted ||
-      countdown !== null);
+  const showControls = !pausedIdle && (controls || !isPlaying || casting || menu !== null || exhausted || countdown !== null);
   // Paused (or not started): what's playing, top-left, like a TV's pause screen.
   // What's playing, top-left in the top bar: always there with the controls, and kept on screen
   // while paused.
-  const pausedInfo = (
-    <TitleInfo
-      title={title}
-      subtitle={subtitle}
-      meta={meta}
-      detailsUrl={detailsUrl}
-      onDetails={onDetails}
-      onEpisodes={onEpisodes}
-    />
-  );
+  const pausedInfo = <TitleInfo title={title} subtitle={subtitle} meta={meta} detailsUrl={detailsUrl} onDetails={onDetails} onEpisodes={onEpisodes} />;
   const keepTop = !isPlaying && !exhausted && !casting;
 
   // ---------- actions ----------
@@ -1366,8 +1048,7 @@ export default function Player({
   }, []);
   const seekTo = useCallback((t: number) => {
     if (liveRef.current) return;
-    if (castingRef.current)
-      return cast.seek(Math.max(0, Math.min(durRef.current - 0.5, t)));
+    if (castingRef.current) return cast.seek(Math.max(0, Math.min(durRef.current - 0.5, t)));
     const v = video.current;
     if (!v || !v.duration) return;
     v.currentTime = Math.max(0, Math.min(v.duration - 0.5, t));
@@ -1376,7 +1057,7 @@ export default function Player({
     (s: number) => {
       if (!durRef.current || liveRef.current) return;
       seekTo(nowRef.current + s);
-      flash(`${s > 0 ? "+" : ""}${s}s`);
+      flash(`${s > 0 ? '+' : ''}${s}s`);
       poke();
     },
     [flash, poke, seekTo],
@@ -1401,49 +1082,31 @@ export default function Player({
   }, []);
   const toggleFullscreen = useCallback(() => {
     const el = wrap.current;
-    const v = video.current as
-      (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
-    if (document.fullscreenElement)
-      return void document.exitFullscreen().catch(() => {});
+    const v = video.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    if (document.fullscreenElement) return void document.exitFullscreen().catch(() => {});
     if (el?.requestFullscreen) {
       el.requestFullscreen()
-        .then(() =>
-          (
-            screen.orientation as ScreenOrientation & {
-              lock?: (o: string) => Promise<void>;
-            }
-          )
-            ?.lock?.("landscape")
-            .catch(() => {}),
-        )
+        .then(() => (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> })?.lock?.('landscape').catch(() => {}))
         .catch(() => v?.webkitEnterFullscreen?.());
     } else v?.webkitEnterFullscreen?.(); // iOS Safari
   }, []);
   const togglePip = useCallback(() => {
     const v = video.current;
     if (!v) return;
-    if (document.pictureInPictureElement)
-      document.exitPictureInPicture().catch(() => {});
+    if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
     else v.requestPictureInPicture?.().catch(() => {});
   }, []);
   const toggleCaptions = useCallback(() => {
     if (!tracks.length) return;
-    const i =
-      subIdx >= 0
-        ? -1
-        : Math.max(0, Math.min(tracks.length - 1, lastSub.current));
+    const i = subIdx >= 0 ? -1 : Math.max(0, Math.min(tracks.length - 1, lastSub.current));
     chooseSub(i);
-    flash(i >= 0 ? `Subtitles: ${tracks[i].label}` : "Subtitles off");
+    flash(i >= 0 ? `Subtitles: ${tracks[i].label}` : 'Subtitles off');
   }, [subIdx, tracks, flash, chooseSub]);
   const nudgeDelay = useCallback(
     (by: number) =>
       setDelay((d) => {
         const v = Math.round((d + by) * 10) / 10;
-        flash(
-          v === 0
-            ? "Subtitle timing reset"
-            : `Subtitles ${Math.abs(v)}s ${v > 0 ? "later" : "earlier"}`,
-        );
+        flash(v === 0 ? 'Subtitle timing reset' : `Subtitles ${Math.abs(v)}s ${v > 0 ? 'later' : 'earlier'}`);
         return v;
       }),
     [flash],
@@ -1459,50 +1122,28 @@ export default function Player({
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFs);
-    return () => document.removeEventListener("fullscreenchange", onFs);
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
   // ---------- segments: auto-skip and the credits hand-off ----------
   useEffect(() => {
     if (!segment) return;
-    if (segment.type === "credits") {
+    if (segment.type === 'credits') {
       // Credits rolling with an episode to go to: start the "Up next" countdown now. Not when more
       // of this episode follows them (a post-credits scene): then they get a "Skip credits" instead.
-      if (
-        next &&
-        !sceneAfter &&
-        settings.creditsNext &&
-        settings.autoplayNext &&
-        !creditsOffered.current &&
-        isPlaying
-      ) {
+      if (next && !sceneAfter && settings.creditsNext && settings.autoplayNext && !creditsOffered.current && isPlaying) {
         creditsOffered.current = true;
         setCountdown(10);
       }
       return;
     }
-    if (
-      settings.autoSkip &&
-      segment.end !== null &&
-      !skipped.current.has(segment.start) &&
-      isPlaying
-    ) {
+    if (settings.autoSkip && segment.end !== null && !skipped.current.has(segment.start) && isPlaying) {
       skipped.current.add(segment.start);
       seekTo(segment.end);
       flash(`Skipped ${segment.type}`);
     }
-  }, [
-    segment,
-    sceneAfter,
-    next,
-    settings.creditsNext,
-    settings.autoplayNext,
-    settings.autoSkip,
-    isPlaying,
-    seekTo,
-    flash,
-  ]);
+  }, [segment, sceneAfter, next, settings.creditsNext, settings.autoplayNext, settings.autoSkip, isPlaying, seekTo, flash]);
 
   // ---------- Chromecast: hand the stream over, keep progress, take it back ----------
   const castLoaded = useRef<string | null>(null);
@@ -1520,10 +1161,7 @@ export default function Player({
     v?.pause();
     const t = subIdx >= 0 ? tracks[subIdx] : undefined;
     // The default receiver reads WebVTT only, and only from a real URL (not a file loaded here).
-    const vtt =
-      t?.url && (t.format === "vtt" || /\.vtt(\?|$)/i.test(t.url))
-        ? t
-        : undefined;
+    const vtt = t?.url && (t.format === 'vtt' || /\.vtt(\?|$)/i.test(t.url)) ? t : undefined;
     cast
       .load({
         url: new URL(source.url, location.href).href,
@@ -1532,20 +1170,13 @@ export default function Player({
         subtitle,
         poster,
         startAt,
-        subtitles: vtt
-          ? { url: new URL(vtt.url!, location.href).href, label: vtt.label }
-          : undefined,
-        subtitleStyle: {
-          color: settings.subColor,
-          bg: settings.subBg,
-          scale: settings.subSize,
-          bold: settings.subBold,
-        },
+        subtitles: vtt ? { url: new URL(vtt.url!, location.href).href, label: vtt.label } : undefined,
+        subtitleStyle: { color: settings.subColor, bg: settings.subBg, scale: settings.subSize, bold: settings.subBold },
       })
       .then((ok) => {
-        if (ok) return flash(`Playing on ${cast.device || "your TV"}`);
+        if (ok) return flash(`Playing on ${cast.device || 'your TV'}`);
         castLoaded.current = null;
-        flash("The Chromecast couldn’t play this source");
+        flash('The Chromecast couldn’t play this source');
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [casting, source.url]);
@@ -1556,7 +1187,7 @@ export default function Player({
     if (wasCasting.current && !casting) {
       const v = video.current;
       if (v && lastRemote.current > 0) v.currentTime = lastRemote.current;
-      flash("Stopped casting");
+      flash('Stopped casting');
     }
     wasCasting.current = casting;
   }, [casting, flash]);
@@ -1564,10 +1195,7 @@ export default function Player({
   // Progress and the next-episode countdown while the TV is playing.
   useEffect(() => {
     if (!casting || !cast.remote.duration) return;
-    const id = window.setInterval(
-      () => onProgress(nowRef.current, durRef.current),
-      REPORT_EVERY_MS,
-    );
+    const id = window.setInterval(() => onProgress(nowRef.current, durRef.current), REPORT_EVERY_MS);
     return () => window.clearInterval(id);
   }, [casting, cast.remote.duration, onProgress]);
   const remoteEnded = casting && cast.remote.ended;
@@ -1579,79 +1207,35 @@ export default function Player({
 
   // ---------- AirPlay (Safari) ----------
   useEffect(() => {
-    const v = video.current as
-      | (HTMLVideoElement & { webkitCurrentPlaybackTargetIsWireless?: boolean })
-      | null;
-    if (!v || !("WebKitPlaybackTargetAvailabilityEvent" in window)) return;
-    const onAvail = (e: Event) =>
-      setAirplay((a) =>
-        (e as Event & { availability?: string }).availability === "available"
-          ? a === "active"
-            ? a
-            : "available"
-          : a === "active"
-            ? a
-            : "none",
-      );
-    const onWireless = () =>
-      setAirplay(
-        v.webkitCurrentPlaybackTargetIsWireless ? "active" : "available",
-      );
-    v.addEventListener("webkitplaybacktargetavailabilitychanged", onAvail);
-    v.addEventListener(
-      "webkitcurrentplaybacktargetiswirelesschanged",
-      onWireless,
-    );
+    const v = video.current as (HTMLVideoElement & { webkitCurrentPlaybackTargetIsWireless?: boolean }) | null;
+    if (!v || !('WebKitPlaybackTargetAvailabilityEvent' in window)) return;
+    const onAvail = (e: Event) => setAirplay((a) => ((e as Event & { availability?: string }).availability === 'available' ? (a === 'active' ? a : 'available') : a === 'active' ? a : 'none'));
+    const onWireless = () => setAirplay(v.webkitCurrentPlaybackTargetIsWireless ? 'active' : 'available');
+    v.addEventListener('webkitplaybacktargetavailabilitychanged', onAvail);
+    v.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', onWireless);
     return () => {
-      v.removeEventListener("webkitplaybacktargetavailabilitychanged", onAvail);
-      v.removeEventListener(
-        "webkitcurrentplaybacktargetiswirelesschanged",
-        onWireless,
-      );
+      v.removeEventListener('webkitplaybacktargetavailabilitychanged', onAvail);
+      v.removeEventListener('webkitcurrentplaybacktargetiswirelesschanged', onWireless);
     };
   }, []);
-  const showAirplayPicker = () =>
-    (
-      video.current as HTMLVideoElement & {
-        webkitShowPlaybackTargetPicker?: () => void;
-      }
-    )?.webkitShowPlaybackTargetPicker?.();
+  const showAirplayPicker = () => (video.current as HTMLVideoElement & { webkitShowPlaybackTargetPicker?: () => void })?.webkitShowPlaybackTargetPicker?.();
 
   // ---------- keyboard ----------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       // Leave keys alone while typing, with modifiers, or while a dialog (e.g. the episode list) is open.
-      if (
-        /input|textarea|select/i.test(el.tagName) ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.altKey ||
-        document.querySelector('dialog[open],[aria-modal="true"]')
-      )
-        return;
+      if (/input|textarea|select/i.test(el.tagName) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open],[aria-modal="true"]')) return;
       // YouTube-style keys, the de facto standard for web video.
-      const jumpTo = (frac: number) =>
-        durRef.current &&
-        !liveRef.current &&
-        (seekTo(durRef.current * frac), flash(`${Math.round(frac * 100)}%`));
+      const jumpTo = (frac: number) => durRef.current && !liveRef.current && (seekTo(durRef.current * frac), flash(`${Math.round(frac * 100)}%`));
       const speed = (dir: 1 | -1) => {
         const i = SPEEDS.indexOf(rate);
-        const sp =
-          SPEEDS[
-            Math.max(
-              0,
-              Math.min(
-                SPEEDS.length - 1,
-                (i < 0 ? SPEEDS.indexOf(1) : i) + dir,
-              ),
-            )
-          ];
+        const sp = SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, (i < 0 ? SPEEDS.indexOf(1) : i) + dir))];
         changeRate(sp);
         flash(`Speed ${sp}×`);
       };
       const map: Record<string, () => void> = {
-        " ": toggle,
+        ' ': toggle,
         k: toggle,
         ArrowLeft: () => seekBy(-5),
         ArrowRight: () => seekBy(5),
@@ -1659,91 +1243,50 @@ export default function Player({
         l: () => seekBy(10),
         Home: () => jumpTo(0),
         End: () => jumpTo(0.999),
-        ArrowUp: () => (
-          setVol(volume + 0.1),
-          flash(`Volume ${Math.round(Math.min(1, volume + 0.1) * 100)}%`)
-        ),
-        ArrowDown: () => (
-          setVol(volume - 0.1),
-          flash(`Volume ${Math.round(Math.max(0, volume - 0.1) * 100)}%`)
-        ),
+        ArrowUp: () => (setVol(volume + 0.1), flash(`Volume ${Math.round(Math.min(1, volume + 0.1) * 100)}%`)),
+        ArrowDown: () => (setVol(volume - 0.1), flash(`Volume ${Math.round(Math.max(0, volume - 0.1) * 100)}%`)),
         m: toggleMute,
         f: toggleFullscreen,
         c: toggleCaptions,
         i: togglePip,
-        "<": () => speed(-1),
-        ">": () => speed(1),
+        '<': () => speed(-1),
+        '>': () => speed(1),
         // Subtitle timing, as in mpv: Z earlier, X later.
         z: () => cues.length && nudgeDelay(-0.5),
         x: () => cues.length && nudgeDelay(0.5),
         N: () => next?.go(),
-        ...Object.fromEntries(
-          [..."0123456789"].map((d) => [d, () => jumpTo(Number(d) / 10)]),
-        ),
+        ...Object.fromEntries([...'0123456789'].map((d) => [d, () => jumpTo(Number(d) / 10)])),
       };
       // Esc closes an open player menu first; otherwise the page handles it (back to details).
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         if (menu) {
           e.stopImmediatePropagation();
           setMenu(null);
         }
         return;
       }
-      const fn =
-        map[e.key] ??
-        (e.key.length === 1 && !e.shiftKey
-          ? map[e.key.toLowerCase()]
-          : undefined);
-      if (!fn || (e.key === " " && el.tagName === "BUTTON")) return;
+      const fn = map[e.key] ?? (e.key.length === 1 && !e.shiftKey ? map[e.key.toLowerCase()] : undefined);
+      if (!fn || (e.key === ' ' && el.tagName === 'BUTTON')) return;
       e.preventDefault();
       fn();
       poke();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [
-    toggle,
-    seekBy,
-    setVol,
-    volume,
-    toggleMute,
-    toggleFullscreen,
-    toggleCaptions,
-    togglePip,
-    next,
-    poke,
-    flash,
-    menu,
-    rate,
-    changeRate,
-    cues.length,
-    nudgeDelay,
-    setMenu,
-  ]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [toggle, seekBy, setVol, volume, toggleMute, toggleFullscreen, toggleCaptions, togglePip, next, poke, flash, menu, rate, changeRate, cues.length, nudgeDelay, setMenu]);
 
   // ---------- media session (lock screen / hardware keys) ----------
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist: subtitle ?? "",
-      artwork: poster ? [{ src: poster, sizes: "342x513" }] : [],
-    });
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({ title, artist: subtitle ?? '', artwork: poster ? [{ src: poster, sizes: '342x513' }] : [] });
     const ms = navigator.mediaSession;
-    ms.setActionHandler("play", () => video.current?.play());
-    ms.setActionHandler("pause", () => video.current?.pause());
-    ms.setActionHandler("seekbackward", live ? null : () => seekBy(-10));
-    ms.setActionHandler("seekforward", live ? null : () => seekBy(10));
-    ms.setActionHandler("nexttrack", next ? () => next.go() : null);
+    ms.setActionHandler('play', () => video.current?.play());
+    ms.setActionHandler('pause', () => video.current?.pause());
+    ms.setActionHandler('seekbackward', live ? null : () => seekBy(-10));
+    ms.setActionHandler('seekforward', live ? null : () => seekBy(10));
+    ms.setActionHandler('nexttrack', next ? () => next.go() : null);
     return () => {
-      for (const a of [
-        "play",
-        "pause",
-        "seekbackward",
-        "seekforward",
-        "nexttrack",
-      ] as MediaSessionAction[])
-        ms.setActionHandler(a, null);
+      for (const a of ['play', 'pause', 'seekbackward', 'seekforward', 'nexttrack'] as MediaSessionAction[]) ms.setActionHandler(a, null);
     };
   }, [title, subtitle, poster, next, seekBy, live]);
 
@@ -1755,10 +1298,7 @@ export default function Player({
       next?.go();
       return;
     }
-    const t = setTimeout(
-      () => setCountdown((c) => (c === null ? null : c - 1)),
-      1000,
-    );
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
     return () => clearTimeout(t);
   }, [countdown, next]);
 
@@ -1786,7 +1326,7 @@ export default function Player({
     if (endHold()) return; // releasing a hold isn't a click
     if (menu) return setMenu(null);
     if (Date.now() - menuClosedAt.current < 700) return; // this press just closed a menu
-    if (e.pointerType === "mouse") return toggle();
+    if (e.pointerType === 'mouse') return toggle();
     const now = Date.now();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
@@ -1806,12 +1346,11 @@ export default function Player({
   const [dragging, setDragging] = useState(false);
   const dropProps = {
     onDragOver: (e: React.DragEvent) => {
-      if (![...e.dataTransfer.types].includes("Files")) return;
+      if (![...e.dataTransfer.types].includes('Files')) return;
       e.preventDefault();
       setDragging(true);
     },
-    onDragLeave: (e: React.DragEvent) =>
-      !e.currentTarget.contains(e.relatedTarget as Node) && setDragging(false),
+    onDragLeave: (e: React.DragEvent) => !e.currentTarget.contains(e.relatedTarget as Node) && setDragging(false),
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
@@ -1820,37 +1359,26 @@ export default function Player({
     },
   };
 
-  const VolumeIcon =
-    muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
-  const skippable =
-    segment &&
-    segment.end !== null &&
-    (sceneAfter || !(segment.type === "credits" && next));
-  const creditsNextBtn =
-    segment?.type === "credits" && next && countdown === null && !sceneAfter;
-  const qualityNow =
-    level === -1
-      ? "Auto"
-      : `${levels.find((l) => l.index === level)?.height ?? ""}p`;
+  const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const skippable = segment && segment.end !== null && (sceneAfter || !(segment.type === 'credits' && next));
+  const creditsNextBtn = segment?.type === 'credits' && next && countdown === null && !sceneAfter;
+  const qualityNow = level === -1 ? 'Auto' : `${levels.find((l) => l.index === level)?.height ?? ''}p`;
 
   return (
     <div
       ref={wrap}
-      className={cx(
-        "relative size-full overflow-hidden bg-black select-none",
-        !showControls && "cursor-none",
-      )}
-      onPointerMove={(e) => e.pointerType === "mouse" && poke()}
+      className={cx('relative size-full overflow-hidden bg-black select-none', !showControls && 'cursor-none')}
+      onPointerMove={(e) => e.pointerType === 'mouse' && poke()}
       // Tabbing to a control brings the (auto-hidden) controls back.
       onFocusCapture={poke}
       {...dropProps}
     >
       <video
         ref={video}
-        className={cx("size-full", fill ? "object-cover" : "object-contain")}
+        className={cx('size-full', fill ? 'object-cover' : 'object-contain')}
         playsInline
         // Lets Safari offer this video to AirPlay.
-        {...{ "x-webkit-airplay": "allow" }}
+        {...{ 'x-webkit-airplay': 'allow' }}
         onPlay={() => setPlaying(true)}
         onPause={() => {
           setPlaying(false);
@@ -1878,37 +1406,17 @@ export default function Player({
         }}
         onEnded={() => {
           report(true, true);
-          if (next && settings.autoplayNext && countdown === null)
-            setCountdown(8);
+          if (next && settings.autoplayNext && countdown === null) setCountdown(8);
         }}
-        onError={(e) =>
-          !engine.current &&
-          e.currentTarget.getAttribute("src") &&
-          e.currentTarget.error &&
-          fail("media error")
-        }
+        onError={(e) => !engine.current && e.currentTarget.getAttribute('src') && e.currentTarget.error && fail('media error')}
         onDoubleClick={toggleFullscreen}
       >
-        {nativeVtt && (
-          <track
-            key={nativeVtt}
-            kind="subtitles"
-            src={nativeVtt}
-            label={subLabel}
-          />
-        )}
+        {nativeVtt && <track key={nativeVtt} kind="subtitles" src={nativeVtt} label={subLabel} />}
       </video>
       {/* Native (iOS) fullscreen can't show our caption overlay, so the track takes over there. */}
       <NativeFullscreenTracks video={video} />
 
-      {!casting && airplay !== "active" && (
-        <CaptionOverlay
-          cues={cues}
-          time={time - delay}
-          raised={showControls}
-          style={settings}
-        />
-      )}
+      {!casting && airplay !== 'active' && <CaptionOverlay cues={cues} time={time - delay} raised={showControls} style={settings} />}
 
       {/* tap/click surface */}
       <div
@@ -1922,26 +1430,15 @@ export default function Player({
       />
 
       {/* Playing on a TV: this tab is the remote. */}
-      {(casting || airplay === "active") && (
+      {(casting || airplay === 'active') && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/85 p-6 text-center">
           <div>
-            {casting ? (
-              <Cast className="mx-auto size-10 text-white/80" />
-            ) : (
-              <Airplay className="mx-auto size-10 text-white/80" />
-            )}
+            {casting ? <Cast className="mx-auto size-10 text-white/80" /> : <Airplay className="mx-auto size-10 text-white/80" />}
             <p className="mt-3 text-sm text-muted">Playing on</p>
-            <p className="text-xl font-semibold">
-              {casting ? cast.device || "Chromecast" : "AirPlay"}
-            </p>
-            <p className="mt-1 text-sm text-white/70">
-              {subtitle ? `${title} · ${subtitle}` : title}
-            </p>
+            <p className="text-xl font-semibold">{casting ? cast.device || 'Chromecast' : 'AirPlay'}</p>
+            <p className="mt-1 text-sm text-white/70">{subtitle ? `${title} · ${subtitle}` : title}</p>
             {casting && (
-              <button
-                onClick={cast.stop}
-                className={cx(btn(), "pointer-events-auto mt-5")}
-              >
+              <button onClick={cast.stop} className={cx(btn(), 'pointer-events-auto mt-5')}>
                 Stop casting
               </button>
             )}
@@ -1959,40 +1456,22 @@ export default function Player({
       {!exhausted && !casting && countdown === null && (
         <div
           className={cx(
-            "pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-200",
-            compact ? "gap-7 bg-black/30" : "gap-6",
-            showControls ? "opacity-100" : "opacity-0",
+            'pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-200',
+            compact ? 'gap-7 bg-black/30' : 'gap-6',
+            showControls ? 'opacity-100' : 'opacity-0',
           )}
         >
           {prev !== undefined && (
-            <CentreButton
-              label={prev ? `Previous: ${prev.label}` : "No previous episode"}
-              onClick={prev ? prev.go : undefined}
-              shown={showControls}
-              size="sm"
-              tip={!compact}
-            >
+            <CentreButton label={prev ? `Previous: ${prev.label}` : 'No previous episode'} onClick={prev ? prev.go : undefined} shown={showControls} size="sm" tip={!compact}>
               <SkipBack className="size-5 fill-current" />
             </CentreButton>
           )}
           {!live && (
-            <CentreButton
-              label="Back 10 seconds (J)"
-              onClick={() => (seekBy(-10), poke())}
-              shown={showControls}
-              size="md"
-              tip={!compact}
-            >
-              <RotateCcw className={compact ? "size-7" : "size-6"} />
+            <CentreButton label="Back 10 seconds (J)" onClick={() => (seekBy(-10), poke())} shown={showControls} size="md" tip={!compact}>
+              <RotateCcw className={compact ? 'size-7' : 'size-6'} />
             </CentreButton>
           )}
-          <CentreButton
-            label={isPlaying ? "Pause (K)" : "Play (K)"}
-            onClick={() => (toggle(), poke())}
-            shown={showControls}
-            size="lg"
-            tip={!compact}
-          >
+          <CentreButton label={isPlaying ? 'Pause (K)' : 'Play (K)'} onClick={() => (toggle(), poke())} shown={showControls} size="lg" tip={!compact}>
             {buffering ? (
               <span className="size-9 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
             ) : isPlaying ? (
@@ -2002,24 +1481,12 @@ export default function Player({
             )}
           </CentreButton>
           {!live && (
-            <CentreButton
-              label="Forward 10 seconds (L)"
-              onClick={() => (seekBy(10), poke())}
-              shown={showControls}
-              size="md"
-              tip={!compact}
-            >
-              <RotateCw className={compact ? "size-7" : "size-6"} />
+            <CentreButton label="Forward 10 seconds (L)" onClick={() => (seekBy(10), poke())} shown={showControls} size="md" tip={!compact}>
+              <RotateCw className={compact ? 'size-7' : 'size-6'} />
             </CentreButton>
           )}
           {next !== undefined && (
-            <CentreButton
-              label={next ? `Next: ${next.label} (Shift N)` : "No next episode"}
-              onClick={next ? next.go : undefined}
-              shown={showControls}
-              size="sm"
-              tip={!compact}
-            >
+            <CentreButton label={next ? `Next: ${next.label} (Shift N)` : 'No next episode'} onClick={next ? next.go : undefined} shown={showControls} size="sm" tip={!compact}>
               <SkipForward className="size-5 fill-current" />
             </CentreButton>
           )}
@@ -2030,14 +1497,8 @@ export default function Player({
           2× <ChevronsRight className="size-4" />
         </div>
       )}
-      {notice && !held && (
-        <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">
-          {notice}
-        </div>
-      )}
-      {srcPill && !notice && !held && (
-        <SourcePill {...srcPill} key={srcPill.key} />
-      )}
+      {notice && !held && <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">{notice}</div>}
+      {srcPill && !notice && !held && <SourcePill {...srcPill} key={srcPill.key} />}
       {dragging && (
         <div className="pointer-events-none absolute inset-4 z-40 grid place-items-center rounded-3xl border-2 border-dashed border-white/40 bg-black/70 text-center">
           <div>
@@ -2056,13 +1517,7 @@ export default function Player({
             ) : (
               <AlertTriangle className="mx-auto size-10 text-warning" />
             )}
-            <p className="font-medium">
-              {refreshing
-                ? "Getting fresh links…"
-                : searching
-                  ? "None of these played. Looking for more sources…"
-                  : "None of the sources would play."}
-            </p>
+            <p className="font-medium">{refreshing ? 'Getting fresh links…' : searching ? 'None of these played. Looking for more sources…' : 'None of the sources would play.'}</p>
             <div className="flex justify-center gap-2">
               <button
                 onClick={() => {
@@ -2076,10 +1531,7 @@ export default function Player({
               >
                 Search again
               </button>
-              <button
-                onClick={onExhausted}
-                className={btn({ variant: "primary" })}
-              >
+              <button onClick={onExhausted} className={btn({ variant: 'primary' })}>
                 Use another server
               </button>
             </div>
@@ -2090,29 +1542,14 @@ export default function Player({
       {/* Skip intro / recap / credits, and "Next episode" when the credits start. Shown even
           while the controls are hidden, like on streaming services. */}
       {(skippable || creditsNextBtn) && !exhausted && (
-        <div
-          className={cx(
-            "absolute right-4 z-20 transition-[bottom] duration-200 md:right-8",
-            showControls ? "bottom-28" : "bottom-8",
-          )}
-        >
+        <div className={cx('absolute right-4 z-20 transition-[bottom] duration-200 md:right-8', showControls ? 'bottom-28' : 'bottom-8')}>
           {creditsNextBtn ? (
-            <button
-              onClick={() => next!.go()}
-              className={btn({ variant: "primary", size: "lg" })}
-            >
+            <button onClick={() => next!.go()} className={btn({ variant: 'primary', size: 'lg' })}>
               <SkipForward className="size-4 fill-current" /> Next episode
             </button>
           ) : (
-            <button
-              onClick={() => skipSegment(segment!)}
-              className={cx(
-                btn({ size: "lg" }),
-                "bg-black/60! backdrop-blur-md hover:bg-black/80!",
-              )}
-            >
-              {SEGMENT_LABEL[segment!.type]}{" "}
-              <ChevronsRight className="size-4" />
+            <button onClick={() => skipSegment(segment!)} className={cx(btn({ size: 'lg' }), 'bg-black/60! backdrop-blur-md hover:bg-black/80!')}>
+              {SEGMENT_LABEL[segment!.type]} <ChevronsRight className="size-4" />
             </button>
           )}
         </div>
@@ -2120,17 +1557,10 @@ export default function Player({
 
       {countdown !== null && next && (
         <div className="absolute right-4 bottom-28 z-20 w-72 rounded-2xl border border-transparent bg-raised/95 p-4 shadow-2xl ring-1 ring-white/10 backdrop-blur-md md:right-8">
-          <div className="text-xs text-muted tabular-nums">
-            Up next in {countdown}s
-          </div>
-          <div className="mt-1 line-clamp-2 text-sm font-medium">
-            {next.label}
-          </div>
+          <div className="text-xs text-muted tabular-nums">Up next in {countdown}s</div>
+          <div className="mt-1 line-clamp-2 text-sm font-medium">{next.label}</div>
           <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => next.go()}
-              className={cx(btn({ variant: "primary" }), "flex-1")}
-            >
+            <button onClick={() => next.go()} className={cx(btn({ variant: 'primary' }), 'flex-1')}>
               Play now
             </button>
             <button onClick={() => setCountdown(null)} className={btn()}>
@@ -2144,33 +1574,23 @@ export default function Player({
       <div
         className={cx(
           // Keyboard focus keeps a bar up; a mouse click inside it doesn't (both bars hide together).
-          "absolute inset-x-0 top-0 bg-gradient-to-b to-transparent transition-[opacity,padding] duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100",
-          "from-black/85 via-black/40 pb-20",
-          showControls || keepTop
-            ? "opacity-100"
-            : "pointer-events-none opacity-0",
+          'absolute inset-x-0 top-0 bg-gradient-to-b to-transparent transition-[opacity,padding] duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100',
+          'from-black/85 via-black/40 pb-20',
+          showControls || keepTop ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        {typeof header === "function" ? header(pausedInfo) : header}
+        {typeof header === 'function' ? header(pausedInfo) : header}
       </div>
 
       {/* bottom controls */}
       <div
         className={cx(
-          "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-opacity duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 md:px-6",
-          showControls ? "opacity-100" : "pointer-events-none opacity-0",
+          'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-opacity duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 md:px-6',
+          showControls ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
         {/* Live: what is on now, not a film with a length. */}
-        {!live && (
-          <SeekBar
-            time={now}
-            duration={dur}
-            buffered={casting ? 0 : buffered}
-            segments={segments}
-            onSeek={seekTo}
-          />
-        )}
+        {!live && <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />}
         <div className="mt-2 flex items-center gap-1 md:gap-1.5">
           {live ? (
             // The header says LIVE (its pill); here it's only for screen readers.
@@ -2179,20 +1599,11 @@ export default function Player({
             </span>
           ) : (
             <span className="pl-1 text-xs text-white/85 tabular-nums md:text-sm">
-              {formatClock(now)}{" "}
-              <span className="text-white/50">/ {formatClock(dur)}</span>
+              {formatClock(now)} <span className="text-white/50">/ {formatClock(dur)}</span>
             </span>
           )}
-          <div
-            className={cx(
-              "group/vol ml-1 hidden items-center",
-              !compact && "sm:flex",
-            )}
-          >
-            <IconButton
-              label={muted || volume === 0 ? "Unmute (M)" : "Mute (M)"}
-              onClick={toggleMute}
-            >
+          <div className={cx('group/vol ml-1 hidden items-center', !compact && 'sm:flex')}>
+            <IconButton label={muted || volume === 0 ? 'Unmute (M)' : 'Mute (M)'} onClick={toggleMute}>
               <VolumeIcon className="size-5" />
             </IconButton>
             <input
@@ -2209,17 +1620,10 @@ export default function Player({
           <div className="ml-auto flex items-center gap-1 md:gap-1.5">
             {episodes && (
               <div className="relative">
-                <IconButton
-                  label="Episodes"
-                  active={menu === "episodes"}
-                  expanded={menu === "episodes"}
-                  onClick={() =>
-                    setMenu(menu === "episodes" ? null : "episodes")
-                  }
-                >
+                <IconButton label="Episodes" active={menu === 'episodes'} expanded={menu === 'episodes'} onClick={() => setMenu(menu === 'episodes' ? null : 'episodes')}>
                   <GalleryVerticalEnd className="size-5" />
                 </IconButton>
-                {menu === "episodes" && (
+                {menu === 'episodes' && (
                   <Popover wide split className="max-h-[min(23rem,55vh)]!">
                     {episodes(() => setMenu(null))}
                   </Popover>
@@ -2229,37 +1633,21 @@ export default function Player({
 
             {/* Subtitles: tracks, own file, timing, look, transcript */}
             <div className="relative">
-              <IconButton
-                label="Subtitles (C)"
-                active={subIdx >= 0 || menu === "captions"}
-                expanded={menu === "captions"}
-                onClick={() => setMenu(menu === "captions" ? null : "captions")}
-              >
+              <IconButton label="Subtitles (C)" active={subIdx >= 0 || menu === 'captions'} expanded={menu === 'captions'} onClick={() => setMenu(menu === 'captions' ? null : 'captions')}>
                 <Captions className="size-5" />
               </IconButton>
-              {menu === "captions" && (
-                <Popover wide={view === "transcript"} split={view === "main"}>
-                  {view === "main" && (
+              {menu === 'captions' && (
+                <Popover wide={view === 'transcript'} split={view === 'main'}>
+                  {view === 'main' && (
                     <>
                       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                        <MenuItem
-                          selected={subIdx < 0}
-                          onClick={() => (chooseSub(-1), setMenu(null))}
-                        >
+                        <MenuItem selected={subIdx < 0} onClick={() => (chooseSub(-1), setMenu(null))}>
                           Off
                         </MenuItem>
                         {tracks.map((s, i) => (
-                          <MenuItem
-                            key={(s.url ?? "file") + s.label + i}
-                            selected={subIdx === i}
-                            onClick={() => (chooseSub(i), setMenu(null))}
-                          >
+                          <MenuItem key={(s.url ?? 'file') + s.label + i} selected={subIdx === i} onClick={() => (chooseSub(i), setMenu(null))}>
                             <span className="flex-1 truncate">{s.label}</span>
-                            {s.text !== undefined && (
-                              <span className="text-micro tracking-wider uppercase opacity-50">
-                                file
-                              </span>
-                            )}
+                            {s.text !== undefined && <span className="text-micro tracking-wider uppercase opacity-50">file</span>}
                           </MenuItem>
                         ))}
                       </div>
@@ -2269,37 +1657,21 @@ export default function Player({
                           <div className="flex items-center gap-2 px-3 py-1.5 text-sm">
                             <span className="flex-1">
                               Timing
-                              <span className="block text-xs text-muted tabular-nums">
-                                {delay === 0
-                                  ? "In sync"
-                                  : `${Math.abs(delay)}s ${delay > 0 ? "later" : "earlier"}`}{" "}
-                                · Z / X
-                              </span>
+                              <span className="block text-xs text-muted tabular-nums">{delay === 0 ? 'In sync' : `${Math.abs(delay)}s ${delay > 0 ? 'later' : 'earlier'}`} · Z / X</span>
                             </span>
-                            <StepButton
-                              label="Earlier (Z)"
-                              onClick={() => nudgeDelay(-0.5)}
-                            >
+                            <StepButton label="Earlier (Z)" onClick={() => nudgeDelay(-0.5)}>
                               <Minus className="size-4" />
                             </StepButton>
-                            <StepButton
-                              label="Later (X)"
-                              onClick={() => nudgeDelay(0.5)}
-                            >
+                            <StepButton label="Later (X)" onClick={() => nudgeDelay(0.5)}>
                               <Plus className="size-4" />
                             </StepButton>
                           </div>
                         )}
                         {cues.length > 0 && (
-                          <button
-                            onClick={() => setView("transcript")}
-                            className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm transition-colors hover:bg-white/10"
-                          >
+                          <button onClick={() => setView('transcript')} className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-sm transition-colors hover:bg-white/10">
                             <span className="flex-1">
                               Transcript
-                              <span className="block text-xs text-muted">
-                                Read along, jump to a line
-                              </span>
+                              <span className="block text-xs text-muted">Read along, jump to a line</span>
                             </span>
                             <ChevronRight className="size-4 shrink-0 text-muted" />
                           </button>
@@ -2312,47 +1684,28 @@ export default function Player({
                               <span className="flex items-center gap-1.5">
                                 {Math.round(settings.subSize * 100)}%,
                                 {/* Like the colour picker's selected swatch: a white ring around the colour. */}
-                                <span
-                                  aria-label={subColorName(settings.subColor)}
-                                  className="grid size-[18px] place-items-center rounded-full ring-[1.5px] ring-white"
-                                >
-                                  <span
-                                    className="size-3 rounded-full"
-                                    style={{ background: settings.subColor }}
-                                  />
+                                <span aria-label={subColorName(settings.subColor)} className="grid size-[18px] place-items-center rounded-full ring-[1.5px] ring-white">
+                                  <span className="size-3 rounded-full" style={{ background: settings.subColor }} />
                                 </span>
                               </span>
                             }
-                            onClick={() => setView("style")}
+                            onClick={() => setView('style')}
                           />
-                          <Card
-                            icon={FileUp}
-                            label="Load file"
-                            value="SRT, VTT"
-                            onClick={() => fileInput.current?.click()}
-                          />
+                          <Card icon={FileUp} label="Load file" value="SRT, VTT" onClick={() => fileInput.current?.click()} />
                         </div>
                       </div>
                     </>
                   )}
-                  {view === "style" && (
+                  {view === 'style' && (
                     <>
-                      <BackHeader onBack={() => setView("main")}>
-                        Subtitle style
-                      </BackHeader>
+                      <BackHeader onBack={() => setView('main')}>Subtitle style</BackHeader>
                       <SubtitleStyleControls />
                     </>
                   )}
-                  {view === "transcript" && (
+                  {view === 'transcript' && (
                     <>
-                      <BackHeader onBack={() => setView("main")}>
-                        Transcript
-                      </BackHeader>
-                      <Transcript
-                        cues={cues}
-                        time={time - delay}
-                        onSeek={(t) => seekTo(t + delay)}
-                      />
+                      <BackHeader onBack={() => setView('main')}>Transcript</BackHeader>
+                      <Transcript cues={cues} time={time - delay} onSeek={(t) => seekTo(t + delay)} />
                     </>
                   )}
                 </Popover>
@@ -2364,7 +1717,7 @@ export default function Player({
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  e.target.value = "";
+                  e.target.value = '';
                   setMenu(null);
                   if (f) loadFile(f);
                 }}
@@ -2373,89 +1726,38 @@ export default function Player({
 
             {/* Settings: quality, audio, source, speed, toggles */}
             <div ref={settingsBox} className="relative">
-              <IconButton
-                label="Settings (quality, source, speed)"
-                active={menu === "settings"}
-                expanded={menu === "settings"}
-                onClick={() => setMenu(menu === "settings" ? null : "settings")}
-              >
+              <IconButton label="Settings (quality, source, speed)" active={menu === 'settings'} expanded={menu === 'settings'} onClick={() => setMenu(menu === 'settings' ? null : 'settings')}>
                 <Settings className="size-5" />
               </IconButton>
-              {menu === "settings" && (
+              {menu === 'settings' && (
                 <Popover onScroll={() => info && setInfo(null)}>
-                  {view === "main" && (
+                  {view === 'main' && (
                     <>
                       <div className="grid grid-cols-2 gap-1.5">
                         <Card
                           icon={Layers}
                           label="Source"
-                          value={`${source.provider.name} · ${source.quality === "original" ? "Original" : qualityLabel(source.quality)}`}
-                          onClick={() => setView("source")}
+                          value={`${source.provider.name} · ${source.quality === 'original' ? 'Original' : qualityLabel(source.quality)}`}
+                          onClick={() => setView('source')}
                         />
-                        <Card
-                          icon={Gauge}
-                          label="Quality"
-                          value={
-                            levels.length > 1
-                              ? qualityNow
-                              : qualityLabel(source.quality)
-                          }
-                          onClick={
-                            levels.length > 1
-                              ? () => setView("quality")
-                              : undefined
-                          }
-                        />
+                        <Card icon={Gauge} label="Quality" value={levels.length > 1 ? qualityNow : qualityLabel(source.quality)} onClick={levels.length > 1 ? () => setView('quality') : undefined} />
                         <Card
                           icon={AudioLines}
                           label="Audio"
-                          value={
-                            audioTracks.find((t) => t.id === audioTrack)
-                              ?.name ??
-                            source.audioTracks?.[0]?.label ??
-                            "Original"
-                          }
-                          onClick={
-                            audioTracks.length > 1
-                              ? () => setView("audio")
-                              : undefined
-                          }
+                          value={audioTracks.find((t) => t.id === audioTrack)?.name ?? source.audioTracks?.[0]?.label ?? 'Original'}
+                          onClick={audioTracks.length > 1 ? () => setView('audio') : undefined}
                         />
-                        <Card
-                          icon={FastForward}
-                          label="Speed"
-                          value={rate === 1 ? "Normal" : `${rate}×`}
-                          onClick={() => setView("speed")}
-                        />
+                        <Card icon={FastForward} label="Speed" value={rate === 1 ? 'Normal' : `${rate}×`} onClick={() => setView('speed')} />
                       </div>
                       <Divider />
-                      <SwitchItem
-                        label="Fill screen"
-                        hint="Crop to remove black bars"
-                        on={fill}
-                        onChange={setFill}
-                      />
-                      <SwitchItem
-                        label="Skip intros automatically"
-                        on={settings.autoSkip}
-                        onChange={(v) =>
-                          actions.updateSettings({ autoSkip: v })
-                        }
-                      />
-                      <SwitchItem
-                        label="Autoplay next episode"
-                        on={settings.autoplayNext}
-                        onChange={(v) =>
-                          actions.updateSettings({ autoplayNext: v })
-                        }
-                      />
+                      <SwitchItem label="Fill screen" hint="Crop to remove black bars" on={fill} onChange={setFill} />
+                      <SwitchItem label="Skip intros automatically" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
+                      <SwitchItem label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
                     </>
                   )}
-                  {view === "quality" && (
+                  {view === 'quality' && (
                     <>
-                      <BackHeader onBack={() => setView("main")}>
-                        Quality
-                      </BackHeader>
+                      <BackHeader onBack={() => setView('main')}>Quality</BackHeader>
                       <MenuItem
                         selected={level === -1}
                         onClick={() => {
@@ -2478,26 +1780,16 @@ export default function Player({
                         >
                           <span className="flex-1">
                             {levelLabel(pos, l.height, source, levels.length)}
-                            {levelSize(pos, source, levels.length) && (
-                              <span className="ml-2 text-xs opacity-50">
-                                {levelSize(pos, source, levels.length)}
-                              </span>
-                            )}
+                            {levelSize(pos, source, levels.length) && <span className="ml-2 text-xs opacity-50">{levelSize(pos, source, levels.length)}</span>}
                           </span>
-                          {l.height >= 2160 ? (
-                            <Badge>4K</Badge>
-                          ) : l.height >= 720 ? (
-                            <Badge>HD</Badge>
-                          ) : null}
+                          {l.height >= 2160 ? <Badge>4K</Badge> : l.height >= 720 ? <Badge>HD</Badge> : null}
                         </MenuItem>
                       ))}
                     </>
                   )}
-                  {view === "audio" && (
+                  {view === 'audio' && (
                     <>
-                      <BackHeader onBack={() => setView("main")}>
-                        Audio
-                      </BackHeader>
+                      <BackHeader onBack={() => setView('main')}>Audio</BackHeader>
                       {audioTracks.map((t) => (
                         <MenuItem
                           key={t.id}
@@ -2512,19 +1804,12 @@ export default function Player({
                       ))}
                     </>
                   )}
-                  {view === "source" && (
+                  {view === 'source' && (
                     <>
-                      <BackHeader onBack={() => setView("main")}>
-                        Source
-                      </BackHeader>
+                      <BackHeader onBack={() => setView('main')}>Source</BackHeader>
                       {settings.showDiagnostics && (
                         <p className="px-3 pb-1.5 text-xs text-muted">
-                          Found by{" "}
-                          {data.via === "extension"
-                            ? "this browser (Charcoal Helper)"
-                            : data.via === "own"
-                              ? "your server"
-                              : "Charcoal’s server"}
+                          Found by {data.via === 'extension' ? 'this browser (Charcoal Helper)' : data.via === 'own' ? 'your server' : 'Charcoal’s server'}
                         </p>
                       )}
                       {(() => {
@@ -2538,11 +1823,7 @@ export default function Player({
                             onInfo={(el) => openInfo(s.url, el)}
                             selected={sourceIdx === i}
                             failed={failed.current.has(i)}
-                            reason={
-                              failed.current.has(i)
-                                ? failReason.current.get(i)
-                                : undefined
-                            }
+                            reason={failed.current.has(i) ? failReason.current.get(i) : undefined}
                             onClick={() => {
                               pickSource(i);
                               setMenu(null);
@@ -2550,31 +1831,19 @@ export default function Player({
                           />
                         );
                         // Out of the way: failed here, or tried by the resolver without an answer (the one playing always stays).
-                        const away = (i: number) =>
-                          i !== sourceIdx &&
-                          (failed.current.has(i) ||
-                            data.sources[i].verification?.state === "failed");
+                        const away = (i: number) => i !== sourceIdx && (failed.current.has(i) || data.sources[i].verification?.state === 'failed');
                         const groups = groupSources(data.sources)
-                          .map((g) => ({
-                            ...g,
-                            items: g.items.filter(({ i }) => !away(i)),
-                          }))
+                          .map((g) => ({ ...g, items: g.items.filter(({ i }) => !away(i)) }))
                           .filter((g) => g.items.length);
-                        const broken = data.sources
-                          .map((s, i) => ({ s, i }))
-                          .filter(({ i }) => away(i));
-                        const unplayableHere = (data.report ?? []).filter(
-                          (r) => r.unplayable,
-                        );
+                        const broken = data.sources.map((s, i) => ({ s, i })).filter(({ i }) => away(i));
+                        const unplayableHere = (data.report ?? []).filter((r) => r.unplayable);
                         return (
                           <>
                             {groups.map(({ name, items }) => (
                               <div key={name} className="pb-1">
                                 <div className="flex items-baseline justify-between px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">
                                   <span>{name}</span>
-                                  <span className="tabular-nums">
-                                    {items.length}
-                                  </span>
+                                  <span className="tabular-nums">{items.length}</span>
                                 </div>
                                 {items.map(({ s, i }) => row(s, i))}
                               </div>
@@ -2583,30 +1852,17 @@ export default function Player({
                               <details className="group/bad pb-1">
                                 <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs text-muted transition-colors marker:hidden hover:bg-white/[0.06] hover:text-white">
                                   <span className="flex-1">
-                                    {broken.length > 0 &&
-                                      `${broken.length} didn’t work`}
-                                    {broken.length > 0 &&
-                                      unplayableHere.length > 0 &&
-                                      " · "}
-                                    {unplayableHere.length > 0 &&
-                                      `${unplayableHere.length} can’t play here`}
+                                    {broken.length > 0 && `${broken.length} didn’t work`}
+                                    {broken.length > 0 && unplayableHere.length > 0 && ' · '}
+                                    {unplayableHere.length > 0 && `${unplayableHere.length} can’t play here`}
                                   </span>
                                   <ChevronRight className="size-3.5 transition-transform group-open/bad:rotate-90" />
                                 </summary>
                                 {broken.map(({ s, i }) => row(s, i))}
                                 {unplayableHere.map((r) => (
-                                  <div
-                                    key={`${r.name}|${r.reason}`}
-                                    data-unplayable
-                                    aria-disabled
-                                    className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm opacity-45"
-                                  >
-                                    <span className="shrink-0 font-medium">
-                                      {r.name}
-                                    </span>
-                                    <span className="min-w-0 flex-1 text-xs leading-snug">
-                                      {r.reason}
-                                    </span>
+                                  <div key={`${r.name}|${r.reason}`} data-unplayable aria-disabled className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm opacity-45">
+                                    <span className="shrink-0 font-medium">{r.name}</span>
+                                    <span className="min-w-0 flex-1 text-xs leading-snug">{r.reason}</span>
                                   </div>
                                 ))}
                               </details>
@@ -2623,89 +1879,49 @@ export default function Player({
                           disabled={refreshing}
                           className="mt-1 flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/10 disabled:opacity-50"
                         >
-                          <RotateCw
-                            className={cx(
-                              "size-4 text-muted",
-                              refreshing && "animate-spin",
-                            )}
-                          />
-                          <span className="flex-1">
-                            {refreshing ? "Searching…" : "Search again"}
-                          </span>
-                          <span className="text-xs text-faint">
-                            fresh links
-                          </span>
+                          <RotateCw className={cx('size-4 text-muted', refreshing && 'animate-spin')} />
+                          <span className="flex-1">{refreshing ? 'Searching…' : 'Search again'}</span>
+                          <span className="text-xs text-faint">fresh links</span>
                         </button>
                       )}
                       {/* Every other provider, and why it had nothing: useful when a title won't play. */}
-                      {settings.showDiagnostics &&
-                        data.report?.some((r) => !r.ok && !r.unplayable) && (
-                          <>
-                            <Divider />
-                            <p className="px-3 pt-1 pb-1 text-xs text-muted">
-                              No stream from
-                            </p>
-                            {data.report
-                              .filter((r) => !r.ok && !r.group && !r.unplayable)
-                              .map((r) => (
-                                <ReportRow
-                                  key={r.name}
-                                  name={r.name}
-                                  reason={r.reason}
-                                />
-                              ))}
-                            {[
-                              ...new Set(
-                                data.report
-                                  .filter((r) => r.group)
-                                  .map((r) => r.group!),
-                              ),
-                            ].map((g) => {
-                              const all = data.report!.filter(
-                                (r) => r.group === g,
-                              );
-                              const failedOnes = all.filter((r) => !r.ok);
-                              if (!failedOnes.length) return null;
-                              return (
-                                <details
-                                  key={g}
-                                  className="group/rep px-3 py-1 text-xs"
-                                >
-                                  <summary className="flex cursor-pointer list-none items-baseline gap-2 marker:hidden">
-                                    <span className="shrink-0 text-white/80">
-                                      {g}
-                                    </span>
-                                    <span className="min-w-0 flex-1 truncate text-faint">
-                                      {failedOnes.length} of {all.length} had
-                                      nothing
-                                    </span>
-                                    <ChevronRight className="size-3.5 shrink-0 self-center text-muted transition-transform group-open/rep:rotate-90" />
-                                  </summary>
-                                  <div className="mt-1 border-l border-white/10 pl-2">
-                                    {failedOnes.map((r) => (
-                                      <ReportRow
-                                        key={r.name}
-                                        name={r.name}
-                                        reason={r.reason?.replace(
-                                          new RegExp(`^${r.name}: `),
-                                          "",
-                                        )}
-                                        wrap
-                                      />
-                                    ))}
-                                  </div>
-                                </details>
-                              );
-                            })}
-                          </>
-                        )}
+                      {settings.showDiagnostics && data.report?.some((r) => !r.ok && !r.unplayable) && (
+                        <>
+                          <Divider />
+                          <p className="px-3 pt-1 pb-1 text-xs text-muted">No stream from</p>
+                          {data.report
+                            .filter((r) => !r.ok && !r.group && !r.unplayable)
+                            .map((r) => (
+                              <ReportRow key={r.name} name={r.name} reason={r.reason} />
+                            ))}
+                          {[...new Set(data.report.filter((r) => r.group).map((r) => r.group!))].map((g) => {
+                            const all = data.report!.filter((r) => r.group === g);
+                            const failedOnes = all.filter((r) => !r.ok);
+                            if (!failedOnes.length) return null;
+                            return (
+                              <details key={g} className="group/rep px-3 py-1 text-xs">
+                                <summary className="flex cursor-pointer list-none items-baseline gap-2 marker:hidden">
+                                  <span className="shrink-0 text-white/80">{g}</span>
+                                  <span className="min-w-0 flex-1 truncate text-faint">
+                                    {failedOnes.length} of {all.length} had nothing
+                                  </span>
+                                  <ChevronRight className="size-3.5 shrink-0 self-center text-muted transition-transform group-open/rep:rotate-90" />
+                                </summary>
+                                <div className="mt-1 border-l border-white/10 pl-2">
+                                  {failedOnes.map((r) => (
+                                    <ReportRow key={r.name} name={r.name} reason={r.reason?.replace(new RegExp(`^${r.name}: `), '')} wrap />
+                                  ))}
+                                </div>
+                              </details>
+                            );
+                          })}
+                        </>
+                      )}
                     </>
                   )}
-                  {view === "speed" && (
+                  {view === 'speed' && (
                     <>
-                      <BackHeader onBack={() => setView("main")}>
-                        Speed
-                      </BackHeader>
+                      <BackHeader onBack={() => setView('main')}>Speed</BackHeader>
                       {SPEEDS.map((sp) => (
                         <MenuItem
                           key={sp}
@@ -2715,89 +1931,44 @@ export default function Player({
                             setMenu(null);
                           }}
                         >
-                          {sp === 1 ? "Normal" : `${sp}×`}
+                          {sp === 1 ? 'Normal' : `${sp}×`}
                         </MenuItem>
                       ))}
                       <p className="px-3 pt-1 pb-2 text-xs text-muted">
-                        {settings.holdToSpeed
-                          ? "Tip: press and hold the video for 2×. "
-                          : ""}
+                        {settings.holdToSpeed ? 'Tip: press and hold the video for 2×. ' : ''}
                         &lt; and &gt; change speed.
                       </p>
                     </>
                   )}
                 </Popover>
               )}
-              {menu === "settings" &&
-                view === "source" &&
+              {menu === 'settings' &&
+                view === 'source' &&
                 info &&
                 (() => {
                   const i = data.sources.findIndex((x) => x.url === info.url);
-                  return i < 0 ? null : (
-                    <SourceInfo
-                      source={data.sources[i]}
-                      reason={
-                        failed.current.has(i)
-                          ? failReason.current.get(i)
-                          : undefined
-                      }
-                      style={info.style}
-                    />
-                  );
+                  return i < 0 ? null : <SourceInfo source={data.sources[i]} reason={failed.current.has(i) ? failReason.current.get(i) : undefined} style={info.style} />;
                 })()}
             </div>
             {/* A TV can't add the headers direct (extension) streams need. */}
-            {!direct &&
-              (cast.state === "NOT_CONNECTED" ||
-                cast.state === "CONNECTING" ||
-                casting) && (
-                <IconButton
-                  label={
-                    casting ? `Stop casting to ${cast.device}` : "Cast to a TV"
-                  }
-                  active={casting}
-                  onClick={casting ? cast.stop : cast.start}
-                >
-                  <Cast
-                    className={cx(
-                      "size-5",
-                      cast.state === "CONNECTING" && "animate-pulse",
-                    )}
-                  />
-                </IconButton>
-              )}
+            {!direct && (cast.state === 'NOT_CONNECTED' || cast.state === 'CONNECTING' || casting) && (
+              <IconButton label={casting ? `Stop casting to ${cast.device}` : 'Cast to a TV'} active={casting} onClick={casting ? cast.stop : cast.start}>
+                <Cast className={cx('size-5', cast.state === 'CONNECTING' && 'animate-pulse')} />
+              </IconButton>
+            )}
             {/* AirPlay hands the TV an address; a DASH stream is assembled in this tab and has none it could play. */}
-            {airplay !== "none" && source.type !== "dash" && (
-              <IconButton
-                label="AirPlay"
-                active={airplay === "active"}
-                onClick={showAirplayPicker}
-              >
+            {airplay !== 'none' && source.type !== 'dash' && (
+              <IconButton label="AirPlay" active={airplay === 'active'} onClick={showAirplayPicker}>
                 <Airplay className="size-5" />
               </IconButton>
             )}
-            {!compact &&
-              "pictureInPictureEnabled" in document &&
-              document.pictureInPictureEnabled &&
-              !casting && (
-                <IconButton
-                  label="Picture in picture (I)"
-                  onClick={togglePip}
-                  className="hidden sm:grid"
-                >
-                  <PictureInPicture2 className="size-5" />
-                </IconButton>
-              )}
-            <IconButton
-              label={fullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
-              onClick={toggleFullscreen}
-              tipAlign="end"
-            >
-              {fullscreen ? (
-                <Minimize className="size-5" />
-              ) : (
-                <Maximize className="size-5" />
-              )}
+            {!compact && 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && !casting && (
+              <IconButton label="Picture in picture (I)" onClick={togglePip} className="hidden sm:grid">
+                <PictureInPicture2 className="size-5" />
+              </IconButton>
+            )}
+            <IconButton label={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'} onClick={toggleFullscreen} tipAlign="end">
+              {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </IconButton>
           </div>
         </div>
@@ -2809,59 +1980,34 @@ export default function Player({
 // ---------- pieces ----------
 
 /** Shows the native caption track only while iOS's own fullscreen player or AirPlay is up. */
-function NativeFullscreenTracks({
-  video,
-}: {
-  video: React.RefObject<HTMLVideoElement | null>;
-}) {
+function NativeFullscreenTracks({ video }: { video: React.RefObject<HTMLVideoElement | null> }) {
   useEffect(() => {
     const v = video.current;
     if (!v) return;
     const set = (mode: TextTrackMode) => () => {
       for (const t of Array.from(v.textTracks)) t.mode = mode;
     };
-    const on = set("showing");
-    const off = set("hidden");
+    const on = set('showing');
+    const off = set('hidden');
     off();
     // On AirPlay the TV draws the native track too (our overlay stays on the phone).
-    const wireless = () =>
-      (
-        v as HTMLVideoElement & {
-          webkitCurrentPlaybackTargetIsWireless?: boolean;
-        }
-      ).webkitCurrentPlaybackTargetIsWireless
-        ? on()
-        : off();
-    v.addEventListener("webkitbeginfullscreen", on);
-    v.addEventListener("webkitendfullscreen", off);
-    v.addEventListener(
-      "webkitcurrentplaybacktargetiswirelesschanged",
-      wireless,
-    );
-    v.textTracks.addEventListener?.("addtrack", off);
+    const wireless = () => ((v as HTMLVideoElement & { webkitCurrentPlaybackTargetIsWireless?: boolean }).webkitCurrentPlaybackTargetIsWireless ? on() : off());
+    v.addEventListener('webkitbeginfullscreen', on);
+    v.addEventListener('webkitendfullscreen', off);
+    v.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', wireless);
+    v.textTracks.addEventListener?.('addtrack', off);
     return () => {
-      v.removeEventListener(
-        "webkitcurrentplaybacktargetiswirelesschanged",
-        wireless,
-      );
-      v.removeEventListener("webkitbeginfullscreen", on);
-      v.removeEventListener("webkitendfullscreen", off);
-      v.textTracks.removeEventListener?.("addtrack", off);
+      v.removeEventListener('webkitcurrentplaybacktargetiswirelesschanged', wireless);
+      v.removeEventListener('webkitbeginfullscreen', on);
+      v.removeEventListener('webkitendfullscreen', off);
+      v.textTracks.removeEventListener?.('addtrack', off);
     };
   }, [video]);
   return null;
 }
 
 /** Every cue as a list; the current one is highlighted and kept in view. Click to jump. */
-function Transcript({
-  cues,
-  time,
-  onSeek,
-}: {
-  cues: Cue[];
-  time: number;
-  onSeek: (t: number) => void;
-}) {
+function Transcript({ cues, time, onSeek }: { cues: Cue[]; time: number; onSeek: (t: number) => void }) {
   const list = useRef<HTMLDivElement>(null);
   const now = activeCues(cues, time)[0];
   const at = now ? cues.indexOf(now) : -1;
@@ -2869,15 +2015,10 @@ function Transcript({
   useEffect(() => {
     if (!follow || at < 0) return;
     const el = list.current?.querySelector<HTMLElement>(`[data-i="${at}"]`);
-    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [at, follow]);
   return (
-    <div
-      ref={list}
-      className="max-h-[46vh] overflow-y-auto overscroll-contain pb-1"
-      onWheel={() => setFollow(false)}
-      onTouchMove={() => setFollow(false)}
-    >
+    <div ref={list} className="max-h-[46vh] overflow-y-auto overscroll-contain pb-1" onWheel={() => setFollow(false)} onTouchMove={() => setFollow(false)}>
       {cues.map((c, i) => (
         <button
           key={i}
@@ -2886,16 +2027,9 @@ function Transcript({
             onSeek(c.start);
             setFollow(true);
           }}
-          className={cx(
-            "flex w-full gap-3 rounded-xl px-3 py-2 text-left text-sm transition",
-            i === at
-              ? "bg-white/10 text-white"
-              : "text-white/65 hover:bg-white/[0.06] hover:text-white",
-          )}
+          className={cx('flex w-full gap-3 rounded-xl px-3 py-2 text-left text-sm transition', i === at ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/[0.06] hover:text-white')}
         >
-          <span className="w-12 shrink-0 pt-px text-xs text-faint tabular-nums">
-            {formatClock(c.start)}
-          </span>
+          <span className="w-12 shrink-0 pt-px text-xs text-faint tabular-nums">{formatClock(c.start)}</span>
           <span className="min-w-0">
             <CueText text={c.text} />
           </span>
@@ -2922,22 +2056,17 @@ function IconButton({
   /** For menu buttons: whether the menu is open (also tells the page's Esc to leave it alone). */
   expanded?: boolean;
   /** Buttons at the ends of the bar line their tooltip up with that edge. */
-  tipAlign?: "start" | "center" | "end";
+  tipAlign?: 'start' | 'center' | 'end';
 }) {
   const [text, keys] = splitKeys(label);
   return (
     <button
       type="button"
       aria-label={label}
-      aria-haspopup={expanded === undefined ? undefined : "menu"}
+      aria-haspopup={expanded === undefined ? undefined : 'menu'}
       aria-expanded={expanded}
       onClick={onClick}
-      className={cx(
-        btn({ variant: "ghost", icon: true }),
-        "group/tip relative text-white",
-        active && "bg-white/15",
-        className,
-      )}
+      className={cx(btn({ variant: 'ghost', icon: true }), 'group/tip relative text-white', active && 'bg-white/15', className)}
     >
       {children}
       <Tip label={text} keys={keys} align={tipAlign} hidden={expanded} />
@@ -2965,30 +2094,16 @@ export function TitleInfo({
   onDetails?: () => void;
   onEpisodes?: () => void;
 }) {
-  const area =
-    "pointer-events-auto absolute -inset-x-2 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.04]";
+  const area = 'pointer-events-auto absolute -inset-x-2 inset-y-0 rounded-2xl transition-colors hover:bg-white/[0.04]';
   return (
     <div className="group/info relative max-w-2xl py-1">
       {onDetails ? (
-        <button
-          type="button"
-          onClick={onDetails}
-          aria-label={`${title}: details`}
-          className={area}
-        />
+        <button type="button" onClick={onDetails} aria-label={`${title}: details`} className={area} />
       ) : (
-        detailsUrl && (
-          <Link
-            to={detailsUrl}
-            aria-label={`${title}: details`}
-            className={area}
-          />
-        )
+        detailsUrl && <Link to={detailsUrl} aria-label={`${title}: details`} className={area} />
       )}
       <div className="pointer-events-none relative">
-        <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">
-          {title}
-        </h2>
+        <h2 className="text-xl leading-snug font-semibold text-balance md:text-3xl">{title}</h2>
         {subtitle &&
           (onEpisodes ? (
             <button
@@ -3002,9 +2117,7 @@ export function TitleInfo({
               <Tip label="Episodes" keys="E" side="bottom" align="start" />
             </button>
           ) : (
-            <p className="mt-0.5 truncate text-sm text-white/85 md:text-base">
-              {subtitle}
-            </p>
+            <p className="mt-0.5 truncate text-sm text-white/85 md:text-base">{subtitle}</p>
           ))}
         {meta && <p className="mt-1 text-sm text-white/60">{meta}</p>}
       </div>
@@ -3018,21 +2131,7 @@ export function TitleInfo({
 }
 
 /** A round see-through button in the middle of the video (iOS-player style). */
-function CentreButton({
-  label,
-  onClick,
-  shown,
-  size,
-  tip,
-  children,
-}: {
-  label: string;
-  onClick?: () => void;
-  shown: boolean;
-  size: "sm" | "md" | "lg";
-  tip: boolean;
-  children: ReactNode;
-}) {
+function CentreButton({ label, onClick, shown, size, tip, children }: { label: string; onClick?: () => void; shown: boolean; size: 'sm' | 'md' | 'lg'; tip: boolean; children: ReactNode }) {
   const [text, keys] = splitKeys(label);
   return (
     <button
@@ -3041,9 +2140,9 @@ function CentreButton({
       onClick={onClick}
       disabled={!onClick}
       className={cx(
-        "group/tip relative grid place-items-center rounded-full bg-black/35 text-white backdrop-blur-md transition enabled:hover:bg-black/55 enabled:active:scale-90 disabled:opacity-30",
-        size === "lg" ? "size-[76px]" : size === "md" ? "size-14" : "size-11",
-        shown && "pointer-events-auto",
+        'group/tip relative grid place-items-center rounded-full bg-black/35 text-white backdrop-blur-md transition enabled:hover:bg-black/55 enabled:active:scale-90 disabled:opacity-30',
+        size === 'lg' ? 'size-[76px]' : size === 'md' ? 'size-14' : 'size-11',
+        shown && 'pointer-events-auto',
       )}
     >
       {children}
@@ -3054,68 +2153,39 @@ function CentreButton({
 
 /** Phone-sized screen, or a small touch screen: use the touch layout. */
 function useCompact() {
-  const query = "(max-width: 639px), (pointer: coarse) and (max-width: 1023px)";
-  const [on, setOn] = useState(
-    () => typeof window !== "undefined" && window.matchMedia(query).matches,
-  );
+  const query = '(max-width: 639px), (pointer: coarse) and (max-width: 1023px)';
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
   useEffect(() => {
     const m = window.matchMedia(query);
     const f = () => setOn(m.matches);
-    m.addEventListener("change", f);
-    return () => m.removeEventListener("change", f);
+    m.addEventListener('change', f);
+    return () => m.removeEventListener('change', f);
   }, []);
   return on;
 }
 
-const StepButton = ({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) => {
+const StepButton = ({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) => {
   const [text, keys] = splitKeys(label);
   return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className="group/tip relative grid size-8 place-items-center rounded-full bg-white/10 hover:bg-white/20"
-    >
+    <button type="button" aria-label={label} onClick={onClick} className="group/tip relative grid size-8 place-items-center rounded-full bg-white/10 hover:bg-white/20">
       {children}
       <Tip label={text} keys={keys} align="end" />
     </button>
   );
 };
 
-const Popover = ({
-  children,
-  wide,
-  split,
-  onScroll,
-  className,
-}: {
-  children: ReactNode;
-  wide?: boolean;
-  split?: boolean;
-  onScroll?: () => void;
-  className?: string;
-}) => (
+const Popover = ({ children, wide, split, onScroll, className }: { children: ReactNode; wide?: boolean; split?: boolean; onScroll?: () => void; className?: string }) => (
   <div
     data-popover
     onScroll={onScroll}
     className={cx(
-      "toast-in absolute right-0 bottom-12 z-30 rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md",
+      'toast-in absolute right-0 bottom-12 z-30 rounded-[18px] border border-transparent bg-raised/95 p-1.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md',
       // Phones: a sheet across the bottom of the screen.
-      "max-sm:fixed max-sm:inset-x-2 max-sm:right-2 max-sm:bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:max-h-[52dvh] max-sm:rounded-3xl max-sm:p-2",
+      'max-sm:fixed max-sm:inset-x-2 max-sm:right-2 max-sm:bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:max-h-[52dvh] max-sm:rounded-3xl max-sm:p-2',
       // split: a scrolling list on top, fixed controls below (the subtitles menu).
-      split
-        ? "flex max-h-[min(22rem,52vh)] flex-col"
-        : "max-h-[min(24rem,52vh)] overflow-y-auto overscroll-contain",
-      wide ? "w-[min(24rem,calc(100vw-1.5rem))]" : "w-72",
-      "max-sm:w-auto",
+      split ? 'flex max-h-[min(22rem,52vh)] flex-col' : 'max-h-[min(24rem,52vh)] overflow-y-auto overscroll-contain',
+      wide ? 'w-[min(24rem,calc(100vw-1.5rem))]' : 'w-72',
+      'max-sm:w-auto',
       className,
     )}
   >
@@ -3126,9 +2196,7 @@ const Popover = ({
 function groupSources(list: JellySource[]) {
   const groups: { name: string; items: { s: JellySource; i: number }[] }[] = [];
   list.forEach((s, i) => {
-    const g =
-      groups.find((x) => x.name === s.provider.name) ??
-      groups[groups.push({ name: s.provider.name, items: [] }) - 1];
+    const g = groups.find((x) => x.name === s.provider.name) ?? groups[groups.push({ name: s.provider.name, items: [] }) - 1];
     g.items.push({ s, i });
   });
   return groups;
@@ -3138,56 +2206,31 @@ function groupSources(list: JellySource[]) {
  * "4K", "1080p" from a source's own level list, else the picture height. Both lists are sorted best
  * first, so position matches (only trusted when they have the same length).
  */
-function levelLabel(
-  pos: number,
-  height: number,
-  source: JellySource,
-  count: number,
-) {
-  const q =
-    source.levels?.length === count ? source.levels[pos]?.quality : undefined;
+function levelLabel(pos: number, height: number, source: JellySource, count: number) {
+  const q = source.levels?.length === count ? source.levels[pos]?.quality : undefined;
   return q ? qualityLabel(q) : `${height}p`;
 }
-const levelSize = (pos: number, source: JellySource, count: number) =>
-  source.levels?.length === count ? formatSize(source.levels[pos]?.size) : "";
+const levelSize = (pos: number, source: JellySource, count: number) => (source.levels?.length === count ? formatSize(source.levels[pos]?.size) : '');
 
-const sourceLabel = (s: JellySource) =>
-  s.quality === "original" ? "Original" : qualityLabel(s.quality);
+const sourceLabel = (s: JellySource) => (s.quality === 'original' ? 'Original' : qualityLabel(s.quality));
 /** Every audio language a source reports ("English, Hindi dub"), else the first words of its file description. */
-const sourceTag = (s: JellySource) =>
-  s.audioTracks?.length
-    ? s.audioTracks.map((a) => a.label).join(", ")
-    : s.note?.split(" · ")[0];
+const sourceTag = (s: JellySource) => (s.audioTracks?.length ? s.audioTracks.map((a) => a.label).join(', ') : s.note?.split(' · ')[0]);
 /** What the resolver found when it tried the stream itself, in a word or two. */
-const triedHint = (s: JellySource) =>
-  s.verification?.state === "verified"
-    ? "Verified"
-    : s.verification?.state === "failed"
-      ? "Did not answer"
-      : "";
+const triedHint = (s: JellySource) => (s.verification?.state === 'verified' ? 'Verified' : s.verification?.state === 'failed' ? 'Did not answer' : '');
 
 /** A language as a small tag ("EN", "HI dub"), like the audio menu's. */
-function LangBadge({
-  track,
-  on,
-}: {
-  track: { language: string; label: string };
-  on?: boolean;
-}) {
-  const code =
-    /^[a-z]{2,3}$/i.test(track.language) && track.language !== "und"
-      ? track.language
-      : track.label.slice(0, 3);
+function LangBadge({ track, on }: { track: { language: string; label: string }; on?: boolean }) {
+  const code = /^[a-z]{2,3}$/i.test(track.language) && track.language !== 'und' ? track.language : track.label.slice(0, 3);
   return (
     <span
       title={track.label}
       className={cx(
-        "inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide uppercase ring-1 ring-inset",
-        on ? "ring-black/40" : "ring-white/35",
+        'inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide uppercase ring-1 ring-inset',
+        on ? 'ring-black/40' : 'ring-white/35',
       )}
     >
       {code}
-      {/dub/i.test(track.label) ? " dub" : ""}
+      {/dub/i.test(track.label) ? ' dub' : ''}
     </span>
   );
 }
@@ -3216,71 +2259,30 @@ function SourceRow({
   const langs = s.audioTracks ?? [];
   const tried = triedHint(s);
   return (
-    <div
-      className={cx(
-        "flex items-center rounded-xl transition-colors",
-        selected ? "bg-white text-black" : "hover:bg-white/10",
-      )}
-    >
-      <button
-        onClick={onClick}
-        aria-pressed={selected}
-        title={reason}
-        className="flex h-10 min-w-0 flex-1 items-center gap-2.5 pr-1 pl-3 text-left text-sm"
-      >
+    <div className={cx('flex items-center rounded-xl transition-colors', selected ? 'bg-white text-black' : 'hover:bg-white/10')}>
+      <button onClick={onClick} aria-pressed={selected} title={reason} className="flex h-10 min-w-0 flex-1 items-center gap-2.5 pr-1 pl-3 text-left text-sm">
         <span className="shrink-0 font-medium">{label}</span>
         {langs.length > 0 ? (
           // One small tag per audio language the source says it carries.
-          <span
-            className="flex min-w-0 items-center gap-1 overflow-hidden"
-            data-languages={langs.map((a) => a.language).join(",")}
-          >
+          <span className="flex min-w-0 items-center gap-1 overflow-hidden" data-languages={langs.map((a) => a.language).join(',')}>
             {langs.slice(0, 4).map((a) => (
-              <LangBadge
-                key={`${a.language}|${a.label}`}
-                track={a}
-                on={selected}
-              />
+              <LangBadge key={`${a.language}|${a.label}`} track={a} on={selected} />
             ))}
-            {langs.length > 4 && (
-              <span className="shrink-0 text-xs opacity-60">
-                +{langs.length - 4}
-              </span>
-            )}
+            {langs.length > 4 && <span className="shrink-0 text-xs opacity-60">+{langs.length - 4}</span>}
           </span>
         ) : (
           tag && <span className="min-w-0 truncate opacity-60">{tag}</span>
         )}
         {/* Tried by the resolver before it got here: a quiet dot when it answered. */}
-        {tried === "Verified" && !failed && (
-          <span
-            title="Verified: it answered when it was tried"
-            aria-label="Verified"
-            className="size-1.5 shrink-0 rounded-full bg-success"
-          />
-        )}
-        <span
-          className={cx(
-            "ml-auto shrink-0 pl-2 text-xs tabular-nums",
-            failed ? "text-danger" : "opacity-50",
-          )}
-        >
-          {failed
-            ? "Failed"
-            : tried === "Did not answer"
-              ? tried
-              : formatSize(s.size)}
-        </span>
+        {tried === 'Verified' && !failed && <span title="Verified: it answered when it was tried" aria-label="Verified" className="size-1.5 shrink-0 rounded-full bg-success" />}
+        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>{failed ? 'Failed' : tried === 'Did not answer' ? tried : formatSize(s.size)}</span>
       </button>
       <button
         type="button"
         onClick={(e) => onInfo(e.currentTarget)}
-        aria-label={`About ${label}${tag ? ` ${tag}` : ""}`}
+        aria-label={`About ${label}${tag ? ` ${tag}` : ''}`}
         aria-expanded={infoOpen}
-        className={cx(
-          "mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-opacity hover:opacity-70",
-          infoOpen ? "opacity-80" : "opacity-25",
-        )}
+        className={cx('mr-1 grid size-8 shrink-0 place-items-center rounded-lg transition-opacity hover:opacity-70', infoOpen ? 'opacity-80' : 'opacity-25')}
       >
         <Info className="size-4" />
       </button>
@@ -3289,15 +2291,7 @@ function SourceRow({
 }
 
 /** The ⓘ card: a small floating panel beside the menu, styled like our tooltips. */
-function SourceInfo({
-  source: s,
-  reason,
-  style,
-}: {
-  source: JellySource;
-  reason?: string;
-  style: React.CSSProperties;
-}) {
+function SourceInfo({ source: s, reason, style }: { source: JellySource; reason?: string; style: React.CSSProperties }) {
   const levels = s.levels && s.levels.length > 1 ? s.levels : null;
   const tag = sourceTag(s);
   return (
@@ -3311,109 +2305,52 @@ function SourceInfo({
       <p className="flex items-baseline gap-2 text-sm">
         <span className="font-medium">{sourceLabel(s)}</span>
         {tag && <span className="truncate text-muted">{tag}</span>}
-        <span className="ml-auto shrink-0 text-xs text-faint">
-          {s.provider.name}
-        </span>
+        <span className="ml-auto shrink-0 text-xs text-faint">{s.provider.name}</span>
       </p>
       {levels && (
         <div className="mt-2 space-y-1">
           {levels.map((l, k) => (
-            <p
-              key={k}
-              className="flex justify-between text-white/80 tabular-nums"
-            >
+            <p key={k} className="flex justify-between text-white/80 tabular-nums">
               <span>{qualityLabel(l.quality)}</span>
               <span className="text-faint">{formatSize(l.size)}</span>
             </p>
           ))}
         </div>
       )}
-      {(s.note || s.quality === "original") && (
+      {(s.note || s.quality === 'original') && (
         <p className="mt-2 leading-snug text-muted">
           {s.note}
-          {s.quality === "original" && (
-            <span className="block text-faint">
-              The untouched file, as released
-            </span>
-          )}
+          {s.quality === 'original' && <span className="block text-faint">The untouched file, as released</span>}
         </p>
       )}
       <p className="mt-2 flex justify-between text-faint">
         <span>
           <span className="uppercase">{s.type}</span>
-          {triedHint(s) && (
-            <span>
-              {" "}
-              ·{" "}
-              {triedHint(s) === "Verified"
-                ? "verified: it answered when tried"
-                : "did not answer when tried"}
-            </span>
-          )}
+          {triedHint(s) && <span> · {triedHint(s) === 'Verified' ? 'verified: it answered when tried' : 'did not answer when tried'}</span>}
         </span>
-        {!levels && s.size ? (
-          <span className="tabular-nums">{formatSize(s.size)}</span>
-        ) : null}
+        {!levels && s.size ? <span className="tabular-nums">{formatSize(s.size)}</span> : null}
       </p>
-      {reason && (
-        <p className="mt-2 leading-snug text-danger">
-          {describeFailure(reason)}
-        </p>
-      )}
+      {reason && <p className="mt-2 leading-snug text-danger">{describeFailure(reason)}</p>}
     </div>
   );
 }
 
 /** One provider that had no stream, and why (wraps when shown inside an expanded group). */
-const ReportRow = ({
-  name,
-  reason,
-  wrap,
-}: {
-  name: string;
-  reason?: string;
-  wrap?: boolean;
-}) => {
-  const text = reason?.replace(/\\n|\s+/g, " ").trim();
+const ReportRow = ({ name, reason, wrap }: { name: string; reason?: string; wrap?: boolean }) => {
+  const text = reason?.replace(/\\n|\s+/g, ' ').trim();
   return (
-    <div
-      className={cx(
-        "flex items-baseline gap-2 text-xs",
-        wrap ? "py-0.5" : "px-3 py-1",
-      )}
-      title={text}
-    >
+    <div className={cx('flex items-baseline gap-2 text-xs', wrap ? 'py-0.5' : 'px-3 py-1')} title={text}>
       <span className="shrink-0 text-white/80">{name}</span>
-      <span
-        className={cx(
-          "min-w-0 text-faint",
-          wrap ? "line-clamp-2 break-words" : "truncate",
-        )}
-      >
-        {text}
-      </span>
+      <span className={cx('min-w-0 text-faint', wrap ? 'line-clamp-2 break-words' : 'truncate')}>{text}</span>
     </div>
   );
 };
 const Divider = () => <div className="mx-3 my-1.5 h-px bg-white/[0.08]" />;
-const Badge = ({ children }: { children: ReactNode }) => (
-  <span className="rounded px-1.5 py-px text-micro font-semibold tracking-wider opacity-70 ring-1 ring-current">
-    {children}
-  </span>
-);
+const Badge = ({ children }: { children: ReactNode }) => <span className="rounded px-1.5 py-px text-micro font-semibold tracking-wider opacity-70 ring-1 ring-current">{children}</span>;
 
-function BackHeader({
-  onBack,
-  children,
-}: {
-  onBack: () => void;
-  children: ReactNode;
-}) {
+function BackHeader({ onBack, children }: { onBack: () => void; children: ReactNode }) {
   return (
-    <button
-      onClick={onBack}
-      className="mb-1 flex h-10 w-full items-center gap-2 rounded-xl px-2 text-left text-sm font-medium transition-colors hover:bg-white/10"
-    >
+    <button onClick={onBack} className="mb-1 flex h-10 w-full items-center gap-2 rounded-xl px-2 text-left text-sm font-medium transition-colors hover:bg-white/10">
       <ChevronLeft className="size-4" />
       {children}
     </button>
@@ -3421,17 +2358,7 @@ function BackHeader({
 }
 
 /** A card button: icon, what it is, its current value. Without onClick it only shows the value. */
-function Card({
-  icon: Icon,
-  label,
-  value,
-  onClick,
-}: {
-  icon: typeof Settings;
-  label: string;
-  value?: ReactNode;
-  onClick?: () => void;
-}) {
+function Card({ icon: Icon, label, value, onClick }: { icon: typeof Settings; label: string; value?: ReactNode; onClick?: () => void }) {
   return (
     <button
       type="button"
@@ -3448,62 +2375,26 @@ function Card({
   );
 }
 
-function SwitchItem({
-  label,
-  hint,
-  on,
-  onChange,
-}: {
-  label: string;
-  hint?: string;
-  on: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function SwitchItem({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      role="switch"
-      aria-checked={on}
-      onClick={() => onChange(!on)}
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/10"
-    >
+    <button role="switch" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/10">
       <span className="flex-1">
         {label}
         {hint && <span className="block text-xs text-muted">{hint}</span>}
       </span>
-      <span
-        className={cx(
-          "relative h-5 w-9 shrink-0 rounded-full transition-colors",
-          on ? "bg-accent" : "bg-white/15",
-        )}
-      >
-        <span
-          className={cx(
-            "absolute top-0.5 left-0.5 size-4 rounded-full transition-transform",
-            on ? "translate-x-4 bg-black" : "bg-white",
-          )}
-        />
+      <span className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-white/15')}>
+        <span className={cx('absolute top-0.5 left-0.5 size-4 rounded-full transition-transform', on ? 'translate-x-4 bg-black' : 'bg-white')} />
       </span>
     </button>
   );
 }
 
-function MenuItem({
-  selected,
-  onClick,
-  children,
-}: {
-  selected?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
+function MenuItem({ selected, onClick, children }: { selected?: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       onClick={onClick}
       aria-pressed={selected}
-      className={cx(
-        "flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors",
-        selected ? "bg-white text-black" : "hover:bg-white/10",
-      )}
+      className={cx('flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors', selected ? 'bg-white text-black' : 'hover:bg-white/10')}
     >
       {children}
       {selected && <Check className="ml-auto size-4 shrink-0" />}
@@ -3511,26 +2402,9 @@ function MenuItem({
   );
 }
 
-const SEGMENT_NAME: Record<Segment["type"], string> = {
-  intro: "Intro",
-  recap: "Recap",
-  credits: "Credits",
-  preview: "Preview",
-};
+const SEGMENT_NAME: Record<Segment['type'], string> = { intro: 'Intro', recap: 'Recap', credits: 'Credits', preview: 'Preview' };
 
-function SeekBar({
-  time,
-  duration,
-  buffered,
-  segments,
-  onSeek,
-}: {
-  time: number;
-  duration: number;
-  buffered: number;
-  segments: Segment[];
-  onSeek: (t: number) => void;
-}) {
+function SeekBar({ time, duration, buffered, segments, onSeek }: { time: number; duration: number; buffered: number; segments: Segment[]; onSeek: (t: number) => void }) {
   const bar = useRef<HTMLDivElement>(null);
   const [scrub, setScrub] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -3540,10 +2414,7 @@ function SeekBar({
   };
   const shown = scrub ?? (duration ? time / duration : 0);
   const tip = scrub ?? hover;
-  const tipSegment =
-    tip !== null && duration
-      ? segmentAt(segments, tip * duration, duration)
-      : undefined;
+  const tipSegment = tip !== null && duration ? segmentAt(segments, tip * duration, duration) : undefined;
   return (
     <div
       ref={bar}
@@ -3556,16 +2427,7 @@ function SeekBar({
       tabIndex={0}
       onKeyDown={(e) => {
         // Own the arrows here so the player's ±10s shortcut doesn't also fire.
-        const to =
-          e.key === "ArrowLeft"
-            ? time - 5
-            : e.key === "ArrowRight"
-              ? time + 5
-              : e.key === "Home"
-                ? 0
-                : e.key === "End"
-                  ? duration
-                  : null;
+        const to = e.key === 'ArrowLeft' ? time - 5 : e.key === 'ArrowRight' ? time + 5 : e.key === 'Home' ? 0 : e.key === 'End' ? duration : null;
         if (to === null || !duration) return;
         e.preventDefault();
         e.stopPropagation();
@@ -3581,7 +2443,7 @@ function SeekBar({
         if (!duration) return;
         const f = frac(e.clientX);
         if (scrub !== null) setScrub(f);
-        else if (e.pointerType === "mouse") setHover(f);
+        else if (e.pointerType === 'mouse') setHover(f);
       }}
       onPointerUp={(e) => {
         if (scrub !== null) onSeek(frac(e.clientX) * duration);
@@ -3590,12 +2452,7 @@ function SeekBar({
       onPointerLeave={() => setHover(null)}
     >
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/25 transition-[height] group-hover/seek:h-1.5">
-        <div
-          className="absolute inset-y-0 left-0 bg-white/35"
-          style={{
-            width: `${duration ? Math.min(100, (buffered / duration) * 100) : 0}%`,
-          }}
-        />
+        <div className="absolute inset-y-0 left-0 bg-white/35" style={{ width: `${duration ? Math.min(100, (buffered / duration) * 100) : 0}%` }} />
         {/* Intro / recap / credits ranges */}
         {duration > 0 &&
           segments
@@ -3605,36 +2462,19 @@ function SeekBar({
               <div
                 key={s.type + s.start}
                 className="absolute inset-y-0 bg-planned/70"
-                style={{
-                  left: `${(s.start / duration) * 100}%`,
-                  width: `${(((s.end ?? duration) - s.start) / duration) * 100}%`,
-                }}
+                style={{ left: `${(s.start / duration) * 100}%`, width: `${(((s.end ?? duration) - s.start) / duration) * 100}%` }}
               />
             ))}
-        <div
-          className="absolute inset-y-0 left-0 bg-white"
-          style={{ width: `${shown * 100}%` }}
-        />
+        <div className="absolute inset-y-0 left-0 bg-white" style={{ width: `${shown * 100}%` }} />
       </div>
       <div
         className="absolute size-3.5 -translate-x-1/2 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/seek:opacity-100"
-        style={{
-          left: `${shown * 100}%`,
-          opacity: scrub !== null ? 1 : undefined,
-        }}
+        style={{ left: `${shown * 100}%`, opacity: scrub !== null ? 1 : undefined }}
       />
       {tip !== null && duration > 0 && (
-        <div
-          className="pointer-events-none absolute bottom-6 -translate-x-1/2 rounded-full bg-black/85 px-2.5 py-0.5 text-xs whitespace-nowrap tabular-nums"
-          style={{ left: `${tip * 100}%` }}
-        >
+        <div className="pointer-events-none absolute bottom-6 -translate-x-1/2 rounded-full bg-black/85 px-2.5 py-0.5 text-xs whitespace-nowrap tabular-nums" style={{ left: `${tip * 100}%` }}>
           {formatClock(tip * duration)}
-          {tipSegment && (
-            <span className="text-planned">
-              {" "}
-              · {SEGMENT_NAME[tipSegment.type]}
-            </span>
-          )}
+          {tipSegment && <span className="text-planned"> · {SEGMENT_NAME[tipSegment.type]}</span>}
         </div>
       )}
     </div>
@@ -3647,16 +2487,13 @@ function describeFailure(why: string): string {
   const cant = unplayableReason(why);
   if (cant) return cant;
   const status = why.match(/\b(\d{3})\b/)?.[1];
-  if (status === "403" || status === "401")
-    return `The video host refused it (${status})`;
-  if (status === "404" || status === "410")
-    return `The video is gone (${status})`;
-  if (/manifest/i.test(why)) return "Couldn’t load the playlist";
-  if (/frag/i.test(why)) return "Couldn’t load the video pieces";
-  if (/startup timeout/.test(why)) return "Took too long to start";
-  if (/link expired/.test(why)) return "Its link expired";
-  if (/media error|bufferAppend|codec/i.test(why))
-    return "This browser can’t play its format";
+  if (status === '403' || status === '401') return `The video host refused it (${status})`;
+  if (status === '404' || status === '410') return `The video is gone (${status})`;
+  if (/manifest/i.test(why)) return 'Couldn’t load the playlist';
+  if (/frag/i.test(why)) return 'Couldn’t load the video pieces';
+  if (/startup timeout/.test(why)) return 'Took too long to start';
+  if (/link expired/.test(why)) return 'Its link expired';
+  if (/media error|bufferAppend|codec/i.test(why)) return 'This browser can’t play its format';
   return why;
 }
 
@@ -3667,20 +2504,16 @@ function describeFailure(why: string): string {
  * "English (SDH)", "French - French Canadian [SDH]" → "French Canadian (SDH)".
  */
 export function subtitleName(raw: string): string {
-  let l = (raw || "").trim();
+  let l = (raw || '').trim();
   const parts = l.split(/\s+-\s+/);
   if (parts.length === 2 && parts[1]) l = parts[1];
-  l = l.replace(
-    /\[(SDH|CC|HI|forced)\]/gi,
-    (_m, x: string) => `(${/forced/i.test(x) ? "forced" : x.toUpperCase()})`,
-  );
+  l = l.replace(/\[(SDH|CC|HI|forced)\]/gi, (_m, x: string) => `(${/forced/i.test(x) ? 'forced' : x.toUpperCase()})`);
   const code = l.match(/^([a-z]{2,3})(?:[-_]([a-z]{2,4}))?(\s*\(.*\))?$/i);
   if (code) {
     const name = languageName(code[1].toLowerCase());
-    if (name.toLowerCase() !== code[1].toLowerCase())
-      l = `${name}${code[2] ? ` (${code[2].toUpperCase()})` : ""}${code[3] ?? ""}`;
+    if (name.toLowerCase() !== code[1].toLowerCase()) l = `${name}${code[2] ? ` (${code[2].toUpperCase()})` : ''}${code[3] ?? ''}`;
   }
-  return l || "Unknown";
+  return l || 'Unknown';
 }
 
 /** Tracks with readable names: the preferred language first, then A–Z; repeated names numbered. */
@@ -3689,26 +2522,9 @@ function sortSubtitles(list: JellySubtitle[]): Track[] {
   const pref = languageName(getState().settings.audioLang).toLowerCase();
   const tracks = list
     // Only formats the overlay reads (WebVTT, SRT): an ASS or TTML track would be listed and show nothing.
-    .filter(
-      (s) =>
-        s.url &&
-        (!s.format || READABLE_SUBS.test(s.format)) &&
-        !seen.has(s.url) &&
-        seen.add(s.url),
-    )
-    .map((s) => ({
-      label: subtitleName(s.label),
-      url: s.url,
-      format: s.format,
-      headers: s.headers,
-      bridged: s.bridged,
-    }))
-    .sort(
-      (a, b) =>
-        Number(b.label.toLowerCase().startsWith(pref)) -
-          Number(a.label.toLowerCase().startsWith(pref)) ||
-        a.label.localeCompare(b.label),
-    );
+    .filter((s) => s.url && (!s.format || READABLE_SUBS.test(s.format)) && !seen.has(s.url) && seen.add(s.url))
+    .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers, bridged: s.bridged }))
+    .sort((a, b) => Number(b.label.toLowerCase().startsWith(pref)) - Number(a.label.toLowerCase().startsWith(pref)) || a.label.localeCompare(b.label));
   const count = new Map<string, number>();
   return tracks.map((t) => {
     const n = (count.get(t.label) ?? 0) + 1;
@@ -3723,42 +2539,19 @@ function toVtt(cues: Cue[], delay: number) {
     const v = Math.max(0, t);
     const h = Math.floor(v / 3600);
     const m = Math.floor((v % 3600) / 60);
-    const s = (v % 60).toFixed(3).padStart(6, "0");
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s}`;
+    const s = (v % 60).toFixed(3).padStart(6, '0');
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s}`;
   };
-  return (
-    "WEBVTT\n\n" +
-    cues
-      .map((c) => `${ts(c.start + delay)} --> ${ts(c.end + delay)}\n${c.text}`)
-      .join("\n\n")
-  );
+  return 'WEBVTT\n\n' + cues.map((c) => `${ts(c.start + delay)} --> ${ts(c.end + delay)}\n${c.text}`).join('\n\n');
 }
 
 /**
  * What started playing, briefly: "4K · Febbox · Found a sharper source". 4K gets a warm glow and
  * 1080p a white one: the good ones look like the good ones.
  */
-function SourcePill({
-  height,
-  quality,
-  from,
-  why,
-}: {
-  height: number;
-  quality: string;
-  from: string;
-  why: string;
-}) {
-  const tier =
-    height >= 2160
-      ? "4k"
-      : height >= 1080
-        ? "fhd"
-        : height >= 720
-          ? "hd"
-          : "sd";
-  const label =
-    tier === "4k" ? "4K" : height ? `${height}p` : quality || "Auto";
+function SourcePill({ height, quality, from, why }: { height: number; quality: string; from: string; why: string }) {
+  const tier = height >= 2160 ? '4k' : height >= 1080 ? 'fhd' : height >= 720 ? 'hd' : 'sd';
+  const label = tier === '4k' ? '4K' : height ? `${height}p` : quality || 'Auto';
   return (
     <div
       role="status"
@@ -3766,19 +2559,15 @@ function SourcePill({
     >
       <span
         className={cx(
-          "rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide",
-          tier === "4k" &&
-            "animate-[glow_2.4s_ease-in-out_infinite] bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 text-black",
-          tier === "fhd" &&
-            "bg-white text-black shadow-[0_0_14px_rgba(255,255,255,0.5)]",
-          tier === "hd" && "bg-white/90 text-black",
-          tier === "sd" && "bg-white/15 text-white",
+          'rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide',
+          tier === '4k' && 'animate-[glow_2.4s_ease-in-out_infinite] bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 text-black',
+          tier === 'fhd' && 'bg-white text-black shadow-[0_0_14px_rgba(255,255,255,0.5)]',
+          tier === 'hd' && 'bg-white/90 text-black',
+          tier === 'sd' && 'bg-white/15 text-white',
         )}
       >
         {label}
-        {tier === "fhd" && (
-          <span className="ml-1 font-semibold opacity-60">HD</span>
-        )}
+        {tier === 'fhd' && <span className="ml-1 font-semibold opacity-60">HD</span>}
       </span>
       <span className="font-medium">{from}</span>
       <span className="text-white/60">{why}</span>
