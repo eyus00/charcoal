@@ -511,7 +511,10 @@ function ServerMenu({ current, onPick, jellyState }: { current: string; onPick: 
                   )}
                 >
                   <span className={cx('shrink-0 font-medium', q.height >= 2160 && 'text-amber-200', q.height >= 1080 && q.height < 2160 && 'text-white')}>{q.height >= 2160 ? '4K' : q.label}</span>
-                  <span className="min-w-0 flex-1 truncate text-xs text-muted">{q.provider}</span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-muted">
+                    {q.provider}
+                    {q.manual && ' · manual'}
+                  </span>
                   {q.selected && <Check className="size-4 shrink-0" />}
                 </button>
               ))}

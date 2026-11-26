@@ -118,6 +118,13 @@ function upstreamHost(url: string): string {
   }
 }
 
+/**
+ * Providers the player never chooses by itself (first pick, failover, quality upgrade): listed,
+ * and played when the viewer picks them. CineJoy's streams too often are not what they claim.
+ */
+const MANUAL_ONLY = new Set(['cinejoy']);
+const manualOnly = (s: JellySource) => MANUAL_ONLY.has(s.provider.id.toLowerCase());
+
 /** Another site's player page, not a stream: never something for the video engines. */
 const isFrame = (s: JellySource) => s.type === 'frame' || s.delivery === 'frame';
 
@@ -127,7 +134,7 @@ const isFrame = (s: JellySource) => s.type === 'frame' || s.delivery === 'frame'
  * -1 when there is none.
  */
 function bestIndex(list: JellySource[], failedAt: (i: number) => boolean = () => false): number {
-  const open = list.map((_, i) => i).filter((i) => !failedAt(i) && !isFrame(list[i]));
+  const open = list.map((_, i) => i).filter((i) => !failedAt(i) && !isFrame(list[i]) && !manualOnly(list[i]));
   return open.find((i) => list[i].verification?.state !== 'failed') ?? open[0] ?? -1;
 }
 
@@ -165,6 +172,8 @@ export interface QuickSource {
   provider: string;
   height: number;
   selected: boolean;
+  /** Never chosen automatically (MANUAL_ONLY): listed last. */
+  manual?: boolean;
 }
 let quickSources: { list: QuickSource[]; pick: (url: string) => void } | null = null;
 const quickSubs = new Set<() => void>();
@@ -685,7 +694,7 @@ export default function Player({
         const list = dataRef.current.sources;
         let best = -1;
         list.forEach((x, i) => {
-          if (failed.current.has(i) || (x.id && failedIds.current.has(x.id)) || isFrame(x) || x.type === 'mkv' || x.verification?.state === 'failed') return;
+          if (failed.current.has(i) || (x.id && failedIds.current.has(x.id)) || isFrame(x) || manualOnly(x) || x.type === 'mkv' || x.verification?.state === 'failed') return;
           if ((x.id && x.id === cur.id) || x.url === cur.url) return;
           if (speaks(cur) && !speaks(x)) return;
           const h = heightOf(x);
@@ -725,7 +734,8 @@ export default function Player({
     const list = data.sources
       .map((s, i) => ({ s, i }))
       .filter(({ s, i }) => i === sourceIdx || (!failed.current.has(i) && !isFrame(s) && s.verification?.state !== 'failed'))
-      .map(({ s, i }) => ({ url: s.url, label: sourceLabel(s), tag: sourceTag(s) || undefined, provider: s.provider.name, height: heightOf(s), selected: i === sourceIdx }));
+      .map(({ s, i }) => ({ url: s.url, label: sourceLabel(s), tag: sourceTag(s) || undefined, provider: s.provider.name, height: heightOf(s), selected: i === sourceIdx, manual: manualOnly(s) }))
+      .sort((a, b) => Number(!!a.manual) - Number(!!b.manual));
     publishQuick({ list, pick: (url) => pickRef.current(dataRef.current.sources.findIndex((x) => x.url === url)) });
   }, [data.sources, sourceIdx, exhausted]);
   useEffect(() => () => publishQuick(null), []);
@@ -2310,7 +2320,9 @@ function SourceRow({
         )}
         {/* Tried by the resolver before it got here: a quiet dot when it answered. */}
         {tried === 'Verified' && !failed && <span title="Verified: it answered when it was tried" aria-label="Verified" className="size-1.5 shrink-0 rounded-full bg-success" />}
-        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>{failed ? 'Failed' : tried === 'Did not answer' ? tried : formatSize(s.size)}</span>
+        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')} title={manualOnly(s) && !failed ? 'Never picked automatically: play it by choosing it here' : undefined}>
+          {failed ? 'Failed' : tried === 'Did not answer' ? tried : manualOnly(s) ? 'Manual' : formatSize(s.size)}
+        </span>
       </button>
       <button
         type="button"
@@ -2606,8 +2618,9 @@ function SourcePill({ height, quality, from, why }: { height: number; quality: s
   return (
     <div
       role="status"
-      className="toast-in pointer-events-none absolute top-20 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-black/75 py-1.5 pr-4 pl-1.5 text-sm whitespace-nowrap backdrop-blur-sm"
+      className="toast-in pointer-events-none absolute top-20 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-1.5 text-sm whitespace-nowrap"
     >
+      <span className="flex items-center gap-2.5 rounded-full bg-black/75 py-1.5 pr-4 pl-1.5 backdrop-blur-sm">
       <span
         className={cx(
           'rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide',
@@ -2621,7 +2634,8 @@ function SourcePill({ height, quality, from, why }: { height: number; quality: s
         {tier === 'fhd' && <span className="ml-1 font-semibold opacity-60">HD</span>}
       </span>
       <span className="font-medium">{from}</span>
-      <span className="text-white/60">{why}</span>
+      </span>
+      <span className="rounded-full bg-black/60 px-3 py-0.5 text-xs text-white/75 backdrop-blur-sm">{why}</span>
     </div>
   );
 }
