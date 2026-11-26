@@ -159,15 +159,15 @@ function Card({
       <div className="pointer-events-none relative [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
         <div className="relative">
           {/* The rest of the stack: sheets behind the card, each a step higher and narrower (like a
-              deck of cards seen from the front); they lift a little on hover. */}
+              deck of cards seen from the front); they brighten on hover (moving would leave the row's room above). */}
           {stacked?.slice(0, 2).map((e, i) => (
             <span
               key={`${e.season}-${e.number}`}
               aria-hidden
               style={{ inset: i ? '-26px 32px 26px 32px' : '-13px 16px 13px 16px', zIndex: 1 - i }}
               className={cx(
-                'absolute overflow-hidden rounded-2xl bg-raised shadow-[0_-4px_12px_rgba(0,0,0,0.45)] ring-1 transition-transform duration-300',
-                i ? 'ring-white/20 group-hover:-translate-y-1.5' : 'ring-white/30 group-hover:-translate-y-0.5',
+                'absolute overflow-hidden rounded-2xl bg-raised shadow-[0_-4px_12px_rgba(0,0,0,0.45)] ring-1 transition-[filter] duration-300 group-hover:brightness-125',
+                i ? 'ring-white/20' : 'ring-white/30',
               )}
             >
               <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.55]' : 'brightness-[0.75]'} />
