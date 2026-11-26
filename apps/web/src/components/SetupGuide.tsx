@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Check, Copy, Download, ExternalLink, Puzzle, Sparkles } from 'lucide-react';
 import { checkFebboxToken } from '@charcoal/providers';
@@ -46,6 +46,15 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
   const installed = !!helper.data;
   const allowed = !!helper.data?.hasPermission;
   const febbox = useStore((s) => s.settings.febboxToken);
+  // Installed and allowed: on to Febbox by itself.
+  const [advanced, setAdvanced] = useState(false);
+  useEffect(() => {
+    if (step === 1 && installed && (allowed || browser !== 'firefox') && !advanced) {
+      setAdvanced(true);
+      const t = window.setTimeout(() => setStep(2), 900);
+      return () => window.clearTimeout(t);
+    }
+  }, [step, installed, allowed, browser, advanced]);
 
   const finish = (how: 'done' | 'skip') => {
     if (how === 'done' || never) actions.updateSettings({ setup: how === 'done' ? 'done' : 'off' });
@@ -144,10 +153,12 @@ function InstallStep({ browser, installed, allowed, version }: { browser: Browse
               <Download className="size-4" /> Add to Firefox
             </a>
           </li>
-          <li className="flex items-center gap-3">
-            <Num n={2} />
-            <span className="flex-1">Click the Charcoal Helper icon in the toolbar and choose “Allow access to streaming sites”.</span>
-          </li>
+          {installed && !allowed && (
+            <li className="flex items-center gap-3">
+              <Num n={2} />
+              <span className="flex-1">Firefox turned its site access off: click the Charcoal Helper icon in the toolbar and choose “Allow access to streaming sites”.</span>
+            </li>
+          )}
         </ol>
       ) : (
         <ol className="space-y-2.5 text-body-sm text-white/85">
@@ -173,7 +184,7 @@ function InstallStep({ browser, installed, allowed, version }: { browser: Browse
         </ol>
       )}
       {installed && browser === 'firefox' && !allowed ? (
-        <Status ok={false}>Installed. Now allow it access to streaming sites (step 2).</Status>
+        <Status ok={false}>Installed, but its site access is off. Allow it (step 2) and this moves on.</Status>
       ) : (
         <Status ok={installed}>{installed ? `Charcoal Helper ${version ?? ''} is installed` : 'Waiting for Charcoal Helper… this moves on by itself once it’s installed'}</Status>
       )}
@@ -203,11 +214,17 @@ function FebboxStep() {
     actions.updateSettings({ febboxToken: token });
     setMsg({ ok: true, text: r === 'ok' ? 'Connected. Febbox accepted it.' : 'Saved (Febbox couldn’t be checked right now).' });
   };
-  const grab = async () => {
+  const grab = async (quiet = false) => {
     setBusy(true);
     try {
       const token = await febboxTokenFromHelper();
-      if (!token) setMsg({ ok: false, text: 'You’re not signed in to Febbox in this browser yet. Sign in (button on the left), then try again.' });
+      if (!token)
+        setMsg({
+          ok: false,
+          text: quiet
+            ? 'Not signed in to Febbox in this browser yet. Sign in at febbox.com; this tab picks it up when you come back.'
+            : 'Still not signed in to Febbox in this browser. Sign in at febbox.com, then come back.',
+        });
       else await keep(token);
     } catch (e) {
       setMsg({ ok: false, text: (e as Error).message });
@@ -219,6 +236,17 @@ function FebboxStep() {
   useEffect(() => {
     if (saved && msg?.ok === false) setMsg({ ok: true, text: 'A Febbox token is saved.' });
   }, [saved, msg]);
+  // Automatic: tried as soon as this step opens, and again each time the viewer comes back to this
+  // tab (from signing in at febbox.com) until a token is saved. The button stays for a manual retry.
+  const grabRef = useRef(grab);
+  grabRef.current = grab;
+  useEffect(() => {
+    if (saved) return;
+    void grabRef.current(true);
+    const back = () => document.visibilityState === 'visible' && !getState().settings.febboxToken && void grabRef.current(true);
+    document.addEventListener('visibilitychange', back);
+    return () => document.removeEventListener('visibilitychange', back);
+  }, [saved]);
   return (
     <div className="space-y-4">
       <div>
@@ -235,9 +263,9 @@ function FebboxStep() {
         </li>
         <li className="flex items-center gap-3">
           <Num n={2} />
-          <span className="flex-1">Come back, and let Charcoal Helper fetch your sign-in token.</span>
-          <button type="button" onClick={grab} disabled={busy} className={cx(btn({ variant: 'primary' }), 'h-9 px-4 text-sm disabled:opacity-50')}>
-            {busy ? 'Getting it…' : 'Get it from Febbox'}
+          <span className="flex-1">Come back to this tab: Charcoal Helper picks up your sign-in by itself.</span>
+          <button type="button" onClick={() => void grab()} disabled={busy} className={cx(btn({ variant: 'primary' }), 'h-9 px-4 text-sm disabled:opacity-50')}>
+            {busy ? 'Checking…' : 'Check again'}
           </button>
         </li>
       </ol>

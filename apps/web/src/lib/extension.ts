@@ -134,9 +134,29 @@ export function releaseStreams() {
  * is missing or too old to do it.
  */
 export async function febboxTokenFromHelper(): Promise<string | null> {
+  // (The helper is asked directly: a page built before this ability existed would not list it.)
   const b = await getBridge(true);
   if (!b) throw new BridgeError('Charcoal Helper isn’t installed', 'DISCONNECTED');
-  if (!b.info.capabilities.includes('febboxToken')) throw new BridgeError('Update Charcoal Helper to get the token by itself', 'NOT_ALLOWED');
+  if (!b.info.capabilities.includes('febboxToken')) throw new BridgeError('Update Charcoal Helper (0.3 or newer) to get the token by itself', 'NOT_ALLOWED');
   const r = await call<{ token: string | null }>('febboxToken', {}, 8000);
   return r.token || null;
+}
+
+let triedFebbox = false;
+/**
+ * Once per visit, quietly: when the helper is there and no Febbox token is saved, take the viewer's
+ * own Febbox sign-in if they are signed in to febbox.com in this browser (checked with Febbox first).
+ * Resolves true when a token was saved.
+ */
+export async function adoptFebboxToken(check: (token: string) => Promise<'ok' | 'invalid' | 'unknown'>, save: (token: string) => void): Promise<boolean> {
+  if (triedFebbox) return false;
+  triedFebbox = true;
+  try {
+    const token = await febboxTokenFromHelper();
+    if (!token || (await check(token)) === 'invalid') return false;
+    save(token);
+    return true;
+  } catch {
+    return false;
+  }
 }

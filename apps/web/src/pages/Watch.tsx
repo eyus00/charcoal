@@ -21,6 +21,8 @@ import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
 import { Tip } from '../components/Tip';
 import SetupGuide, { shouldOfferSetup } from '../components/SetupGuide';
+import { checkFebboxToken } from '@charcoal/providers';
+import { adoptFebboxToken, extensionFetcher } from '../lib/extension';
 
 /** Searches for one title before Jelly gives way to an embed server. */
 const MAX_SEARCHES = 3;
@@ -159,6 +161,18 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   // First play in a browser that can run Charcoal Helper: offer the setup (the search runs meanwhile).
   const [setup, setSetup] = useState(() => shouldOfferSetup());
+  // Helper there but no Febbox token: take the viewer's Febbox sign-in if they have one (once a visit),
+  // and search again so Febbox's sources join the list.
+  useEffect(() => {
+    if (setup || getState().settings.febboxToken || !getState().settings.useExtension) return;
+    void adoptFebboxToken(
+      (t) => checkFebboxToken(extensionFetcher, t),
+      (t) => {
+        actions.updateSettings({ febboxToken: t });
+        toast('Febbox connected from your Febbox sign-in');
+      },
+    );
+  }, [setup]);
 
   // Switching from Jelly to an embed: first say what embeds are (once, unless turned off).
   const [embedAsk, setEmbedAsk] = useState<string | null>(null);
@@ -215,7 +229,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
             <EmbedPlayer server={embed} target={target} resumeAt={resumeAt} sandbox={settings.blockPopups} onProgress={record} onStarted={() => record(0, 0)} />
           </div>
         </>
-      ) : streams ? (
+      ) : streams && !setup ? (
         <Player
           key={settings.serverUrl}
           data={streams}

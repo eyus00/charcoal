@@ -61,7 +61,7 @@ export class BridgeError extends Error {
 export type BridgeCall = <T>(type: string, payload: unknown, timeoutMs: number) => Promise<T>;
 
 const V1_CAPABILITIES: BridgeCapability[] = ['request', 'allowStream', 'releaseStreams', 'cookies'];
-const KNOWN = new Set<string>(['request', 'allowStream', 'releaseStreams', 'cookies', 'status']);
+const KNOWN = new Set<string>(['request', 'allowStream', 'releaseStreams', 'cookies', 'status', 'febboxToken']);
 
 /** Version and capability negotiation: what this page and that bridge can do together. */
 export function negotiate(hello: BridgeHello | null | undefined): BridgeInfo | null {
