@@ -53,7 +53,7 @@ test('hello: protocol and capabilities are negotiated; an old page gets protocol
   assert.deepEqual([v1.ok, v1.result.version, v1.result.protocol, v1.result.hasPermission], [true, '0.2.0', 1, true]);
   const v2 = await send('hello', { protocol: 2 });
   assert.equal(v2.result.protocol, 2);
-  assert.deepEqual(v2.result.capabilities, ['request', 'allowStream', 'releaseStreams', 'cookies', 'status']);
+  assert.deepEqual(v2.result.capabilities, ['request', 'allowStream', 'releaseStreams', 'cookies', 'status', 'febboxToken']);
   assert.equal(v2.result.kind, 'extension');
   assert.equal((await send('hello', { protocol: 9 })).result.protocol, 2, 'never claims a protocol it does not speak');
   assert.equal((await boot({ hasPermission: false }).send('hello', { protocol: 2 })).result.hasPermission, false);

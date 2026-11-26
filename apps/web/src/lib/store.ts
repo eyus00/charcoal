@@ -67,6 +67,8 @@ export interface Settings {
   pauseOverlay: boolean;
   /** Use frames from what you watched as Continue watching images (kept in this browser). */
   frameThumbs: boolean;
+  /** The first-play setup (Charcoal Helper, Febbox): 'new' until it's finished or turned off. */
+  setup: 'new' | 'done' | 'off';
   /** Trakt (when connected): mark what's played in the Jelly player as watched there. */
   traktScrobble: boolean;
   /** Trakt (when connected): keep "To watch" in step with the Trakt watchlist. */
@@ -125,6 +127,7 @@ const defaultSettings: Settings = {
   creditsNext: true,
   pauseOverlay: true,
   frameThumbs: true,
+  setup: 'new',
   traktScrobble: true,
   traktSyncWatchlist: true,
   holdToSpeed: true,

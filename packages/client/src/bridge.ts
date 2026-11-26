@@ -21,7 +21,9 @@ export type BridgeCapability =
   /** Send a Cookie header to an allow-listed host (the viewer's own pasted token). */
   | 'cookies'
   /** Report its own health and counters. */
-  | 'status';
+  | 'status'
+  /** Read the viewer's own Febbox sign-in token from febbox.com's cookie (on request, during setup). */
+  | 'febboxToken';
 
 /** What a bridge answers to `hello`. */
 export interface BridgeHello {

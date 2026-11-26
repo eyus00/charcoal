@@ -1,4 +1,5 @@
 import AvatarImg from '../components/AvatarImg';
+import SetupGuide from '../components/SetupGuide';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
@@ -279,6 +280,7 @@ function Watchlist() {
 // ---------- settings ----------
 
 function SettingsSection() {
+  const [setupOpen, setSetupOpen] = useState(false);
   const settings = useStore((s) => s.settings);
   const historyCount = useStore((s) => s.history.length);
   const file = useRef<HTMLInputElement>(null);
@@ -329,6 +331,16 @@ function SettingsSection() {
   const card = 'rounded-3xl bg-surface p-5 md:p-6';
   return (
     <section>
+      <div className={cx(card, 'mb-4 flex flex-wrap items-center gap-4')}>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-medium">Setup</h3>
+          <p className="text-sm text-muted">Charcoal Helper and Febbox, step by step: more sources, faster starts and up to 4K.</p>
+        </div>
+        <button type="button" onClick={() => setSetupOpen(true)} className={btn()}>
+          Run setup again
+        </button>
+      </div>
+      {setupOpen && <SetupGuide onClose={() => setSetupOpen(false)} />}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className={cx(card, 'space-y-5')}>
           <h3 className="font-medium">Playback</h3>

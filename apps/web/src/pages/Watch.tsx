@@ -20,6 +20,7 @@ import EmbedPlayer from '../player/EmbedPlayer';
 import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
 import { Tip } from '../components/Tip';
+import SetupGuide, { shouldOfferSetup } from '../components/SetupGuide';
 
 /** Searches for one title before Jelly gives way to an embed server. */
 const MAX_SEARCHES = 3;
@@ -156,6 +157,9 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     [d, id, type, season, episode, ep?.name, next],
   );
 
+  // First play in a browser that can run Charcoal Helper: offer the setup (the search runs meanwhile).
+  const [setup, setSetup] = useState(() => shouldOfferSetup());
+
   // Switching from Jelly to an embed: first say what embeds are (once, unless turned off).
   const [embedAsk, setEmbedAsk] = useState<string | null>(null);
   const pickServer = (s: string, confirmed = false) => {
@@ -201,6 +205,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
+      {setup && <SetupGuide onClose={() => setSetup(false)} />}
       {embedAsk && <EmbedNotice name={embedById(embedAsk)?.name ?? 'this server'} onCancel={() => setEmbedAsk(null)} onContinue={() => pickServer(embedAsk, true)} />}
       {embed ? (
         <>

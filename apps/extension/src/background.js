@@ -14,10 +14,14 @@
  *                   expected request headers and a CORS header for Charcoal, only for requests
  *                   made by that Charcoal tab.
  *  releaseStreams → removes those rules for the tab.
+ *  febboxToken    → the viewer's own Febbox sign-in token (febbox.com's "ui" cookie), when they are
+ *                   signed in to Febbox in this browser. Asked for only when they press "Get it
+ *                   from Febbox" in Charcoal's setup; the token is used for Febbox and nothing else.
  *
- * Deliberately not offered (unlike some similar extensions): reading the browser's cookies, sending
- * cookies anywhere but febbox.com (where the viewer's own pasted token goes), arbitrary headers,
- * private / local network addresses, or use by any other website.
+ * Deliberately not offered (unlike some similar extensions): reading any other cookie (the one
+ * exception is Febbox's own sign-in cookie, above, which is the viewer's key to their own account),
+ * sending cookies anywhere but febbox.com, arbitrary headers, private / local network addresses, or
+ * use by any other website.
  */
 const ALLOWED = ['https://charcoal.eys0.fyi'];
 const isAllowedOrigin = (o) => ALLOWED.includes(o) || /^http:\/\/localhost(:\d+)?$/.test(o);
@@ -37,7 +41,7 @@ const TIMEOUT_MS = 20000;
 
 /** The newest protocol this build speaks, and what it can do (the page plans around these). */
 const PROTOCOL = 2;
-const CAPABILITIES = ['request', 'allowStream', 'releaseStreams', 'cookies', 'status'];
+const CAPABILITIES = ['request', 'allowStream', 'releaseStreams', 'cookies', 'status', 'febboxToken'];
 const counters = { ok: 0, failed: 0, since: Date.now() };
 
 /** An error with a code the page can act on: TIMEOUT, NETWORK, NOT_ALLOWED, TOO_LARGE, BAD_REQUEST. */
@@ -230,7 +234,17 @@ async function releaseStreams(_payload, sender) {
   return {};
 }
 
-const HANDLERS = { hello, status, request, allowStream, releaseStreams };
+/** Febbox's sign-in cookie, read only on febbox.com and only by name. Nothing else is looked at. */
+async function febboxToken() {
+  if (!chrome.cookies) throw new HelperError('NOT_ALLOWED', 'This build of Charcoal Helper can’t read the Febbox sign-in');
+  for (const url of ['https://www.febbox.com/', 'https://febbox.com/']) {
+    const c = await chrome.cookies.get({ url, name: 'ui' }).catch(() => null);
+    if (c?.value) return { token: c.value };
+  }
+  return { token: null };
+}
+
+const HANDLERS = { hello, status, request, allowStream, releaseStreams, febboxToken };
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const origin = (() => {

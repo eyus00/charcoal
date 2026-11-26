@@ -28,7 +28,8 @@ interface AppBridge {
 const appBridge = (): AppBridge | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { __charcoalBridge?: AppBridge }).__charcoalBridge);
 
 const CODES = ['TIMEOUT', 'NETWORK', 'NOT_ALLOWED', 'TOO_LARGE', 'BAD_REQUEST'] as const;
-const fail = (r: { error: string; code?: string }) => new BridgeError(r.error, (CODES as readonly string[]).includes(r.code ?? '') ? (r.code as (typeof CODES)[number]) : /too long/i.test(r.error) ? 'TIMEOUT' : 'UNKNOWN');
+const fail = (r: { error: string; code?: string }) =>
+  new BridgeError(r.error, (CODES as readonly string[]).includes(r.code ?? '') ? (r.code as (typeof CODES)[number]) : /too long/i.test(r.error) ? 'TIMEOUT' : 'UNKNOWN');
 
 const call: BridgeCall = <T>(type: string, payload: unknown, timeoutMs: number): Promise<T> => {
   const app = appBridge();
@@ -125,4 +126,17 @@ export async function allowStream(host: string, headers: Record<string, string> 
 /** Removes this tab's stream rules (when the player closes). */
 export function releaseStreams() {
   connected?.then((b) => b?.releaseStreams()).catch(() => {});
+}
+
+/**
+ * The viewer's Febbox sign-in token, read by Charcoal Helper (0.3+) from febbox.com's own cookie
+ * when they are signed in to Febbox in this browser. Null when they aren't; throws when the helper
+ * is missing or too old to do it.
+ */
+export async function febboxTokenFromHelper(): Promise<string | null> {
+  const b = await getBridge(true);
+  if (!b) throw new BridgeError('Charcoal Helper isn’t installed', 'DISCONNECTED');
+  if (!b.info.capabilities.includes('febboxToken')) throw new BridgeError('Update Charcoal Helper to get the token by itself', 'NOT_ALLOWED');
+  const r = await call<{ token: string | null }>('febboxToken', {}, 8000);
+  return r.token || null;
 }
