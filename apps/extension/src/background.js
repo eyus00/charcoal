@@ -236,10 +236,11 @@ async function releaseStreams(_payload, sender) {
 
 /**
  * Febbox's sign-in cookie ("ui"), read only on febbox.com and only by name. Nothing else is looked at.
- * Every cookie store is searched: in Firefox a sign-in can live in a container or a private window,
- * each with its own store (the tab asking comes first). Several distinct values (an old and a new
- * sign-in) are all returned so the page can try each with Febbox; when there is none, `reason`
- * says why: no site access to febbox.com, or simply not signed in.
+ * Asked from a private window, only that private window's cookies are searched; asked from a normal
+ * one, every normal cookie store (Firefox containers each have their own; the asking tab's first),
+ * never a private window's. Several distinct values (an old and a new sign-in) are all returned so
+ * the page can try each with Febbox; when there is none, `reason` says why: no site access to
+ * febbox.com, or simply not signed in.
  */
 /** The call's answer, or null when it throws or rejects. */
 async function attempt(fn) {
@@ -255,7 +256,16 @@ async function febboxToken(_payload, sender) {
   const access = (await attempt(() => chrome.permissions.contains({ origins: ['https://www.febbox.com/*'] }))) ?? true;
   if (!access) return { token: null, tokens: [], reason: 'no-access' };
   const stores = (await attempt(() => chrome.cookies.getAllCookieStores())) ?? [];
-  const ids = [sender?.tab?.cookieStoreId, ...stores.map((st) => st.id)].filter((id, i, all) => id && all.indexOf(id) === i);
+  const tab = sender?.tab;
+  // The asking tab's store: Firefox names it on the tab; Chrome lists the tab under its store.
+  const own = tab?.cookieStoreId ?? stores.find((st) => st.tabIds?.includes(tab?.id))?.id;
+  // Private stores: Firefox marks them (and calls the store "firefox-private"); Chrome's is "1".
+  const isPrivate = (st) => st.incognito === true || st.id === 'firefox-private' || st.id === '1';
+  const ids = tab?.incognito
+    ? [own].filter(Boolean)
+    : [own, ...stores.filter((st) => !isPrivate(st)).map((st) => st.id)].filter((id, i, all) => id && all.indexOf(id) === i);
+  // A private window whose store can't be told: nothing rather than the normal windows' sign-in.
+  if (tab?.incognito && !ids.length) return { token: null, tokens: [], reason: 'signed-out' };
   const found = [];
   const look = async (storeId) => {
     const base = { name: 'ui', domain: 'febbox.com', ...(storeId ? { storeId } : {}) };
@@ -267,7 +277,7 @@ async function febboxToken(_payload, sender) {
     for (const c of [...list, ...parted]) if (c?.value && c.value !== 'deleted') found.push(c);
   };
   if (ids.length) for (const id of ids) await look(id);
-  else await look(undefined);
+  else await look(undefined); // the default store (the only one this browser has)
   // The longest-lived first: the current sign-in rather than one left behind.
   const tokens = [...new Set(found.sort((a, b) => (b.expirationDate ?? 0) - (a.expirationDate ?? 0)).map((c) => c.value))].slice(0, 4);
   return { token: tokens[0] ?? null, tokens, reason: tokens.length ? undefined : 'signed-out' };

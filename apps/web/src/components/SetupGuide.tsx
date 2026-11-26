@@ -84,18 +84,29 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
                 <ArrowLeft className="size-4" /> Back
               </button>
             )}
-            {step < 3 && (
-              <button type="button" onClick={() => (step === 1 && !installed ? finish('skip') : setStep((s) => (s + 1) as 2 | 3))} className={cx(btn(), 'h-10 px-4 text-sm')}>
-                {step === 1 && !installed ? 'Skip for now' : 'Skip this step'}
+            {/* One way on at a time: Next once a step is done; until then, a way to leave it for later. */}
+            {step === 1 && !installed && (
+              <button type="button" onClick={() => finish('skip')} className={cx(btn(), 'h-10 px-4 text-sm')}>
+                Skip for now
               </button>
             )}
-            {step === 1 && (
-              <button type="button" disabled={!installed} onClick={() => setStep(2)} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm disabled:opacity-40')}>
+            {step === 1 && installed && !ready && (
+              <button type="button" onClick={() => setStep(2)} className={cx(btn(), 'h-10 px-4 text-sm')}>
+                Not now
+              </button>
+            )}
+            {step === 1 && ready && (
+              <button type="button" onClick={() => setStep(2)} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm')}>
                 Next
               </button>
             )}
-            {step === 2 && (
-              <button type="button" disabled={!febbox} onClick={() => setStep(3)} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm disabled:opacity-40')}>
+            {step === 2 && !febbox && (
+              <button type="button" onClick={() => setStep(3)} className={cx(btn(), 'h-10 px-4 text-sm')}>
+                Skip this step
+              </button>
+            )}
+            {step === 2 && febbox && (
+              <button type="button" onClick={() => setStep(3)} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm')}>
                 Next
               </button>
             )}
@@ -145,19 +156,29 @@ function Status({ ok, pending, children }: { ok: boolean; pending?: boolean; chi
 }
 
 function InstallStep({ browser, installed, allowed, version, outdated }: { browser: Browser; installed: boolean; allowed: boolean; version?: string; outdated: boolean }) {
+  // Installed already: only what's left to do (update it, or allow its site access), or that it's done.
+  if (installed)
+    return (
+      <div className="space-y-4">
+        <StepHead title={outdated ? 'Update Charcoal Helper' : 'Charcoal Helper'} body="The browser extension that finds and plays sources from your own connection." />
+        {outdated ? (
+          <UpdateNotice browser={browser} version={version ?? ''} />
+        ) : browser === 'firefox' && !allowed ? (
+          <>
+            <Status ok={false}>Installed, but its site access is off.</Status>
+            <p className="text-body-sm text-white/85">Click the Charcoal Helper icon in the toolbar and choose “Allow access to streaming sites”. This moves on by itself.</p>
+          </>
+        ) : (
+          <Status ok>Charcoal Helper {version} is installed, the latest version</Status>
+        )}
+      </div>
+    );
   return (
     <div className="space-y-4">
-      <div className="flex gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.06]">
-          <Puzzle className="size-5" />
-        </span>
-        <div>
-          <p className="font-medium">Install Charcoal Helper</p>
-          <p className="text-body-sm text-muted">
-            A small browser extension. Sources are then found and played from your own connection, so many more of them work and start faster. It only talks to Charcoal.
-          </p>
-        </div>
-      </div>
+      <StepHead
+        title="Install Charcoal Helper"
+        body="A small browser extension. Sources are then found and played from your own connection, so many more of them work and start faster. It only talks to Charcoal."
+      />
       {browser === 'firefox' ? (
         <ol className="space-y-2.5 text-body-sm text-white/85">
           <li className="flex items-center gap-3">
@@ -167,12 +188,6 @@ function InstallStep({ browser, installed, allowed, version, outdated }: { brows
               <Download className="size-4" /> Add to Firefox
             </a>
           </li>
-          {installed && !allowed && (
-            <li className="flex items-center gap-3">
-              <Num n={2} />
-              <span className="flex-1">Firefox turned its site access off: click the Charcoal Helper icon in the toolbar and choose “Allow access to streaming sites”.</span>
-            </li>
-          )}
         </ol>
       ) : (
         <ol className="space-y-2.5 text-body-sm text-white/85">
@@ -197,13 +212,9 @@ function InstallStep({ browser, installed, allowed, version, outdated }: { brows
           </li>
         </ol>
       )}
-      {outdated ? (
-        <UpdateNotice browser={browser} version={version ?? ''} />
-      ) : installed && browser === 'firefox' && !allowed ? (
-        <Status ok={false}>Installed, but its site access is off. Allow it (step 2) and this moves on.</Status>
-      ) : (
-        <Status ok={installed}>{installed ? `Charcoal Helper ${version ?? ''} is installed, the latest version` : 'Waiting for Charcoal Helper… this moves on by itself once it’s installed'}</Status>
-      )}
+      <Status ok={false} pending>
+        Waiting for Charcoal Helper… this moves on by itself once it’s installed
+      </Status>
       <p className="text-xs text-faint">
         Problems? All versions are on{' '}
         <a href={RELEASES} target="_blank" rel="noreferrer" className="text-white/70 hover:text-white">
@@ -211,6 +222,20 @@ function InstallStep({ browser, installed, allowed, version, outdated }: { brows
         </a>
         .
       </p>
+    </div>
+  );
+}
+
+function StepHead({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="flex gap-3">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.06]">
+        <Puzzle className="size-5" />
+      </span>
+      <div>
+        <p className="font-medium">{title}</p>
+        <p className="text-body-sm text-muted">{body}</p>
+      </div>
     </div>
   );
 }
@@ -241,6 +266,8 @@ function FebboxStep() {
   const [busy, setBusy] = useState(false);
   const [value, setValue] = useState('');
   const [where, setWhere] = useState(false);
+  /** Connected, and the viewer asked to put in another token. */
+  const [changing, setChanging] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(saved ? { ok: true, text: 'Febbox is connected.' } : null);
   const check = (token: string) => checkFebboxToken(extensionFetcher, token);
   const keep = async (raw: string) => {
@@ -253,6 +280,7 @@ function FebboxStep() {
     if (r === 'invalid') return setMsg({ ok: false, text: 'Febbox didn’t accept that token. Copy a fresh “ui” value after signing in again.' });
     actions.updateSettings({ febboxToken: token });
     setValue('');
+    setChanging(false);
     setMsg({ ok: true, text: r === 'ok' ? 'Connected. Febbox accepted it.' : 'Saved (Febbox couldn’t be checked right now).' });
   };
   const grab = async () => {
@@ -278,12 +306,39 @@ function FebboxStep() {
     return () => document.removeEventListener('visibilitychange', back);
   }, [saved]);
   const pending = busy || /Checking|Looking/.test(msg?.text ?? '');
+  const intro = (
+    <div>
+      <p className="font-medium">Connect Febbox (optional, recommended)</p>
+      <p className="text-body-sm text-muted">Original Blu-ray files, often in 4K, from your own free Febbox account. The token stays in this browser and is only sent to febbox.com.</p>
+    </div>
+  );
+  // Done: say so, and nothing else to press here but Next (or another token, if wanted).
+  if (saved && !changing)
+    return (
+      <div className="space-y-4">
+        {intro}
+        <div className="flex items-center gap-3 rounded-2xl bg-success/10 px-4 py-3.5 ring-1 ring-success/20">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-success/20 text-success">
+            <Check className="size-4.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-success">Febbox is connected</p>
+            <p className="truncate text-xs text-white/60">
+              {msg?.ok && !/is connected|Checking|Looking/.test(msg.text) ? `${msg.text} · ` : ''}token ••••{saved.slice(-4)}
+            </p>
+          </div>
+          <button type="button" onClick={() => setChanging(true)} className="shrink-0 text-xs text-muted underline-offset-4 hover:text-white hover:underline">
+            Use another token
+          </button>
+        </div>
+      </div>
+    );
   return (
     <div className="space-y-4">
-      <div>
-        <p className="font-medium">Connect Febbox (optional, recommended)</p>
-        <p className="text-body-sm text-muted">Original Blu-ray files, often in 4K, from your own free Febbox account. The token stays in this browser and is only sent to febbox.com.</p>
-      </div>
+      {intro}
+      {/* Replacing a saved token: only the field below. */}
+      {!saved && (
+        <>
       <ol className="space-y-2.5 text-body-sm text-white/85">
         <li className="flex items-center gap-3">
           <Num n={1} />
@@ -301,6 +356,8 @@ function FebboxStep() {
         </li>
       </ol>
       {msg && <Status ok={msg.ok && !pending} pending={pending}>{msg.text}</Status>}
+        </>
+      )}
 
       {/* Always here: the token typed in by hand, for when the helper can't read it. */}
       <form
@@ -328,9 +385,16 @@ function FebboxStep() {
             Save
           </button>
         </div>
-        <button type="button" onClick={() => setWhere((w) => !w)} aria-expanded={where} className="mt-2.5 text-xs text-muted underline-offset-4 hover:text-white hover:underline">
-          Where do I find it?
-        </button>
+        <div className="mt-2.5 flex gap-4">
+          <button type="button" onClick={() => setWhere((w) => !w)} aria-expanded={where} className="text-xs text-muted underline-offset-4 hover:text-white hover:underline">
+            Where do I find it?
+          </button>
+          {saved && (
+            <button type="button" onClick={() => setChanging(false)} className="text-xs text-muted underline-offset-4 hover:text-white hover:underline">
+              Keep the current token
+            </button>
+          )}
+        </div>
         {where && (
           <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-white/70">
             <li>Open febbox.com, signed in.</li>
