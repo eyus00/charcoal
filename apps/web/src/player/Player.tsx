@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { formatSize, languageName, qualityLabel, type JellyResult, type JellySource, type JellySubtitle } from '../lib/servers';
 import { actions, getState, useStore } from '../lib/store';
+import { useFoundSubtitles, type FoundSubtitle } from '../lib/subtitles';
 import { segmentAt, SEGMENT_LABEL, useSegments, type Segment } from '../lib/segments';
 import type { MediaType } from '../lib/tmdb';
 import { cx, formatClock } from '../lib/util';
@@ -177,8 +178,12 @@ export const usePlayerSources = () =>
     () => quickSources,
   );
 
-/** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
-type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string>; bridged?: boolean };
+/**
+ * A subtitle track: from the source or OpenSubtitles (url), or a file the viewer loaded (text).
+ * `origin` says whether it came with the stream (timed to it) or was found for the title;
+ * `detail` is what a found one was timed against (its release), for the menu's tooltip.
+ */
+type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string>; bridged?: boolean; origin?: 'source' | 'found'; detail?: string };
 
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
@@ -361,11 +366,16 @@ export default function Player({
 
   // ---------- subtitles ----------
   const [localTracks, setLocalTracks] = useState<Track[]>([]);
-  const tracks = useMemo<Track[]>(() => [...localTracks, ...sortSubtitles(data.subtitles)], [localTracks, data.subtitles]);
+  const found = useFoundSubtitles(media, !live && media.id > 0 && settings.findSubtitles);
+  const tracks = useMemo<Track[]>(() => [...localTracks, ...sortSubtitles(data.subtitles, found)], [localTracks, data.subtitles, found]);
   const [subIdx, setSubIdx] = useState<number>(() => {
     const want = settings.subtitleLabel;
     return want ? sortSubtitles(data.subtitles).findIndex((s) => s.label === want) : -1;
   });
+  /** Set when the viewer turns subtitles off here: tracks arriving later don't switch them back on. */
+  const turnedOff = useRef(false);
+  /** A track to select as soon as it is in the list (a file just loaded). */
+  const selectKey = useRef<string>(undefined);
   const [cues, setCues] = useState<Cue[]>([]);
   const [delay, setDelay] = useState(0); // + shows subtitles later
   const lastSub = useRef(subIdx >= 0 ? subIdx : tracks.findIndex((s) => /english|^en/i.test(s.label)));
@@ -401,6 +411,7 @@ export default function Player({
   const chooseSub = useCallback(
     (i: number, label?: string) => {
       setSubIdx(i);
+      turnedOff.current = i < 0;
       if (i >= 0) lastSub.current = i;
       actions.updateSettings({ subtitleLabel: i >= 0 ? (label ?? tracks[i]?.label ?? null) : null });
     },
@@ -416,21 +427,42 @@ export default function Player({
       if (!parseCaptions(text).length) return flash('That file has no subtitles in it');
       const label = file.name.replace(/\.(srt|vtt)$/i, '');
       setLocalTracks((l) => [{ label, text }, ...l.filter((x) => x.label !== label)]);
-      // The new file goes first in the list.
-      setSubIdx(0);
-      lastSub.current = 0;
+      // The new file is selected once it's in the list (see below).
+      selectKey.current = `file:${label}`;
       setDelay(0);
       flash(`Subtitles: ${label}`);
     },
     [flash],
   );
-  // Indexes shift when a file is added in front; keep the same track selected.
-  const prevLocal = useRef(localTracks.length);
+  // The list changes under the selection: a file added in front, sources arriving with their own
+  // tracks, OpenSubtitles answering. The same track stays selected, by what it is, not where it was;
+  // and with nothing on yet, the language last chosen is taken once a track by that name turns up.
+  const prevTracks = useRef(tracks);
   useEffect(() => {
-    const added = localTracks.length - prevLocal.current;
-    prevLocal.current = localTracks.length;
-    if (added > 0) setSubIdx((i) => (i > 0 ? i + added : i));
-  }, [localTracks.length]);
+    const before = prevTracks.current;
+    prevTracks.current = tracks;
+    if (before === tracks) return;
+    const at = (k: string | undefined) => (k ? tracks.findIndex((t) => trackKey(t) === k) : -1);
+    if (selectKey.current) {
+      const j = at(selectKey.current);
+      selectKey.current = undefined;
+      if (j >= 0) {
+        setSubIdx(j);
+        lastSub.current = j;
+        return;
+      }
+    }
+    const last = at(trackKey(before[lastSub.current]));
+    if (last >= 0) lastSub.current = last;
+    setSubIdx((i) => {
+      if (i >= 0) {
+        const j = at(trackKey(before[i]));
+        return j >= 0 ? j : i < tracks.length ? i : -1;
+      }
+      const want = getState().settings.subtitleLabel;
+      return want && !turnedOff.current ? tracks.findIndex((t) => t.label === want) : -1;
+    });
+  }, [tracks]);
 
   // iOS fullscreen is the native player, which can't show our overlay: give it a real track.
   const nativeVtt = useMemo(() => (cues.length ? URL.createObjectURL(new Blob([toVtt(cues, delay)], { type: 'text/vtt' })) : null), [cues, delay]);
@@ -1646,8 +1678,11 @@ export default function Player({
                         </MenuItem>
                         {tracks.map((s, i) => (
                           <MenuItem key={(s.url ?? 'file') + s.label + i} selected={subIdx === i} onClick={() => (chooseSub(i), setMenu(null))}>
-                            <span className="flex-1 truncate">{s.label}</span>
+                            <span className="flex-1 truncate" title={s.detail}>
+                              {s.label}
+                            </span>
                             {s.text !== undefined && <span className="text-micro tracking-wider uppercase opacity-50">file</span>}
+                            {s.origin === 'source' && <span className="rounded-full bg-white/10 px-1.5 py-px text-micro tracking-wider text-white/75 uppercase">Source</span>}
                           </MenuItem>
                         ))}
                       </div>
@@ -2516,15 +2551,31 @@ export function subtitleName(raw: string): string {
   return l || 'Unknown';
 }
 
-/** Tracks with readable names: the preferred language first, then A–Z; repeated names numbered. */
-function sortSubtitles(list: JellySubtitle[]): Track[] {
+/** What a track is, whatever its place in the list. */
+const trackKey = (t: Track | undefined) => (t ? (t.url ?? `file:${t.label}`) : undefined);
+
+/**
+ * Tracks with readable names: the preferred language first, then A–Z, and within a language the
+ * source's own (timed to this very video) before those found on OpenSubtitles; repeated names numbered.
+ */
+function sortSubtitles(list: JellySubtitle[], found: FoundSubtitle[] = []): Track[] {
   const seen = new Set<string>();
   const pref = languageName(getState().settings.audioLang).toLowerCase();
-  const tracks = list
+  const own: Track[] = list
     // Only formats the overlay reads (WebVTT, SRT): an ASS or TTML track would be listed and show nothing.
     .filter((s) => s.url && (!s.format || READABLE_SUBS.test(s.format)) && !seen.has(s.url) && seen.add(s.url))
-    .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers, bridged: s.bridged }))
-    .sort((a, b) => Number(b.label.toLowerCase().startsWith(pref)) - Number(a.label.toLowerCase().startsWith(pref)) || a.label.localeCompare(b.label));
+    .map((s) => ({ label: subtitleName(s.label), url: s.url, format: s.format, headers: s.headers, bridged: s.bridged, origin: 'source' as const }));
+  const more: Track[] = found
+    .filter((f) => !seen.has(f.url) && seen.add(f.url))
+    .map((f) => ({ label: f.hearingImpaired ? `${f.label} (SDH)` : f.label, url: f.url, format: 'srt', origin: 'found' as const, detail: f.release ? `OpenSubtitles · ${f.release}` : 'OpenSubtitles' }));
+  // "English (SDH)" sorts with English; the source's tracks lead their language.
+  const base = (t: Track) => t.label.replace(/ \(SDH\)$/, '');
+  const tracks = [...own, ...more].sort(
+    (a, b) =>
+      Number(b.label.toLowerCase().startsWith(pref)) - Number(a.label.toLowerCase().startsWith(pref)) ||
+      base(a).localeCompare(base(b)) ||
+      Number(a.origin === 'found') - Number(b.origin === 'found'),
+  );
   const count = new Map<string, number>();
   return tracks.map((t) => {
     const n = (count.get(t.label) ?? 0) + 1;

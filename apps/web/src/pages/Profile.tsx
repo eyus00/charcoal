@@ -467,6 +467,12 @@ function SettingsSection() {
         </SettingsGroup>
 
         <SettingsGroup id="set-subtitles" title="Subtitles" body="How subtitles look. In the player you can also load your own .srt / .vtt file, shift the timing (Z / X) and read the transcript.">
+          <Toggle
+            label="Find subtitles for every title"
+            hint="From OpenSubtitles, beside the ones a source comes with (tagged Source)"
+            on={settings.findSubtitles}
+            onChange={(v) => actions.updateSettings({ findSubtitles: v })}
+          />
           <div className="px-1 py-2">
             <SubtitleStyleControls />
           </div>

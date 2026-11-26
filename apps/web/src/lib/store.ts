@@ -49,6 +49,8 @@ export interface Settings {
   muted: boolean;
   playbackRate: number;
   subtitleLabel: string | null;
+  /** Also offer subtitles from OpenSubtitles, not only those the source carries. */
+  findSubtitles: boolean;
   /** Sandbox embed iframes so they can't open pop-ups (some servers refuse to play). */
   blockPopups: boolean;
   /** Don't show the "embedded players aren't ours" notice again. */
@@ -120,6 +122,7 @@ const defaultSettings: Settings = {
   muted: false,
   playbackRate: 1,
   subtitleLabel: null,
+  findSubtitles: true,
   blockPopups: false,
   embedNoticeOff: false,
   serverUrl: '',
