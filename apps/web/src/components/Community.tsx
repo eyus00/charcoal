@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, EyeOff, Heart, MessageCircle, MessagesSquare, PenLine, Star, Trash2 } from 'lucide-react';
 import { Tip } from './Tip';
@@ -28,6 +28,25 @@ import Score from './Score';
 import { cx, useInView } from '../lib/util';
 import { fetchMyComments } from '../lib/traktData';
 import { setLocalRating, useLocalRating } from '../lib/ratings';
+
+/**
+ * One way to say "this needs Trakt": the Connect Trakt pop-up, with a line on what was just tried.
+ * Commenting, liking and rating all open it, so the reason and the way forward read the same.
+ */
+type TraktAsk = { why: string } | null;
+let traktAsk: TraktAsk = null;
+const askSubs = new Set<() => void>();
+const setTraktAsk = (a: TraktAsk) => {
+  traktAsk = a;
+  askSubs.forEach((f) => f());
+};
+const useTraktAsk = () =>
+  useSyncExternalStore(
+    (f) => (askSubs.add(f), () => void askSubs.delete(f)),
+    () => traktAsk,
+  );
+/** Asked once per visit for ratings (they work without Trakt; this only says they could go further). */
+let askedForRating = false;
 
 /**
  * What people think: the Trakt community's rating and comments for this title (shared with
@@ -89,9 +108,9 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
   const [writing, setWriting] = useState(false);
   const [draft, setDraft] = useState({ text: '', spoiler: false });
   const [all, setAll] = useState(false);
-  const [aboutTrakt, setAboutTrakt] = useState(false);
+  const ask = useTraktAsk();
   // Comments live on Trakt: without it the button says why, and offers to connect.
-  const write = () => (user ? setWriting(true) : toast('Comments are posted on Trakt', { label: 'Connect Trakt', run: () => setAboutTrakt(true) }));
+  const write = () => (user ? setWriting(true) : setTraktAsk({ why: 'Comments are posted on Trakt, so writing one needs a Trakt account.' }));
   const shown = [...mine, ...others];
   const { ref: rowRef, scroll } = useRowScroll();
   const onDeleted = (c: TraktComment) => {
@@ -207,7 +226,7 @@ export default function Community({ type, id, name }: { type: MediaType; id: num
           )}
         </Dialog>
       )}
-      {aboutTrakt && <AboutTrakt onClose={() => setAboutTrakt(false)} />}
+      {ask && <AboutTrakt why={ask.why} onClose={() => setTraktAsk(null)} />}
       {writing && t && user && (
         <Composer
           t={t}
@@ -328,7 +347,10 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
         });
         qc.invalidateQueries({ queryKey: ['trakt', 'ratings', t.kind, t.slug] });
       }
-      toast(next ? `Rated ${next}/10` : 'Rating removed');
+      if (!user && next && !askedForRating) {
+        askedForRating = true;
+        setTraktAsk({ why: `Rated ${next}/10. It’s saved in this browser; with Trakt it goes everywhere you watch, and counts towards the score here.` });
+      } else toast(next ? `Rated ${next}/10` : 'Rating removed');
     } catch (e) {
       toast((e as Error).message);
     } finally {
@@ -373,7 +395,7 @@ function YourRating({ t, type, id, user }: { t: TraktTitle; type: MediaType; id:
 }
 
 /** What connecting Trakt is and does, with the button to do it. */
-function AboutTrakt({ onClose }: { onClose: () => void }) {
+function AboutTrakt({ why, onClose }: { why?: string; onClose: () => void }) {
   return (
     <Dialog
       title="Connect Trakt"
@@ -382,12 +404,16 @@ function AboutTrakt({ onClose }: { onClose: () => void }) {
       footer={
         <div className="flex items-center gap-3">
           <p className="min-w-0 flex-1 text-xs text-muted">You sign in on trakt.tv. Charcoal never sees your password, and the sign-in stays in this browser.</p>
+          <button type="button" onClick={onClose} className={cx(btn(), 'h-10 px-4 text-sm')}>
+            Not now
+          </button>
           <button type="button" onClick={() => startTraktLogin()} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm')}>
             Connect Trakt
           </button>
         </div>
       }
     >
+      {why && <p className="mb-4 rounded-2xl bg-white/[0.05] px-4 py-3 text-body-sm leading-6 text-white/90 ring-1 ring-white/[0.06]">{why}</p>}
       <p className="text-body-sm leading-6 text-white/85">Trakt is a free service that keeps track of what you watch, shared by many apps. The comments and ratings here come from its community.</p>
       <ul className="mt-4 space-y-2.5 text-body-sm text-white/85">
         {[
@@ -609,7 +635,7 @@ function CommentCard({ c, me, pinned, row, onDeleted }: { c: TraktComment; me: T
       <footer className="mt-auto flex items-center gap-4 pt-3 text-xs text-faint">
         <button
           type="button"
-          onClick={() => (!me ? toast('Liking comments needs Trakt: connect it in Settings') : mine ? toast('That’s your own comment') : like())}
+          onClick={() => (!me ? setTraktAsk({ why: 'Likes are counted on Trakt, so liking a comment needs a Trakt account.' }) : mine ? toast('That’s your own comment') : like())}
           aria-pressed={liked}
           aria-label={liked ? 'Unlike' : 'Like'}
           className={cx('group/like flex items-center gap-1 tabular-nums transition-colors', liked ? 'text-white' : 'hover:text-white')}
@@ -713,7 +739,7 @@ function Thread({ c, me, pinned, onClose, onReplied }: { c: TraktComment; me: Tr
         ) : (
           <div className="flex items-center gap-3">
             <p className="min-w-0 flex-1 text-sm text-muted">Connect Trakt to reply.</p>
-            <button type="button" onClick={() => startTraktLogin()} className={cx(btn(), 'h-9 px-4 text-sm')}>
+            <button type="button" onClick={() => (onClose(), setTraktAsk({ why: 'Replies are posted on Trakt, so replying needs a Trakt account.' }))} className={cx(btn(), 'h-9 px-4 text-sm')}>
               Connect Trakt
             </button>
           </div>
