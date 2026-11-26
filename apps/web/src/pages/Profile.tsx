@@ -4,7 +4,7 @@ import SetupGuide from '../components/SetupGuide';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
-import { CalendarDays, CheckCircle2, Download, Film, Heart, Play, Trash2, Upload, X } from 'lucide-react';
+import { CalendarDays, Captions, CheckCircle2, Compass, Database, Download, Film, Heart, Link2, Pencil, Play, Server, Trash2, Upload, X } from 'lucide-react';
 import { StatusDot } from '../components/LibraryStatus';
 import { LIBRARY_LABEL } from '../lib/library';
 import ContinueWatching from '../components/ContinueWatching';
@@ -15,7 +15,7 @@ import { TILE } from '../components/EpisodeTile';
 import { startOfDay, useSchedule } from '../lib/schedule';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
-import { detectExtension, extensionFetcher } from '../lib/extension';
+import { detectExtension, extensionFetcher, febboxTokenFromHelper } from '../lib/extension';
 import { checkFebboxToken } from '@charcoal/providers';
 import { SubtitleStyleControls } from '../player/captions';
 import AnimeShelfRow from '../components/AnimeShelfRow';
@@ -320,44 +320,40 @@ function YourShows() {
 
 // ---------- settings ----------
 
+/** The settings, by what they're about; a list of sections beside them (a row of them on phones). */
+const SETTINGS_NAV = [
+  { id: 'set-browsing', label: 'Browsing', icon: Compass },
+  { id: 'set-playback', label: 'Playback', icon: Play },
+  { id: 'set-subtitles', label: 'Subtitles', icon: Captions },
+  { id: 'set-sources', label: 'Sources', icon: Server },
+  { id: 'set-accounts', label: 'Accounts', icon: Link2 },
+  { id: 'set-data', label: 'Your data', icon: Database },
+] as const;
+
 function SettingsSection() {
   const [setupOpen, setSetupOpen] = useState(false);
   const settings = useStore((s) => s.settings);
   const historyCount = useStore((s) => s.history.length);
   const file = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [server, setServer] = useState(settings.serverUrl);
-  const [serverState, setServerState] = useState<{
-    ok: boolean;
-    text: string;
-  } | null>(null);
+  const [active, setActive] = useState<string>(SETTINGS_NAV[0].id);
 
-  const saveServer = async () => {
-    const url = normalizeServer(server);
-    if (server.trim() && !url)
-      return setServerState({
-        ok: false,
-        text: 'Enter an address like http://localhost:8080 or https://stream.example.com',
-      });
-    setServer(url);
-    if (!url) {
-      actions.updateSettings({ serverUrl: '' });
-      return setServerState({
-        ok: true,
-        text: 'Removed. Charcoal’s own server is used again.',
-      });
-    }
-    setServerState({ ok: true, text: 'Checking…' });
-    const r = await checkServer(url);
-    if (r.ok) actions.updateSettings({ serverUrl: url });
-    setServerState(
-      r.ok
-        ? {
-            ok: true,
-            text: `Saved. Your server answered (${r.providers}) and will be used from now on.`,
-          }
-        : { ok: false, text: `Not saved: ${r.error}.` },
+  // The section in view is the one marked in the list.
+  useEffect(() => {
+    const els = SETTINGS_NAV.map((n) => document.getElementById(n.id)).filter((e): e is HTMLElement => !!e);
+    const io = new IntersectionObserver(
+      (entries) => {
+        const top = entries.filter((e) => e.isIntersecting).sort((x, y) => x.boundingClientRect.top - y.boundingClientRect.top)[0];
+        if (top) setActive(top.target.id);
+      },
+      { rootMargin: '-20% 0px -65% 0px' },
     );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, []);
+  const go = (id: string) => {
+    setActive(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   };
 
   const download = () => {
@@ -369,30 +365,57 @@ function SettingsSection() {
     URL.revokeObjectURL(a.href);
   };
 
-  const card = 'rounded-3xl bg-surface p-5 md:p-6';
+  const select = 'h-10 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm';
   return (
-    <section>
-      <div className={cx(card, 'mb-4 flex flex-wrap items-center gap-4')}>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-medium">Setup</h3>
-          <p className="text-sm text-muted">Charcoal Helper and Febbox, step by step: more sources, faster starts and up to 4K.</p>
-        </div>
-        <button type="button" onClick={() => setSetupOpen(true)} className={btn()}>
-          Run setup again
-        </button>
-      </div>
+    <section className="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10">
       {setupOpen && <SetupGuide onClose={() => setSetupOpen(false)} />}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className={cx(card, 'space-y-5')}>
-          <h3 className="font-medium">Playback</h3>
-          <Row label="Default server" hint="Jelly switches to an embedded player automatically if it finds nothing.">
-            <select
-              value={settings.server}
-              onChange={(e) => actions.updateSettings({ server: e.target.value })}
-              aria-label="Default server"
-              className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
-            >
-              <option value="jelly">Jelly (direct)</option>
+      <nav
+        aria-label="Settings sections"
+        className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 lg:sticky lg:top-24 lg:mx-0 lg:mb-0 lg:flex-col lg:gap-1 lg:self-start lg:overflow-visible lg:px-0"
+      >
+        {SETTINGS_NAV.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => go(id)}
+            aria-current={active === id ? 'true' : undefined}
+            className={cx(
+              'flex h-10 shrink-0 items-center gap-2.5 rounded-full px-4 text-sm whitespace-nowrap transition-colors lg:rounded-xl lg:px-3',
+              active === id ? 'bg-white font-medium text-black' : 'bg-surface text-white/75 hover:text-white lg:bg-transparent lg:hover:bg-white/[0.05]',
+            )}
+          >
+            <Icon className="size-4" strokeWidth={1.75} />
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="min-w-0 space-y-12">
+        <SettingsGroup id="set-browsing" title="Browsing" body="How titles are shown around the app.">
+          <Toggle
+            label="Peek at titles on hover"
+            hint="Hovering a card shows a small preview beside it. Right-click a card for it any time."
+            on={settings.hoverPeek}
+            onChange={(v) => actions.updateSettings({ hoverPeek: v })}
+          />
+          <Row label="New shows start at" hint="Where the episode list of a show you haven’t started opens, and what Play starts. After that it opens where you left off.">
+            <select value={settings.episodeStart} onChange={(e) => actions.updateSettings({ episodeStart: e.target.value as 'latest' | 'first' })} aria-label="New shows start at" className={select}>
+              <option value="latest">The latest episode</option>
+              <option value="first">Season 1, episode 1</option>
+            </select>
+          </Row>
+          <Toggle
+            label="Show where you stopped"
+            hint="Continue watching cards show the frame you stopped at (saved in this browser)"
+            on={settings.frameThumbs}
+            onChange={(v) => actions.updateSettings({ frameThumbs: v })}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup id="set-playback" title="Playback" body="What plays, in which language, and what happens around it.">
+          <Row label="Default player" hint="Jelly is Charcoal’s own. It switches to an embedded player by itself if it finds nothing.">
+            <select value={settings.server} onChange={(e) => actions.updateSettings({ server: e.target.value })} aria-label="Default player" className={select}>
+              <option value="jelly">Jelly (recommended)</option>
               {EMBEDS.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.name}
@@ -400,73 +423,8 @@ function SettingsSection() {
               ))}
             </select>
           </Row>
-          <Toggle label="Block pop-ups in embeds" hint="Some servers refuse to play when on" on={settings.blockPopups} onChange={(v) => actions.updateSettings({ blockPopups: v })} />
-          <Toggle
-            label="Peek at titles on hover"
-            hint="Hovering a card shows a small preview beside it. Right-click a card for the preview any time."
-            on={settings.hoverPeek}
-            onChange={(v) => actions.updateSettings({ hoverPeek: v })}
-          />
-        </div>
-
-        <div className={cx(card, 'space-y-3')}>
-          <h3 className="font-medium">Your own server</h3>
-          <p className="text-sm text-muted">
-            Optional. Run Charcoal’s server on your computer or a VPS and paste its address. One on your own computer uses your home connection, so more sources play.{' '}
-            <a
-              href="https://github.com/eyus00/charcoal#run-the-server-yourself-vps-or-your-own-computer"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-white/85 transition-colors hover:text-white"
-            >
-              How to set one up
-            </a>
-          </p>
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveServer();
-            }}
-          >
-            <input
-              value={server}
-              onChange={(e) => setServer(e.target.value)}
-              placeholder="http://localhost:8080"
-              inputMode="url"
-              autoComplete="off"
-              spellCheck={false}
-              aria-label="Your server’s address"
-              className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
-            />
-            <button className={btn({ variant: 'primary' })}>Save</button>
-          </form>
-          {/* Always mounted, so screen readers announce the result. */}
-          <p role="status" className={cx('text-sm empty:hidden', serverState?.ok === false ? 'text-danger' : 'text-success')}>
-            {serverState?.text ?? (settings.serverUrl ? `Using ${settings.serverUrl}. If it doesn’t answer, Charcoal’s server takes over.` : '')}
-          </p>
-          {!settings.serverUrl && !serverState && <p className="text-xs text-faint">Now using Charcoal’s server ({new URL(HOSTED_SERVER).host}).</p>}
-        </div>
-
-        <TraktCard className={cx(card, 'space-y-4')} />
-
-        <LetterboxdCard className={cx(card, 'space-y-3')} />
-
-        <HelperCard className={cx(card, 'space-y-3')} />
-
-        <FebboxCard className={cx(card, 'space-y-3')} />
-
-        <div className={cx(card, 'space-y-5')}>
-          <h3 className="font-medium">
-            Player <span className="text-sm font-normal text-muted">· Jelly player only</span>
-          </h3>
           <Row label="Audio language" hint="Sources in it are tried first; streams with several languages switch to it">
-            <select
-              value={settings.audioLang}
-              onChange={(e) => actions.updateSettings({ audioLang: e.target.value })}
-              aria-label="Audio language"
-              className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
-            >
+            <select value={settings.audioLang} onChange={(e) => actions.updateSettings({ audioLang: e.target.value })} aria-label="Audio language" className={select}>
               {[...new Set([settings.audioLang, ...AUDIO_LANGS])].map((c) => (
                 <option key={c} value={c}>
                   {languageName(c)}
@@ -474,7 +432,7 @@ function SettingsSection() {
               ))}
             </select>
           </Row>
-          <Row label="Anime audio" hint="Sub: the original Japanese audio. Dub: dubbed into your audio language when a source has it">
+          <Row label="Anime audio" hint="Sub: the original Japanese audio. Dub: dubbed into your audio language when there is one">
             <Segmented
               value={settings.animeAudio}
               options={[
@@ -486,29 +444,56 @@ function SettingsSection() {
               compact
             />
           </Row>
-          <Row label="New shows start at" hint="Where a show you haven’t started opens, and what Play starts. After that it opens where you left off.">
-            <select
-              value={settings.episodeStart}
-              onChange={(e) => actions.updateSettings({ episodeStart: e.target.value as 'latest' | 'first' })}
-              aria-label="New shows start at"
-              className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
-            >
-              <option value="latest">The latest episode</option>
-              <option value="first">Season 1, episode 1</option>
-            </select>
-          </Row>
-          <Toggle label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
-          <Toggle label="Skip intros and recaps automatically" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
-          <Toggle label="Next episode when the credits start" hint="Starts the autoplay countdown early" on={settings.creditsNext} onChange={(v) => actions.updateSettings({ creditsNext: v })} />
+          <Toggle label="Autoplay the next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle
-            label="Continue watching shows where you left off"
-            hint="Saves a still from the video in this browser"
-            on={settings.frameThumbs}
-            onChange={(v) => actions.updateSettings({ frameThumbs: v })}
+            label="Next episode when the credits start"
+            hint="Starts the autoplay countdown at the credits"
+            on={settings.creditsNext}
+            onChange={(v) => actions.updateSettings({ creditsNext: v })}
           />
+          <Toggle label="Skip intros and recaps by themselves" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
           <Toggle label="Press and hold for 2× speed" on={settings.holdToSpeed} onChange={(v) => actions.updateSettings({ holdToSpeed: v })} />
+          <SettingsNote>
+            Intro, recap and credits times come from{' '}
+            <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="text-white/80 hover:text-white">
+              TheIntroDB
+            </a>{' '}
+            and, for anime,{' '}
+            <a href="https://aniskip.com" target="_blank" rel="noreferrer" className="text-white/80 hover:text-white">
+              AniSkip
+            </a>
+            . These apply to the Jelly player.
+          </SettingsNote>
+        </SettingsGroup>
+
+        <SettingsGroup id="set-subtitles" title="Subtitles" body="How subtitles look. In the player you can also load your own .srt / .vtt file, shift the timing (Z / X) and read the transcript.">
+          <div className="px-1 py-2">
+            <SubtitleStyleControls />
+          </div>
+        </SettingsGroup>
+
+        <SettingsGroup
+          id="set-sources"
+          title="Sources"
+          body="Where streams are found. Charcoal Helper and Febbox bring more of them, faster and up to 4K."
+          action={
+            <button type="button" onClick={() => setSetupOpen(true)} className={cx(btn(), 'h-9 px-4 text-sm')}>
+              Run setup
+            </button>
+          }
+        >
+          <HelperRow />
+          <FebboxRows />
+          <ServerRow />
+          <Toggle label="Block pop-ups in embedded players" hint="Some of them refuse to play while it’s on" on={settings.blockPopups} onChange={(v) => actions.updateSettings({ blockPopups: v })} />
           <Toggle
-            label="Show source diagnostics"
+            label="Warn before switching to an embedded player"
+            hint="They are other sites, with their own ads"
+            on={!settings.embedNoticeOff}
+            onChange={(v) => actions.updateSettings({ embedNoticeOff: !v })}
+          />
+          <Toggle
+            label="Show source details in the player"
             hint="Where sources came from, and why others had none"
             on={settings.showDiagnostics}
             onChange={(v) => actions.updateSettings({ showDiagnostics: v })}
@@ -519,189 +504,363 @@ function SettingsSection() {
             on={settings.shareHealth}
             onChange={(v) => actions.updateSettings({ shareHealth: v })}
           />
-          <Toggle
-            label="Warn before switching to an embed"
-            hint="Embedded players are other sites, with their own ads"
-            on={!settings.embedNoticeOff}
-            onChange={(v) => actions.updateSettings({ embedNoticeOff: !v })}
-          />
-          <p className="text-xs text-muted">
-            Intro, recap and credits times come from{' '}
-            <a href="https://theintrodb.org" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
-              TheIntroDB
-            </a>
-            , a community database; for anime it has nothing on, from{' '}
-            <a href="https://aniskip.com" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
-              AniSkip
-            </a>
-            .
-          </p>
-        </div>
+        </SettingsGroup>
+        <SourceStatus className="rounded-3xl bg-surface p-5 md:p-6" />
 
-        <div className={cx(card, 'space-y-2')}>
-          <h3 className="font-medium">Subtitles</h3>
-          <p className="text-sm text-muted">In the player you can also load your own .srt / .vtt file, fix the timing (Z / X) and read the transcript.</p>
-          <div className="-mx-3">
-            <SubtitleStyleControls />
-          </div>
-        </div>
+        <SettingsGroup id="set-accounts" title="Accounts" body="Other services Charcoal can work with.">
+          <TraktCard className="space-y-4 px-4 py-4" />
+          <LetterboxdCard className="space-y-3 px-4 py-4" />
+        </SettingsGroup>
 
-        <SourceStatus className={cx(card, 'md:col-span-2')} />
-
-        <div className={cx(card, 'space-y-3 md:col-span-2')}>
-          <h3 className="font-medium">Your data</h3>
-          <p className="text-sm text-muted">History and library are stored only in this browser. Back them up or move them to another device.</p>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={download} className={btn()}>
+        <SettingsGroup id="set-data" title="Your data" body="History, library and settings are kept only in this browser. Back them up or move them to another device.">
+          <Row label="Back up" hint="A file with your history, library and settings">
+            <button onClick={download} className={cx(btn(), 'h-9 px-4 text-sm')}>
               <Download className="size-4" strokeWidth={1.5} /> Export
             </button>
-            <button onClick={() => file.current?.click()} className={btn()}>
+          </Row>
+          <Row label="Restore" hint="Adds what’s in a Charcoal backup file">
+            <button onClick={() => file.current?.click()} className={cx(btn(), 'h-9 px-4 text-sm')}>
               <Upload className="size-4" strokeWidth={1.5} /> Import
             </button>
-            {historyCount > 0 && (
+          </Row>
+          {historyCount > 0 && (
+            <Row label="Clear watch history" hint={`${plural(historyCount, 'entry', 'entries')}; you can undo it right after`}>
               <button
                 onClick={() => {
                   const before = getState().history;
                   actions.clearHistory();
-                  toast('Watch history cleared', {
-                    label: 'Undo',
-                    run: () => actions.restore({ history: before }),
-                  });
+                  toast('Watch history cleared', { label: 'Undo', run: () => actions.restore({ history: before }) });
                 }}
-                className={cx(btn(), 'bg-danger/10! text-danger! hover:bg-danger/20!')}
+                className={cx(btn(), 'h-9 bg-danger/10! px-4 text-sm text-danger! hover:bg-danger/20!')}
               >
-                <Trash2 className="size-4" strokeWidth={1.5} /> Clear history
+                <Trash2 className="size-4" strokeWidth={1.5} /> Clear
               </button>
-            )}
-            <input
-              ref={file}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                e.target.value = '';
-                if (!f) return;
-                try {
-                  const r = actions.importData(await f.text());
-                  setMsg({
-                    ok: true,
-                    text: `Imported ${plural(r.history, 'history entry', 'history entries')} and ${plural(r.watchlist, 'library item', 'library items')}.`,
-                  });
-                } catch {
-                  setMsg({
-                    ok: false,
-                    text: 'That file isn’t a Charcoal backup. Choose a .json file made with Export.',
-                  });
-                }
-              }}
-            />
-          </div>
-          <p role="status" className={cx('text-sm empty:hidden', msg?.ok === false ? 'text-danger' : 'text-success')}>
-            {msg?.text ?? ''}
-          </p>
-        </div>
+            </Row>
+          )}
+          <input
+            ref={file}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (!f) return;
+              try {
+                const r = actions.importData(await f.text());
+                setMsg({ ok: true, text: `Imported ${plural(r.history, 'history entry', 'history entries')} and ${plural(r.watchlist, 'library item', 'library items')}.` });
+              } catch {
+                setMsg({ ok: false, text: 'That file isn’t a Charcoal backup. Choose a .json file made with Export.' });
+              }
+            }}
+          />
+          {msg && (
+            <p role="status" className={cx('px-4 py-3 text-sm', msg.ok ? 'text-success' : 'text-danger')}>
+              {msg.text}
+            </p>
+          )}
+        </SettingsGroup>
       </div>
     </section>
   );
 }
 
-/** The viewer's own Febbox token: up to 4K originals, found and played through Charcoal Helper. */
-function FebboxCard({ className }: { className: string }) {
-  const saved = useStore((s) => s.settings.febboxToken);
-  const maxHeight = useStore((s) => s.settings.febboxMaxHeight);
-  const [value, setValue] = useState(saved);
-  const [state, setState] = useState<{ ok: boolean; text: string } | null>(null);
-  const { data: helper } = useQuery({
-    queryKey: ['helper'],
-    queryFn: () => detectExtension(true),
-    staleTime: 0,
-    retry: false,
-  });
+/** One settings section: a heading, a line on what's in it, and its rows in one card. */
+function SettingsGroup({ id, title, body, action, children }: { id: string; title: string; body?: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-24">
+      <div className="mb-3 flex items-end gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 id={`${id}-h`} className="text-lg font-semibold tracking-tight">
+            {title}
+          </h3>
+          {body && <p className="mt-0.5 text-sm text-pretty text-muted">{body}</p>}
+        </div>
+        {action}
+      </div>
+      <div className="divide-y divide-white/[0.06] rounded-3xl bg-surface px-1 ring-1 ring-white/[0.04]">{children}</div>
+    </section>
+  );
+}
+
+const SettingsNote = ({ children }: { children: React.ReactNode }) => <p className="px-4 py-3 text-xs text-pretty text-muted">{children}</p>;
+
+/**
+ * A saved value shown read-only, with a pencil to change it: the field (and Save / Cancel) appear
+ * only while editing, so a stray tap can't change it.
+ */
+function LockedField({
+  label,
+  hint,
+  shown,
+  initial,
+  placeholder,
+  secret,
+  inputMode,
+  onSave,
+  extra,
+  status,
+}: {
+  label: string;
+  hint?: string;
+  /** What's shown while not editing. */
+  shown: React.ReactNode;
+  /** The value the field starts with when editing. */
+  initial: string;
+  placeholder: string;
+  secret?: boolean;
+  inputMode?: 'url' | 'text';
+  /** Returns false (with a message shown by the caller) to stay in editing. */
+  onSave: (value: string) => Promise<boolean>;
+  /** Shown beside the pencil (e.g. Remove), only while not editing. */
+  extra?: React.ReactNode;
+  status?: { ok: boolean; text: string } | null;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editing) input.current?.focus();
+  }, [editing]);
   const save = async () => {
-    const token = value.trim().replace(/^ui=/, '').replace(/;.*$/, '');
-    setValue(token);
-    if (!token) {
-      actions.updateSettings({ febboxToken: '' });
-      return setState({ ok: true, text: 'Removed.' });
-    }
-    if (!helper?.hasPermission) {
-      actions.updateSettings({ febboxToken: token });
-      return setState({
-        ok: true,
-        text: 'Saved. It’s used once Charcoal Helper is installed and allowed.',
-      });
-    }
-    setState({ ok: true, text: 'Checking with Febbox…' });
-    const r = await checkFebboxToken(extensionFetcher, token);
-    if (r === 'invalid')
-      return setState({
-        ok: false,
-        text: 'Not saved: Febbox didn’t accept it. Log in to febbox.com again and copy a fresh “ui” cookie.',
-      });
-    actions.updateSettings({ febboxToken: token });
-    setState({
-      ok: true,
-      text: r === 'ok' ? 'Saved. Febbox accepted it.' : 'Saved (Febbox couldn’t be checked right now).',
-    });
+    setBusy(true);
+    const ok = await onSave(value).finally(() => setBusy(false));
+    if (ok) setEditing(false);
   };
   return (
-    <div className={className}>
-      <h3 className="font-medium">
-        Febbox <span className="text-sm font-normal text-muted">· up to 4K</span>
-      </h3>
-      <p className="text-sm text-muted">
-        Original Blu-ray files, often 4K, from your own free Febbox account (100 GB of fast traffic a month). Needs Charcoal Helper. The token stays in this browser and is only sent to febbox.com.
-      </p>
-      <ol className="list-decimal space-y-0.5 pl-5 text-xs text-muted">
-        <li>
-          Log in at{' '}
-          <a href="https://www.febbox.com" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
-            febbox.com
-          </a>{' '}
-          (a separate Google account is safest).
-        </li>
-        <li>Open DevTools → Application (Storage in Firefox) → Cookies → www.febbox.com.</li>
-        <li>Copy the value of the “ui” cookie and paste it here. Don’t log out of Febbox afterwards.</li>
-      </ol>
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          save();
-        }}
-      >
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          type="password"
-          placeholder={saved ? 'Token saved' : 'Paste the “ui” cookie value'}
-          autoComplete="off"
-          spellCheck={false}
-          aria-label="Febbox token"
-          className="h-11 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
-        />
-        <button className={btn({ variant: 'primary' })}>Save</button>
-      </form>
-      <p role="status" className={cx('text-sm empty:hidden', state?.ok === false ? 'text-danger' : 'text-success')}>
-        {state?.text ?? (saved ? 'A token is saved.' : '')}
-      </p>
-      <Row label="Highest quality" hint={FEBBOX_HOURS[maxHeight]}>
-        <select
-          value={maxHeight}
-          onChange={(e) => actions.updateSettings({ febboxMaxHeight: Number(e.target.value) })}
-          aria-label="Highest Febbox quality"
-          className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
+    <div className="px-4 py-3.5">
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{label}</p>
+          {!editing && <div className="mt-0.5 truncate text-sm text-muted">{shown}</div>}
+          {!editing && hint && <p className="text-xs text-faint">{hint}</p>}
+        </div>
+        {!editing && (
+          <div className="flex shrink-0 items-center gap-1.5">
+            {extra}
+            <button
+              type="button"
+              onClick={() => {
+                setValue(initial);
+                setEditing(true);
+              }}
+              aria-label={`Edit ${label.toLowerCase()}`}
+              className={cx(btn({ icon: true }), 'group/tip relative size-9')}
+            >
+              <Pencil className="size-4" strokeWidth={1.75} />
+              <Tip label="Edit" side="bottom" align="end" />
+            </button>
+          </div>
+        )}
+      </div>
+      {editing && (
+        <form
+          className="mt-2.5 flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+          onKeyDown={(e) => e.key === 'Escape' && (e.stopPropagation(), setEditing(false))}
         >
-          <option value={0}>Best possible (up to 4K)</option>
-          <option value={1080}>1080p</option>
-          <option value={720}>720p (data saver)</option>
-        </select>
-      </Row>
-      <p className="text-xs text-muted">
-        The player picks the best quality your connection and screen can take, up to this. Febbox gives each account 100 GB of fast traffic a month; after that it keeps playing, but may buffer more.
-      </p>
+          <input
+            ref={input}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            type={secret ? 'password' : 'text'}
+            inputMode={inputMode}
+            placeholder={placeholder}
+            autoComplete="off"
+            spellCheck={false}
+            aria-label={label}
+            className="h-10 min-w-0 flex-1 basis-56 rounded-xl bg-raised px-3.5 text-base placeholder:text-faint sm:text-sm"
+          />
+          <button type="button" onClick={() => setEditing(false)} className={cx(btn(), 'h-10 px-4 text-sm')}>
+            Cancel
+          </button>
+          <button disabled={busy} className={cx(btn({ variant: 'primary' }), 'h-10 px-5 text-sm disabled:opacity-50')}>
+            {busy ? 'Checking…' : 'Save'}
+          </button>
+        </form>
+      )}
+      {status && (
+        <p role="status" className={cx('mt-2 text-sm', status.ok ? 'text-success' : 'text-danger')}>
+          {status.text}
+        </p>
+      )}
     </div>
+  );
+}
+
+/** Your own resolver server: read-only until edited. */
+function ServerRow() {
+  const serverUrl = useStore((s) => s.settings.serverUrl);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  return (
+    <LockedField
+      label="Server"
+      hint={serverUrl ? 'If it doesn’t answer, Charcoal’s server takes over.' : 'Optional: run Charcoal’s server on your computer or a VPS (more sources play from a home connection).'}
+      shown={serverUrl ? <span className="text-white/85">{serverUrl}</span> : <>Charcoal’s server ({new URL(HOSTED_SERVER).host})</>}
+      initial={serverUrl}
+      placeholder="http://localhost:8080"
+      inputMode="url"
+      status={status}
+      extra={
+        serverUrl ? (
+          <button
+            type="button"
+            onClick={() => {
+              actions.updateSettings({ serverUrl: '' });
+              setStatus({ ok: true, text: 'Charcoal’s own server is used again.' });
+            }}
+            className={cx(btn({ variant: 'ghost' }), 'h-9 px-3 text-sm')}
+          >
+            Use Charcoal’s
+          </button>
+        ) : (
+          <a href="https://github.com/eyus00/charcoal#run-the-server-yourself-vps-or-your-own-computer" target="_blank" rel="noreferrer" className={cx(btn({ variant: 'ghost' }), 'h-9 px-3 text-sm')}>
+            How
+          </a>
+        )
+      }
+      onSave={async (raw) => {
+        const url = normalizeServer(raw);
+        if (raw.trim() && !url) {
+          setStatus({ ok: false, text: 'Enter an address like http://localhost:8080 or https://stream.example.com' });
+          return false;
+        }
+        if (!url) {
+          actions.updateSettings({ serverUrl: '' });
+          setStatus({ ok: true, text: 'Charcoal’s own server is used again.' });
+          return true;
+        }
+        const r = await checkServer(url);
+        if (!r.ok) {
+          setStatus({ ok: false, text: `Not saved: ${r.error}.` });
+          return false;
+        }
+        actions.updateSettings({ serverUrl: url });
+        setStatus({ ok: true, text: `Saved. Your server answered (${r.providers}).` });
+        return true;
+      }}
+    />
+  );
+}
+
+/** Charcoal Helper: is it installed and allowed, and should Charcoal use it. */
+function HelperRow() {
+  const useExtension = useStore((s) => s.settings.useExtension);
+  const { data: info, isLoading, refetch } = useQuery({ queryKey: ['helper'], queryFn: () => detectExtension(true), staleTime: 0, retry: false });
+  const state = isLoading ? 'checking' : !info ? 'missing' : !info.hasPermission ? 'permission' : 'ready';
+  const TEXT = {
+    checking: 'Checking…',
+    missing: 'Not installed in this browser',
+    permission: `Installed (${info?.version}), but its site access is off: click its icon in the toolbar and allow it`,
+    ready: `Installed (${info?.version}) and ready`,
+  } as const;
+  return (
+    <Row label="Charcoal Helper" hint="A browser extension: sources are found and played from your own connection, so more of them work.">
+      <span className="flex shrink-0 items-center gap-3">
+        <span className={cx('flex items-center gap-1.5 text-xs', state === 'ready' ? 'text-success' : state === 'permission' ? 'text-warning' : 'text-muted')} title={TEXT[state]}>
+          <span aria-hidden className={cx('size-2 rounded-full', state === 'ready' ? 'bg-success' : state === 'permission' ? 'bg-warning' : 'bg-white/25')} />
+          <span className="hidden sm:inline">{state === 'ready' ? `On · ${info?.version}` : state === 'permission' ? 'Needs access' : state === 'missing' ? 'Not installed' : 'Checking'}</span>
+        </span>
+        {info ? (
+          <SwitchButton label="Use Charcoal Helper" on={useExtension} onChange={(v) => actions.updateSettings({ useExtension: v })} />
+        ) : (
+          state !== 'checking' && (
+            <button onClick={() => refetch()} className={cx(btn({ variant: 'ghost' }), 'h-9 px-3 text-sm')}>
+              Check again
+            </button>
+          )
+        )}
+      </span>
+    </Row>
+  );
+}
+
+/** The viewer's own Febbox token (read-only until edited) and its quality cap. */
+function FebboxRows() {
+  const saved = useStore((s) => s.settings.febboxToken);
+  const maxHeight = useStore((s) => s.settings.febboxMaxHeight);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
+  const keep = async (raw: string): Promise<boolean> => {
+    const token = raw.trim().replace(/^ui=/, '').replace(/;.*$/, '');
+    if (!token) {
+      actions.updateSettings({ febboxToken: '' });
+      setStatus({ ok: true, text: 'Removed.' });
+      return true;
+    }
+    const r = await checkFebboxToken(extensionFetcher, token).catch(() => 'unknown' as const);
+    if (r === 'invalid') {
+      setStatus({ ok: false, text: 'Febbox didn’t accept it. Sign in to febbox.com again and use a fresh token.' });
+      return false;
+    }
+    actions.updateSettings({ febboxToken: token });
+    setStatus({ ok: true, text: r === 'ok' ? 'Saved. Febbox accepted it.' : 'Saved (Febbox couldn’t be checked right now).' });
+    return true;
+  };
+  const grab = async () => {
+    setGrabbing(true);
+    try {
+      const token = await febboxTokenFromHelper();
+      if (!token) setStatus({ ok: false, text: 'Not signed in to febbox.com in this browser. Sign in there, then try again.' });
+      else await keep(token);
+    } catch (e) {
+      setStatus({ ok: false, text: (e as Error).message });
+    } finally {
+      setGrabbing(false);
+    }
+  };
+  return (
+    <>
+      <LockedField
+        label="Febbox"
+        hint="Original files, often 4K, from your own free Febbox account. Stays in this browser; only sent to febbox.com."
+        shown={saved ? <span className="text-white/85">Connected · token ••••{saved.slice(-4)}</span> : 'Not connected'}
+        initial=""
+        placeholder={saved ? 'Paste a new “ui” cookie value' : 'Paste the “ui” cookie value from febbox.com'}
+        secret
+        status={status}
+        extra={
+          <>
+            {!saved && (
+              <button type="button" onClick={grab} disabled={grabbing} className={cx(btn({ variant: 'ghost' }), 'h-9 px-3 text-sm disabled:opacity-50')}>
+                {grabbing ? 'Getting it…' : 'Get from Febbox'}
+              </button>
+            )}
+            {saved && (
+              <button
+                type="button"
+                onClick={() => {
+                  actions.updateSettings({ febboxToken: '' });
+                  setStatus({ ok: true, text: 'Removed.' });
+                }}
+                className={cx(btn({ variant: 'ghost' }), 'h-9 px-3 text-sm')}
+              >
+                Remove
+              </button>
+            )}
+          </>
+        }
+        onSave={keep}
+      />
+      {saved && (
+        <Row label="Febbox quality" hint={FEBBOX_HOURS[maxHeight]}>
+          <select
+            value={maxHeight}
+            onChange={(e) => actions.updateSettings({ febboxMaxHeight: Number(e.target.value) })}
+            aria-label="Highest Febbox quality"
+            className="h-10 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
+          >
+            <option value={0}>Best (up to 4K)</option>
+            <option value={1080}>1080p</option>
+            <option value={720}>720p (data saver)</option>
+          </select>
+        </Row>
+      )}
+    </>
   );
 }
 
@@ -864,50 +1023,6 @@ function LetterboxdCard({ className }: { className: string }) {
   );
 }
 
-function HelperCard({ className }: { className: string }) {
-  const useExtension = useStore((s) => s.settings.useExtension);
-  const {
-    data: info,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ['helper'],
-    queryFn: () => detectExtension(true),
-    staleTime: 0,
-    retry: false,
-  });
-  const state = isLoading ? 'checking' : !info ? 'missing' : !info.hasPermission ? 'permission' : 'ready';
-  const TEXT = {
-    checking: 'Checking…',
-    missing: 'Not installed in this browser.',
-    permission: `Installed (v${info?.version}), but it needs access to streaming sites: click its icon in the toolbar and allow it.`,
-    ready: `Installed (v${info?.version}) and ready.`,
-  } as const;
-  return (
-    <div className={className}>
-      <h3 className="font-medium">Charcoal Helper</h3>
-      <p className="text-sm text-muted">
-        A browser extension that finds and plays sources from your own connection, with no server in between, so more of them work. For Chrome, Edge, Brave and Firefox on a computer.{' '}
-        <a href="https://github.com/eyus00/charcoal/tree/main/apps/extension#install" target="_blank" rel="noreferrer" className="font-medium text-white/85 transition-colors hover:text-white">
-          How to install
-        </a>
-      </p>
-      <p role="status" className={cx('flex items-center gap-2 text-sm', state === 'ready' ? 'text-success' : state === 'permission' ? 'text-warning' : 'text-muted')}>
-        <span aria-hidden className={cx('size-2 rounded-full', state === 'ready' ? 'bg-success' : state === 'permission' ? 'bg-warning' : 'bg-white/25')} />
-        {TEXT[state]}
-        {state !== 'checking' && state !== 'ready' && (
-          <button onClick={() => refetch()} className="ml-auto text-xs text-white/70 transition-colors hover:text-white">
-            Check again
-          </button>
-        )}
-      </p>
-      {info && (
-        <Toggle label="Use Charcoal Helper" hint="Your own server or Charcoal’s takes over if it finds nothing" on={useExtension} onChange={(v) => actions.updateSettings({ useExtension: v })} />
-      )}
-    </div>
-  );
-}
-
 /** Which of Jelly's sources are working right now (from its provider health table). */
 function SourceStatus({ className }: { className: string }) {
   const serverUrl = useStore((s) => s.settings.serverUrl);
@@ -933,7 +1048,7 @@ function SourceStatus({ className }: { className: string }) {
   return (
     <div className={cx(className, 'space-y-3')}>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-medium">Sources {serverUrl ? <span className="text-sm font-normal text-muted">· your server</span> : null}</h3>
+        <h3 className="font-medium">How sources are doing {serverUrl ? <span className="text-sm font-normal text-muted">· your server</span> : null}</h3>
         <button onClick={() => refetch()} disabled={isFetching} className={btn({ variant: 'ghost' })}>
           {isFetching ? 'Checking…' : 'Refresh'}
         </button>
@@ -964,28 +1079,35 @@ function SourceStatus({ className }: { className: string }) {
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-sm font-medium">
+    // Narrow screens: a control that doesn't fit beside the label moves under it, to the right.
+    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2.5 px-4 py-3.5">
+      <span className="min-w-0 flex-1 basis-56 text-sm font-medium">
         {label}
-        {hint && <span className="block text-xs font-normal text-muted">{hint}</span>}
+        {hint && <span className="mt-0.5 block text-xs font-normal text-pretty text-muted">{hint}</span>}
       </span>
       {children}
     </div>
   );
 }
 
+function SwitchButton({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+      className={cx('relative h-6 w-11 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-raised')}
+    >
+      <span className={cx('absolute top-0.5 left-0.5 size-5 rounded-full transition-transform', on ? 'translate-x-5 bg-black' : 'bg-white')} />
+    </button>
+  );
+}
+
 function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
     <Row label={label} hint={hint}>
-      <button
-        role="switch"
-        aria-checked={on}
-        aria-label={label}
-        onClick={() => onChange(!on)}
-        className={cx('relative h-6 w-11 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-raised')}
-      >
-        <span className={cx('absolute top-0.5 left-0.5 size-5 rounded-full transition-transform', on ? 'translate-x-5 bg-black' : 'bg-white')} />
-      </button>
+      <SwitchButton label={label} on={on} onChange={onChange} />
     </Row>
   );
 }

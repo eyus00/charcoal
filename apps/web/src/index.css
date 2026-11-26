@@ -81,8 +81,8 @@
 /* Horizontal scrollers clip vertically too; give rings/shadows room without shifting layout. */
 @utility scroll-row {
   /* Room above and below for frame labels and outlines (Calendar cards). */
-  padding-block: 16px;
-  margin-block: -16px;
+  padding-block: 30px;
+  margin-block: -30px;
 }
 
 /* Loading placeholder: the surface colour with a soft highlight sweeping across. */

@@ -164,13 +164,13 @@ function Card({
             <span
               key={`${e.season}-${e.number}`}
               aria-hidden
-              style={{ inset: i ? '-16px 30px 16px 30px' : '-8px 15px 8px 15px', zIndex: 1 - i }}
+              style={{ inset: i ? '-26px 32px 26px 32px' : '-13px 16px 13px 16px', zIndex: 1 - i }}
               className={cx(
-                'absolute overflow-hidden rounded-2xl bg-raised ring-1 transition-transform duration-300',
+                'absolute overflow-hidden rounded-2xl bg-raised shadow-[0_-4px_12px_rgba(0,0,0,0.45)] ring-1 transition-transform duration-300',
                 i ? 'ring-white/20 group-hover:-translate-y-1.5' : 'ring-white/30 group-hover:-translate-y-0.5',
               )}
             >
-              <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.3]' : 'brightness-[0.5]'} />
+              <Img path={null} src={e.image ?? image} kind="still" sizes="120px" alt="" className="size-full" imgClassName={i ? 'brightness-[0.55]' : 'brightness-[0.75]'} />
             </span>
           ))}
           <div>
@@ -182,6 +182,12 @@ function Card({
                     <Chip>{formatRuntime(runtime)}</Chip>
                   </span>
                 ) : null}
+                {/* When it airs: a pill on the picture (outside the Calendar, whose day says it), so the text stays two lines. */}
+                {showDate && (
+                  <span className="absolute top-2 left-2">
+                    <Chip light>{dateLabel(a.at, !tv)}</Chip>
+                  </span>
+                )}
                 {!stack && (
                   <span className="absolute top-2 right-2 z-10">
                     <ReminderBell a={a} ep={ep} />
@@ -193,7 +199,6 @@ function Card({
         </div>
         <div className={CARD_INFO}>
           <div className={CARD_TITLE}>{line1}</div>
-          {showDate && <div className="text-caption text-faint">{dateLabel(a.at, !tv)}</div>}
           <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted">
             {tv ? (
               <Link to={`/tv/${a.id}`} className="relative z-10 min-w-0 truncate decoration-white/80 decoration-1 underline-offset-[3px] transition-colors hover:text-white hover:underline">
