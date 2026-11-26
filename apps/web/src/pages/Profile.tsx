@@ -1,14 +1,18 @@
 import AvatarImg from '../components/AvatarImg';
+import { Empty } from '../components/PageHeader';
 import SetupGuide from '../components/SetupGuide';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { ActivityTab, ProfileHeader } from '../components/ProfileSocial';
-import { Download, Film, Trash2, Upload, X, Heart } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Download, Film, Heart, Play, Trash2, Upload, X } from 'lucide-react';
 import { StatusDot } from '../components/LibraryStatus';
 import { LIBRARY_LABEL } from '../lib/library';
 import ContinueWatching from '../components/ContinueWatching';
 import MediaCard from '../components/MediaCard';
-import { ROW_ITEM, ROW_SIZES, Scroller, SectionHeader } from '../components/Row';
+import { ROW_ITEM, ROW_SIZES, RowArrows, Scroller, SectionHeader, useRowScroll } from '../components/Row';
+import AiringTile, { AiringTileSkeleton } from '../components/AiringTile';
+import { TILE } from '../components/EpisodeTile';
+import { startOfDay, useSchedule } from '../lib/schedule';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
 import { detectExtension, extensionFetcher } from '../lib/extension';
@@ -129,6 +133,9 @@ export default function Profile() {
               <AnimeShelfRow title="Anime outside TMDB" show="library" bleed={false} />
             </div>
           </div>
+          <div id="your-shows" className={cx(PANEL, 'scroll-mt-4')}>
+            <YourShows />
+          </div>
         </>
       ) : tab === 'activity' ? (
         <ActivityTab />
@@ -151,6 +158,12 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'completed', label: 'Watched' },
 ];
 const SECTIONS: WatchStatus[] = ['watching', 'planned', 'completed'];
+/** What an empty status says, the same in All and in its own view. */
+const NONE: Record<WatchStatus, { icon: typeof Film; title: string; body: string }> = {
+  watching: { icon: Play, title: 'Nothing in progress', body: 'Start a movie or show and it shows up here.' },
+  planned: { icon: Heart, title: 'Nothing saved for later', body: 'Tap ♥ on a title you haven’t started to keep it here.' },
+  completed: { icon: CheckCircle2, title: 'Nothing watched to the end yet', body: 'Movies and shows you finish move here.' },
+};
 
 /** A library card: the poster, with a remove button on hover. The section says its status. */
 function LibraryCard({ w, className }: { w: WatchlistItem; className?: string }) {
@@ -255,14 +268,14 @@ function Watchlist() {
                           ))}
                         </Scroller>
                       ) : (
-                        <div className="grid h-28 place-items-center rounded-2xl border border-dashed border-white/10 text-sm text-faint">Nothing here yet</div>
+                        <EmptyCard compact {...NONE[st]} />
                       )}
                     </div>
                   );
                 })}
               </div>
             ) : !of(view).length ? (
-              <EmptyCard title={`Nothing in ${LIBRARY_LABEL[view]} yet`} />
+              <EmptyCard {...NONE[view]} />
             ) : (
               <div className={CARD_GRID}>
                 {of(view).map((w) => (
@@ -272,6 +285,46 @@ function Watchlist() {
             )}
           </div>
         </>
+      )}
+    </section>
+  );
+}
+
+/** This week's episodes and streaming days from your library (the Calendar's "Your shows"). */
+function YourShows() {
+  const start = useMemo(() => startOfDay(new Date()), []);
+  const { items, isPending } = useSchedule(start, 7, 8);
+  const yours = items.filter((a) => a.yours);
+  const { ref, scroll } = useRowScroll();
+  return (
+    <section>
+      <SectionHeader
+        title="Your shows this week"
+        action={
+          yours.length ? (
+            <div className="flex items-center gap-3">
+              <Link to="/calendar?section=yours" className="text-sm text-muted transition-colors hover:text-white">
+                Calendar
+              </Link>
+              <RowArrows onScroll={scroll} />
+            </div>
+          ) : undefined
+        }
+      />
+      {isPending ? (
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 4 }, (_, i) => (
+            <AiringTileSkeleton key={i} className={TILE} />
+          ))}
+        </div>
+      ) : yours.length ? (
+        <Scroller label="Your shows this week" scrollRef={ref} bleed={false}>
+          {yours.map((a) => (
+            <AiringTile key={a.key} a={a} className={TILE} />
+          ))}
+        </Scroller>
+      ) : (
+        <EmptyCard compact icon={CalendarDays} title="Nothing from your shows this week" body="New episodes and streaming days of what’s in your library show up here." />
       )}
     </section>
   );
@@ -444,6 +497,17 @@ function SettingsSection() {
               label="Anime audio"
               compact
             />
+          </Row>
+          <Row label="New shows start at" hint="Where a show you haven’t started opens, and what Play starts. After that it opens where you left off.">
+            <select
+              value={settings.episodeStart}
+              onChange={(e) => actions.updateSettings({ episodeStart: e.target.value as 'latest' | 'first' })}
+              aria-label="New shows start at"
+              className="h-11 min-w-0 rounded-xl bg-raised px-3 text-base sm:text-sm"
+            >
+              <option value="latest">The latest episode</option>
+              <option value="first">Season 1, episode 1</option>
+            </select>
           </Row>
           <Toggle label="Autoplay next episode" on={settings.autoplayNext} onChange={(v) => actions.updateSettings({ autoplayNext: v })} />
           <Toggle label="Skip intros and recaps automatically" hint="Otherwise a Skip button appears" on={settings.autoSkip} onChange={(v) => actions.updateSettings({ autoSkip: v })} />
@@ -938,17 +1002,21 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; o
   );
 }
 
-function EmptyCard({ icon: Icon, title, body }: { icon?: typeof Film; title: string; body?: string }) {
+/** The app's one empty state; with an icon, it offers a way to find something to watch. */
+function EmptyCard({ icon, title, body, compact }: { icon?: typeof Film; title: string; body?: string; compact?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl bg-raised/50 px-6 py-12 text-center">
-      {Icon && <Icon className="mb-1 size-7 text-faint" />}
-      <p className="font-medium">{title}</p>
-      {body && <p className="max-w-sm text-sm text-pretty text-muted">{body}</p>}
-      {Icon && (
-        <Link to="/discover" className={cx(btn({ variant: 'primary' }), 'mt-3')}>
-          Browse titles
-        </Link>
-      )}
-    </div>
+    <Empty
+      icon={icon}
+      title={title}
+      body={body}
+      compact={compact}
+      action={
+        icon && !compact ? (
+          <Link to="/discover" className={btn({ variant: 'primary' })}>
+            Browse titles
+          </Link>
+        ) : undefined
+      }
+    />
   );
 }

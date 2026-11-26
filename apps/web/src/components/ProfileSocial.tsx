@@ -1,3 +1,4 @@
+import { Empty } from './PageHeader';
 import AvatarImg from './AvatarImg';
 import Score from './Score';
 import { useState } from 'react';
@@ -103,16 +104,9 @@ export function ProfileHeader({ local }: { local: { k: string; v: number }[] }) 
   );
 }
 
-/** The empty / connect state every profile section uses (same as Library's). */
-export function EmptyState({ icon: Icon, title, body, action }: { icon: typeof Users; title: string; body: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-2xl bg-raised/50 px-6 py-10 text-center">
-      <Icon className="mb-1 size-7 text-faint" />
-      <p className="font-medium">{title}</p>
-      <p className="max-w-sm text-sm text-pretty text-muted">{body}</p>
-      {action && <div className="mt-3">{action}</div>}
-    </div>
-  );
+/** The empty / connect state every profile section uses: the app's one empty state. */
+export function EmptyState({ icon, title, body, action }: { icon: typeof Users; title: string; body: string; action?: React.ReactNode }) {
+  return <Empty icon={icon} title={title} body={body} action={action} />;
 }
 
 const connect = (to: string) => (

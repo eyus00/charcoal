@@ -1,3 +1,5 @@
+import { SearchX } from 'lucide-react';
+import { Empty } from './PageHeader';
 import { useEffect, useRef } from 'react';
 import type { MediaItem, MediaType } from '../lib/tmdb';
 import MediaCard from './MediaCard';
@@ -19,7 +21,7 @@ interface Props {
 export default function Grid({ items, type, loading, error, onRetry, hasMore, loadingMore, onLoadMore, empty }: Props) {
   if (loading) return <GridSkeleton />;
   if (error && !items.length) return <ErrorBox onRetry={onRetry} />;
-  if (!items.length) return <>{empty ?? <p className="py-20 text-center text-muted">Nothing found.</p>}</>;
+  if (!items.length) return <>{empty ?? <Empty icon={SearchX} title="Nothing found" />}</>;
   return (
     <>
       <div className={GRID}>
@@ -47,12 +49,7 @@ export function LoadMore({ onLoad, busy }: { onLoad: () => void; busy: boolean }
   }, [busy]);
   return (
     <div className="mt-12 flex justify-center">
-      <button
-        ref={ref}
-        onClick={onLoad}
-        disabled={busy}
-        className={btn({ size: 'lg' })}
-      >
+      <button ref={ref} onClick={onLoad} disabled={busy} className={btn({ size: 'lg' })}>
         {busy ? 'Loading…' : 'Load more'}
       </button>
     </div>

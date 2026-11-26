@@ -67,6 +67,8 @@ export interface Settings {
   pauseOverlay: boolean;
   /** Use frames from what you watched as Continue watching images (kept in this browser). */
   frameThumbs: boolean;
+  /** A show you haven't started: its episode list opens on (and Play starts) the latest episode, or S1 E1. */
+  episodeStart: 'latest' | 'first';
   /** The first-play setup (Charcoal Helper, Febbox): 'new' until it's finished or turned off. */
   setup: 'new' | 'done' | 'off';
   /** Trakt (when connected): mark what's played in the Jelly player as watched there. */
@@ -127,6 +129,7 @@ const defaultSettings: Settings = {
   creditsNext: true,
   pauseOverlay: true,
   frameThumbs: true,
+  episodeStart: 'latest',
   setup: 'new',
   traktScrobble: true,
   traktSyncWatchlist: true,

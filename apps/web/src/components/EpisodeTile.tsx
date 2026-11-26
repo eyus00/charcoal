@@ -13,7 +13,7 @@ export const Chip = ({ children, light }: { children: ReactNode; light?: boolean
   <span className={cx('flex items-center gap-1 rounded-full px-2.5 py-1 text-xs', light ? 'bg-white font-medium text-black' : 'bg-black/75 text-white')}>{children}</span>
 );
 
-export const TILE = 'w-[288px] shrink-0 snap-start sm:w-[344px]';
+export const TILE = 'w-[288px] shrink-0 snap-start sm:w-[304px]';
 export const TILE_SIZES = '(min-width: 640px) 344px, 288px';
 
 interface Props {

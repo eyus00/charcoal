@@ -1,8 +1,8 @@
 import { cx } from '../lib/util';
 import { ROW_BLEED } from './Row';
 
-export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1280px) 14vw, (min-width: 1024px) 17vw, (min-width: 640px) 30vw, 46vw';
-export const GRID = 'grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-9 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
+export const GRID_SIZES = '(min-width: 1536px) 12vw, (min-width: 1280px) 14vw, (min-width: 1024px) 17vw, (min-width: 768px) 22vw, (min-width: 640px) 30vw, 46vw';
+export const GRID = 'grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-9 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7';
 
 export const Bone = ({ className }: { className?: string }) => <div className={cx('skeleton rounded-md', className)} />;
 
@@ -46,7 +46,6 @@ export function PageSkeleton() {
     </div>
   );
 }
-
 
 /** Home hero while trending loads: the same layout as a slide, in placeholders. */
 export function HeroSkeleton({ className }: { className?: string }) {

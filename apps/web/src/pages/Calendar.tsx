@@ -7,6 +7,7 @@ import { btn } from '../components/Button';
 import { downloadIcs } from '../lib/reminders';
 import { DAY, startOfDay, useSchedule, type Airing } from '../lib/schedule';
 import { cx, useTitle } from '../lib/util';
+import { Empty } from '../components/PageHeader';
 
 type Section = 'explore' | 'yours';
 const NAME: Record<Section, string> = { explore: 'Explore', yours: 'Your shows' };
@@ -21,7 +22,7 @@ const TILE_W = 'w-[250px] shrink-0 snap-start sm:w-[300px]';
  */
 export default function Calendar() {
   useTitle('Calendar');
-  const [section, setSection] = useState<Section>('explore');
+  const [section, setSection] = useState<Section>(() => (new URLSearchParams(location.search).get('section') === 'yours' ? 'yours' : 'explore'));
   const [week, setWeek] = useState(0);
   const today = startOfDay(new Date()).getTime();
   const start = useMemo(() => new Date(today + week * 7 * DAY), [today, week]);
@@ -124,30 +125,32 @@ export default function Calendar() {
 }
 
 function EmptySection({ section, onExplore }: { section: Section; onExplore: () => void }) {
-  return (
-    <div className="flex min-h-72 flex-col items-center justify-center gap-2 rounded-3xl bg-surface/60 px-6 text-center">
-      {section === 'yours' ? <CalendarDays className="mb-1 size-7 text-faint" /> : <Compass className="mb-1 size-7 text-faint" />}
-      <p className="font-medium">{section === 'yours' ? 'Nothing from your shows this week' : 'Nothing notable this week'}</p>
-      <p className="max-w-sm text-sm text-muted">
-        {section === 'yours' ? 'Add shows and films to your library (the ♥ on their page). Their new episodes and streaming days show up here, with a reminder.' : 'Try next week.'}
-      </p>
-      {section === 'yours' && (
-        <button type="button" onClick={onExplore} className={cx(btn({ variant: 'primary' }), 'mt-3')}>
+  return section === 'yours' ? (
+    <Empty
+      icon={CalendarDays}
+      title="Nothing from your shows this week"
+      body="Add shows and films to your library (the ♥ on their page). Their new episodes and streaming days show up here, with a reminder."
+      action={
+        <button type="button" onClick={onExplore} className={btn({ variant: 'primary' })}>
           Explore
         </button>
-      )}
-    </div>
+      }
+    />
+  ) : (
+    <Empty icon={Compass} title="Nothing notable this week" body="Try next week." />
   );
 }
 
 /** One row per day: the date on the left, its releases side by side. */
 function DayRow({ day, items, loading }: { day: number; items: Airing[]; loading: boolean }) {
   const isToday = day === startOfDay(new Date()).getTime();
+  // A day with nothing is one short line (its date), not a row of empty space.
+  const empty = !loading && !items.length;
   return (
-    <section aria-label={new Date(day).toDateString()} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-8 first:pt-2 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-6">
-      <div className="pt-1">
+    <section aria-label={new Date(day).toDateString()} className={cx('grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 first:pt-2 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-6', empty ? 'py-3' : 'py-8')}>
+      <div className={cx(empty ? 'flex items-baseline gap-2' : 'pt-1')}>
         <p className={cx('text-xs font-medium tracking-wide uppercase', isToday ? 'text-white' : 'text-faint')}>{isToday ? 'Today' : weekday(day)}</p>
-        <p className={cx('text-2xl font-semibold tabular-nums', !isToday && 'text-white/85')}>{dayNum(day)}</p>
+        <p className={cx('font-semibold tabular-nums', empty ? 'text-sm text-faint' : 'text-2xl', !empty && !isToday && 'text-white/85')}>{dayNum(day)}</p>
       </div>
       {loading ? (
         <div className="flex gap-5 overflow-hidden sm:gap-7">
@@ -162,7 +165,7 @@ function DayRow({ day, items, loading }: { day: number; items: Airing[]; loading
           ))}
         </Scroller>
       ) : (
-        <p className="self-center text-sm text-faint">Nothing</p>
+        <span />
       )}
     </section>
   );

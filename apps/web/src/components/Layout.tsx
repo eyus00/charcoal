@@ -154,6 +154,8 @@ const DISCOVER: RailGroup = {
 };
 /** Live events and channels: a page of its own, with its own search. */
 const SPORTS: RailItem = { to: '/sports', label: 'Sports', icon: Trophy, id: 'sports', keys: 'G O' };
+/** What's airing and coming out, a week at a time. */
+const CALENDAR: RailItem = { to: '/calendar', label: 'Calendar', icon: CalendarDays, id: 'calendar', keys: 'G C' };
 const PROFILE: RailGroup = {
   to: '/profile',
   label: 'Profile',
@@ -174,13 +176,6 @@ const PROFILE: RailGroup = {
       icon: Heart,
       id: 'profile#library',
       keys: 'G L',
-    },
-    {
-      to: '/calendar',
-      label: 'Calendar',
-      icon: CalendarDays,
-      id: 'calendar',
-      keys: 'G C',
     },
     {
       to: '/profile#settings',
@@ -279,6 +274,7 @@ function Rail() {
       <nav className="flex flex-col gap-5" aria-label="Browse">
         <RailLink item={HOME} open={open} active={section === 'home'} />
         <RailGroupBox group={DISCOVER} section={section} open={open} />
+        <RailLink item={CALENDAR} open={open} active={section === 'calendar'} />
         <RailLink item={SPORTS} open={open} active={section === 'sports'} />
       </nav>
       <nav className="mt-auto flex flex-col gap-3" aria-label="Your library">

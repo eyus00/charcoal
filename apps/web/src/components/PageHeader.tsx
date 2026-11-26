@@ -14,12 +14,23 @@ export function PageTitle({ title, body, action }: { title: string; body?: React
   );
 }
 
-export function Empty({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }) {
+/**
+ * Nothing to show: the one empty state used everywhere. An icon, a title, a line on why (and what
+ * to do), and an optional action. `compact` inside a section, full size for a page or tab.
+ */
+export function Empty({ icon: Icon, title, body, action, compact, className }: { icon?: LucideIcon; title: string; body?: ReactNode; action?: ReactNode; compact?: boolean; className?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-3xl bg-surface px-6 py-20 text-center">
-      <Icon className="size-8 text-faint" />
-      <h3 className="text-lg font-medium">{title}</h3>
-      <p className="max-w-sm text-sm text-pretty text-muted">{body}</p>
+    <div
+      className={[
+        'flex flex-col items-center justify-center gap-1.5 rounded-3xl bg-white/[0.03] px-6 text-center ring-1 ring-white/[0.06]',
+        compact ? 'min-h-36 py-7' : 'min-h-64 py-14',
+        className ?? '',
+      ].join(' ')}
+    >
+      {Icon && <Icon className={compact ? 'mb-1 size-6 text-faint' : 'mb-1.5 size-7 text-faint'} strokeWidth={1.5} />}
+      <p className="font-medium">{title}</p>
+      {body && <p className="max-w-sm text-sm text-pretty text-muted">{body}</p>}
+      {action && <div className="mt-3">{action}</div>}
     </div>
   );
 }

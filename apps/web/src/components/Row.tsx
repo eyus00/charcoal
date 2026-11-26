@@ -11,7 +11,8 @@ import { Tip } from './Tip';
  */
 /** Runs a row to the page edges. Also a size container: its cards size themselves to it (row-item). */
 export const ROW_BLEED = 'row-fit -mx-4 px-4 scroll-px-4 [--row-pad:16px] md:-mx-8 md:px-8 md:scroll-px-8 md:[--row-pad:32px] lg:-mx-10 lg:px-10 lg:scroll-px-10 lg:[--row-pad:40px]';
-const INSET = 'row-fit -mx-1 px-1 [--row-pad:4px]';
+// Room each side for what's drawn just outside a card (release frames sit 6.5px out).
+const INSET = 'row-fit -mx-2.5 px-2.5 [--row-pad:10px]';
 
 /** Horizontal scroller with native scrolling + snap. Arrows live in the header (see RowArrows). */
 /** A row in a page's right-hand column: runs to the page's right edge only (full width on phones). */

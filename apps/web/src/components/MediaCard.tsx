@@ -43,13 +43,14 @@ const ARC_MASK = {
   maskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
   WebkitMaskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
 } as const;
-export const CornerArc = ({ rise = true }: { rise?: boolean }) => (
+export const CornerArc = ({ rise = true, wrap = false }: { rise?: boolean; wrap?: boolean }) => (
   <span
     aria-hidden
     style={ARC_MASK}
     className={cx(
       'pointer-events-none absolute right-0 bottom-0 w-28 rounded-br-2xl border-r border-b border-white/[0.12] transition-colors duration-200 group-hover:border-white/20',
-      rise ? '-top-6' : 'top-0',
+      // wrap: round the top corner too and run back left, fading like the bottom edge (text beside an image).
+      wrap ? 'top-0 rounded-tr-2xl border-t' : rise ? '-top-6' : 'top-0',
     )}
   />
 );

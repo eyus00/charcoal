@@ -223,7 +223,7 @@ function ListCard({ item, type }: { item: MediaItem; type: MediaType }) {
         </div>
         <p className="mt-1.5 line-clamp-4 text-caption leading-[1.4] text-muted">{item.overview}</p>
         <Meta year={yearOf(item)} rating={item.vote_average} className="mt-auto pt-2" extra={<TypeIcon type={type} />} />
-        <CornerArc rise={false} />
+        <CornerArc rise={false} wrap />
       </div>
     </Link>
   );

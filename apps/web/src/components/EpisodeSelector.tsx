@@ -80,7 +80,8 @@ function releaseLabel(ep: Episode) {
 
 /** Ring around the episode opened from elsewhere (Airing this week, the new-episode card). */
 /** On a phone's small still, the corner chips are the small ones the player's picker uses. */
-const PHONE_CHIPS = 'max-sm:[&>span.absolute>span]:px-1.5 max-sm:[&>span.absolute>span]:py-px max-sm:[&>span.absolute>span]:text-micro max-sm:[&>span.top-2\\.5]:top-1 max-sm:[&>span.left-2\\.5]:left-1 max-sm:[&>span.bottom-2\\.5]:bottom-1 max-sm:[&>span.right-2\\.5]:right-1';
+const PHONE_CHIPS =
+  'max-sm:[&>span.absolute>span]:px-1.5 max-sm:[&>span.absolute>span]:py-px max-sm:[&>span.absolute>span]:text-micro max-sm:[&>span.top-2\\.5]:top-1 max-sm:[&>span.left-2\\.5]:left-1 max-sm:[&>span.bottom-2\\.5]:bottom-1 max-sm:[&>span.right-2\\.5]:right-1';
 const SELECTED = 'ring-2 ring-white/80 ring-offset-4 ring-offset-surface';
 
 export default function EpisodeSelector({ show, current, initialSeason, onSeasonChange, onClose, replace, onPick, prev, next, selected }: Props) {
@@ -94,9 +95,12 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   // Where it opens: an episode asked for (or playing), else where you left the list last time,
   // else where you'd resume, else the latest release (not season 1 of a long-running show).
   const remembered = useRef(readPosition(show.id)).current;
-  const latest = show.last_episode_to_air ? { season: show.last_episode_to_air.season_number, episode: show.last_episode_to_air.episode_number } : undefined;
-  const focus = selected ?? current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined) ?? (remembered ? undefined : latest);
   const first = regularSeasons(show)[0]?.season_number ?? seasons[0]?.season_number ?? 1;
+  // A show not started yet: the latest released episode, or the very first (a setting).
+  const startFrom = useStore((s) => s.settings.episodeStart);
+  const latest = show.last_episode_to_air ? { season: show.last_episode_to_air.season_number, episode: show.last_episode_to_air.episode_number } : undefined;
+  const start = startFrom === 'latest' && latest ? latest : { season: first, episode: 1 };
+  const focus = selected ?? current ?? (resume?.season !== undefined ? { season: resume.season, episode: resume.episode! } : undefined) ?? (remembered ? undefined : start);
   const [season, setSeason] = useState(() =>
     initialSeason !== undefined && seasons.some((s) => s.season_number === initialSeason)
       ? initialSeason
@@ -195,7 +199,8 @@ export default function EpisodeSelector({ show, current, initialSeason, onSeason
   const cta =
     sel && !selUnaired
       ? { s: sel.season, e: sel.episode, label: resumeCta && resumeCta.s === sel.season && resumeCta.e === sel.episode ? resumeCta.label : 'Play' }
-      : (resumeCta ?? { s: first, e: 1, label: 'Play' });
+      : // Play starts the episode the list opened on (not S1 E1 while the latest is highlighted).
+        (resumeCta ?? { s: start.season, e: start.episode, label: 'Play' });
 
   return (
     <Modal label={`${titleOf(show)} episodes`} onClose={onClose}>
