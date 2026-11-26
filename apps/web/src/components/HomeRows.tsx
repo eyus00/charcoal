@@ -182,17 +182,7 @@ export function AiringThisWeek() {
   if (isError || (!isPending && !shows.length)) return null;
   return (
     <section ref={ref}>
-      <SectionHeader
-        title="Airing this week"
-        action={
-          <div className="flex items-center gap-3">
-            <Link to="/calendar" className="text-sm text-muted transition-colors hover:text-white">
-              Calendar
-            </Link>
-            <RowArrows onScroll={scroll} />
-          </div>
-        }
-      />
+      <SectionHeader title="Airing this week" action={<RowArrows onScroll={scroll} />} />
       {isPending || !inView ? (
         <div className={cx('flex gap-4 overflow-hidden', ROW_BLEED)}>
           {Array.from({ length: 4 }, (_, i) => (
@@ -204,6 +194,13 @@ export function AiringThisWeek() {
           {shows.map((a) => (
             <AiringTile key={a.key} a={a} className={TILE} />
           ))}
+          {/* Like the other rows' end card, at a release card's picture size: the week in full. */}
+          <Link
+            to="/calendar"
+            className={cx(TILE, 'grid aspect-video shrink-0 snap-start place-items-center self-start rounded-2xl bg-surface text-body-sm text-muted transition hover:bg-raised hover:text-white')}
+          >
+            See all
+          </Link>
         </Scroller>
       )}
     </section>

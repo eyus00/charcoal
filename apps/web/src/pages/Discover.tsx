@@ -1,11 +1,10 @@
 import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router';
-import { Compass, X } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router';
+import { CalendarDays, Compass, X } from 'lucide-react';
 import { FilterBar, useUrlFilters } from '../components/Filters';
 import Grid from '../components/Grid';
 import { useDiscover, useTextSearch, useTrendingPages } from '../lib/browse';
-import { genresFor, hasActiveFilters, matchesFilters, parseFilters, REGIONS, writeFilters, type Filters, type Region } from '../lib/filters';
-import { Pill } from '../components/Row';
+import { genresFor, hasActiveFilters, matchesFilters, parseFilters, writeFilters, type Filters } from '../lib/filters';
 import { cleanList, titleOf } from '../lib/tmdb';
 import { useAnimeSearch } from '../lib/anilist';
 import AnimeCard from '../components/AnimeCard';
@@ -47,7 +46,9 @@ export default function Discover() {
   const moreAnime = useMemo(() => {
     const norm = (s: string | undefined) => (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
     const have = new Set(items.flatMap((m) => [norm(titleOf(m)), norm(m.original_title ?? m.original_name)]).filter(Boolean));
-    return (anilist.data ?? []).filter((a) => (filters.type === 'all' || (filters.type === 'movie') === (a.kind === 'film')) && !have.has(norm(a.title)) && !have.has(norm(a.romaji)) && !have.has(norm(a.native)));
+    return (anilist.data ?? []).filter(
+      (a) => (filters.type === 'all' || (filters.type === 'movie') === (a.kind === 'film')) && !have.has(norm(a.title)) && !have.has(norm(a.romaji)) && !have.has(norm(a.native)),
+    );
   }, [anilist.data, items, filters.type]);
 
   // Filters can hide whole pages of text results; keep loading until something shows.
@@ -59,7 +60,6 @@ export default function Discover() {
 
   useTitle(query ? `“${query}”` : kind.title);
 
-  const setRegion = (region: Region) => setParams(writeFilters(params, { region }), { replace: true, preventScrollReset: true });
   const setType = (type: Filters['type']) => {
     // Drop genres that don't exist for the new type (e.g. Horror has no TV equivalent).
     const genres = filters.genres.filter((g) => genresFor(type).some((x) => x.slug === g));
@@ -74,30 +74,26 @@ export default function Discover() {
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-3xl">“{query}”</h1>
         </div>
       )}
-      {/* Where from: everything, or one part of the world's film and television (anime among them). */}
-      <div className="no-scrollbar scroll-row -mx-4 mb-4 flex gap-2.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="From">
-        {REGIONS.map((r) => (
-          <Pill key={r.key} on={(filters.region ?? 'all') === r.key} onClick={() => setRegion(r.key)}>
-            {r.label}
-          </Pill>
-        ))}
-      </div>
       {/* Type switch + quick filters: two rows on phones, one row on desktop. */}
-      <div className="mb-7 flex flex-wrap items-center gap-3 lg:flex-nowrap lg:gap-4">
+      <div className="mb-7 flex flex-wrap items-center gap-2.5 lg:flex-nowrap lg:gap-4">
         <div className="inline-flex shrink-0 rounded-full bg-surface p-1" role="group" aria-label="Show">
           {TYPES.map((t) => (
             <button
               key={t.key}
               aria-pressed={filters.type === t.key}
               onClick={() => setType(t.key)}
-              className={cx('h-10 rounded-full px-5 text-sm transition', filters.type === t.key ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
+              className={cx('h-10 rounded-full px-4 text-sm transition sm:px-5', filters.type === t.key ? 'bg-white font-medium text-black' : 'text-white/75 hover:text-white')}
             >
               {t.label}
             </button>
           ))}
         </div>
+        {/* Phones: the Calendar has no place in the bottom bar, so it sits here. */}
+        <Link to="/calendar" aria-label="Calendar" className="ml-auto grid size-12 shrink-0 place-items-center rounded-full bg-surface text-white/85 transition-colors hover:text-white lg:hidden">
+          <CalendarDays className="size-5" strokeWidth={1.75} />
+        </Link>
         {hasActiveFilters(filters) && (
-          <button onClick={() => set({ region: 'all', genres: [], from: undefined, to: undefined, rating: 0 })} aria-label="Clear filters" className={cx(btn(), 'ml-auto lg:ml-0')}>
+          <button onClick={() => set({ region: 'all', genres: [], from: undefined, to: undefined, rating: 0 })} aria-label="Clear filters" className={cx(btn(), 'lg:ml-0')}>
             <X className="size-4" strokeWidth={1.5} /> Clear
           </button>
         )}
@@ -115,11 +111,15 @@ export default function Discover() {
         onLoadMore={() => !active.isFetchingNextPage && active.fetchNextPage()}
         empty={
           // AniList alone may have it.
-          moreAnime.length ? <></> : <Empty
-            icon={Compass}
-            title={query ? `Nothing found for “${query}”` : 'Nothing matches these filters'}
-            body={hasActiveFilters(filters) ? 'Try removing some filters.' : 'Try a different search.'}
-          />
+          moreAnime.length ? (
+            <></>
+          ) : (
+            <Empty
+              icon={Compass}
+              title={query ? `Nothing found for “${query}”` : 'Nothing matches these filters'}
+              body={hasActiveFilters(filters) ? 'Try removing some filters.' : 'Try a different search.'}
+            />
+          )
         }
       />
       {moreAnime.length > 0 && !active.isPending && (
