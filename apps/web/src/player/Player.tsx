@@ -120,9 +120,9 @@ function upstreamHost(url: string): string {
 
 /**
  * Providers the player never chooses by itself (first pick, failover, quality upgrade): listed,
- * and played when the viewer picks them. CineJoy's streams too often are not what they claim.
+ * and played when the viewer picks them. MeowTV's are most often a Hindi dub.
  */
-const MANUAL_ONLY = new Set(['cinejoy']);
+const MANUAL_ONLY = new Set(['meowtv']);
 const manualOnly = (s: JellySource) => MANUAL_ONLY.has(s.provider.id.toLowerCase());
 
 /** Another site's player page, not a stream: never something for the video engines. */
