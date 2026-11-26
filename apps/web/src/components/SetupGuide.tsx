@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Check, Copy, Download, ExternalLink, KeyRound, Puzzle, RefreshCw, Sparkles } from 'lucide-react';
 import { checkFebboxToken } from '@charcoal/providers';
 import { Dialog } from './Modal';
+import Img from './Img';
+import { Wordmark } from './Logo';
+import { q } from '../lib/tmdb';
 import { btn } from './Button';
 import { toast } from './Toast';
 import { detectExtension, extensionFetcher, findFebboxToken, LATEST_HELPER, olderThan } from '../lib/extension';
@@ -126,16 +129,7 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
       </ol>
       {step === 1 && <InstallStep browser={browser} installed={installed} allowed={allowed} version={helper.data?.version} outdated={outdated} />}
       {step === 2 && <FebboxStep />}
-      {step === 3 && (
-        <div className="py-4 text-center">
-          <Sparkles className="mx-auto mb-3 size-8 text-white/80" />
-          <p className="text-lg font-semibold">You’re set</p>
-          <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
-            {installed ? 'Charcoal Helper is on' : 'You can add Charcoal Helper any time'}
-            {febbox ? ', and Febbox will be tried first for the best quality.' : '.'} All of this is in Settings, with a button to run this again.
-          </p>
-        </div>
-      )}
+      {step === 3 && <DoneStep helper={installed} febbox={!!febbox} />}
     </Dialog>
   );
 }
@@ -405,6 +399,58 @@ function FebboxStep() {
         )}
       </form>
     </div>
+  );
+}
+
+/**
+ * The last step: what it looks like now (this week's most watched film, framed like Charcoal's
+ * player, with the 4K pill it shows when a sharp source plays) and what is on.
+ */
+function DoneStep({ helper, febbox }: { helper: boolean; febbox: boolean }) {
+  const film = useQuery({ ...q.trending('movie', 'week'), staleTime: 60 * 60_000 }).data?.results.find((m) => m.backdrop_path);
+  const title = film && ('title' in film ? film.title : undefined);
+  return (
+    <div className="space-y-5">
+      <div className="relative overflow-hidden rounded-2xl bg-black ring-1 ring-white/10">
+        <Img path={film?.backdrop_path ?? null} kind="backdrop" sizes="(min-width: 640px) 640px, 100vw" alt="" className="aspect-[21/9]" />
+        <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40" />
+        <span className="absolute top-3 left-4 text-base font-semibold tracking-tight text-white/90">
+          <Wordmark />
+        </span>
+        {/* The player's own "now playing" pill: the 4K tier glows. */}
+        <span className="absolute top-3 right-3 flex items-center gap-2 rounded-full bg-black/70 py-1 pr-3 pl-1 text-xs backdrop-blur-sm">
+          <span className="animate-[glow_2.4s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 px-2 py-0.5 font-bold tracking-wide text-black">4K</span>
+          <span className="font-medium text-white/90">{febbox ? 'Febbox · Original' : 'Best source'}</span>
+        </span>
+        <div className="absolute inset-x-4 bottom-3">
+          {title && <p className="mb-2 truncate text-sm font-semibold text-white">{title}</p>}
+          <span className="block h-1 overflow-hidden rounded-full bg-white/20">
+            <span className="block h-full w-[38%] rounded-full bg-white" />
+          </span>
+        </div>
+      </div>
+      <div>
+        <p className="flex items-center gap-2 text-lg font-semibold">
+          <Sparkles className="size-5 text-amber-200" /> You’re set
+        </p>
+        <ul className="mt-3 space-y-2 text-body-sm">
+          <DoneRow on={helper} on_="Charcoal Helper is on: more sources, from your own connection" off="Charcoal Helper isn’t installed: fewer sources play" />
+          <DoneRow on={febbox} on_="Febbox is connected: original files, up to 4K, tried first" off="Febbox isn’t connected: most titles top out at 1080p" />
+        </ul>
+        <p className="mt-3 text-xs text-faint">All of this is in Settings, with a button to run this again.</p>
+      </div>
+    </div>
+  );
+}
+
+function DoneRow({ on, on_, off }: { on: boolean; on_: string; off: string }) {
+  return (
+    <li className={cx('flex items-center gap-2.5', on ? 'text-white/85' : 'text-muted')}>
+      <span className={cx('grid size-5 shrink-0 place-items-center rounded-full', on ? 'bg-success/20 text-success' : 'bg-white/[0.06] text-faint')}>
+        {on ? <Check className="size-3" /> : <span className="size-1 rounded-full bg-current" />}
+      </span>
+      {on ? on_ : off}
+    </li>
   );
 }
 
