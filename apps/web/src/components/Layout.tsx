@@ -7,7 +7,7 @@ import { actions, useStore } from '../lib/store';
 import { cx, scrollBehavior, useDebounced } from '../lib/util';
 import { QuickFilterMenu } from './Filters';
 import { PageSkeleton } from './Skeletons';
-import { Wordmark } from './Logo';
+import { Wordmark, partOf } from './Logo';
 import { startReminderLoop } from '../lib/reminders';
 import { migrateLibrary, useLibraryReminders } from '../lib/library';
 import { startWatchlistSync, syncWatchlistOnStart } from '../lib/trakt';
@@ -249,6 +249,7 @@ const Sep = () => <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" /
 
 function Rail() {
   const section = useSection();
+  const sportsPart = partOf(useLocation().pathname);
   const open = useStore((s) => s.settings.sidebarOpen);
   const toggle = () => actions.updateSettings({ sidebarOpen: !open });
   return (
@@ -270,8 +271,8 @@ function Rail() {
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
         {open && (
-          <Link to="/" className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
-            <Wordmark />
+          <Link to={sportsPart ? '/sports' : '/'} className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label={sportsPart ? 'Charcoal Sports' : 'Charcoal home'}>
+            <Wordmark part={sportsPart} />
           </Link>
         )}
       </div>
@@ -409,22 +410,23 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
   // (Not on Discover: there the page under the field is already the live result.)
   const previewing = focused && !menu && !onDiscover && typed.length >= 2 && text.trim().length >= 2;
   const atHome = pathname === '/';
+  const part = partOf(pathname);
 
   return (
     <>
       {/* The wordmark sits at the top of the page and scrolls away with it. */}
       <Link
-        to="/"
+        to={part ? '/sports' : '/'}
         className={cx(
           'absolute top-0 left-4 z-30 flex h-[76px] items-center text-2xl font-semibold tracking-tight md:left-8 md:h-[92px] lg:left-10',
           // With the sidebar open, the wordmark moves into it.
           hideLogo && 'lg:hidden',
-          // Phones: the wordmark is on Home only; other pages start with their own title.
-          (open || !atHome) && 'max-md:hidden',
+          // Phones: the wordmark is on Home (and Sports, whose name it carries) only; other pages start with their own title.
+          (open || (!atHome && !part)) && 'max-md:hidden',
         )}
-        aria-label="Charcoal home"
+        aria-label={part ? 'Charcoal Sports' : 'Charcoal home'}
       >
-        <Wordmark />
+        <Wordmark part={part} />
       </Link>
       <header
         // Only the search field floats and sticks (as a pill, no bar behind it). The header itself

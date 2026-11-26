@@ -1485,8 +1485,9 @@ export default function Player({
         {!live && <SeekBar time={now} duration={dur} buffered={casting ? 0 : buffered} segments={segments} onSeek={seekTo} />}
         <div className="mt-2 flex items-center gap-1 md:gap-1.5">
           {live ? (
-            <span data-testid="live-state" className="flex items-center gap-1.5 pl-1 text-xs font-semibold tracking-wide text-white/90 uppercase md:text-sm">
-              <span aria-hidden className={cx('size-1.5 rounded-full bg-danger', isPlaying && 'animate-pulse')} /> Live
+            // The header says LIVE (its pill); here it's only for screen readers.
+            <span data-testid="live-state" className="sr-only">
+              Live
             </span>
           ) : (
             <span className="pl-1 text-xs text-white/85 tabular-nums md:text-sm">

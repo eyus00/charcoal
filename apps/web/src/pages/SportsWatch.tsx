@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { ChevronDown, ExternalLink, RotateCw, X } from 'lucide-react';
+import { ChevronDown, RotateCw, X } from 'lucide-react';
+import LivePill from '../components/LivePill';
 import { listingState, type LiveListing } from '@charcoal/content';
 import { btn } from '../components/Button';
 import Kbd from '../components/Kbd';
@@ -68,9 +69,10 @@ function Stream({ listing: l, onClose }: { listing: LiveListing; onClose: () => 
   const option = l.options[Math.min(choice, l.options.length - 1)];
   const labels = optionLabels(l.options);
   const start = l.channel ? null : localStart(l.startsAt, now);
-  const subtitle = l.channel
-    ? `${l.sport} · Always on`
-    : [l.league || l.sport, state === 'live' ? 'Live' : state === 'upcoming' ? `${start!.day} ${start!.time}` : open ? '' : 'Ended'].filter(Boolean).join(' · ');
+  // Under the name: the league (or the sport, for a channel), then LIVE, or when it starts.
+  const where = l.channel ? l.sport : l.league || l.sport;
+  const when = l.channel || state === 'live' ? null : state === 'upcoming' ? `${start!.day} ${start!.time}` : open ? null : 'Ended';
+  const isLive = !!l.channel || state === 'live';
   const waiting = !open;
 
   useKeys({ r: () => setReloads((n) => n + 1) }, !waiting);
@@ -82,24 +84,13 @@ function Stream({ listing: l, onClose }: { listing: LiveListing; onClose: () => 
           <h1 className="truncate text-base font-semibold md:text-lg" title={l.title}>
             {l.title}
           </h1>
-          <p className="flex items-center gap-1.5 truncate text-sm text-white/80">
-            {state === 'live' && !l.channel && <span aria-hidden className="size-1.5 shrink-0 animate-pulse rounded-full bg-danger" />}
-            <span className="truncate">{subtitle}</span>
+          <p className="mt-0.5 flex min-w-0 items-center gap-2 text-sm text-white/80">
+            {where && <span className="truncate">{where}</span>}
+            {isLive ? <LivePill /> : when && <span className="shrink-0 text-white/60">{when}</span>}
           </p>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-3">
-          {!waiting && (
-            <>
-              <IconButton label="Reload the player" keys="R" onClick={() => setReloads((n) => n + 1)}>
-                <RotateCw className="size-[18px]" strokeWidth={1.75} />
-              </IconButton>
-              <a href={option.embed} target="_blank" rel="noopener noreferrer" aria-label="Open the player in a new tab" className={cx(btn({ variant: 'ghost', icon: true }), 'group/tip relative max-sm:hidden')}>
-                <ExternalLink className="size-[18px]" strokeWidth={1.75} />
-                <Tip label="Open the player in a new tab" side="bottom" align="end" />
-              </a>
-              <StreamMenu labels={labels} current={choice} onPick={setChoice} blockPopups={blockPopups} external={option.embed} />
-            </>
-          )}
+          {!waiting && <StreamMenu labels={labels} current={choice} onPick={setChoice} blockPopups={blockPopups} onReload={() => setReloads((n) => n + 1)} />}
           <button type="button" aria-label="Close (Esc)" onClick={onClose} className={cx(btn({ variant: 'secondary', icon: true }), 'group/tip relative')}>
             <X className="size-5" />
             <Tip label="Close" keys="Esc" side="bottom" align="end" />
@@ -109,9 +100,7 @@ function Stream({ listing: l, onClose }: { listing: LiveListing; onClose: () => 
 
       {notice && !waiting && (
         <div className="flex shrink-0 items-center gap-3 bg-amber-500/15 px-4 py-2 text-sm text-amber-100" data-testid="embed-note">
-          <span className="min-w-0 flex-1 text-pretty">
-            This player belongs to another site, not Charcoal. It may show ads{blockPopups ? '; pop-ups from it are blocked.' : '.'}
-          </span>
+          <span className="min-w-0 flex-1 text-pretty">This player belongs to another site, not Charcoal. It may show ads{blockPopups ? '; pop-ups from it are blocked.' : '.'}</span>
           {!blockPopups && (
             <button type="button" onClick={() => actions.updateSettings({ blockPopups: true })} className="shrink-0 font-medium text-white underline-offset-2 hover:underline">
               Block pop-ups
@@ -151,17 +140,8 @@ function Stream({ listing: l, onClose }: { listing: LiveListing; onClose: () => 
   );
 }
 
-function IconButton({ label, keys, onClick, children }: { label: string; keys?: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button type="button" aria-label={keys ? `${label} (${keys})` : label} onClick={onClick} className={cx(btn({ variant: 'ghost', icon: true }), 'group/tip relative')}>
-      {children}
-      <Tip label={label} keys={keys} side="bottom" align="end" />
-    </button>
-  );
-}
-
 /** The streams the directory lists for this event, and what the frame is allowed to do. */
-function StreamMenu({ labels, current, onPick, blockPopups, external }: { labels: string[]; current: number; onPick: (i: number) => void; blockPopups: boolean; external: string }) {
+function StreamMenu({ labels, current, onPick, blockPopups, onReload }: { labels: string[]; current: number; onPick: (i: number) => void; blockPopups: boolean; onReload: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const close = useCallback(() => {
@@ -191,7 +171,6 @@ function StreamMenu({ labels, current, onPick, blockPopups, external }: { labels
           role="menu"
           className="toast-in absolute right-0 z-40 mt-2 max-h-[min(24rem,52dvh)] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[18px] border border-transparent bg-raised p-1.5 shadow-2xl ring-1 shadow-black/50 ring-white/10"
         >
-          <div className="px-3 pt-1.5 pb-1 text-xs text-faint">{labels.length > 1 ? 'Streams' : 'Stream'}</div>
           {labels.map((label, i) => (
             <button
               key={i}
@@ -201,12 +180,28 @@ function StreamMenu({ labels, current, onPick, blockPopups, external }: { labels
                 onPick(i);
                 setOpen(false);
               }}
-              className={cx('flex h-9 w-full items-center rounded-xl px-3 text-left text-sm transition-colors', i === current ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10 hover:text-white')}
+              className={cx(
+                'flex h-9 w-full items-center rounded-xl px-3 text-left text-sm transition-colors',
+                i === current ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10 hover:text-white',
+              )}
             >
               <span className="truncate">{label}</span>
             </button>
           ))}
           <div className="my-1.5 h-px bg-white/[0.06]" />
+          {/* A player that froze or stays black: load it again. */}
+          <button
+            role="menuitem"
+            onClick={() => {
+              onReload();
+              setOpen(false);
+            }}
+            className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <RotateCw className="size-4 text-muted" strokeWidth={1.75} />
+            <span className="flex-1">Reload the player</span>
+            <Kbd>R</Kbd>
+          </button>
           <button
             role="menuitemcheckbox"
             aria-checked={blockPopups}
@@ -219,11 +214,6 @@ function StreamMenu({ labels, current, onPick, blockPopups, external }: { labels
             </span>
           </button>
           <p className="px-3 pt-1 pb-2 text-xs text-pretty text-faint">Some players refuse to start while pop-ups are blocked. If this one stays black, turn it off or try another stream.</p>
-          {/* Phones have no room for the header's own button. */}
-          <a href={external} target="_blank" rel="noopener noreferrer" role="menuitem" className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm text-white/80 transition-colors hover:bg-white/10 sm:hidden">
-            <span className="flex-1">Open the player in a new tab</span>
-            <ExternalLink className="size-4" strokeWidth={1.5} />
-          </a>
         </div>
       )}
     </div>

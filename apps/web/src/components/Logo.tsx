@@ -28,12 +28,15 @@ export function LogoGlyph({ className }: { className?: string }) {
   );
 }
 
-/** The logo and "Charcoal" beside it. */
-export function Wordmark({ className }: { className?: string }) {
+/** The logo and "Charcoal" beside it; inside a part of the app, its name follows ("Charcoal Sports"). */
+export function Wordmark({ className, part }: { className?: string; part?: string }) {
   return (
     <span className={`flex items-center gap-2 ${className ?? ''}`}>
       <LogoMark className="size-[1.3em]" />
-      Charcoal
+      <span>Charcoal{part && <span className="font-normal text-white/60"> {part}</span>}</span>
     </span>
   );
 }
+
+/** The part of the app a path belongs to, for the wordmark (none for the main app). */
+export const partOf = (pathname: string) => (/^\/(sports|live)(\/|$)/.test(pathname) ? 'Sports' : undefined);

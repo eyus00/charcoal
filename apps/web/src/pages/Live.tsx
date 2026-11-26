@@ -5,6 +5,7 @@ import { ExternalLink, X } from 'lucide-react';
 import { btn } from '../components/Button';
 import { Tip } from '../components/Tip';
 import Player from '../player/Player';
+import LivePill from '../components/LivePill';
 import { countryName, PROBLEM_TEXT, tune, useChannels, type PlayableChannel, type StreamProblem } from '../lib/sports';
 import { cx, useKeys, useTitle } from '../lib/util';
 
@@ -42,7 +43,7 @@ function LiveView({ entry }: { entry: PlayableChannel }) {
   // The streams answered, but then none of them would actually play.
   const [gaveUp, setGaveUp] = useState(false);
 
-  const subtitle = ['Live', countryName(channel.country), 'Public channel'].filter(Boolean).join(' · ');
+  const subtitle = countryName(channel.country);
   const official = channel.website && /^https?:\/\//i.test(channel.website) ? channel.website : undefined;
   const problem: StreamProblem | null = gaveUp ? 'unreachable' : (tuned.data?.problem ?? (tuned.error ? 'unreachable' : null));
 
@@ -61,20 +62,18 @@ function LiveView({ entry }: { entry: PlayableChannel }) {
     );
   }
 
-  const header = (info: ReactNode | null) => (
+  // The same as the sports player: the channel, then its country and LIVE. (The player's bigger
+  // paused-state block is not used: a channel has nothing more to say.)
+  const header = (_info: ReactNode | null) => (
     <div className="flex items-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:gap-3 md:px-5">
-      <div className="min-w-0 px-1">
-        {info ?? (
-          <div className="leading-snug">
-            <div className="truncate text-base font-semibold md:text-lg">{channel.name}</div>
-            <div className="truncate text-sm text-white/80">{subtitle}</div>
-          </div>
-        )}
+      <div className="min-w-0 px-1 pt-0.5 leading-snug">
+        <div className="truncate text-base font-semibold md:text-lg">{channel.name}</div>
+        <div className="mt-0.5 flex min-w-0 items-center gap-2 text-sm text-white/80">
+          {subtitle && <span className="truncate">{subtitle}</span>}
+          <LivePill />
+        </div>
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
-        <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-danger/20 px-2.5 text-micro font-semibold tracking-wide text-danger uppercase">
-          <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-danger" /> Live
-        </span>
         <CloseButton onClose={leave} />
       </div>
     </div>

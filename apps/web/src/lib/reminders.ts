@@ -57,17 +57,22 @@ export const useReminders = () =>
 
 export const hasReminder = (key: string) => list.some((r) => r.key === key);
 
-/** Turn a reminder on or off. Asks for notification permission the first time. */
-export async function toggleReminder(r: Reminder) {
+/**
+ * Turn a reminder on or off. Asks for notification permission the first time.
+ * `already`: what it's about has started (a live match kept as "yours"): kept, but never fires.
+ * `words`: the toasts, when the default ones don't fit.
+ */
+export async function toggleReminder(r: Reminder, opts: { already?: boolean; words?: { on: string; off: string } } = {}) {
   if (hasReminder(r.key)) {
     save(list.filter((x) => x.key !== r.key));
-    toast('Reminder removed');
+    toast(opts.words?.off ?? 'Reminder removed');
     return;
   }
-  save([...list, { ...r, done: false }]);
+  save([...list, { ...r, done: !!opts.already }]);
+  if (opts.already) return void toast(opts.words?.on ?? 'Saved');
   if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission().catch(() => {});
   const allowed = 'Notification' in window && Notification.permission === 'granted';
-  toast(allowed ? 'Reminder set. You’ll get a notification while Charcoal is open.' : 'Reminder set. You’ll see it here while Charcoal is open.');
+  toast(opts.words?.on ?? (allowed ? 'Reminder set. You’ll get a notification while Charcoal is open.' : 'Reminder set. You’ll see it here while Charcoal is open.'));
 }
 
 /** Check for due reminders now and every minute (call once from the app shell). */
