@@ -244,7 +244,6 @@ const Sep = () => <span aria-hidden className="mx-3 my-1 h-px bg-white/[0.08]" /
 
 function Rail() {
   const section = useSection();
-  const sportsPart = partOf(useLocation().pathname);
   const open = useStore((s) => s.settings.sidebarOpen);
   const toggle = () => actions.updateSettings({ sidebarOpen: !open });
   return (
@@ -266,8 +265,8 @@ function Rail() {
           {!open && <Tip label="Expand sidebar" keys="[" />}
         </button>
         {open && (
-          <Link to={sportsPart ? '/sports' : '/'} className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label={sportsPart ? 'Charcoal Sports' : 'Charcoal home'}>
-            <Wordmark part={sportsPart} />
+          <Link to="/" className="text-xl font-semibold tracking-tight whitespace-nowrap" aria-label="Charcoal home">
+            <Wordmark />
           </Link>
         )}
       </div>
@@ -424,6 +423,12 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
       >
         <Wordmark part={part} />
       </Link>
+      {/* Sidebar open: "Charcoal" sits in the sidebar; the part's own name stays here, as a heading. */}
+      {part && hideLogo && (
+        <Link to="/sports" className="absolute top-0 left-10 z-30 hidden h-[92px] items-center text-2xl font-semibold tracking-tight lg:flex">
+          {part}
+        </Link>
+      )}
       <header
         // Only the search field floats and sticks (as a pill, no bar behind it). The header itself
         // ignores clicks so the page around the pill stays usable.
