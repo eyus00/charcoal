@@ -128,18 +128,65 @@ export function releaseStreams() {
   connected?.then((b) => b?.releaseStreams()).catch(() => {});
 }
 
+declare const __HELPER_VERSION__: string;
+/** The newest Charcoal Helper (built from the same repository as this page). */
+export const LATEST_HELPER = typeof __HELPER_VERSION__ === 'string' ? __HELPER_VERSION__ : '0.0.0';
+/** Whether version `a` is older than `b` ("0.3.0" < "0.3.1"). */
+export const olderThan = (a: string, b: string) => {
+  const x = a.split('.').map(Number);
+  const y = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+  return false;
+};
+
 /**
- * The viewer's Febbox sign-in token, read by Charcoal Helper (0.3+) from febbox.com's own cookie
- * when they are signed in to Febbox in this browser. Null when they aren't; throws when the helper
- * is missing or too old to do it.
+ * The viewer's Febbox sign-in, as Charcoal Helper (0.3+) reads it from febbox.com's own cookie.
+ * `tokens` holds every distinct one it found (0.3.1+ searches every cookie store); `reason` says why
+ * there are none. Throws when the helper is missing or too old to do it.
  */
-export async function febboxTokenFromHelper(): Promise<string | null> {
+export async function febboxTokenFromHelper(): Promise<{ tokens: string[]; reason?: 'no-access' | 'signed-out'; version: string }> {
   // (The helper is asked directly: a page built before this ability existed would not list it.)
   const b = await getBridge(true);
   if (!b) throw new BridgeError('Charcoal Helper isn’t installed', 'DISCONNECTED');
-  if (!b.info.capabilities.includes('febboxToken')) throw new BridgeError('Update Charcoal Helper (0.3 or newer) to get the token by itself', 'NOT_ALLOWED');
-  const r = await call<{ token: string | null }>('febboxToken', {}, 8000);
-  return r.token || null;
+  if (!b.info.capabilities.includes('febboxToken')) throw new BridgeError(`Charcoal Helper ${b.info.version} can’t read the Febbox sign-in`, 'NOT_ALLOWED');
+  const r = await call<{ token: string | null; tokens?: string[]; reason?: 'no-access' | 'signed-out' }>('febboxToken', {}, 8000);
+  const tokens = r.tokens?.length ? r.tokens : r.token ? [r.token] : [];
+  return { tokens, reason: tokens.length ? undefined : (r.reason ?? 'signed-out'), version: b.info.version };
+}
+
+export type FebboxFound =
+  | { status: 'ok' | 'unchecked'; token: string; message: string }
+  | { status: 'invalid' | 'signed-out' | 'no-access' | 'old-helper' | 'no-helper'; message: string };
+
+/**
+ * Finds the viewer's Febbox sign-in and checks it with Febbox: the first token Febbox accepts wins
+ * (several can be found: an old sign-in and a new one, in different containers). Every outcome comes
+ * with what to tell the viewer.
+ */
+export async function findFebboxToken(check: (token: string) => Promise<'ok' | 'invalid' | 'unknown'>): Promise<FebboxFound> {
+  let got: Awaited<ReturnType<typeof febboxTokenFromHelper>>;
+  try {
+    got = await febboxTokenFromHelper();
+  } catch (e) {
+    const old = e instanceof BridgeError && e.code === 'NOT_ALLOWED';
+    return old
+      ? { status: 'old-helper', message: `${(e as Error).message}. Update it (Charcoal Helper ${LATEST_HELPER}), or paste the token below.` }
+      : { status: 'no-helper', message: 'Charcoal Helper isn’t installed, so your sign-in can’t be read. Paste the token below instead.' };
+  }
+  if (got.reason === 'no-access')
+    return { status: 'no-access', message: 'Charcoal Helper isn’t allowed on febbox.com. Click its toolbar icon and allow its site access, then Check again.' };
+  if (!got.tokens.length) {
+    const hint = olderThan(got.version, '0.3.1') ? ` If you are, update Charcoal Helper to ${LATEST_HELPER}: ${got.version} only looks outside containers and private windows.` : '';
+    return { status: 'signed-out', message: `No Febbox sign-in found in this browser. Sign in at febbox.com, then come back.${hint}` };
+  }
+  let unchecked: string | undefined;
+  for (const token of got.tokens) {
+    const r = await check(token).catch(() => 'unknown' as const);
+    if (r === 'ok') return { status: 'ok', token, message: 'Connected. Febbox accepted your sign-in.' };
+    if (r === 'unknown') unchecked ??= token;
+  }
+  if (unchecked) return { status: 'unchecked', token: unchecked, message: 'Connected (Febbox couldn’t be checked right now).' };
+  return { status: 'invalid', message: 'Found your Febbox sign-in, but Febbox says it has expired. Sign out and in again at febbox.com, then Check again.' };
 }
 
 let triedFebbox = false;
@@ -152,9 +199,9 @@ export async function adoptFebboxToken(check: (token: string) => Promise<'ok' | 
   if (triedFebbox) return false;
   triedFebbox = true;
   try {
-    const token = await febboxTokenFromHelper();
-    if (!token || (await check(token)) === 'invalid') return false;
-    save(token);
+    const found = await findFebboxToken(check);
+    if (found.status !== 'ok' && found.status !== 'unchecked') return false;
+    save(found.token);
     return true;
   } catch {
     return false;

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Copy, Download, ExternalLink, Puzzle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Download, ExternalLink, KeyRound, Puzzle, RefreshCw, Sparkles } from 'lucide-react';
 import { checkFebboxToken } from '@charcoal/providers';
 import { Dialog } from './Modal';
 import { btn } from './Button';
 import { toast } from './Toast';
-import { detectExtension, extensionFetcher, febboxTokenFromHelper } from '../lib/extension';
+import { detectExtension, extensionFetcher, findFebboxToken, LATEST_HELPER, olderThan } from '../lib/extension';
 import { actions, getState, useStore } from '../lib/store';
 import { cx } from '../lib/util';
 
@@ -46,15 +46,18 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
   const installed = !!helper.data;
   const allowed = !!helper.data?.hasPermission;
   const febbox = useStore((s) => s.settings.febboxToken);
-  // Installed and allowed: on to Febbox by itself.
-  const [advanced, setAdvanced] = useState(false);
+  const outdated = installed && olderThan(helper.data!.version, LATEST_HELPER);
+  // Installed, allowed and up to date: on to Febbox by itself, once (going Back stays on step 1).
+  const advanced = useRef(false);
+  const ready = step === 1 && installed && (allowed || browser !== 'firefox') && !outdated;
   useEffect(() => {
-    if (step === 1 && installed && (allowed || browser !== 'firefox') && !advanced) {
-      setAdvanced(true);
-      const t = window.setTimeout(() => setStep(2), 900);
-      return () => window.clearTimeout(t);
-    }
-  }, [step, installed, allowed, browser, advanced]);
+    if (!ready || advanced.current) return;
+    const t = window.setTimeout(() => {
+      advanced.current = true;
+      setStep(2);
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 
   const finish = (how: 'done' | 'skip') => {
     if (how === 'done' || never) actions.updateSettings({ setup: how === 'done' ? 'done' : 'off' });
@@ -76,6 +79,11 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
             </label>
           )}
           <div className="ml-auto flex gap-2">
+            {step > 1 && (
+              <button type="button" onClick={() => setStep((s) => (s - 1) as 1 | 2)} className={cx(btn({ variant: 'ghost' }), 'h-10 px-3.5 text-sm')}>
+                <ArrowLeft className="size-4" /> Back
+              </button>
+            )}
             {step < 3 && (
               <button type="button" onClick={() => (step === 1 && !installed ? finish('skip') : setStep((s) => (s + 1) as 2 | 3))} className={cx(btn(), 'h-10 px-4 text-sm')}>
                 {step === 1 && !installed ? 'Skip for now' : 'Skip this step'}
@@ -105,7 +113,7 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
           <li key={n} className={cx('h-1 flex-1 rounded-full transition-colors', n <= step ? 'bg-white' : 'bg-white/15')} />
         ))}
       </ol>
-      {step === 1 && <InstallStep browser={browser} installed={installed} allowed={allowed} version={helper.data?.version} />}
+      {step === 1 && <InstallStep browser={browser} installed={installed} allowed={allowed} version={helper.data?.version} outdated={outdated} />}
       {step === 2 && <FebboxStep />}
       {step === 3 && (
         <div className="py-4 text-center">
@@ -121,16 +129,22 @@ export default function SetupGuide({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Status({ ok, children }: { ok: boolean; children: React.ReactNode }) {
+function Status({ ok, pending, children }: { ok: boolean; pending?: boolean; children: React.ReactNode }) {
   return (
     <p className={cx('flex items-center gap-2 rounded-2xl px-4 py-3 text-sm ring-1', ok ? 'bg-success/10 text-success ring-success/20' : 'bg-white/[0.04] text-muted ring-white/[0.06]')}>
-      {ok ? <Check className="size-4 shrink-0" /> : <span aria-hidden className="size-2 shrink-0 animate-pulse rounded-full bg-white/50" />}
+      {ok ? (
+        <Check className="size-4 shrink-0" />
+      ) : pending ? (
+        <span aria-hidden className="size-2 shrink-0 animate-pulse rounded-full bg-white/50" />
+      ) : (
+        <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
+      )}
       {children}
     </p>
   );
 }
 
-function InstallStep({ browser, installed, allowed, version }: { browser: Browser; installed: boolean; allowed: boolean; version?: string }) {
+function InstallStep({ browser, installed, allowed, version, outdated }: { browser: Browser; installed: boolean; allowed: boolean; version?: string; outdated: boolean }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
@@ -183,10 +197,12 @@ function InstallStep({ browser, installed, allowed, version }: { browser: Browse
           </li>
         </ol>
       )}
-      {installed && browser === 'firefox' && !allowed ? (
+      {outdated ? (
+        <UpdateNotice browser={browser} version={version ?? ''} />
+      ) : installed && browser === 'firefox' && !allowed ? (
         <Status ok={false}>Installed, but its site access is off. Allow it (step 2) and this moves on.</Status>
       ) : (
-        <Status ok={installed}>{installed ? `Charcoal Helper ${version ?? ''} is installed` : 'Waiting for Charcoal Helper… this moves on by itself once it’s installed'}</Status>
+        <Status ok={installed}>{installed ? `Charcoal Helper ${version ?? ''} is installed, the latest version` : 'Waiting for Charcoal Helper… this moves on by itself once it’s installed'}</Status>
       )}
       <p className="text-xs text-faint">
         Problems? All versions are on{' '}
@@ -199,42 +215,56 @@ function InstallStep({ browser, installed, allowed, version }: { browser: Browse
   );
 }
 
+/** An older Charcoal Helper than this page knows: what's new, and how to update in this browser. */
+function UpdateNotice({ browser, version }: { browser: Browser; version: string }) {
+  return (
+    <div className="space-y-3 rounded-2xl bg-warning/10 p-4 ring-1 ring-warning/25">
+      <p className="flex items-center gap-2 text-sm font-medium text-warning">
+        <RefreshCw className="size-4 shrink-0" /> Charcoal Helper {version} is installed; {LATEST_HELPER} is out
+      </p>
+      <p className="text-body-sm text-white/80">
+        {browser === 'firefox'
+          ? 'Click Update: Firefox replaces it in place. Then come back to this tab.'
+          : 'Download it, unzip it over the folder you loaded before (replace the files), then press the reload ↻ on Charcoal Helper in '}
+        {browser !== 'firefox' && <CopyText text={browser === 'edge' ? 'edge://extensions' : 'chrome://extensions'} />}
+        {browser !== 'firefox' && '. This tab notices by itself.'}
+      </p>
+      <a href={browser === 'firefox' ? XPI : ZIP} className={cx(btn({ variant: 'primary' }), 'h-9 px-4 text-sm')}>
+        <Download className="size-4" /> {browser === 'firefox' ? 'Update' : `Download ${LATEST_HELPER}`}
+      </a>
+    </div>
+  );
+}
+
 function FebboxStep() {
   const saved = useStore((s) => s.settings.febboxToken);
   const [busy, setBusy] = useState(false);
-  const [manual, setManual] = useState(false);
   const [value, setValue] = useState('');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(saved ? { ok: true, text: 'A Febbox token is saved.' } : null);
+  const [where, setWhere] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(saved ? { ok: true, text: 'Febbox is connected.' } : null);
+  const check = (token: string) => checkFebboxToken(extensionFetcher, token);
   const keep = async (raw: string) => {
     const token = raw.trim().replace(/^ui=/, '').replace(/;.*$/, '');
     if (!token) return;
+    setBusy(true);
     setMsg({ ok: true, text: 'Checking with Febbox…' });
-    const r = await checkFebboxToken(extensionFetcher, token).catch(() => 'unknown' as const);
-    if (r === 'invalid') return setMsg({ ok: false, text: 'Febbox didn’t accept that token. Sign in at febbox.com again and retry.' });
+    const r = await check(token).catch(() => 'unknown' as const);
+    setBusy(false);
+    if (r === 'invalid') return setMsg({ ok: false, text: 'Febbox didn’t accept that token. Copy a fresh “ui” value after signing in again.' });
     actions.updateSettings({ febboxToken: token });
+    setValue('');
     setMsg({ ok: true, text: r === 'ok' ? 'Connected. Febbox accepted it.' : 'Saved (Febbox couldn’t be checked right now).' });
   };
-  const grab = async (quiet = false) => {
+  const grab = async () => {
     setBusy(true);
-    try {
-      const token = await febboxTokenFromHelper();
-      if (!token)
-        setMsg({
-          ok: false,
-          text: quiet
-            ? 'Not signed in to Febbox in this browser yet. Sign in at febbox.com; this tab picks it up when you come back.'
-            : 'Still not signed in to Febbox in this browser. Sign in at febbox.com, then come back.',
-        });
-      else await keep(token);
-    } catch (e) {
-      setMsg({ ok: false, text: (e as Error).message });
-      setManual(true);
-    } finally {
-      setBusy(false);
-    }
+    setMsg({ ok: true, text: 'Looking for your Febbox sign-in…' });
+    const found = await findFebboxToken(check);
+    setBusy(false);
+    if (found.status === 'ok' || found.status === 'unchecked') actions.updateSettings({ febboxToken: found.token });
+    setMsg({ ok: found.status === 'ok' || found.status === 'unchecked', text: found.message });
   };
   useEffect(() => {
-    if (saved && msg?.ok === false) setMsg({ ok: true, text: 'A Febbox token is saved.' });
+    if (saved && msg?.ok === false) setMsg({ ok: true, text: 'Febbox is connected.' });
   }, [saved, msg]);
   // Automatic: tried as soon as this step opens, and again each time the viewer comes back to this
   // tab (from signing in at febbox.com) until a token is saved. The button stays for a manual retry.
@@ -242,11 +272,12 @@ function FebboxStep() {
   grabRef.current = grab;
   useEffect(() => {
     if (saved) return;
-    void grabRef.current(true);
-    const back = () => document.visibilityState === 'visible' && !getState().settings.febboxToken && void grabRef.current(true);
+    void grabRef.current();
+    const back = () => document.visibilityState === 'visible' && !getState().settings.febboxToken && void grabRef.current();
     document.addEventListener('visibilitychange', back);
     return () => document.removeEventListener('visibilitychange', back);
   }, [saved]);
+  const pending = busy || /Checking|Looking/.test(msg?.text ?? '');
   return (
     <div className="space-y-4">
       <div>
@@ -269,33 +300,46 @@ function FebboxStep() {
           </button>
         </li>
       </ol>
-      {msg && <Status ok={msg.ok && !/Checking/.test(msg.text)}>{msg.text}</Status>}
-      {manual ? (
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void keep(value);
-          }}
-        >
+      {msg && <Status ok={msg.ok && !pending} pending={pending}>{msg.text}</Status>}
+
+      {/* Always here: the token typed in by hand, for when the helper can't read it. */}
+      <form
+        className="rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.06]"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void keep(value);
+        }}
+      >
+        <label htmlFor="febbox-token" className="flex items-center gap-2 text-sm font-medium">
+          <KeyRound className="size-4 text-white/70" /> Or paste your token
+        </label>
+        <div className="mt-2.5 flex gap-2">
           <input
+            id="febbox-token"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             type="password"
-            placeholder="Paste the “ui” cookie value"
+            placeholder="The value of febbox.com’s “ui” cookie"
             autoComplete="off"
             spellCheck={false}
-            aria-label="Febbox token"
-            className="h-10 min-w-0 flex-1 rounded-xl bg-raised px-3.5 text-sm placeholder:text-faint"
+            className="h-11 min-w-0 flex-1 rounded-xl bg-black/30 px-3.5 text-sm ring-1 ring-white/10 transition placeholder:text-faint focus:ring-white/40 focus:outline-none"
           />
-          <button className={cx(btn(), 'h-10 px-4 text-sm')}>Save</button>
-        </form>
-      ) : (
-        <button type="button" onClick={() => setManual(true)} className="text-xs text-faint hover:text-white">
-          Paste the token yourself instead
+          <button disabled={!value.trim() || busy} className={cx(btn({ variant: 'primary' }), 'h-11 px-5 text-sm disabled:opacity-40')}>
+            Save
+          </button>
+        </div>
+        <button type="button" onClick={() => setWhere((w) => !w)} aria-expanded={where} className="mt-2.5 text-xs text-muted underline-offset-4 hover:text-white hover:underline">
+          Where do I find it?
         </button>
-      )}
-      {manual && <p className="text-xs text-faint">On febbox.com: DevTools → Application (Storage in Firefox) → Cookies → www.febbox.com → copy the value of “ui”.</p>}
+        {where && (
+          <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-white/70">
+            <li>Open febbox.com, signed in.</li>
+            <li>Open the developer tools: F12, or ⌥⌘I on a Mac.</li>
+            <li>Application tab (Storage in Firefox) → Cookies → https://www.febbox.com.</li>
+            <li>Copy the Value of the row named “ui” and paste it here.</li>
+          </ol>
+        )}
+      </form>
     </div>
   );
 }

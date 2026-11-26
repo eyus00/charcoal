@@ -234,14 +234,43 @@ async function releaseStreams(_payload, sender) {
   return {};
 }
 
-/** Febbox's sign-in cookie, read only on febbox.com and only by name. Nothing else is looked at. */
-async function febboxToken() {
-  if (!chrome.cookies) throw new HelperError('NOT_ALLOWED', 'This build of Charcoal Helper can’t read the Febbox sign-in');
-  for (const url of ['https://www.febbox.com/', 'https://febbox.com/']) {
-    const c = await chrome.cookies.get({ url, name: 'ui' }).catch(() => null);
-    if (c?.value) return { token: c.value };
+/**
+ * Febbox's sign-in cookie ("ui"), read only on febbox.com and only by name. Nothing else is looked at.
+ * Every cookie store is searched: in Firefox a sign-in can live in a container or a private window,
+ * each with its own store (the tab asking comes first). Several distinct values (an old and a new
+ * sign-in) are all returned so the page can try each with Febbox; when there is none, `reason`
+ * says why: no site access to febbox.com, or simply not signed in.
+ */
+/** The call's answer, or null when it throws or rejects. */
+async function attempt(fn) {
+  try {
+    return await fn();
+  } catch {
+    return null;
   }
-  return { token: null };
+}
+
+async function febboxToken(_payload, sender) {
+  if (!chrome.cookies) throw new HelperError('NOT_ALLOWED', 'This build of Charcoal Helper can’t read the Febbox sign-in');
+  const access = (await attempt(() => chrome.permissions.contains({ origins: ['https://www.febbox.com/*'] }))) ?? true;
+  if (!access) return { token: null, tokens: [], reason: 'no-access' };
+  const stores = (await attempt(() => chrome.cookies.getAllCookieStores())) ?? [];
+  const ids = [sender?.tab?.cookieStoreId, ...stores.map((st) => st.id)].filter((id, i, all) => id && all.indexOf(id) === i);
+  const found = [];
+  const look = async (storeId) => {
+    const base = { name: 'ui', domain: 'febbox.com', ...(storeId ? { storeId } : {}) };
+    // Firefox with first-party isolation wants firstPartyDomain (null = any); other browsers refuse the key.
+    // (Chrome refuses an unknown key by throwing at once, not by rejecting: hence attempt().)
+    const list = (await attempt(() => chrome.cookies.getAll({ ...base, firstPartyDomain: null }))) ?? (await attempt(() => chrome.cookies.getAll(base))) ?? [];
+    // Partitioned copies too, where the browser has them (Firefox's Total Cookie Protection, Chrome's CHIPS).
+    const parted = (await attempt(() => chrome.cookies.getAll({ ...base, partitionKey: {} }))) ?? [];
+    for (const c of [...list, ...parted]) if (c?.value && c.value !== 'deleted') found.push(c);
+  };
+  if (ids.length) for (const id of ids) await look(id);
+  else await look(undefined);
+  // The longest-lived first: the current sign-in rather than one left behind.
+  const tokens = [...new Set(found.sort((a, b) => (b.expirationDate ?? 0) - (a.expirationDate ?? 0)).map((c) => c.value))].slice(0, 4);
+  return { token: tokens[0] ?? null, tokens, reason: tokens.length ? undefined : 'signed-out' };
 }
 
 const HANDLERS = { hello, status, request, allowStream, releaseStreams, febboxToken };

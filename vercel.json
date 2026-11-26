@@ -2,7 +2,7 @@
   "installCommand": "npm ci --workspace apps/web --include-workspace-root",
   "buildCommand": "npm run build --workspace apps/web",
   "outputDirectory": "apps/web/dist",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/web packages package.json package-lock.json vercel.json",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/web apps/extension/package.json packages package.json package-lock.json vercel.json",
   "rewrites": [
     {
       "source": "/((?!assets/).*)",

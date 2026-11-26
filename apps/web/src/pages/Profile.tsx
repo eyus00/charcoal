@@ -15,7 +15,7 @@ import { TILE } from '../components/EpisodeTile';
 import { startOfDay, useSchedule } from '../lib/schedule';
 import { checkServer, EMBEDS, fetchProviderHealth, HOSTED_SERVER, languageName, normalizeServer } from '../lib/servers';
 import { useQuery } from '@tanstack/react-query';
-import { detectExtension, extensionFetcher, febboxTokenFromHelper } from '../lib/extension';
+import { detectExtension, extensionFetcher, findFebboxToken, LATEST_HELPER, olderThan } from '../lib/extension';
 import { checkFebboxToken } from '@charcoal/providers';
 import { SubtitleStyleControls } from '../player/captions';
 import AnimeShelfRow from '../components/AnimeShelfRow';
@@ -762,7 +762,10 @@ function HelperRow() {
     checking: 'Checking…',
     missing: 'Not installed in this browser',
     permission: `Installed (${info?.version}), but its site access is off: click its icon in the toolbar and allow it`,
-    ready: `Installed (${info?.version}) and ready`,
+    ready:
+      info && olderThan(info.version, LATEST_HELPER)
+        ? `Installed (${info.version}); ${LATEST_HELPER} is out. Run setup to update it.`
+        : `Installed (${info?.version}), the latest version, and ready`,
   } as const;
   return (
     <Row label="Charcoal Helper" hint="A browser extension: sources are found and played from your own connection, so more of them work.">
@@ -810,9 +813,11 @@ function FebboxRows() {
   const grab = async () => {
     setGrabbing(true);
     try {
-      const token = await febboxTokenFromHelper();
-      if (!token) setStatus({ ok: false, text: 'Not signed in to febbox.com in this browser. Sign in there, then try again.' });
-      else await keep(token);
+      const found = await findFebboxToken((t) => checkFebboxToken(extensionFetcher, t));
+      if (found.status === 'ok' || found.status === 'unchecked') {
+        actions.updateSettings({ febboxToken: found.token });
+        setStatus({ ok: true, text: found.message });
+      } else setStatus({ ok: false, text: found.message });
     } catch (e) {
       setStatus({ ok: false, text: (e as Error).message });
     } finally {
