@@ -379,7 +379,19 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
     setDraft(onDiscover ? parseFilters(params) : EMPTY_FILTERS);
   };
 
+  // What the preview last found for a query: a search with no results shakes instead of opening an empty page.
+  const results = useRef<{ query: string; count: number } | null>(null);
+  const field = useRef<HTMLDivElement>(null);
+  const deny = () => {
+    const el = field.current;
+    if (!el) return;
+    el.classList.remove('shake');
+    void el.offsetWidth; // restart the animation
+    el.classList.add('shake');
+  };
   const submit = () => {
+    const q = text.trim();
+    if (q && !onDiscover && results.current?.query === q && results.current.count === 0) return deny();
     typing.current = false;
     setMenu(false);
     addRecent(text);
@@ -446,6 +458,8 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
           }}
         >
           <div
+            ref={field}
+            onAnimationEnd={(e) => e.currentTarget.classList.remove('shake')}
             className={cx(
               'group/search pointer-events-auto flex h-12 items-center gap-1.5 rounded-full pr-1.5 pl-4 ring-1 backdrop-blur-xl transition has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent',
               FLOAT,
@@ -572,6 +586,7 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
                   searchInput.current?.blur();
                 }}
                 onAll={submit}
+                onCount={(query, count) => (results.current = { query, count })}
               />
             </Suspense>
           )}
