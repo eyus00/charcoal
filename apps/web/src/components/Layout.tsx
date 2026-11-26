@@ -600,35 +600,29 @@ function TopBar({ hideLogo }: { hideLogo: boolean }) {
 function BottomBar() {
   const section = useSection();
   const item = (to: string, Icon: typeof Home, label: string, active: boolean) => (
-    <Link to={to} className={cx('flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-micro transition-colors', active ? 'text-white' : 'text-faint')}>
+    <Link to={to} className={cx('relative z-[1] flex flex-1 touch-manipulation flex-col items-center gap-1 pt-2.5 pb-2 text-micro transition-colors', active ? 'text-white' : 'text-faint')}>
       <Icon className="size-[22px]" />
       {label}
     </Link>
   );
   const discovering = section === 'discover' || section === 'movies' || section === 'tv' || section === 'calendar';
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-center border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-end border-t border-white/5 bg-bg/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Main">
       {item('/', Home, 'Home', section === 'home')}
-      {/* Discover and search, one pill: the left half browses, the round right half searches.
-          (Plain static styles: no hover states that stick after a tap on touch screens.) */}
-      <div className="flex flex-[1.6] justify-center py-2">
-        <div className={cx('flex h-12 items-center rounded-full p-1 ring-1 transition-colors', discovering ? 'bg-white/[0.12] ring-white/20' : 'bg-white/[0.06] ring-white/10')}>
-          <Link
-            to="/discover"
-            aria-current={discovering ? 'page' : undefined}
-            className={cx('flex h-full touch-manipulation items-center gap-1.5 rounded-full pr-3 pl-3 text-sm font-medium', discovering ? 'text-white' : 'text-white/70')}
-          >
-            <Compass className="size-[19px]" />
-            Discover
-          </Link>
+      {/* Discover and search belong together: a thin line joins Discover's icon to the search button. */}
+      <div className="relative flex flex-[2] items-end">
+        <span aria-hidden className="pointer-events-none absolute top-[21px] right-1/4 left-1/4 h-px bg-white/15" />
+        {item('/discover', Compass, 'Discover', discovering)}
+        <div className="relative z-[1] flex flex-1 justify-center">
+          {/* Plain static styles: no hover/active states that stick after a tap on touch screens. */}
           <button
             type="button"
             data-search-trigger
             onClick={() => searchCtl.open()}
             aria-label="Search"
-            className="grid size-10 touch-manipulation place-items-center rounded-full bg-white text-black outline-none select-none focus-visible:ring-2 focus-visible:ring-white/60"
+            className="-mt-5 mb-2 grid size-14 touch-manipulation place-items-center rounded-full bg-white text-black shadow-lg shadow-black/50 outline-none select-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
-            <Search className="size-[18px]" strokeWidth={2.25} />
+            <Search className="size-6" />
           </button>
         </div>
       </div>
