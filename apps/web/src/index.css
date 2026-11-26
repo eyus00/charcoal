@@ -285,3 +285,14 @@ video::cue {
     animation: none;
   }
 }
+
+/* The 4K badge's slow shimmer. */
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 14px rgba(252, 211, 77, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(252, 211, 77, 0.85);
+  }
+}

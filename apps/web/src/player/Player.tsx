@@ -220,6 +220,12 @@ export default function Player({
   };
   const [exhausted, setExhausted] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Shown when a source starts playing: its quality, where it's from, and why it's this one. */
+  const [srcPill, setSrcPill] = useState<{ key: number; height: number; quality: string; from: string; why: string } | null>(null);
+  /** Why the next source to start was chosen (read when it starts playing). */
+  const switchWhy = useRef('Playing');
+  const pillTimer = useRef<number>(undefined);
+  const levelsRef = useRef<{ height: number }[]>([]);
   /** The stream playing turned out to be live (its playlist has no end). */
   const [liveSeen, setLiveSeen] = useState(false);
   /** Live: there is no film to seek in. No seek bar, no duration, no ±10 s; a "Live" state instead. */
@@ -239,6 +245,7 @@ export default function Player({
   const [muted, setMuted] = useState(settings.muted);
   const [rate, setRate] = useState(settings.playbackRate);
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([]);
+  useEffect(() => void (levelsRef.current = levels), [levels]);
   const [level, setLevel] = useState(-1);
   const [audioTracks, setAudioTracks] = useState<{ id: number; name: string }[]>([]);
   const [audioTrack, setAudioTrack] = useState(-1);
@@ -617,8 +624,8 @@ export default function Player({
         keepPosition();
         const h = heightOf(list[best]);
         console.info(`[player] switching to a ${h}p source (was ${now}p)`);
+        switchWhy.current = 'Found a sharper source';
         setSourceIdx(best);
-        flash(`Switched to a sharper source (${h >= 2160 ? '4K' : `${h}p`})`);
       },
       searching ? 6000 : 1500,
     );
@@ -662,6 +669,7 @@ export default function Player({
       // A source this device can't play at all is skipped with the reason, not reported as broken.
       const cant = unplayableReason(why);
       flash(cant ? `Skipped source ${sourceIdx + 1}: ${cant}` : `Source ${sourceIdx + 1} failed — trying another`);
+      switchWhy.current = 'Switched source';
       setSourceIdx(nextIdx);
     },
     [data.sources, sourceIdx, flash, setSourceIdx, keepPinned, twinAt, source],
@@ -706,6 +714,15 @@ export default function Player({
     const onPlaying = () => {
       clearStartup();
       healthy.current = true;
+      // Say what's playing: the quality (the best of what it says and what it turned out to carry).
+      const height = Math.max(heightOf(source), ...levelsRef.current.map((l) => l.height), v.videoHeight || 0);
+      const why = switchWhy.current;
+      switchWhy.current = 'Playing';
+      if (!liveRef.current) {
+        setSrcPill({ key: Date.now(), height, quality: source.quality, from: source.provider.name, why });
+        window.clearTimeout(pillTimer.current);
+        pillTimer.current = window.setTimeout(() => setSrcPill(null), 3800);
+      }
       if (getState().settings.lastProvider !== source.provider.id) actions.updateSettings({ lastProvider: source.provider.id });
     };
     v.addEventListener('playing', onPlaying, { once: true });
@@ -1391,6 +1408,7 @@ export default function Player({
         </div>
       )}
       {notice && !held && <div className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm backdrop-blur-sm">{notice}</div>}
+      {srcPill && !notice && !held && <SourcePill {...srcPill} key={srcPill.key} />}
       {dragging && (
         <div className="pointer-events-none absolute inset-4 z-40 grid place-items-center rounded-3xl border-2 border-dashed border-white/40 bg-black/70 text-center">
           <div>
@@ -1721,6 +1739,7 @@ export default function Player({
                               keepPosition();
                               failed.current.delete(i);
                               userPicked.current = true;
+                              switchWhy.current = 'Source changed';
                               // The viewer chose: a wait for fresh links doesn't override it.
                               comeBackTo.current = null;
                               setRenewing(false);
@@ -2439,4 +2458,34 @@ function toVtt(cues: Cue[], delay: number) {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s}`;
   };
   return 'WEBVTT\n\n' + cues.map((c) => `${ts(c.start + delay)} --> ${ts(c.end + delay)}\n${c.text}`).join('\n\n');
+}
+
+/**
+ * What started playing, briefly: "4K · Febbox · Found a sharper source". 4K gets a warm glow and
+ * 1080p a white one: the good ones look like the good ones.
+ */
+function SourcePill({ height, quality, from, why }: { height: number; quality: string; from: string; why: string }) {
+  const tier = height >= 2160 ? '4k' : height >= 1080 ? 'fhd' : height >= 720 ? 'hd' : 'sd';
+  const label = tier === '4k' ? '4K' : height ? `${height}p` : quality || 'Auto';
+  return (
+    <div
+      role="status"
+      className="toast-in pointer-events-none absolute top-20 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-black/75 py-1.5 pr-4 pl-1.5 text-sm whitespace-nowrap backdrop-blur-sm"
+    >
+      <span
+        className={cx(
+          'rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide',
+          tier === '4k' && 'animate-[glow_2.4s_ease-in-out_infinite] bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 text-black',
+          tier === 'fhd' && 'bg-white text-black shadow-[0_0_14px_rgba(255,255,255,0.5)]',
+          tier === 'hd' && 'bg-white/90 text-black',
+          tier === 'sd' && 'bg-white/15 text-white',
+        )}
+      >
+        {label}
+        {tier === 'fhd' && <span className="ml-1 font-semibold opacity-60">HD</span>}
+      </span>
+      <span className="font-medium">{from}</span>
+      <span className="text-white/60">{why}</span>
+    </div>
+  );
 }

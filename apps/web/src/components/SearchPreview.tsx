@@ -26,7 +26,7 @@ interface Found {
 }
 
 const norm = (s: string | undefined) => (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-const LIMIT = 9;
+const LIMIT = 7;
 
 function fromTmdb(m: MediaItem): Found {
   const type = typeOf(m);
@@ -123,7 +123,7 @@ export default function SearchPreview({ query, onPick, onAll, onCount }: { query
       role="listbox"
       aria-label="Search results"
       aria-busy={busy}
-      className="toast-in absolute top-full right-0 z-50 mt-2 max-h-[min(80vh,44rem)] w-[min(46rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-3xl border border-transparent bg-raised p-3 shadow-2xl ring-1 shadow-black/50 ring-white/5 max-md:left-0 max-md:w-auto"
+      className="toast-in absolute top-full right-0 z-50 mt-2 max-h-[min(78vh,36rem)] w-[min(40rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-3xl border border-transparent bg-raised p-3 shadow-2xl ring-1 shadow-black/50 ring-white/5 max-md:left-0 max-md:w-auto"
       // Keep focus in the input while picking.
       onPointerDown={(e) => e.preventDefault()}
     >
@@ -133,10 +133,11 @@ export default function SearchPreview({ query, onPick, onAll, onCount }: { query
         <p className="px-3 py-6 text-center text-sm text-muted">No matches for “{query}”</p>
       ) : (
         // While the next search loads, these results stay (dimmed a touch) instead of flashing.
-        <div className={cx('transition-opacity duration-150', busy && 'opacity-70')}>
+        // The best match on the left, the rest beside it (stacked on phones).
+        <div className={cx('grid gap-3 transition-opacity duration-150 sm:grid-cols-[15rem_minmax(0,1fr)]', busy && 'opacity-70')}>
           <TopResult f={top} marked={marked === 0} onPick={onPick} />
           {rest.length > 0 && (
-            <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-4 px-1 sm:grid-cols-4">
+            <div className="grid grid-cols-3 content-start gap-x-2.5 gap-y-3">
               {rest.map((f, i) => (
                 <ResultCard key={f.key} f={f} marked={marked === i + 1} onPick={onPick} />
               ))}
@@ -167,9 +168,9 @@ function TopResult({ f, marked, onPick }: { f: Found; marked: boolean; onPick: (
       role="option"
       aria-selected={marked}
       data-result={f.key}
-      className={cx('group block overflow-hidden rounded-2xl bg-surface ring-1 transition', marked ? 'ring-white/40' : 'ring-white/[0.06] hover:ring-white/15')}
+      className={cx('group block self-start overflow-hidden rounded-2xl bg-surface ring-1 transition', marked ? 'ring-white/40' : 'ring-white/[0.06] hover:ring-white/15')}
     >
-      <span className="relative block aspect-[16/5] overflow-hidden">
+      <span className="relative block aspect-video overflow-hidden">
         {f.backdrop || f.poster ? (
           <img src={f.backdrop ?? f.poster} alt="" referrerPolicy="no-referrer" className="size-full object-cover object-[70%_25%] transition duration-200 group-hover:brightness-110" />
         ) : (
@@ -177,10 +178,10 @@ function TopResult({ f, marked, onPick }: { f: Found; marked: boolean; onPick: (
         )}
         <span className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
       </span>
-      <span className="relative -mt-10 block px-4 pb-4">
-        <span className="block truncate text-xl leading-tight font-semibold tracking-tight">{f.title}</span>
+      <span className="relative -mt-8 block px-3.5 pb-3.5">
+        <span className="line-clamp-2 block text-lg leading-tight font-semibold tracking-tight">{f.title}</span>
         <Meta year={f.year} rating={f.rating} className="mt-1.5" extra={<TypeIcon type={f.type} />} />
-        {f.overview && <span className="mt-2 line-clamp-2 block text-caption text-pretty text-white/70">{f.overview}</span>}
+        {f.overview && <span className="mt-2 line-clamp-4 block text-caption text-pretty text-white/70">{f.overview}</span>}
       </span>
     </Link>
   );
@@ -205,17 +206,17 @@ function ResultCard({ f, marked, onPick }: { f: Found; marked: boolean; onPick: 
 /** The panel's shape while the first results load: the banner card, then poster cards. */
 function PreviewSkeleton() {
   return (
-    <div aria-hidden>
-      <div className="overflow-hidden rounded-2xl bg-surface">
-        <div className="skeleton aspect-[16/5]" />
+    <div aria-hidden className="grid gap-3 sm:grid-cols-[15rem_minmax(0,1fr)]">
+      <div className="self-start overflow-hidden rounded-2xl bg-surface">
+        <div className="skeleton aspect-video" />
         <div className="space-y-2 px-4 pt-2 pb-4">
           <div className="skeleton h-5 w-1/2 rounded-md" />
           <div className="skeleton h-3 w-1/4 rounded" />
           <div className="skeleton h-3 w-5/6 rounded" />
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-4 px-1 sm:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
+      <div className="grid grid-cols-3 content-start gap-x-2.5 gap-y-3">
+        {Array.from({ length: 6 }, (_, i) => (
           <div key={i}>
             <div className="skeleton aspect-[2/3] rounded-2xl" />
             <div className="skeleton mt-2.5 h-3.5 w-4/5 rounded" />
