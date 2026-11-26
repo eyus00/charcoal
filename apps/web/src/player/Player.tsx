@@ -130,13 +130,47 @@ function bestIndex(list: JellySource[], failedAt: (i: number) => boolean = () =>
   return open.find((i) => list[i].verification?.state !== 'failed') ?? open[0] ?? -1;
 }
 
+/** A source's top picture height as far as it says (its label, or its best level); 0 when it doesn't. */
+function heightOf(s: JellySource): number {
+  const read = (q?: string) => {
+    const t = (q ?? '').toLowerCase();
+    if (/4k|2160|uhd/.test(t)) return 2160;
+    const m = /(\d{3,4})\s*p?\b/.exec(t);
+    return m ? Number(m[1]) : 0;
+  };
+  return Math.max(read(s.quality), ...(s.levels ?? []).map((l) => read(l.quality)));
+}
+
 /** A subtitle track: from Jelly (url) or a file the viewer loaded (text). */
 type Track = { label: string; url?: string; text?: string; format?: string; headers?: Record<string, string>; bridged?: boolean };
 
 type Menu = null | 'captions' | 'settings' | 'episodes';
 type View = 'main' | 'quality' | 'source' | 'audio' | 'speed' | 'style' | 'transcript';
 
-export default function Player({ data, media, title, subtitle, meta, poster, detailsUrl, onEpisodes, onDetails, resumeAt, header, next, prev, episodes, onProgress, onExhausted, searching, onRefresh, refreshing, generation, live: liveSaid, audioLang }: Props) {
+export default function Player({
+  data,
+  media,
+  title,
+  subtitle,
+  meta,
+  poster,
+  detailsUrl,
+  onEpisodes,
+  onDetails,
+  resumeAt,
+  header,
+  next,
+  prev,
+  episodes,
+  onProgress,
+  onExhausted,
+  searching,
+  onRefresh,
+  refreshing,
+  generation,
+  live: liveSaid,
+  audioLang,
+}: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   /** The streaming engine in use (hls.js or dash.js), or null while the video element plays a file (or HLS) by itself. */
@@ -157,9 +191,18 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   dataRef.current = data;
   const urlAt = (i: number) => dataRef.current.sources[i]?.url;
   const [selectedUrl, setSelectedUrl] = useState(() => data.sources[Math.max(0, bestIndex(data.sources))]?.url);
-  const sourceIdx = Math.max(0, data.sources.findIndex((x) => x.url === selectedUrl));
+  // The source playing is kept as an object too: a fresh search hands out new links for the same
+  // streams, and the one playing must carry on (not reload) even though its address isn't listed.
+  const pinned = useRef<JellySource | undefined>(undefined);
+  const listedAt = data.sources.findIndex((x) => x.url === selectedUrl);
+  const keepPinned = listedAt < 0 && !!pinned.current && pinned.current.url === selectedUrl;
+  /** Where the playing stream sits in the list (its fresh twin, when the list is newer than it). */
+  const twinAt = keepPinned && pinned.current?.id ? data.sources.findIndex((x) => x.id === pinned.current!.id) : -1;
+  const sourceIdx = listedAt >= 0 ? listedAt : Math.max(0, twinAt);
   const setSourceIdx = useCallback((i: number) => setSelectedUrl(dataRef.current.sources[i]?.url), []);
   const failedUrls = useRef(new Set<string>());
+  /** Streams (by id) that failed here: a fresh link for one of them isn't a reason to try it again by itself. */
+  const failedIds = useRef(new Set<string>());
   const failed = useRef({
     has: (i: number) => failedUrls.current.has(urlAt(i) ?? ''),
     add: (i: number) => void (urlAt(i) && failedUrls.current.add(urlAt(i)!)),
@@ -248,7 +291,12 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     return () => document.removeEventListener('pointerdown', onDown, true);
   }, [menu, setMenu]);
 
-  const source = data.sources[sourceIdx];
+  const source = (keepPinned ? pinned.current : data.sources[sourceIdx]) as JellySource;
+  pinned.current = source;
+  /** It has played (the current source): from then on new lists never interrupt it, only a clearly better source does. */
+  const healthy = useRef(false);
+  /** The viewer picked a source in the menu: no automatic switching after that. */
+  const userPicked = useRef(false);
   /** A bridged source loads straight from its host: Charcoal Helper (or the app) adds the headers.
    *  Decided per source: one list can mix bridged, plain and relayed sources. */
   const direct = !!source?.bridged;
@@ -358,10 +406,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
    * end: more of the episode follows (an anime's scene after the ending).
    */
   const sceneAfter =
-    segment?.type === 'credits' &&
-    segment.end !== null &&
-    dur - segment.end > 20 &&
-    !segments.some((s) => s !== segment && Math.abs(s.start - segment.end!) < 5 && !!segmentAt([s], s.start, dur));
+    segment?.type === 'credits' && segment.end !== null && dur - segment.end > 20 && !segments.some((s) => s !== segment && Math.abs(s.start - segment.end!) < 5 && !!segmentAt([s], s.start, dur));
 
   // Stills for Continue watching: every 90 s while playing, and on pause / leaving (see lib/frames).
   // Trakt (when connected): tell it what's playing. Stopping at 80 %+ marks it watched there.
@@ -484,10 +529,11 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   useEffect(() => {
     if (generation === firstGeneration.current) return;
     firstGeneration.current = generation;
-    // The video element is already reset by now; use the last position it reported.
-    if (pos.current.t > 5) seekOnLoad.current = pos.current.t;
     failed.current.clear();
     failReason.current.clear();
+    // Playing fine: the new list is only there for later (a failure, a better source). Nothing reloads.
+    if (healthy.current && !exhausted && !renewingRef.current) return;
+    if (pos.current.t > 5) seekOnLoad.current = pos.current.t;
     setExhausted(false);
     // While an expired stream is being waited for, the effect below picks the source.
     if (!renewingRef.current) setSourceIdx(Math.max(0, bestIndex(data.sources)));
@@ -538,6 +584,48 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     return () => window.clearTimeout(t);
   }, [renewing]);
 
+  // ---------- a better source turned up ----------
+  // Playback starts with the first source that works; providers keep answering meanwhile. When one
+  // of them has a clearly sharper picture (at least HD, and 40% taller than what's playing) in an
+  // audio that suits, playback moves to it from the same moment. Not after the viewer has picked a
+  // source themselves, not more than twice, and not live. New sources are given a moment to settle
+  // (several often arrive together) so the best of them is taken, not the first.
+  const upgrades = useRef(0);
+  useEffect(() => {
+    if (!playing || !healthy.current || userPicked.current || exhausted || renewing || casting || live || upgrades.current >= 2) return;
+    const t = window.setTimeout(
+      () => {
+        if (!healthy.current || userPicked.current) return;
+        const cur = pinned.current;
+        if (!cur) return;
+        const now = Math.max(heightOf(cur), ...levels.map((l) => l.height));
+        if (!now) return; // unknown: it may already be the best there is
+        const lang = audioPref.current;
+        const speaks = (x: JellySource) => !x.audioTracks?.length || x.audioTracks.some((a) => a.language === lang);
+        const list = dataRef.current.sources;
+        let best = -1;
+        list.forEach((x, i) => {
+          if (failed.current.has(i) || (x.id && failedIds.current.has(x.id)) || isFrame(x) || x.type === 'mkv' || x.verification?.state === 'failed') return;
+          if ((x.id && x.id === cur.id) || x.url === cur.url) return;
+          if (speaks(cur) && !speaks(x)) return;
+          const h = heightOf(x);
+          if (h < Math.max(720, now * 1.4)) return;
+          if (best < 0 || h > heightOf(list[best])) best = i;
+        });
+        if (best < 0) return;
+        upgrades.current += 1;
+        keepPosition();
+        const h = heightOf(list[best]);
+        console.info(`[player] switching to a ${h}p source (was ${now}p)`);
+        setSourceIdx(best);
+        flash(`Switched to a sharper source (${h >= 2160 ? '4K' : `${h}p`})`);
+      },
+      searching ? 6000 : 1500,
+    );
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.sources, searching, playing, exhausted, renewing, casting, live, levels]);
+
   // ---------- source loading & fallback ----------
   /** Why each failed source failed, in words (shown in the Source menu). */
   const reasons = useRef(new Map<string, string>());
@@ -548,11 +636,15 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
   });
   const fail = useCallback(
     (why: string, blockedHost = false) => {
-      failed.current.add(sourceIdx);
-      failReason.current.set(sourceIdx, describeFailure(why));
+      const unlisted = keepPinned && twinAt < 0;
+      if (source?.id) failedIds.current.add(source.id);
+      if (!unlisted) {
+        failed.current.add(sourceIdx);
+        failReason.current.set(sourceIdx, describeFailure(why));
+      }
       // A 4xx from the video host (e.g. Cloudflare blocking the proxy) will hit every source on that host.
       if (blockedHost) {
-        const host = upstreamHost(data.sources[sourceIdx].url);
+        const host = upstreamHost((source ?? data.sources[sourceIdx]).url);
         data.sources.forEach((s, i) => {
           if (upstreamHost(s.url) !== host || i === sourceIdx) return;
           failed.current.add(i);
@@ -572,7 +664,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       flash(cant ? `Skipped source ${sourceIdx + 1}: ${cant}` : `Source ${sourceIdx + 1} failed — trying another`);
       setSourceIdx(nextIdx);
     },
-    [data.sources, sourceIdx, flash, setSourceIdx],
+    [data.sources, sourceIdx, flash, setSourceIdx, keepPinned, twinAt, source],
   );
   // The loading effect calls the latest fail() without depending on it: a new list (more sources
   // arriving) must not reload the video that's playing.
@@ -596,6 +688,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
       return;
     }
     let cancelled = false;
+    healthy.current = false;
     // Recovery from a network or media error, for either engine: once a minute per kind, then the next source.
     const retry = retryBudget();
     setBuffering(true);
@@ -612,6 +705,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     // Remember the provider that actually played, so it's tried first next time.
     const onPlaying = () => {
       clearStartup();
+      healthy.current = true;
       if (getState().settings.lastProvider !== source.provider.id) actions.updateSettings({ lastProvider: source.provider.id });
     };
     v.addEventListener('playing', onPlaying, { once: true });
@@ -773,7 +867,7 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
     }
 
     return stop;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url, direct, attempt]);
 
   // Apply persisted volume/speed (hold-to-speed overrides the speed while held).
@@ -1609,49 +1703,71 @@ export default function Player({ data, media, title, subtitle, meta, poster, det
                           Found by {data.via === 'extension' ? 'this browser (Charcoal Helper)' : data.via === 'own' ? 'your server' : 'Charcoal’s server'}
                         </p>
                       )}
-                      {groupSources(data.sources).map(({ name, items }) => (
-                        <div key={name} className="pb-1">
-                          <div className="flex items-baseline justify-between px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">
-                            <span>{name}</span>
-                            <span className="tabular-nums">{items.length}</span>
-                          </div>
-                          {items.map(({ s, i }) => (
-                            <SourceRow
-                              key={s.url}
-                              source={s}
-                              infoOpen={info?.url === s.url}
-                              onInfo={(el) => openInfo(s.url, el)}
-                              selected={sourceIdx === i}
-                              failed={failed.current.has(i)}
-                              reason={failed.current.has(i) ? failReason.current.get(i) : undefined}
-                              onClick={() => {
-                                if (i === sourceIdx) return setMenu(null);
-                                keepPosition();
-                                failed.current.delete(i);
-                                // The viewer chose: a wait for fresh links doesn't override it.
-                                comeBackTo.current = null;
-                                setRenewing(false);
-                                setSourceIdx(i);
-                                setMenu(null);
-                              }}
-                            />
-                          ))}
-                        </div>
-                      ))}
-                      {/* Found, but not for this device (a codec it can't decode, say): listed, never tried. */}
-                      {data.report?.some((r) => r.unplayable) && (
-                        <div className="pb-1">
-                          <div className="px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">Can’t play here</div>
-                          {data.report
-                            .filter((r) => r.unplayable)
-                            .map((r) => (
-                              <div key={`${r.name}|${r.reason}`} data-unplayable aria-disabled className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm opacity-45">
-                                <span className="shrink-0 font-medium">{r.name}</span>
-                                <span className="min-w-0 flex-1 text-xs leading-snug">{r.reason}</span>
+                      {(() => {
+                        // Sources that failed here, and ones this device can't play, are folded away
+                        // under one row, so the list shows what can still be watched.
+                        const row = (s: JellySource, i: number) => (
+                          <SourceRow
+                            key={s.url}
+                            source={s}
+                            infoOpen={info?.url === s.url}
+                            onInfo={(el) => openInfo(s.url, el)}
+                            selected={sourceIdx === i}
+                            failed={failed.current.has(i)}
+                            reason={failed.current.has(i) ? failReason.current.get(i) : undefined}
+                            onClick={() => {
+                              if (i === sourceIdx) return setMenu(null);
+                              keepPosition();
+                              failed.current.delete(i);
+                              userPicked.current = true;
+                              // The viewer chose: a wait for fresh links doesn't override it.
+                              comeBackTo.current = null;
+                              setRenewing(false);
+                              setSourceIdx(i);
+                              setMenu(null);
+                            }}
+                          />
+                        );
+                        // Out of the way: failed here, or tried by the resolver without an answer (the one playing always stays).
+                        const away = (i: number) => i !== sourceIdx && (failed.current.has(i) || data.sources[i].verification?.state === 'failed');
+                        const groups = groupSources(data.sources)
+                          .map((g) => ({ ...g, items: g.items.filter(({ i }) => !away(i)) }))
+                          .filter((g) => g.items.length);
+                        const broken = data.sources.map((s, i) => ({ s, i })).filter(({ i }) => away(i));
+                        const unplayableHere = (data.report ?? []).filter((r) => r.unplayable);
+                        return (
+                          <>
+                            {groups.map(({ name, items }) => (
+                              <div key={name} className="pb-1">
+                                <div className="flex items-baseline justify-between px-3 pt-2 pb-1 text-micro font-medium tracking-wider text-faint uppercase">
+                                  <span>{name}</span>
+                                  <span className="tabular-nums">{items.length}</span>
+                                </div>
+                                {items.map(({ s, i }) => row(s, i))}
                               </div>
                             ))}
-                        </div>
-                      )}
+                            {broken.length + unplayableHere.length > 0 && (
+                              <details className="group/bad pb-1">
+                                <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs text-muted transition-colors marker:hidden hover:bg-white/[0.06] hover:text-white">
+                                  <span className="flex-1">
+                                    {broken.length > 0 && `${broken.length} didn’t work`}
+                                    {broken.length > 0 && unplayableHere.length > 0 && ' · '}
+                                    {unplayableHere.length > 0 && `${unplayableHere.length} can’t play here`}
+                                  </span>
+                                  <ChevronRight className="size-3.5 transition-transform group-open/bad:rotate-90" />
+                                </summary>
+                                {broken.map(({ s, i }) => row(s, i))}
+                                {unplayableHere.map((r) => (
+                                  <div key={`${r.name}|${r.reason}`} data-unplayable aria-disabled className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm opacity-45">
+                                    <span className="shrink-0 font-medium">{r.name}</span>
+                                    <span className="min-w-0 flex-1 text-xs leading-snug">{r.reason}</span>
+                                  </div>
+                                ))}
+                              </details>
+                            )}
+                          </>
+                        );
+                      })()}
                       {onRefresh && (
                         <button
                           onClick={() => {
@@ -2003,7 +2119,10 @@ function LangBadge({ track, on }: { track: { language: string; label: string }; 
   return (
     <span
       title={track.label}
-      className={cx('inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide uppercase ring-1 ring-inset', on ? 'ring-black/40' : 'ring-white/35')}
+      className={cx(
+        'inline-flex h-5 min-w-7 shrink-0 items-center justify-center rounded-[5px] px-1.5 text-[11px] leading-none font-medium tracking-wide uppercase ring-1 ring-inset',
+        on ? 'ring-black/40' : 'ring-white/35',
+      )}
     >
       {code}
       {/dub/i.test(track.label) ? ' dub' : ''}
@@ -2051,9 +2170,7 @@ function SourceRow({
         )}
         {/* Tried by the resolver before it got here: a quiet dot when it answered. */}
         {tried === 'Verified' && !failed && <span title="Verified: it answered when it was tried" aria-label="Verified" className="size-1.5 shrink-0 rounded-full bg-success" />}
-        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>
-          {failed ? 'Failed' : tried === 'Did not answer' ? tried : formatSize(s.size)}
-        </span>
+        <span className={cx('ml-auto shrink-0 pl-2 text-xs tabular-nums', failed ? 'text-danger' : 'opacity-50')}>{failed ? 'Failed' : tried === 'Did not answer' ? tried : formatSize(s.size)}</span>
       </button>
       <button
         type="button"
@@ -2237,12 +2354,12 @@ function SeekBar({ time, duration, buffered, segments, onSeek }: { time: number;
             // The same rule as segmentAt: times measured on a video of another length are another cut.
             .filter((s) => segmentAt([s], s.start, duration))
             .map((s) => (
-            <div
-              key={s.type + s.start}
-              className="absolute inset-y-0 bg-planned/70"
-              style={{ left: `${(s.start / duration) * 100}%`, width: `${(((s.end ?? duration) - s.start) / duration) * 100}%` }}
-            />
-          ))}
+              <div
+                key={s.type + s.start}
+                className="absolute inset-y-0 bg-planned/70"
+                style={{ left: `${(s.start / duration) * 100}%`, width: `${(((s.end ?? duration) - s.start) / duration) * 100}%` }}
+              />
+            ))}
         <div className="absolute inset-y-0 left-0 bg-white" style={{ width: `${shown * 100}%` }} />
       </div>
       <div

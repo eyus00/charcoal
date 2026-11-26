@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Play, X } from 'lucide-react';
@@ -26,6 +26,12 @@ export default function Details({ type }: { type: MediaType }) {
   const valid = Number.isInteger(id) && id > 0;
   const { data, isPending, error, refetch } = useQuery({ ...q.details(type, id), enabled: valid });
   useTitle(data ? titleOf(data) : undefined);
+  // Most visits end in Play: have the resolver server awake and the providers loaded by then.
+  useEffect(() => {
+    // (Loaded on its own: the player needs that code anyway, so this also fetches it ahead.)
+    const t = window.setTimeout(() => void import('../lib/resolver').then((m) => m.warmUp()).catch(() => {}), 600);
+    return () => window.clearTimeout(t);
+  }, []);
 
   if (!valid || (error instanceof HttpError && error.status === 404)) return <NotFound />;
   if (error) return <ErrorBox onRetry={() => refetch()} />;

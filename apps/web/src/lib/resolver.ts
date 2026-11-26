@@ -8,7 +8,19 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RegistryClient, resolveSources, type PlayableSource, type RemoteEvent, type ResolveState, type ResolverDeps } from '@charcoal/client';
-import { DEFAULT_WEIGHTS, HealthStore, mergeCaptions, normalizeStream, type EpisodeMedia, type HealthRecord, type AnimeMedia, type Media, type MovieMedia, type PlaybackCapabilities, type Stream } from '@charcoal/provider-sdk';
+import {
+  DEFAULT_WEIGHTS,
+  HealthStore,
+  mergeCaptions,
+  normalizeStream,
+  type EpisodeMedia,
+  type HealthRecord,
+  type AnimeMedia,
+  type Media,
+  type MovieMedia,
+  type PlaybackCapabilities,
+  type Stream,
+} from '@charcoal/provider-sdk';
 import { animeMediaFor, looksLikeAnime, type AnimeAudio } from './anime';
 import { within } from './content';
 import { getBridge } from './extension';
@@ -24,8 +36,9 @@ function servers(): string[] {
   return [...new Set([getState().settings.serverUrl, HOSTED_SERVER].filter(Boolean))];
 }
 
-const FIRST_BYTE_MS = 12_000;
-const TOTAL_MS = 45_000;
+// A server that has been asleep can take a while to answer at all; once it answers, results stream.
+const FIRST_BYTE_MS = 25_000;
+const TOTAL_MS = 60_000;
 
 /** /v2/sources as a stream of events (newline-delimited JSON). Falls back to /v1 on an older server. */
 async function* remote(base: string, query: URLSearchParams, signal: AbortSignal): AsyncGenerator<RemoteEvent> {
@@ -101,7 +114,10 @@ async function* legacy(base: string, query: URLSearchParams, signal: AbortSignal
     }
     const provider = { id: s.provider.id.toLowerCase(), name: s.provider.name, version: 'v1' };
     const a = s.audioTracks?.[0];
-    const stream = normalizeStream({ url: upstream.url, type: s.type as Stream['type'], quality: s.quality, headers: upstream.headers, language: a?.label, languageCode: a?.language }, { provider, runtime: 'server' });
+    const stream = normalizeStream(
+      { url: upstream.url, type: s.type as Stream['type'], quality: s.quality, headers: upstream.headers, language: a?.label, languageCode: a?.language },
+      { provider, runtime: 'server' },
+    );
     if ('rejected' in stream) continue;
     const entry = byProvider.get(provider.id) ?? { name: provider.name, streams: [] };
     // Header-less or not, a v1 server only vouches for its own relay URL.
@@ -111,7 +127,15 @@ async function* legacy(base: string, query: URLSearchParams, signal: AbortSignal
   yield { t: 'plan', runtime: 'server', providers: [...byProvider].map(([id, p]) => ({ id, name: p.name, wave: 1 })), skipped: [] };
   let first = true;
   for (const [id, p] of byProvider) {
-    yield { t: 'result', provider: { id, name: p.name, version: 'v1' }, outcome: 'ok', ms: Date.now() - started, streams: p.streams, captions: first ? (body?.subtitles ?? []).map((c) => ({ url: c.url, label: c.label, format: (c.format === 'srt' ? 'srt' : 'vtt') as 'srt' | 'vtt' })) : [], requests: 0 };
+    yield {
+      t: 'result',
+      provider: { id, name: p.name, version: 'v1' },
+      outcome: 'ok',
+      ms: Date.now() - started,
+      streams: p.streams,
+      captions: first ? (body?.subtitles ?? []).map((c) => ({ url: c.url, label: c.label, format: (c.format === 'srt' ? 'srt' : 'vtt') as 'srt' | 'vtt' })) : [],
+      requests: 0,
+    };
     first = false;
   }
   yield { t: 'done', ms: Date.now() - started, ok: byProvider.size, empty: 0, failed: 0 };
@@ -139,7 +163,10 @@ const storage = {
 /** Public keys this build trusts for registry signatures: `VITE_REGISTRY_KEYS="keyId=base64,keyId2=base64"`. */
 function trustedKeys(): Record<string, string> | undefined {
   const raw = (import.meta.env.VITE_REGISTRY_KEYS as string | undefined) ?? '';
-  const pairs = raw.split(',').map((p) => p.trim().split('=')).filter((p) => p.length >= 2 && p[0] && p[1]);
+  const pairs = raw
+    .split(',')
+    .map((p) => p.trim().split('='))
+    .filter((p) => p.length >= 2 && p[0] && p[1]);
   return pairs.length ? Object.fromEntries(pairs.map(([id, ...rest]) => [id, rest.join('=')])) : undefined;
 }
 
@@ -368,6 +395,20 @@ function toResult(state: ResolveState, taste: Taste): JellyResult {
   };
 }
 
+let warmedAt = 0;
+/**
+ * Gets everything a search needs ready before the viewer presses play: wakes the resolver server
+ * (its registry request), loads the in-browser providers and asks the helper extension what it can
+ * do. Called from title pages; at most every two minutes. Costs a few small requests.
+ */
+export function warmUp() {
+  if (Date.now() - warmedAt < 120_000) return;
+  warmedAt = Date.now();
+  void registry.refresh().catch(() => {});
+  void import('@charcoal/providers').catch(() => {});
+  if (getState().settings.useExtension) void getBridge().catch(() => null);
+}
+
 /** How long a search waits to learn a title's anime identity before going on without it. */
 const ANIME_IDENTITY_MS = 8_000;
 
@@ -426,13 +467,16 @@ export async function findSources(t: Target, d: Details, episodeTmdbId: number |
   // [the TMDB search, the anime search]: either may be missing at any moment.
   const parts: (ResolveState | undefined)[] = [undefined, undefined];
   let awaitingIdentity = anime;
-  const merged = () => mergeStates(parts.filter((p): p is ResolveState => !!p), awaitingIdentity);
+  const merged = () =>
+    mergeStates(
+      parts.filter((p): p is ResolveState => !!p),
+      awaitingIdentity,
+    );
   const publish = () => {
     const state = merged();
     onUpdate(toResult(state, taste), state.done);
   };
-  const search = (m: Media, slot: 0 | 1) =>
-    resolveSources(m, deps, { signal, onUpdate: (s) => ((parts[slot] = s), publish()) }).then((s) => void (parts[slot] = s));
+  const search = (m: Media, slot: 0 | 1) => resolveSources(m, deps, { signal, onUpdate: (s) => ((parts[slot] = s), publish()) }).then((s) => void (parts[slot] = s));
   const asAnime = !anime
     ? Promise.resolve()
     : within(animeMediaFor(media, d, animeAudio!), ANIME_IDENTITY_MS, 'Looking up the anime entry')
@@ -495,7 +539,11 @@ function useSearch(key: string, ready: boolean, enabled: boolean, search: Search
     latest
       .current(ctrl.signal, adopt)
       .then((r) => adopt(r, true))
-      .catch((e) => !ctrl.signal.aborted && setState((s) => ({ key, data: s.key === key ? s.data : undefined, searching: false, error: s.key === key && s.data ? undefined : (e as Error), generation: s.generation })));
+      .catch(
+        (e) =>
+          !ctrl.signal.aborted &&
+          setState((s) => ({ key, data: s.key === key ? s.data : undefined, searching: false, error: s.key === key && s.data ? undefined : (e as Error), generation: s.generation })),
+      );
     return () => ctrl.abort();
   }, [key, run, ready]);
 
@@ -522,6 +570,9 @@ export function useEntrySources(media: AnimeMedia | undefined): SourcesQuery {
 }
 
 function noSourcesMessage(r: JellyResult): string {
-  const why = (r.report ?? []).filter((p) => !p.ok && p.reason).slice(0, 3).map((p) => `${p.name}: ${p.reason}`);
+  const why = (r.report ?? [])
+    .filter((p) => !p.ok && p.reason)
+    .slice(0, 3)
+    .map((p) => `${p.name}: ${p.reason}`);
   return why.length ? `No playable source (${why.join('; ')})` : 'No sources found for this title';
 }

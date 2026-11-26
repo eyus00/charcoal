@@ -21,6 +21,9 @@ import Player, { TitleInfo } from '../player/Player';
 import MiniEpisodes from '../player/MiniEpisodes';
 import { Tip } from '../components/Tip';
 
+/** Searches for one title before Jelly gives way to an embed server. */
+const MAX_SEARCHES = 3;
+
 export default function Watch() {
   const params = useParams();
   const [sp] = useSearchParams();
@@ -115,20 +118,24 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
     if (ownError) toast(`Your server didn’t work (${ownError.replace(/\.$/, '')}), so Charcoal’s server is being used`);
   }, [ownError]);
 
-  // Nothing playable anywhere: use an embed server (without changing the saved preference). This
-  // happens as soon as every provider has answered; there is no blind retry in between.
-  // A search that ends with nothing is run once more by itself first: a provider that was slow
-  // or resting a moment ago often answers the second time, and an embed is a worse way to watch.
-  // (Only when the first one was quick: after a long empty search the viewer has waited enough.)
-  const emptySearches = useRef(0);
-  const opened = useRef(Date.now());
+  // Nothing playable: search again before giving up on Jelly. The first search after a while often
+  // comes back empty for reasons that pass by themselves (the server was asleep, a provider was
+  // resting, the helper extension wasn't ready yet), and an embed is a worse way to watch. Up to
+  // three searches, a short pause between them; only then an embed server (the saved choice stays).
+  const searches = useRef(1);
+  const [attempt, setAttempt] = useState(1);
   useEffect(() => {
-    if (server === 'jelly' && found.error && !found.searching) {
-      if (emptySearches.current++ < 1 && Date.now() - opened.current < 8000) return void found.refetch();
-      console.warn('Jelly:', found.error.message);
-      setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
-      setServer(EMBEDS[0].id);
+    if (server !== 'jelly' || !found.error || found.searching) return;
+    if (searches.current < MAX_SEARCHES) {
+      const n = searches.current++;
+      setAttempt(n + 1);
+      const t = window.setTimeout(() => found.refetch(), n === 1 ? 1500 : 4000);
+      return () => window.clearTimeout(t);
     }
+    console.warn('Jelly:', found.error.message);
+    setFallbackNote(`Jelly couldn’t find a working source. Switched to ${EMBEDS[0].name}.`);
+    setServer(EMBEDS[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server, found.error, found.searching]);
 
   const record = useCallback(
@@ -154,12 +161,15 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
   const pickServer = (s: string, confirmed = false) => {
     if (s !== 'jelly' && server === 'jelly' && !confirmed && !getState().settings.embedNoticeOff) return setEmbedAsk(s);
     setEmbedAsk(null);
-    if (s === 'jelly' && found.error) found.refetch();
+    if (s === 'jelly') {
+      searches.current = 1;
+      setAttempt(1);
+      if (found.error) found.refetch();
+    }
     setServer(s);
     setFallbackNote(null);
     actions.updateSettings({ server: s });
   };
-
 
   const embed = server !== 'jelly' ? (embedById(server) ?? EMBEDS[0]) : null;
 
@@ -256,7 +266,7 @@ function WatchView({ type, id, season, episode, restart }: { type: MediaType; id
               />,
             )}
           </div>
-          <JellyLoading backdrop={d?.backdrop_path} onSkip={() => pickServer(EMBEDS[0].id)} />
+          <JellyLoading backdrop={d?.backdrop_path} attempt={attempt} onSkip={() => pickServer(EMBEDS[0].id)} />
         </>
       )}
 
@@ -534,15 +544,15 @@ function EmbedNotice({ name, onCancel, onContinue }: { name: string; onCancel: (
   );
 }
 
-
 // ---------- states ----------
 
-function JellyLoading({ backdrop, onSkip }: { backdrop?: string | null; onSkip: () => void }) {
+function JellyLoading({ backdrop, attempt, onSkip }: { backdrop?: string | null; attempt: number; onSkip: () => void }) {
   const [secs, setSecs] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setSecs((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
+  const why = attempt > 1 ? `Nothing yet, looking again (${attempt} of ${MAX_SEARCHES})` : secs >= 12 ? 'Waking the server up, this can take a moment' : 'Jelly is checking providers';
   return (
     <div className="absolute inset-0 grid place-items-center overflow-hidden">
       {backdrop && <img src={imageUrl(backdrop, 'backdrop', 780)} alt="" className="absolute inset-0 size-full scale-105 object-cover opacity-25 blur-sm" />}
@@ -550,9 +560,11 @@ function JellyLoading({ backdrop, onSkip }: { backdrop?: string | null; onSkip: 
         <Spinner />
         <div>
           <p className="font-medium">Finding sources…</p>
-          <p className="mt-1 text-sm text-white/60 tabular-nums">Jelly is checking providers · {secs}s</p>
+          <p className="mt-1 text-sm text-white/60 tabular-nums">
+            {why} · {secs}s
+          </p>
         </div>
-        {secs >= 8 && (
+        {secs >= 15 && (
           <button onClick={onSkip} className={btn()}>
             Use an embedded player instead
           </button>
